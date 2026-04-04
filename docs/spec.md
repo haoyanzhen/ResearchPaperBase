@@ -686,15 +686,15 @@
 
 **说明**：存储系统用户基本信息，每个用户唯一。
 
-| 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 用户唯一标识符 |
-| username | VARCHAR | 50 | 是 | UNIQUE | 用户名，全局唯一 |
-| email | VARCHAR | 100 | 是 | UNIQUE | 邮箱，全局唯一 |
-| password_hash | VARCHAR | 255 | 是 | - | 密码哈希值 |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
-| updated_at | DATETIME | - | 是 | - | 最后更新时间 |
-| last_login_at | DATETIME | - | 否 | - | 最后登录时间 |
+| 字段名        | 类型      | 长度 | 必填 | 约束           | 说明           |
+|---------------|-----------|------|------|----------------|----------------|
+| id            | VARCHAR   | 50   | 是   | PRIMARY KEY    | 用户唯一标识符 |
+| username      | VARCHAR   | 50   | 是   | UNIQUE         | 用户名，全局唯一 |
+| email         | VARCHAR   | 100  | 是   | UNIQUE         | 邮箱，全局唯一 |
+| password_hash | VARCHAR   | 255  | 是   | -              | 密码哈希值     |
+| created_at    | DATETIME  | -    | 是   | -              | 创建时间       |
+| updated_at    | DATETIME  | -    | 是   | -              | 最后更新时间   |
+| last_login_at | DATETIME  | -    | 否   | -              | 最后登录时间   |
 
 **索引**：
 - PRIMARY KEY (id)
@@ -708,15 +708,15 @@
 
 **说明**：存储用户相关的配置信息，包括系统默认配置和用户自定义配置。每一行保存一个配置项，每个配置项唯一。
 
-| 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 配置唯一标识符 |
-| user_id | VARCHAR | 50 | 是 | FOREIGN KEY | 用户ID，关联users表 |
-| config_name | VARCHAR | 100 | 是 | - | 配置名称（如：llm.model、database.arxiv.endpoint等） |
-| config_value | TEXT | 是 | - | 配置值（JSON格式存储复杂配置） |
-| is_system_default | BOOLEAN | - | DEFAULT FALSE | 是否为系统默认配置 |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
-| updated_at | DATETIME | - | 是 | - | 最后更新时间 |
+| 字段名            | 类型      | 长度 | 必填 | 约束           | 说明                                                        |
+|-------------------|-----------|------|------|----------------|-------------------------------------------------------------|
+| id                | VARCHAR   | 50   | 是   | PRIMARY KEY    | 配置唯一标识符                                              |
+| user_id           | VARCHAR   | 50   | 是   | FOREIGN KEY    | 用户ID，关联users表                                         |
+| config_name       | VARCHAR   | 100  | 是   | -              | 配置名称（如：llm.model、database.arxiv.endpoint等）         |
+| config_value      | TEXT      | -    | 是   | -              | 配置值（JSON格式存储复杂配置）                              |
+| is_system_default | BOOLEAN   | -    | 是   | DEFAULT FALSE  | 是否为系统默认配置                                         |
+| created_at        | DATETIME  | -    | 是   | -              | 创建时间                                                    |
+| updated_at        | DATETIME  | -    | 是   | -              | 最后更新时间                                                |
 
 **约束**：
 - PRIMARY KEY (id)
@@ -742,19 +742,19 @@ config_value: ["user1@example.com", "user2@example.com"]
 **说明**：存储用户创建的各个研究课题及其执行进展，每个课题唯一。
 
 | 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 课题唯一标识符 |
-| user_id | VARCHAR | 50 | 是 | FOREIGN KEY | 用户ID，关联users表 |
-| name | VARCHAR | 200 | 是 | - | 课题名称 |
-| description | TEXT | 否 | - | 课题描述 |
-| status | VARCHAR | 20 | 是 | - | 状态（draft/pending/running/paused/completed/failed） |
-| current_stage | INTEGER | - | DEFAULT 1 | 当前执行阶段（1-7） |
-| total_papers | INTEGER | - | DEFAULT 0 | 总论文数 |
-| valid_papers | INTEGER | - | DEFAULT 0 | 有效论文数 |
-| push_status | VARCHAR | 20 | - | DEFAULT "not_pushed" | 推送状态（not_pushed/pushed/failed） |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
-| updated_at | DATETIME | - | 是 | - | 最后更新时间 |
-| completed_at | DATETIME | - | 否 | - | 完成时间 |
+|---------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id            | VARCHAR   | 50   | 是   | PRIMARY KEY    | 课题唯一标识符                                            |
+| user_id       | VARCHAR   | 50   | 是   | FOREIGN KEY    | 用户ID，关联users表                                       |
+| name          | VARCHAR   | 255  | 是   | -              | 课题名称                                                  |
+| description   | TEXT      | -    | 否   | -              | 课题描述                                                  |
+| status        | VARCHAR   | 20   | 是   | -              | 状态（draft/pending/running/paused/completed/failed）      |
+| current_stage | TINYINT   | -    | -    | DEFAULT 1      | 当前执行阶段（1-7）                                       |
+| total_papers | INTEGER   | -    | -    | DEFAULT 0      | 总论文数                                                  |
+| valid_papers  | INTEGER   | -    | -    | DEFAULT 0      | 有效论文数                                                |
+| push_status   | VARCHAR   | 20   | -    | DEFAULT "not_pushed" | 推送状态（not_pushed/pushed/failed）             |
+| created_at    | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at    | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
+| completed_at  | DATETIME  | -    | 否   | -              | 完成时间                                                  |
 
 **约束**：
 - PRIMARY KEY (id)
@@ -779,15 +779,15 @@ config_value: ["user1@example.com", "user2@example.com"]
 **说明**：存储每个课题的检索词，每一行为一个检索词，支持多个数据库的布尔表达式。
 
 | 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 检索词唯一标识符 |
-| topic_id | VARCHAR | 50 | 是 | FOREIGN KEY | 课题ID，关联research_topics表 |
-| dimension | VARCHAR | 50 | 是 | - | 维度（core_concept/technical_method/metric/upper_term/lower_term） |
-| keyword | VARCHAR | 500 | 是 | - | 关键词 |
-| boolean_expressions | JSON | - | - | 各数据库的布尔表达式 |
-| is_selected | BOOLEAN | - | DEFAULT TRUE | 是否被选中使用 |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
-| updated_at | DATETIME | - | 是 | - | 最后更新时间 |
+|---------------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id                  | VARCHAR   | 50   | 是   | PRIMARY KEY    | 检索词唯一标识符                                          |
+| topic_id            | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联research_topics表                             |
+| dimension           | VARCHAR   | 50   | 是   | -              | 维度（core_concept/technical_method/metric/upper_term/lower_term） |
+| search_word         | VARCHAR   | 500  | 是   | -              | 检索词                                                    |
+| boolean_expressions | JSON      | -    | -    | -              | 各数据库的布尔表达式                                      |
+| is_selected         | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否被选中使用                                            |
+| created_at          | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at          | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
 
 **约束**：
 - PRIMARY KEY (id)
@@ -798,7 +798,7 @@ config_value: ["user1@example.com", "user2@example.com"]
 **boolean_expressions示例**：
 ```json
 {
-  "arxiv": "deep learning AND medical imaging",
+  "arxiv": "ti:deep learning AND abs:medical imaging",
   "openalex": "(deep learning OR CNN) AND medical imaging",
   "semantic_scholar": "deep learning AND medical imaging",
   "ads": "deep learning AND medical AND imaging"
@@ -812,25 +812,25 @@ config_value: ["user1@example.com", "user2@example.com"]
 **说明**：存储所有论文的元数据，每篇论文唯一，支持多课题关联。
 
 | 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 论文唯一标识符 |
-| doi | VARCHAR | 100 | 否 | UNIQUE | DOI，数字对象标识符 |
-| arxiv_id | VARCHAR | 50 | 否 | UNIQUE | ArXiv ID |
-| title | TEXT | 是 | - | 论文标题 |
-| authors | TEXT | 否 | - | 作者列表（JSON格式） |
-| pub_date | DATE | 否 | - | 发布日期 |
-| venue | VARCHAR | 200 | 否 | - | 期刊/会议名称 |
-| abstract | TEXT | 否 | - | 摘要 |
-| source | VARCHAR | 50 | 否 | - | 检索来源（arxiv/openalex/semantic_scholar/ads） |
-| retrieved_at | DATETIME | - | 是 | - | 检索时间 |
-| pdf_path | VARCHAR | 500 | 否 | - | PDF文件本地路径 |
-| text_path | VARCHAR | 500 | 否 | - | 文本文件本地路径 |
-| download_status | VARCHAR | 20 | - | DEFAULT "not_downloaded" | 下载状态（not_downloaded/downloading/success/failed） |
-| download_error | TEXT | 否 | - | 下载错误信息 |
-| ai_analysis | JSON | 否 | - | AI分析结果 |
-| ai_analysis_status | VARCHAR | 20 | - | DEFAULT "not_analyzed" | AI分析状态（not_analyzed/analyzing/success/failed） |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
-| updated_at | DATETIME | - | 是 | - | 最后更新时间 |
+|-------------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id                | VARCHAR   | 50   | 是   | PRIMARY KEY    | 论文唯一标识符                                            |
+| doi               | VARCHAR   | 100  | 否   | UNIQUE         | DOI，数字对象标识符                                       |
+| arxiv_id          | VARCHAR   | 50   | 否   | UNIQUE         | ArXiv ID                                                  |
+| title             | TEXT      | -    | 是   | -              | 论文标题                                                  |
+| authors           | TEXT      | -    | 否   | -              | 作者列表（JSON格式）                                     |
+| pub_date          | DATE      | -    | 否   | -              | 发布日期                                                  |
+| venue             | VARCHAR   | 200  | 否   | -              | 期刊/会议名称                                             |
+| abstract          | TEXT      | -    | 否   | -              | 摘要                                                      |
+| source            | VARCHAR   | 50   | 否   | -              | 检索来源（arxiv/openalex/semantic_scholar/ads）             |
+| retrieved_at      | DATETIME  | -    | 是   | -              | 检索时间                                                  |
+| download_status   | VARCHAR   | 20   | -    | DEFAULT "not_downloaded" | 下载状态（not_downloaded/downloading/success/failed） |
+| pdf_path          | VARCHAR   | 500  | 否   | -              | PDF文件本地路径                                           |
+| text_path         | VARCHAR   | 500  | 否   | -              | 文本文件本地路径                                          |
+| download_error    | TEXT      | -    | 否   | -              | 下载错误信息                                              |
+| ai_analysis_status| VARCHAR   | 20   | -    | DEFAULT "not_analyzed" | AI分析状态（not_analyzed/analyzing/success/failed） |
+| ai_analysis       | JSON      | -    | 否   | -              | AI分析结果                                                |
+| created_at        | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at        | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
 
 **约束**：
 - PRIMARY KEY (id)
@@ -859,19 +859,19 @@ config_value: ["user1@example.com", "user2@example.com"]
 **说明**：保存课题与论文的关联关系以及论文在该课题中的评分和状态。
 
 | 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 关联唯一标识符 |
-| topic_id | VARCHAR | 50 | 是 | FOREIGN KEY | 课题ID，关联research_topics表 |
-| paper_id | VARCHAR | 50 | 是 | FOREIGN KEY | 论文ID，关联papers表 |
-| reference_score | INTEGER | - | - | 参考价值评分（0-5） |
-| technical_score | INTEGER | - | - | 技术价值评分（0-5） |
-| total_score | INTEGER | - | - | 总分（0-10） |
-| scoring_reason | TEXT | 否 | - | 评分理由 |
-| is_valid | BOOLEAN | - | DEFAULT TRUE | 是否有效（总分≥7） |
-| push_status | BOOLEAN | - | DEFAULT FALSE | 是否已推送给该课题 |
-| pushed_at | DATETIME | - | 否 | - | 推送时间 |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
-| updated_at | DATETIME | - | 是 | - | 最后更新时间 |
+|-----------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id               | VARCHAR   | 50   | 是   | PRIMARY KEY    | 关联唯一标识符                                            |
+| topic_id         | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联research_topics表                             |
+| paper_id         | VARCHAR   | 50   | 是   | FOREIGN KEY    | 论文ID，关联papers表                                     |
+| reference_score  | INTEGER   | -    | -    | -              | 参考价值评分（0-5）                                       |
+| technical_score  | INTEGER   | -    | -    | -              | 技术价值评分（0-5）                                       |
+| total_score      | INTEGER   | -    | -    | -              | 总分（0-10）                                             |
+| scoring_reason   | TEXT      | -    | 否   | -              | 评分理由                                                  |
+| is_valid         | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否有效（总分≥7）                                       |
+| push_status      | BOOLEAN   | -    | -    | DEFAULT FALSE  | 是否已推送给该课题                                        |
+| pushed_at        | DATETIME  | -    | 否   | -              | 推送时间                                                  |
+| created_at       | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at       | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
 
 **约束**：
 - PRIMARY KEY (id)
@@ -890,20 +890,20 @@ config_value: ["user1@example.com", "user2@example.com"]
 **说明**：记录课题各执行阶段的详细信息。
 
 | 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 记录唯一标识符 |
-| topic_id | VARCHAR | 50 | 是 | FOREIGN KEY | 课题ID，关联research_topics表 |
-| stage | INTEGER | 是 | - | 执行阶段（1-7） |
-| status | VARCHAR | 20 | 是 | - | 状态（running/paused/completed/failed） |
-| started_at | DATETIME | - | 是 | - | 开始时间 |
-| completed_at | DATETIME | - | 否 | - | 完成时间 |
-| paused_at | DATETIME | - | 否 | - | 暂停时间 |
-| resumed_at | DATETIME | - | 否 | - | 恢复时间 |
-| failed_at | DATETIME | - | 否 | - | 失败时间 |
-| result | JSON | - | 否 | - | 阶段结果数据 |
-| error | TEXT | 否 | - | 错误信息 |
-| user_actions | JSON | - | 否 | - | 用户操作记录 |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
+|--------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id           | VARCHAR   | 50   | 是   | PRIMARY KEY    | 记录唯一标识符                                            |
+| topic_id     | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联research_topics表                             |
+| stage        | INTEGER   | -    | 是   | -              | 执行阶段（1-7）                                           |
+| status       | VARCHAR   | 20   | 是   | -              | 状态（running/paused/completed/failed）                    |
+| started_at   | DATETIME  | -    | 是   | -              | 开始时间                                                  |
+| completed_at | DATETIME  | -    | 否   | -              | 完成时间                                                  |
+| paused_at    | DATETIME  | -    | 否   | -              | 暂停时间                                                  |
+| resumed_at   | DATETIME  | -    | 否   | -              | 恢复时间                                                  |
+| failed_at    | DATETIME  | -    | 否   | -              | 失败时间                                                  |
+| result       | JSON      | -    | 否   | -              | 阶段结果数据                                              |
+| error        | TEXT      | -    | 否   | -              | 错误信息                                                  |
+| user_actions | JSON      | -    | 否   | -              | 用户操作记录                                              |
+| created_at   | DATETIME  | -    | 是   | -              | 创建时间                                                  |
 
 **约束**：
 - PRIMARY KEY (id)
@@ -919,18 +919,18 @@ config_value: ["user1@example.com", "user2@example.com"]
 **说明**：存储用户的定时任务配置。
 
 | 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|--------|------|------|------|------|------|
-| id | VARCHAR | 50 | 是 | PRIMARY KEY | 定时任务唯一标识符 |
-| user_id | VARCHAR | 50 | 是 | FOREIGN KEY | 用户ID，关联users表 |
-| name | VARCHAR | 200 | 是 | - | 任务名称 |
-| topic_description | TEXT | 是 | - | 研究课题描述 |
-| schedule_type | VARCHAR | 20 | 是 | - | 调度类型（daily/weekly/monthly） |
-| schedule_time | TIME | 是 | - | 调度时间 |
-| enabled | BOOLEAN | - | DEFAULT TRUE | 是否启用 |
-| last_run_at | DATETIME | - | 否 | - | 上次运行时间 |
-| next_run_at | DATETIME | - | 否 | - | 下次运行时间 |
-| created_at | DATETIME | - | 是 | - | 创建时间 |
-| updated_at | DATETIME | - | 是 | - | 最后更新时间 |
+|------------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id                | VARCHAR   | 50   | 是   | PRIMARY KEY    | 定时任务唯一标识符                                        |
+| user_id           | VARCHAR   | 50   | 是   | FOREIGN KEY    | 用户ID，关联users表                                       |
+| name              | VARCHAR   | 200  | 是   | -              | 任务名称                                                  |
+| topic_description | TEXT      | -    | 是   | -              | 研究课题描述                                              |
+| schedule_type     | VARCHAR   | 20   | 是   | -              | 调度类型（daily/weekly/monthly）                         |
+| schedule_time     | TIME      | -    | 是   | -              | 调度时间                                                  |
+| enabled           | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否启用                                                  |
+| last_run_at       | DATETIME  | -    | 否   | -              | 上次运行时间                                              |
+| next_run_at       | DATETIME  | -    | 否   | -              | 下次运行时间                                              |
+| created_at        | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at        | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
 
 **约束**：
 - PRIMARY KEY (id)
