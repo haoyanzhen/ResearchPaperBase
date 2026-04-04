@@ -4,7 +4,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 项目名称 | Paper Push Agent |
+| 项目名称 | Research Paper Base |
 | 文档版本 | v1.0 |
 | 编写日期 | 2026-04-03 |
 | 编写人 | 系统设计师 |
@@ -17,11 +17,11 @@
 
 ### 1.1 编写目的
 
-本文档旨在详细描述Paper Push Agent系统的功能需求、非功能需求和约束条件，为系统设计、开发、测试和验收提供依据。
+本文档旨在详细描述 Research Paper Base 系统的功能需求、非功能需求和约束条件，为系统设计、开发、测试和验收提供依据。
 
 ### 1.2 项目背景
 
-学术研究人员需要定期跟踪相关领域的最新论文，但手动检索、筛选、下载和分析论文的过程耗时耗力。本系统旨在通过AI Agent自动化这一流程，帮助研究人员高效获取相关论文并生成分析报告。
+学术研究人员需要定期跟踪相关领域的最新论文，并实时查询论文中的相关内容，但手动检索、筛选、下载和分析论文的过程耗时耗力。本系统旨在通过AI Agent自动化这一流程，帮助研究人员高效获取相关论文、生成分析报告并持续提供论文库中论文的解析。
 
 ### 1.3 定义与缩写
 
@@ -35,7 +35,7 @@
 
 ### 1.4 参考资料
 
-- design.md - 系统设计文档
+- original_design.md - 初始设计文档
 - LangGraph官方文档
 - FastAPI官方文档
 - React官方文档
@@ -958,7 +958,7 @@ research_topics (课题任务表)
     ↓ 1:N
 stage_records (阶段记录表)
 
-research_topics (课题任务表)
+research_topics (用户表)
     ↓ 1:N
 scheduled_tasks (定时任务表)
 
@@ -1100,7 +1100,1325 @@ AI分析
 
 ### 8.1 设计原则
 
-本系统以**科学研究主题（Research Topic）**为核心单元进行底层设计，所有状态管理、生命周期管理和接口协议均围绕科学研究主题展开，确保系统的一致性和可维护性。
+本系统以**科学研究主题（Research Topic）**为核心单元进行底层设计，整个研究主题的构建分为两套模式：
+
+1. **构建模式（Construction Mode）**：用于快速构建研究主题的基础知识库
+2. **深度研究模式（Deep Research Mode）**：用于深入探讨理论与技术，开拓新方向
+
+所有状态管理、生命周期管理和接口协议均围绕科学研究主题展开，确保系统的一致性和可维护性。
+
+### 8.2 双模式设计架构
+
+#### 8.2.1 模式对比
+
+| 特性 | 构建模式 | 深度研究模式 |
+|------|---------|-------------|
+| **目标** | 快速构建知识库 | 深度探讨与创新 |
+| **检索方式** | 关键词检索 | Graph-RAG知识图谱检索 |
+| **LLM交互** | 任务导向 | 对话式探讨 |
+| **数据来源** | 学术数据库 | 学术数据库 + 网络搜索 + 用户输入 |
+| **Agent角色** | 执行者 | 研究助手 |
+| **用户参与度** | 低（配置为主） | 高（持续对话） |
+| **输出形式** | 论文列表 + 分析报告 | 研究结论 + 实验设计 + 创新方向 |
+| **适用场景** | 文献收集、现状调研 | 理论研究、技术突破 |
+
+#### 8.2.2 模式切换机制
+
+```python
+class ResearchMode(Enum):
+    """研究模式"""
+    CONSTRUCTION = "construction"  # 构建模式
+    DEEP_RESEARCH = "deep_research"  # 深度研究模式
+
+class ModeSwitcher:
+    """模式切换器"""
+    
+    def __init__(self, topic_id: str):
+        self.topic_id = topic_id
+        self.current_mode = self._get_current_mode()
+    
+    def switch_to_construction(self):
+        """切换到构建模式"""
+        self.current_mode = ResearchMode.CONSTRUCTION
+        self._update_topic_mode()
+        self._initialize_construction_context()
+    
+    def switch_to_deep_research(self):
+        """切换到深度研究模式"""
+        self.current_mode = ResearchMode.DEEP_RESEARCH
+        self._update_topic_mode()
+        self._initialize_deep_research_context()
+    
+    def _get_current_mode(self) -> ResearchMode:
+        """获取当前模式"""
+        topic = self.db_session.query(ResearchTopic).get(self.topic_id)
+        return ResearchMode(topic.mode) if topic.mode else ResearchMode.CONSTRUCTION
+    
+    def _update_topic_mode(self):
+        """更新主题模式"""
+        topic = self.db_session.query(ResearchTopic).get(self.topic_id)
+        topic.mode = self.current_mode.value
+        topic.updated_at = datetime.now()
+        self.db_session.commit()
+```
+
+### 8.3 构建模式设计
+
+#### 8.3.1 构建模式流程
+
+```
+用户输入研究课题
+    ↓
+Agent生成检索词（可人工编辑）
+    ↓
+多数据库检索论文
+    ↓
+用户补充论文或手动上传资料
+    ↓
+Agent自动解析和后台入库
+    ↓
+邮件提示服务接收新信息
+    ↓
+完成构建
+```
+
+#### 8.3.2 构建模式核心组件
+
+```python
+class ConstructionAgent:
+    """构建模式Agent"""
+    
+    def __init__(self, topic_id: str):
+        self.topic_id = topic_id
+        self.keyword_generator = KeywordGenerator()
+        self.paper_retriever = PaperRetriever()
+        self.paper_parser = PaperParser()
+        self.email_notifier = EmailNotifier()
+    
+    async def execute_construction(self):
+        """执行构建流程"""
+        # 1. 生成检索词
+        keywords = await self.keyword_generator.generate(self.topic_id)
+        
+        # 2. 检索论文
+        papers = await self.paper_retriever.retrieve(keywords)
+        
+        # 3. 等待用户补充
+        await self._wait_for_user_input()
+        
+        # 4. 解析和入库
+        await self._parse_and_store(papers)
+        
+        # 5. 邮件通知
+        await self.email_notifier.notify_completion(self.topic_id)
+    
+    async def _wait_for_user_input(self):
+        """等待用户补充论文或上传资料"""
+        # 暂停执行，等待用户操作
+        self._pause_and_wait_user()
+    
+    async def _parse_and_store(self, papers: List[Paper]):
+        """解析和存储论文"""
+        for paper in papers:
+            # 解析PDF
+            parsed_text = await self.paper_parser.parse(paper)
+            
+            # 提取元数据
+            metadata = self._extract_metadata(paper, parsed_text)
+            
+            # 存储到数据库
+            await self._store_paper(metadata)
+```
+
+### 8.4 深度研究模式设计
+
+#### 8.4.1 深度研究模式流程
+
+```
+用户进入深度研究模式
+    ↓
+加载知识图谱（基于已有论文）
+    ↓
+用户与LLM对话探讨
+    ↓
+Graph-RAG检索相关论文和信息
+    ↓
+LLM分析并给出研究建议
+    ↓
+用户设计实验方案
+    ↓
+记录探讨历史和结论
+    ↓
+发布到推荐模块（可选）
+```
+
+#### 8.4.2 深度研究模式核心组件
+
+```python
+class DeepResearchAgent:
+    """深度研究模式Agent"""
+    
+    def __init__(self, topic_id: str):
+        self.topic_id = topic_id
+        self.graph_rag_engine = GraphRAGEngine()
+        self.dialogue_manager = DialogueManager()
+        self.research_analyzer = ResearchAnalyzer()
+        self.experiment_designer = ExperimentDesigner()
+    
+    async def start_research_session(self):
+        """开始研究会话"""
+        # 初始化知识图谱
+        await self.graph_rag_engine.initialize(self.topic_id)
+        
+        # 创建对话会话
+        session = await self.dialogue_manager.create_session(self.topic_id)
+        
+        return session
+    
+    async def process_dialogue(self, session_id: str, user_input: str):
+        """处理用户对话"""
+        # 1. 理解用户输入
+        context = await self._understand_input(session_id, user_input)
+        
+        # 2. Graph-RAG检索
+        relevant_info = await self.graph_rag_engine.retrieve(context)
+        
+        # 3. LLM分析和建议
+        analysis = await self.research_analyzer.analyze(
+            user_input=user_input,
+            context=context,
+            relevant_info=relevant_info
+        )
+        
+        # 4. 记录对话
+        await self.dialogue_manager.record_dialogue(
+            session_id=session_id,
+            user_input=user_input,
+            llm_response=analysis,
+            context=context
+        )
+        
+        return analysis
+    
+    async def design_experiment(self, session_id: str, research_goal: str):
+        """设计实验方案"""
+        # 基于研究目标和已有知识设计实验
+        experiment = await self.experiment_designer.design(
+            topic_id=self.topic_id,
+            goal=research_goal,
+            knowledge_graph=await self.graph_rag_engine.get_knowledge_graph()
+        )
+        
+        # 记录实验设计
+        await self._record_experiment_design(session_id, experiment)
+        
+        return experiment
+```
+
+### 8.5 核心数据模型更新
+
+#### 8.5.1 研究主题（ResearchTopic）- 更新
+
+```python
+class ResearchTopic:
+    """科学研究主题核心数据模型"""
+    # 基础信息
+    id: str                          # 唯一标识符
+    user_id: str                     # 所属用户ID
+    name: str                        # 主题名称
+    description: str                 # 主题描述
+    
+    # 模式管理
+    mode: str                        # 当前模式（construction/deep_research）
+    mode_switch_history: List[ModeSwitchRecord]  # 模式切换历史
+    
+    # 生命周期管理
+    status: TopicStatus              # 当前状态
+    created_at: datetime             # 创建时间
+    updated_at: datetime             # 最后更新时间
+    completed_at: Optional[datetime] # 完成时间
+    
+    # 构建模式数据
+    construction_data: Optional[ConstructionData]  # 构建模式数据
+    
+    # 深度研究模式数据
+    deep_research_data: Optional[DeepResearchData]  # 深度研究数据
+    
+    # 推荐数据
+    is_published: bool               # 是否已发布到推荐模块
+    published_at: Optional[datetime] # 发布时间
+
+class ModeSwitchRecord:
+    """模式切换记录"""
+    from_mode: str                   # 原模式
+    to_mode: str                     # 新模式
+    switched_at: datetime            # 切换时间
+    reason: str                      # 切换原因
+
+class ConstructionData:
+    """构建模式数据"""
+    keywords: List[Keyword]          # 检索词
+    papers: List[Paper]              # 论文列表
+    total_papers: int                # 总论文数
+    valid_papers: int                # 有效论文数
+    last_notification_at: Optional[datetime]  # 最后通知时间
+
+class DeepResearchData:
+    """深度研究数据"""
+    knowledge_graph_id: str          # 知识图谱ID
+    total_dialogues: int             # 总对话数
+    total_experiments: int           # 总实验数
+    last_research_at: Optional[datetime]  # 最后研究时间
+```
+
+### 8.6 新增数据表设计
+
+#### 8.6.1 研究历史表 (research_history)
+
+**说明**：存储与用户的对话记录，记录用户在研究过程中的所有交互。
+
+| 字段名           | 类型      | 长度 | 必填 | 约束           | 说明                                                        |
+|------------------|-----------|------|------|----------------|-------------------------------------------------------------|
+| id               | VARCHAR   | 50   | 是   | PRIMARY KEY    | 历史记录唯一标识符                                          |
+| topic_id         | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联research_topics表                             |
+| user_id          | VARCHAR   | 50   | 是   | FOREIGN KEY    | 用户ID，关联users表                                       |
+| mode             | VARCHAR   | 20   | 是   | -              | 模式（construction/deep_research）                          |
+| action_type      | VARCHAR   | 50   | 是   | -              | 操作类型（create_topic/switch_mode/add_paper/dialogue等）   |
+| action_data      | JSON      | -    | 是   | -              | 操作数据（JSON格式）                                      |
+| created_at       | DATETIME  | -    | 是   | -              | 创建时间                                                    |
+
+**约束**：
+- PRIMARY KEY (id)
+- FOREIGN KEY (topic_id) REFERENCES research_topics(id) ON DELETE CASCADE
+- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+- INDEX idx_topic_id (topic_id)
+- INDEX idx_user_id (user_id)
+- INDEX idx_mode (mode)
+- INDEX idx_created_at (created_at)
+
+**action_data示例**：
+```json
+{
+  "action": "switch_mode",
+  "from_mode": "construction",
+  "to_mode": "deep_research",
+  "reason": "需要深入探讨理论细节"
+}
+```
+
+#### 8.6.2 研究对话表 (research_dialogues)
+
+**说明**：存储用户与LLM的深度探讨记录，包括对话内容、总结、引用信息等。
+
+| 字段名              | 类型      | 长度 | 必填 | 约束           | 说明                                                        |
+|--------------------|-----------|------|------|----------------|-------------------------------------------------------------|
+| id                 | VARCHAR   | 50   | 是   | PRIMARY KEY    | 对话记录唯一标识符                                          |
+| topic_id           | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联research_topics表                             |
+| session_id         | VARCHAR   | 50   | 是   | -              | 会话ID，标识一次深度研究会话                              |
+| user_input         | TEXT      | -    | 是   | -              | 用户输入内容                                                |
+| llm_response       | TEXT      | -    | 是   | -              | LLM响应内容                                                |
+| dialogue_summary   | TEXT      | -    | 否   | -              | 对话总结                                                    |
+| references         | JSON      | -    | 否   | -              | 引用信息（papers/网页搜索结果/用户提供的信息）            |
+| user_judgment     | TEXT      | -    | 否   | -              | 用户判断                                                    |
+| created_at         | DATETIME  | -    | 是   | -              | 创建时间                                                    |
+
+**约束**：
+- PRIMARY KEY (id)
+- FOREIGN KEY (topic_id) REFERENCES research_topics(id) ON DELETE CASCADE
+- INDEX idx_topic_id (topic_id)
+- INDEX idx_session_id (session_id)
+- INDEX idx_created_at (created_at)
+
+**references示例**：
+```json
+{
+  "papers": [
+    {
+      "paper_id": "paper_001",
+      "title": "Deep Learning for Medical Imaging",
+      "relevance": "high"
+    }
+  ],
+  "web_search": [
+    {
+      "url": "https://example.com",
+      "title": "Latest advances in CNN",
+      "snippet": "Recent research shows..."
+    }
+  ],
+  "user_provided": [
+    {
+      "type": "observation",
+      "content": "Based on my experience..."
+    }
+  ]
+}
+```
+
+#### 8.6.3 推荐模块表 (recommendations)
+
+**说明**：存储用户发表的讨论和观点，供其他用户参考。
+
+| 字段名           | 类型      | 长度 | 必填 | 约束           | 说明                                                        |
+|------------------|-----------|------|------|----------------|-------------------------------------------------------------|
+| id               | VARCHAR   | 50   | 是   | PRIMARY KEY    | 推荐记录唯一标识符                                          |
+| topic_id         | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联research_topics表                             |
+| user_id          | VARCHAR   | 50   | 是   | FOREIGN KEY    | 用户ID，关联users表                                       |
+| dialogue_id      | VARCHAR   | 50   | 是   | FOREIGN KEY    | 对话ID，关联research_dialogues表                           |
+| content_type     | VARCHAR   | 20   | 是   | -              | 内容类型（insight/conclusion/experiment_design等）          |
+| title            | VARCHAR   | 200  | 是   | -              | 标题                                                        |
+| content          | TEXT      | -    | 是   | -              | 内容                                                        |
+| tags             | JSON      | -    | 否   | -              | 标签（JSON数组）                                          |
+| view_count       | INTEGER   | -    | DEFAULT 0      | 查看次数                                                    |
+| like_count       | INTEGER   | -    | DEFAULT 0      | 点赞次数                                                    |
+| contact_info     | VARCHAR   | 200  | 是   | -              | 联系信息（用户名或邮箱，用于私下交流）                     |
+| created_at       | DATETIME  | -    | 是   | -              | 创建时间                                                    |
+| updated_at       | DATETIME  | -    | 是   | -              | 最后更新时间                                                |
+
+**约束**：
+- PRIMARY KEY (id)
+- FOREIGN KEY (topic_id) REFERENCES research_topics(id) ON DELETE CASCADE
+- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+- FOREIGN KEY (dialogue_id) REFERENCES research_dialogues(id) ON DELETE CASCADE
+- INDEX idx_topic_id (topic_id)
+- INDEX idx_user_id (user_id)
+- INDEX idx_content_type (content_type)
+- INDEX idx_created_at (created_at)
+
+### 8.7 Session管理与API路由设计
+
+#### 8.7.1 Session管理架构
+
+```python
+class SessionManager:
+    """Session管理器"""
+    
+    def __init__(self):
+        self.sessions = {}
+        self.mode_controllers = {
+            ResearchMode.CONSTRUCTION: ConstructionModeController(),
+            ResearchMode.DEEP_RESEARCH: DeepResearchModeController()
+        }
+    
+    def create_session(self, topic_id: str, mode: ResearchMode) -> Session:
+        """创建会话"""
+        session = Session(
+            session_id=self._generate_session_id(),
+            topic_id=topic_id,
+            mode=mode,
+            created_at=datetime.now()
+        )
+        
+        # 初始化模式特定的上下文
+        self._initialize_mode_context(session)
+        
+        self.sessions[session.session_id] = session
+        return session
+    
+    def get_session(self, session_id: str) -> Optional[Session]:
+        """获取会话"""
+        return self.sessions.get(session_id)
+    
+    def switch_mode(self, session_id: str, new_mode: ResearchMode):
+        """切换模式"""
+        session = self.get_session(session_id)
+        if not session:
+            raise SessionNotFoundError(f"Session {session_id} not found")
+        
+        # 记录模式切换
+        mode_switch = ModeSwitchRecord(
+            from_mode=session.mode.value,
+            to_mode=new_mode.value,
+            switched_at=datetime.now(),
+            reason="user_request"
+        )
+        
+        # 更新会话模式
+        session.mode = new_mode
+        session.mode_switches.append(mode_switch)
+        
+        # 重新初始化上下文
+        self._initialize_mode_context(session)
+    
+    def _initialize_mode_context(self, session: Session):
+        """初始化模式特定的上下文"""
+        controller = self.mode_controllers[session.mode]
+        session.context = controller.initialize_context(session.topic_id)
+
+class Session:
+    """会话对象"""
+    session_id: str
+    topic_id: str
+    mode: ResearchMode
+    created_at: datetime
+    context: dict  # 模式特定的上下文
+    mode_switches: List[ModeSwitchRecord]  # 模式切换历史
+```
+
+#### 8.7.2 API路由隔离设计
+
+```python
+# 构建模式API路由
+@router.post("/api/construction/topics")
+async def create_construction_topic(request: ConstructionTopicRequest):
+    """创建构建模式课题"""
+    session = session_manager.create_session(
+        topic_id=request.topic_id,
+        mode=ResearchMode.CONSTRUCTION
+    )
+    return {"session_id": session.session_id}
+
+@router.post("/api/construction/{session_id}/keywords/generate")
+async def generate_keywords(session_id: str, request: KeywordGenerationRequest):
+    """生成检索词"""
+    session = session_manager.get_session(session_id)
+    controller = session_manager.mode_controllers[ResearchMode.CONSTRUCTION]
+    return await controller.generate_keywords(session, request)
+
+@router.post("/api/construction/{session_id}/papers/retrieve")
+async def retrieve_papers(session_id: str, request: PaperRetrievalRequest):
+    """检索论文"""
+    session = session_manager.get_session(session_id)
+    controller = session_manager.mode_controllers[ResearchMode.CONSTRUCTION]
+    return await controller.retrieve_papers(session, request)
+
+# 深度研究模式API路由
+@router.post("/api/deep-research/sessions")
+async def create_deep_research_session(request: DeepResearchSessionRequest):
+    """创建深度研究会话"""
+    session = session_manager.create_session(
+        topic_id=request.topic_id,
+        mode=ResearchMode.DEEP_RESEARCH
+    )
+    return {"session_id": session.session_id}
+
+@router.post("/api/deep-research/{session_id}/dialogue")
+async def process_dialogue(session_id: str, request: DialogueRequest):
+    """处理对话"""
+    session = session_manager.get_session(session_id)
+    controller = session_manager.mode_controllers[ResearchMode.DEEP_RESEARCH]
+    return await controller.process_dialogue(session, request)
+
+@router.post("/api/deep-research/{session_id}/experiments/design")
+async def design_experiment(session_id: str, request: ExperimentDesignRequest):
+    """设计实验"""
+    session = session_manager.get_session(session_id)
+    controller = session_manager.mode_controllers[ResearchMode.DEEP_RESEARCH]
+    return await controller.design_experiment(session, request)
+
+# 通用API路由
+@router.post("/api/topics/{topic_id}/switch-mode")
+async def switch_mode(topic_id: str, request: ModeSwitchRequest):
+    """切换模式"""
+    # 获取当前活动的会话
+    session = session_manager.get_active_session(topic_id)
+    
+    # 切换模式
+    session_manager.switch_mode(session.session_id, request.new_mode)
+    
+    return {"message": f"Switched to {request.new_mode} mode"}
+```
+
+#### 8.7.3 上下文自动更新机制
+
+```python
+class ModeController(ABC):
+    """模式控制器基类"""
+    
+    @abstractmethod
+    def initialize_context(self, topic_id: str) -> dict:
+        """初始化上下文"""
+        pass
+    
+    @abstractmethod
+    def update_context(self, context: dict, new_data: dict):
+        """更新上下文"""
+        pass
+
+class ConstructionModeController(ModeController):
+    """构建模式控制器"""
+    
+    def initialize_context(self, topic_id: str) -> dict:
+        """初始化构建模式上下文"""
+        return {
+            "mode": "construction",
+            "topic_id": topic_id,
+            "keywords": [],
+            "papers": [],
+            "stage": "keyword_generation",
+            "user_inputs": []
+        }
+    
+    def update_context(self, context: dict, new_data: dict):
+        """更新构建模式上下文"""
+        context.update(new_data)
+        
+        # 自动更新阶段
+        if "keywords" in new_data and len(new_data["keywords"]) > 0:
+            context["stage"] = "paper_retrieval"
+        elif "papers" in new_data and len(new_data["papers"]) > 0:
+            context["stage"] = "paper_analysis"
+
+class DeepResearchModeController(ModeController):
+    """深度研究模式控制器"""
+    
+    def initialize_context(self, topic_id: str) -> dict:
+        """初始化深度研究模式上下文"""
+        # 加载知识图谱
+        knowledge_graph = self._load_knowledge_graph(topic_id)
+        
+        return {
+            "mode": "deep_research",
+            "topic_id": topic_id,
+            "knowledge_graph": knowledge_graph,
+            "dialogue_history": [],
+            "research_insights": [],
+            "experiment_designs": []
+        }
+    
+    def update_context(self, context: dict, new_data: dict):
+        """更新深度研究模式上下文"""
+        context.update(new_data)
+        
+        # 自动更新知识图谱
+        if "new_papers" in new_data:
+            self._update_knowledge_graph(context["knowledge_graph"], new_data["new_papers"])
+        
+        # 自动提取研究洞察
+        if "dialogue_history" in new_data:
+            insights = self._extract_insights(new_data["dialogue_history"])
+            if insights:
+                context["research_insights"].extend(insights)
+```
+
+### 8.8 RAG引擎调研与适配性分析
+
+#### 8.8.1 Graph-RAG适配性分析
+
+**调研结果：**
+
+| 维度 | 评估 | 说明 |
+|------|------|------|
+| **研究适配性** | ⭐⭐⭐⭐⭐ | 极高 |
+| **技术可行性** | ⭐⭐⭐⭐⭐ | 高 |
+| **实现复杂度** | ⭐⭐⭐ | 中等 |
+| **性能开销** | ⭐⭐⭐⭐ | 中等 |
+| **维护成本** | ⭐⭐⭐⭐ | 中等 |
+
+**采用意见：强烈推荐采用**
+
+**理由：**
+
+1. **知识关联性强**：Graph-RAG能够建立论文之间的引用关系和概念关联，非常适合学术研究
+2. **支持深度推理**：图结构支持多跳推理，能够发现间接关联和潜在研究方向
+3. **动态更新**：知识图谱可以动态更新，随着新论文的加入不断优化
+4. **可视化友好**：图结构可以直观展示知识网络，便于用户理解
+
+**实现方案：**
+
+```python
+class GraphRAGEngine:
+    """Graph-RAG引擎"""
+    
+    def __init__(self):
+        self.neo4j_client = Neo4jClient()
+        self.embedding_model = EmbeddingModel()
+    
+    async def initialize(self, topic_id: str):
+        """初始化知识图谱"""
+        # 创建主题节点
+        await self._create_topic_node(topic_id)
+        
+        # 加载相关论文
+        papers = await self._load_papers(topic_id)
+        
+        # 构建知识图谱
+        await self._build_knowledge_graph(papers)
+    
+    async def retrieve(self, query: str, context: dict) -> List[GraphRAGResult]:
+        """Graph-RAG检索"""
+        # 1. 将查询转换为向量
+        query_vector = await self.embedding_model.embed(query)
+        
+        # 2. 图遍历检索
+        graph_traversal_results = await self._graph_traversal(query_vector, context)
+        
+        # 3. 语义相似度检索
+        semantic_results = await self._semantic_search(query_vector)
+        
+        # 4. 融合结果
+        fused_results = self._fuse_results(graph_traversal_results, semantic_results)
+        
+        return fused_results
+    
+    async def _build_knowledge_graph(self, papers: List[Paper]):
+        """构建知识图谱"""
+        for paper in papers:
+            # 创建论文节点
+            await self._create_paper_node(paper)
+            
+            # 提取实体和关系
+            entities = await self._extract_entities(paper)
+            relations = await self._extract_relations(paper)
+            
+            # 创建实体节点和关系
+            for entity in entities:
+                await self._create_entity_node(entity)
+            
+            for relation in relations:
+                await self._create_relation(relation)
+    
+    async def _graph_traversal(self, query_vector: list, context: dict) -> List[GraphRAGResult]:
+        """图遍历检索"""
+        # 从最相关的节点开始
+        start_nodes = await self._find_start_nodes(query_vector)
+        
+        # 多跳遍历
+        traversal_results = []
+        for node in start_nodes:
+            results = await self._traverse_from_node(node, max_hops=3)
+            traversal_results.extend(results)
+        
+        return traversal_results
+```
+
+#### 8.8.2 Relational-RAG适配性分析
+
+**调研结果：**
+
+| 维度 | 评估 | 说明 |
+|------|------|------|
+| **研究适配性** | ⭐⭐⭐⭐ | 高 |
+| **技术可行性** | ⭐⭐⭐⭐⭐ | 高 |
+| **实现复杂度** | ⭐⭐⭐⭐⭐ | 低 |
+| **性能开销** | ⭐⭐⭐⭐⭐ | 低 |
+| **维护成本** | ⭐⭐⭐⭐⭐ | 低 |
+
+**采用意见：推荐采用，作为Graph-RAG的补充**
+
+**理由：**
+
+1. **实现简单**：基于现有关系型数据库，易于实现和维护
+2. **性能优异**：SQL查询性能优秀，适合大规模数据
+3. **结构化查询**：支持复杂的关系查询，适合学术研究场景
+4. **成本可控**：无需额外的图数据库，降低运维成本
+
+**实现方案：**
+
+```python
+class RelationalRAGEngine:
+    """Relational-RAG引擎"""
+    
+    def __init__(self):
+        self.db_session = DatabaseSession()
+        self.embedding_model = EmbeddingModel()
+    
+    async def retrieve(self, query: str, context: dict) -> List[RelationalRAGResult]:
+        """关系型RAG检索"""
+        # 1. 将查询转换为向量
+        query_vector = await self.embedding_model.embed(query)
+        
+        # 2. 关系查询
+        relational_results = await self._relational_query(context)
+        
+        # 3. 向量相似度检索
+        vector_results = await self._vector_search(query_vector)
+        
+        # 4. 融合结果
+        fused_results = self._fuse_results(relational_results, vector_results)
+        
+        return fused_results
+    
+    async def _relational_query(self, context: dict) -> List[RelationalRAGResult]:
+        """关系查询"""
+        # 查询相关论文
+        papers = await self._query_related_papers(context)
+        
+        # 查询论文之间的关系
+        relations = await self._query_paper_relations(papers)
+        
+        return self._format_relational_results(papers, relations)
+    
+    async def _query_related_papers(self, context: dict) -> List[Paper]:
+        """查询相关论文"""
+        # 基于主题ID查询
+        topic_id = context.get("topic_id")
+        
+        # 查询该主题的所有论文
+        papers = await self.db_session.query(Paper).join(
+            topic_paper_relations,
+            Paper.id == topic_paper_relations.c.paper_id
+        ).filter(
+            topic_paper_relations.c.topic_id == topic_id,
+            topic_paper_relations.c.is_valid == True
+        ).all()
+        
+        return papers
+```
+
+#### 8.8.3 混合RAG策略
+
+**最终推荐方案：采用混合RAG策略**
+
+```python
+class HybridRAGEngine:
+    """混合RAG引擎"""
+    
+    def __init__(self):
+        self.graph_rag = GraphRAGEngine()
+        self.relational_rag = RelationalRAGEngine()
+        self.rag_selector = RAGSelector()
+    
+    async def retrieve(self, query: str, context: dict) -> List[RAGResult]:
+        """混合RAG检索"""
+        # 1. 选择合适的RAG引擎
+        rag_strategy = self.rag_selector.select_strategy(query, context)
+        
+        # 2. 根据策略执行检索
+        if rag_strategy == "graph":
+            results = await self.graph_rag.retrieve(query, context)
+        elif rag_strategy == "relational":
+            results = await self.relational_rag.retrieve(query, context)
+        else:  # hybrid
+            graph_results = await self.graph_rag.retrieve(query, context)
+            relational_results = await self.relational_rag.retrieve(query, context)
+            results = self._merge_results(graph_results, relational_results)
+        
+        return results
+
+class RAGSelector:
+    """RAG策略选择器"""
+    
+    def select_strategy(self, query: str, context: dict) -> str:
+        """选择RAG策略"""
+        # 分析查询类型
+        query_type = self._analyze_query_type(query)
+        
+        # 分析上下文
+        context_type = self._analyze_context(context)
+        
+        # 根据查询类型和上下文选择策略
+        if query_type == "exploratory" and context_type == "deep":
+            return "graph"  # 探索性查询 + 深度研究 → 使用Graph-RAG
+        elif query_type == "factual" and context_type == "construction":
+            return "relational"  # 事实性查询 + 构建模式 → 使用Relational-RAG
+        else:
+            return "hybrid"  # 其他情况使用混合策略
+    
+    def _analyze_query_type(self, query: str) -> str:
+        """分析查询类型"""
+        # 使用LLM分析查询类型
+        # exploratory: 探索性查询（如"有哪些新的研究方向？"）
+        # factual: 事实性查询（如"这篇论文的作者是谁？"）
+        pass
+    
+    def _analyze_context(self, context: dict) -> str:
+        """分析上下文"""
+        # 根据会话历史和知识图谱分析上下文类型
+        # deep: 深度研究上下文
+        # construction: 构建模式上下文
+        pass
+```
+
+### 8.9 可扩展性设计
+
+#### 8.9.1 推荐模块设计
+
+```python
+class RecommendationModule:
+    """推荐模块"""
+    
+    def __init__(self):
+        self.recommendation_db = RecommendationDatabase()
+        self.content_filter = ContentFilter()
+    
+    async def publish_insight(self, user_id: str, dialogue_id: str, 
+                              content_type: str, title: str, content: str,
+                              tags: List[str], contact_info: str):
+        """发布洞察到推荐模块"""
+        # 1. 内容过滤
+        filtered_content = await self.content_filter.filter(content)
+        
+        # 2. 创建推荐记录
+        recommendation = Recommendation(
+            id=self._generate_id(),
+            user_id=user_id,
+            dialogue_id=dialogue_id,
+            content_type=content_type,
+            title=title,
+            content=filtered_content,
+            tags=tags,
+            contact_info=contact_info,
+            view_count=0,
+            like_count=0,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        
+        # 3. 保存到数据库
+        await self.recommendation_db.save(recommendation)
+        
+        return recommendation
+    
+    async def get_recommendations(self, topic_id: str, 
+                                  content_type: Optional[str] = None,
+                                  limit: int = 10) -> List[Recommendation]:
+        """获取推荐内容"""
+        # 获取相关主题的所有推荐
+        recommendations = await self.recommendation_db.query(
+            topic_id=topic_id,
+            content_type=content_type,
+            limit=limit,
+            order_by="like_count DESC, view_count DESC"
+        )
+        
+        return recommendations
+    
+    async def increment_view_count(self, recommendation_id: str):
+        """增加查看次数"""
+        await self.recommendation_db.increment_view_count(recommendation_id)
+    
+    async def increment_like_count(self, recommendation_id: str):
+        """增加点赞次数"""
+        await self.recommendation_db.increment_like_count(recommendation_id)
+
+class ContentFilter:
+    """内容过滤器"""
+    
+    async def filter(self, content: str) -> str:
+        """过滤内容"""
+        # 1. 移除敏感信息
+        filtered = self._remove_sensitive_info(content)
+        
+        # 2. 移除个人隐私信息
+        filtered = self._remove_personal_info(filtered)
+        
+        # 3. 移除不当内容
+        filtered = self._remove_inappropriate_content(filtered)
+        
+        return filtered
+    
+    def _remove_sensitive_info(self, content: str) -> str:
+        """移除敏感信息"""
+        # 使用正则表达式或NLP技术移除敏感信息
+        pass
+    
+    def _remove_personal_info(self, content: str) -> str:
+        """移除个人隐私信息"""
+        # 移除电话号码、邮箱地址等（除非是用户指定的联系信息）
+        pass
+    
+    def _remove_inappropriate_content(self, content: str) -> str:
+        """移除不当内容"""
+        # 移除不当语言、广告等内容
+        pass
+```
+
+#### 8.9.2 推荐模块API接口
+
+```python
+@router.post("/api/recommendations/publish")
+async def publish_recommendation(request: PublishRecommendationRequest):
+    """发布推荐"""
+    # 验证用户权限
+    user = await authenticate_user(request.token)
+    
+    # 发布推荐
+    recommendation = await recommendation_module.publish_insight(
+        user_id=user.id,
+        dialogue_id=request.dialogue_id,
+        content_type=request.content_type,
+        title=request.title,
+        content=request.content,
+        tags=request.tags,
+        contact_info=request.contact_info
+    )
+    
+    return {"recommendation_id": recommendation.id}
+
+@router.get("/api/recommendations")
+async def get_recommendations(topic_id: str, 
+                              content_type: Optional[str] = None,
+                              limit: int = 10):
+    """获取推荐列表"""
+    recommendations = await recommendation_module.get_recommendations(
+        topic_id=topic_id,
+        content_type=content_type,
+        limit=limit
+    )
+    
+    return {
+        "recommendations": [
+            {
+                "id": rec.id,
+                "title": rec.title,
+                "content": rec.content,
+                "tags": rec.tags,
+                "contact_info": rec.contact_info,
+                "view_count": rec.view_count,
+                "like_count": rec.like_count,
+                "created_at": rec.created_at
+            }
+            for rec in recommendations
+        ]
+    }
+
+@router.post("/api/recommendations/{recommendation_id}/view")
+async def view_recommendation(recommendation_id: str):
+    """查看推荐（增加查看次数）"""
+    await recommendation_module.increment_view_count(recommendation_id)
+    return {"message": "View count incremented"}
+
+@router.post("/api/recommendations/{recommendation_id}/like")
+async def like_recommendation(recommendation_id: str):
+    """点赞推荐（增加点赞次数）"""
+    await recommendation_module.increment_like_count(recommendation_id)
+    return {"message": "Like count incremented"}
+```
+
+### 8.10 数据库设计更新
+
+#### 8.10.1 更新research_topics表
+
+在现有research_topics表中新增以下字段：
+
+| 字段名              | 类型      | 长度 | 必填 | 约束           | 说明                                                        |
+|--------------------|-----------|------|------|----------------|-------------------------------------------------------------|
+| mode               | VARCHAR   | 20   | 是   | DEFAULT "construction" | 当前模式（construction/deep_research）           |
+| is_published       | BOOLEAN   | -    | DEFAULT FALSE  | 是否已发布到推荐模块                                        |
+| published_at       | DATETIME  | -    | 否   | -              | 发布时间                                                    |
+
+#### 8.10.2 数据库关系图更新
+
+```
+users (用户表)
+    ↓ 1:N
+user_configs (用户配置表)
+
+users (用户表)
+    ↓ 1:N
+research_topics (课题任务表)
+    ↓ 1:N
+keywords (检索词表)
+
+research_topics (课题任务表)
+    ↓ 1:N
+stage_records (阶段记录表)
+
+research_topics (课题任务表)
+    ↓ 1:N
+research_history (研究历史表) ← 新增
+
+research_topics (课题任务表)
+    ↓ 1:N
+research_dialogues (研究对话表) ← 新增
+
+research_dialogues (研究对话表)
+    ↓ 1:N
+recommendations (推荐模块表) ← 新增
+
+research_topics (课题任务表)
+    ↓ 1:N
+scheduled_tasks (定时任务表)
+
+papers (论文表)
+    ↓ 1:N
+topic_paper_relations (课题-论文关联表)
+    ↑ N:1
+research_topics (课题任务表)
+```
+
+### 8.11 数据一致性保证
+
+#### 8.11.1 跨模式数据一致性
+
+```python
+class CrossModeConsistencyManager:
+    """跨模式一致性管理器"""
+    
+    def __init__(self):
+        self.db_session = DatabaseSession()
+        self.lock_manager = DistributedLockManager()
+    
+    async def ensure_consistency_on_mode_switch(self, topic_id: str, 
+                                               old_mode: str, new_mode: str):
+        """确保模式切换时的数据一致性"""
+        # 获取分布式锁
+        async with self.lock_manager.acquire(f"topic_{topic_id}"):
+            # 1. 保存当前模式的状态
+            await self._save_mode_state(topic_id, old_mode)
+            
+            # 2. 切换模式
+            await self._switch_mode(topic_id, new_mode)
+            
+            # 3. 验证数据一致性
+            await self._verify_consistency(topic_id, new_mode)
+    
+    async def _save_mode_state(self, topic_id: str, mode: str):
+        """保存模式状态"""
+        # 将当前模式的关键数据快照保存
+        state_snapshot = {
+            "topic_id": topic_id,
+            "mode": mode,
+            "timestamp": datetime.now(),
+            "keywords": await self._get_keywords(topic_id),
+            "papers": await self._get_papers(topic_id),
+            "dialogues": await self._get_dialogues(topic_id) if mode == "deep_research" else []
+        }
+        
+        await self._save_state_snapshot(state_snapshot)
+    
+    async def _verify_consistency(self, topic_id: str, mode: str):
+        """验证数据一致性"""
+        # 验证关键字段的数据完整性
+        if mode == "construction":
+            await self._verify_construction_data(topic_id)
+        elif mode == "deep_research":
+            await self._verify_deep_research_data(topic_id)
+```
+
+### 8.12 性能优化设计
+
+#### 8.12.1 Graph-RAG性能优化
+
+```python
+class GraphRAGOptimizer:
+    """Graph-RAG性能优化器"""
+    
+    def __init__(self):
+        self.cache = RedisCache()
+        self.query_optimizer = QueryOptimizer()
+    
+    async def optimize_retrieval(self, query: str, context: dict) -> List[GraphRAGResult]:
+        """优化检索性能"""
+        # 1. 检查缓存
+        cache_key = self._generate_cache_key(query, context)
+        cached_results = await self.cache.get(cache_key)
+        
+        if cached_results:
+            return cached_results
+        
+        # 2. 优化查询
+        optimized_query = self.query_optimizer.optimize(query)
+        
+        # 3. 执行检索
+        results = await self.graph_rag.retrieve(optimized_query, context)
+        
+        # 4. 缓存结果
+        await self.cache.set(cache_key, results, ttl=3600)
+        
+        return results
+    
+    def _generate_cache_key(self, query: str, context: dict) -> str:
+        """生成缓存键"""
+        # 基于查询和上下文生成唯一的缓存键
+        import hashlib
+        key_data = f"{query}:{context.get('topic_id')}:{context.get('mode')}"
+        return hashlib.md5(key_data.encode()).hexdigest()
+```
+
+### 8.13 安全性设计
+
+#### 8.13.1 推荐模块安全控制
+
+```python
+class RecommendationSecurityManager:
+    """推荐模块安全管理器"""
+    
+    def __init__(self):
+        self.content_moderator = ContentModerator()
+        self.rate_limiter = RateLimiter()
+    
+    async def validate_publication(self, user_id: str, content: str) -> ValidationResult:
+        """验证发布内容"""
+        # 1. 检查用户权限
+        if not await self._check_user_permission(user_id):
+            return ValidationResult(valid=False, reason="用户无发布权限")
+        
+        # 2. 检查内容合规性
+        moderation_result = await self.content_moderator.moderate(content)
+        if not moderation_result.approved:
+            return ValidationResult(
+                valid=False,
+                reason=f"内容未通过审核：{moderation_result.reason}"
+            )
+        
+        # 3. 检查频率限制
+        if not await self.rate_limiter.check(user_id, "publish"):
+            return ValidationResult(
+                valid=False,
+                reason="发布频率过高，请稍后再试"
+            )
+        
+        return ValidationResult(valid=True)
+    
+    async def _check_user_permission(self, user_id: str) -> bool:
+        """检查用户权限"""
+        # 检查用户是否被封禁
+        user = await self.db_session.query(User).get(user_id)
+        if not user or user.is_banned:
+            return False
+        
+        return True
+```
+
+### 8.14 接口协议设计更新
+
+#### 8.14.1 模式切换接口
+
+```python
+# 模式切换接口
+@router.post("/api/topics/{topic_id}/switch-mode")
+async def switch_mode(topic_id: str, request: ModeSwitchRequest):
+    """切换模式"""
+    request = ModeSwitchRequest(
+        new_mode="deep_research",
+        reason="需要深入探讨理论细节"
+    )
+    
+    # 验证权限
+    user = await authenticate_user(request.token)
+    if not await topic_service.check_ownership(topic_id, user.id):
+        raise PermissionDeniedError("无权限操作此课题")
+    
+    # 切换模式
+    result = await mode_switcher.switch_mode(
+        topic_id=topic_id,
+        new_mode=request.new_mode,
+        reason=request.reason,
+        user_id=user.id
+    )
+    
+    return {
+        "topic_id": topic_id,
+        "old_mode": result.old_mode,
+        "new_mode": result.new_mode,
+        "switched_at": result.switched_at,
+        "message": f"成功切换到{result.new_mode}模式"
+    }
+```
+
+#### 8.14.2 推荐模块接口
+
+```python
+# 推荐模块接口
+@router.post("/api/recommendations")
+async def create_recommendation(request: CreateRecommendationRequest):
+    """创建推荐"""
+    # 验证用户权限
+    user = await authenticate_user(request.token)
+    
+    # 验证发布权限
+    validation_result = await recommendation_security.validate_publication(
+        user_id=user.id,
+        content=request.content
+    )
+    
+    if not validation_result.valid:
+        raise ValidationError(validation_result.reason)
+    
+    # 创建推荐
+    recommendation = await recommendation_module.publish_insight(
+        user_id=user.id,
+        dialogue_id=request.dialogue_id,
+        content_type=request.content_type,
+        title=request.title,
+        content=request.content,
+        tags=request.tags,
+        contact_info=request.contact_info
+    )
+    
+    return {
+        "recommendation_id": recommendation.id,
+        "status": "published",
+        "message": "推荐已发布"
+    }
+
+@router.get("/api/recommendations/{topic_id}")
+async def get_recommendations(topic_id: str, 
+                              content_type: Optional[str] = None,
+                              limit: int = 10):
+    """获取推荐列表"""
+    recommendations = await recommendation_module.get_recommendations(
+        topic_id=topic_id,
+        content_type=content_type,
+        limit=limit
+    )
+    
+    return {
+        "recommendations": [
+            {
+                "id": rec.id,
+                "title": rec.title,
+                "content": rec.content,
+                "tags": rec.tags,
+                "contact_info": rec.contact_info,
+                "view_count": rec.view_count,
+                "like_count": rec.like_count,
+                "created_at": rec.created_at.isoformat()
+            }
+            for rec in recommendations
+        ]
+    }
+```
+
+### 8.15 数据库设计更新
+
+#### 8.15.1 新增表结构
+
+**研究历史表 (research_history)**
+
+| 字段名     | 类型    | 长度 | 必填 | 约束           | 说明             |
+|------------|---------|------|------|----------------|------------------|
+| id         | VARCHAR | 50   | 是   | PRIMARY KEY    | 历史记录ID       |
+| topic_id   | VARCHAR | 50   | 是   | FOREIGN KEY    | 课题ID          |
+| user_id    | VARCHAR | 50   | 是   | FOREIGN KEY    | 用户ID           |
+| mode       | VARCHAR | 20   | 是   | -              | 模式             |
+| action_type| VARCHAR | 50   | 是   | -              | 操作类型         |
+| action_data| JSON    | -    | 是   | -              | 操作数据         |
+| created_at | DATETIME| -    | 是   | -              | 创建时间         |
+
+**研究对话表 (research_dialogues)**
+
+| 字段名           | 类型    | 长度 | 必填 | 约束           | 说明             |
+|------------------|---------|------|------|----------------|------------------|
+| id               | VARCHAR | 50   | 是   | PRIMARY KEY    | 对话记录ID       |
+| topic_id         | VARCHAR | 50   | 是   | FOREIGN KEY    | 课题ID          |
+| session_id       | VARCHAR | 50   | 是   | -              | 会话ID           |
+| user_input       | TEXT    | -    | 是   | -              | 用户输入         |
+| llm_response     | TEXT    | -    | 是   | -              | LLM响应         |
+| dialogue_summary | TEXT    | -    | 否   | -              | 对话总结         |
+| references       | JSON    | -    | 否   | -              | 引用信息         |
+| user_judgment   | TEXT    | -    | 否   | -              | 用户判断         |
+| created_at       | DATETIME| -    | 是   | -              | 创建时间         |
+
+**推荐模块表 (recommendations)**
+
+| 字段名        | 类型    | 长度 | 必填 | 约束           | 说明             |
+|---------------|---------|------|------|----------------|------------------|
+| id            | VARCHAR | 50   | 是   | PRIMARY KEY    | 推荐记录ID       |
+| topic_id      | VARCHAR | 50   | 是   | FOREIGN KEY    | 课题ID          |
+| user_id       | VARCHAR | 50   | 是   | FOREIGN KEY    | 用户ID           |
+| dialogue_id   | VARCHAR | 50   | 是   | FOREIGN KEY    | 对话ID           |
+| content_type  | VARCHAR | 20   | 是   | -              | 内容类型         |
+| title         | VARCHAR | 200  | 是   | -              | 标题             |
+| content       | TEXT    | -    | 是   | -              | 内容             |
+| tags          | JSON    | -    | 否   | -              | 标签             |
+| view_count    | INTEGER | -    | DEFAULT 0      | 查看次数         |
+| like_count    | INTEGER | -    | DEFAULT 0      | 点赞次数         |
+| contact_info  | VARCHAR | 200  | 是   | -              | 联系信息         |
+| created_at    | DATETIME| -    | 是   | -              | 创建时间         |
+| updated_at    | DATETIME| -    | 是   | -              | 最后更新时间     |
+
+#### 8.15.2 更新现有表结构
+
+**research_topics表新增字段**：
+
+| 字段名      | 类型    | 必填 | 默认值             | 说明                        |
+|------------|---------|------|--------------------|-----------------------------|
+| mode       | VARCHAR | 是   | "construction"     | 当前模式                    |
+| is_published| BOOLEAN | 否   | FALSE              | 是否已发布到推荐模块        |
+| published_at| DATETIME| 否   | NULL               | 发布时间                    |
 
 ### 8.2 核心数据模型
 
@@ -3679,7 +4997,7 @@ class DashboardAggregator:
 
 | 角色 | 姓名 | 签字 | 日期 |
 |------|------|------|------|
-| 需求分析人员 | - | - | - |
+| 需求分析人员 | haoyanzhen | - | - |
 | 系统设计师 | - | - | - |
 | 项目经理 | - | - | - |
 | 用户代表 | - | - | - |
