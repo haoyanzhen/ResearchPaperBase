@@ -52,6 +52,14 @@
 - 以研究主题（Project）为基础单元进行设计
 - 整个研究主题的构建分为两套模式：构建模式和深度研究模式
 - 两套模式应有明显的切换方式，方便用户使用
+- **双模式互斥性**：对于每个研究主题，同一时间只能处于一种模式，且必须处于其中一种模式
+- **模式扩展性**：系统架构设计预留扩展性，支持未来扩展为三模式或更多模式，无需对核心架构进行重大改造
+
+**基础层设计（独立于双模式）**：
+- 用户和用户信息管理：用户注册、登录、权限管理等，全局通用
+- 系统配置管理：LLM模型配置、论文数据库API配置、邮件配置等，全局通用
+- 数据查看与管理：检索历史查看、与自己课题关联的数据库查看等，独立于双模式，随时可以打开或关闭
+- 基础层的功能模块不依赖于特定的研究模式，用户可以在任何模式下随时访问和使用
 
 **构建模式**：
 - 用户借助Agent工具自动生成检索词
@@ -62,6 +70,7 @@
 - Agent自动完成解析和后台入库
 - 通过邮件提示服务接收新信息
 - 快速构建研究主题的基础知识库
+- 包含任务管理、分步骤交互、数据导出、定时任务等功能
 
 **深度研究模式**：
 - 基于已有论文构建知识图谱
@@ -71,6 +80,13 @@
 - 设计周密的实验方案
 - 记录探讨历史和结论
 - 支持发表观点供其他用户参考（禁止讨论，只允许暴露用户名或邮箱以用于私下交流）
+- 包含Agent总结模块、数据导出等功能
+
+**模式设计原则**：
+1. **互斥性**：每个研究主题在同一时间只能处于构建模式或深度研究模式中的一种，不能同时处于两种模式
+2. **完整性**：每个研究主题必须处于一种模式中，不能处于"无模式"状态
+3. **可切换性**：用户可以在两种模式之间自由切换，系统会保存当前模式的状态，切换后自动初始化新模式的上下文
+4. **扩展性**：系统架构采用枚举类型设计模式，预留扩展性，支持未来添加新的模式（如协作模式、分析模式等）
 
 ### 2.2 产品定位
 
@@ -142,7 +158,6 @@
 | FR-014 | 检索历史查看 | 中 | 待开发 |
 | FR-015 | 数据库查看与管理 | 中 | 待开发 |
 | FR-016 | 任务管理 | 中 | 待开发 |
-| FR-017 | 数据导出 | 低 | 待开发 |
 | FR-018 | 定时任务 | 低 | 待开发 |
 | FR-019 | 深度研究模式-知识图谱构建 | 高 | 待开发 |
 | FR-020 | 深度研究模式-Graph-RAG检索 | 高 | 待开发 |
@@ -150,8 +165,46 @@
 | FR-022 | 深度研究模式-实验方案设计 | 高 | 待开发 |
 | FR-023 | 深度研究模式-研究历史记录 | 高 | 待开发 |
 | FR-024 | 推荐模块 | 中 | 待开发 |
+| FR-025 | 深度研究模式-Agent总结模块 | 中 | 待开发 |
+| FR-026 | 数据导出 | 中 | 待开发 |
 
 ### 3.2 功能需求详细说明
+
+本节按照系统架构的三层设计对功能需求进行详细说明：
+
+**3.2.1 全局基础层功能**（独立于双模式，全局通用）
+- FR-001：用户注册与登录
+- FR-002：模型配置管理
+- FR-003：论文数据库API配置
+- FR-004：邮件配置管理
+- FR-005：双模式切换
+- FR-014：检索历史查看
+- FR-015：数据库查看与管理
+- FR-024：推荐模块
+- FR-026：数据导出
+
+**3.2.2 构建模式层功能**（仅在构建模式下可用）
+- FR-006：构建模式-多源论文检索
+- FR-007：构建模式-智能评分与筛选
+- FR-008：构建模式-论文补充与上传
+- FR-009：构建模式-PDF下载与解析
+- FR-010：构建模式-AI分析生成
+- FR-011：构建模式-数据库存储
+- FR-012：构建模式-邮件提示服务
+- FR-013：构建模式-分步骤用户交互
+- FR-016：任务管理（构建模式）
+- FR-017：数据导出（构建模式）
+- FR-018：定时任务（构建模式）
+
+**3.2.3 深度研究模式层功能**（仅在深度研究模式下可用）
+- FR-019：深度研究模式-知识图谱构建
+- FR-020：深度研究模式-Graph-RAG检索
+- FR-021：深度研究模式-对话式探讨（含三种子模式）
+- FR-022：深度研究模式-实验方案设计
+- FR-023：深度研究模式-研究历史记录
+- FR-025：深度研究模式-Agent总结模块
+
+---
 
 #### FR-001 用户注册与登录
 
@@ -660,30 +713,6 @@
 - 状态应正确更新
 - 日志应完整记录
 
-#### FR-017 数据导出
-
-**需求描述：**
-用户应能够导出检索结果和分析报告。
-
-**功能要求：**
-- 支持导出为CSV格式
-- 支持导出为JSON格式
-- 支持导出为Markdown格式
-- 支持导出为PDF格式
-- 支持选择导出内容（全部、部分）
-
-**输入：**
-- 导出格式
-- 导出内容选择
-
-**输出：**
-- 导出文件
-
-**验收标准：**
-- 导出应包含所有必要信息
-- 格式应正确
-- 文件应能正常打开
-
 #### FR-018 定时任务
 
 **需求描述：**
@@ -775,7 +804,7 @@
 #### FR-021 深度研究模式-对话式探讨
 
 **需求描述：**
-系统应支持用户与LLM进行对话式探讨,深入理解研究领域的理论和技术。
+系统应支持用户与LLM进行对话式探讨,深入理解研究领域的理论和技术。对话式探讨支持三种子模式，以适应不同的研究场景。
 
 **功能要求：**
 - 支持多轮对话
@@ -787,6 +816,57 @@
 - 支持导出对话内容
 - 支持对话分类和标签
 - 支持用户判断和反馈
+- 支持三种对话子模式：理论分析模式、技术讨论模式、实验方案设计模式
+
+**对话子模式详细说明：**
+
+**1. 理论分析模式**
+- 适用于深入探讨理论概念、原理和框架
+- Agent角色：理论导师，帮助用户理解复杂理论
+- 探讨重点：
+  - 理论基础和核心概念解析
+  - 理论的发展历程和演进
+  - 不同理论之间的比较和联系
+  - 理论的适用范围和局限性
+- 输出特点：理论解释、概念图、理论对比表
+- 适用场景：
+  - 需要理解复杂理论时
+  - 比较不同理论框架时
+  - 分析理论的内在逻辑时
+
+**2. 技术讨论模式**
+- 适用于讨论具体技术实现、方法和工具
+- Agent角色：技术顾问，提供技术建议和方案
+- 探讨重点：
+  - 技术方案的可行性分析
+  - 技术细节的实现方法
+  - 技术选型的考虑因素
+  - 技术优缺点的权衡
+- 输出特点：技术方案、代码示例、技术对比
+- 适用场景：
+  - 设计技术方案时
+  - 解决技术难题时
+  - 评估技术选型时
+
+**3. 实验方案设计模式**
+- 适用于设计具体的实验方案和验证方法
+- Agent角色：实验设计专家，协助制定实验计划
+- 探讨重点：
+  - 实验目标的明确和细化
+  - 实验变量的控制和测量
+  - 实验流程的设计和优化
+  - 结果分析和验证方法
+- 输出特点：实验方案、步骤清单、评估指标
+- 适用场景：
+  - 设计新实验时
+  - 优化现有实验时
+  - 验证研究假设时
+
+**子模式切换：**
+- 用户可以随时切换对话子模式
+- 切换时保留当前对话上下文
+- 不同子模式可以互相引用和补充
+- 系统记录子模式切换历史
 
 **输入：**
 - 用户输入内容
@@ -915,6 +995,108 @@
   - 联系信息仅显示用户名或邮箱
   - 所有交互均为私下交流（如通过邮件）
 
+#### FR-025 深度研究模式-Agent总结模块
+
+**需求描述：**
+系统应提供Agent自动总结功能，在深度研究模式下定期或按需总结研究进展、关键发现和待解决的问题。
+
+**功能要求：**
+- 支持自动总结研究进展
+  - 总结已完成的探讨内容
+  - 提取关键发现和洞察
+  - 识别待解决的问题
+  - 生成下一步研究建议
+- 支持手动触发总结
+  - 用户可以随时请求Agent生成总结
+  - 支持指定总结的时间范围
+  - 支持指定总结的主题范围
+- 支持总结的可视化展示
+  - 研究进展时间线
+  - 关键发现卡片
+  - 问题清单
+  - 建议列表
+- 支持总结的导出
+  - 导出为Markdown格式
+  - 导出为PDF格式
+  - 导出为Word格式
+- 支持总结的历史记录
+  - 保存所有生成的总结
+  - 支持查看历史总结
+  - 支持对比不同时期的总结
+- 支持总结的分享
+  - 支持分享给其他用户
+  - 支持发布到推荐模块
+
+**输入：**
+- 对话历史记录
+- 知识图谱数据
+- 研究主题信息
+- 用户指定的总结范围
+
+**输出：**
+- 研究进展总结
+- 关键发现列表
+- 待解决问题清单
+- 下一步研究建议
+
+**验收标准：**
+- 总结内容应准确反映研究进展
+- 关键发现应具有洞察性
+- 建议应具有可操作性
+- 总结应易于理解和分享
+
+#### FR-026 数据导出
+
+**需求描述：**
+系统应支持导出各类研究数据、对话记录、总结报告、论文数据等内容，适用于构建模式和深度研究模式。
+
+**功能要求：**
+- 支持导出对话记录
+  - 导出为Markdown格式
+  - 导出为JSON格式
+  - 导出为PDF格式
+  - 支持选择导出的时间范围
+  - 支持选择导出的子模式
+- 支持导出研究总结
+  - 导出为Markdown格式
+  - 导出为PDF格式
+  - 导出为Word格式
+  - 支持自定义总结模板
+- 支持导出知识图谱
+  - 导出为GraphML格式
+  - 导出为JSON格式
+  - 导出为图片格式
+  - 支持选择导出的节点和边
+- 支持导出实验方案
+  - 导出为Markdown格式
+  - 导出为PDF格式
+  - 导出为Word格式
+  - 支持版本管理
+- 支持批量导出
+  - 支持选择多个项目进行批量导出
+  - 支持打包为ZIP文件
+  - 支持自定义导出目录结构
+- 支持导出历史记录
+  - 记录所有导出操作
+  - 支持查看导出历史
+  - 支持重新导出
+
+**输入：**
+- 导出内容类型
+- 导出格式
+- 导出范围（时间、主题等）
+- 导出选项（模板、目录结构等）
+
+**输出：**
+- 导出文件
+- 导出统计信息
+
+**验收标准：**
+- 导出内容应完整准确
+- 格式应正确规范
+- 批量导出应高效
+- 导出历史应可追溯
+
 ---
 
 ## 4. 非功能需求
@@ -968,6 +1150,8 @@
 | 模型扩展 | 支持 | 支持添加新的LLM提供商 |
 | 数据源扩展 | 支持 | 支持添加新的学术数据库 |
 | 功能扩展 | 支持 | 支持添加新功能模块 |
+| 模式扩展 | 支持 | 支持扩展研究模式（如协作模式、分析模式等） |
+| 第三方集成 | 支持 | 支持集成第三方学术平台和工具 |
 
 ### 4.6 易用性需求
 
@@ -1513,37 +1697,283 @@ class ResearchMode(Enum):
     """研究模式"""
     CONSTRUCTION = "construction"  # 构建模式
     DEEP_RESEARCH = "deep_research"  # 深度研究模式
+    
+    # 扩展性设计：未来可以轻松添加新的模式
+    # COLLABORATION = "collaboration"  # 协作模式（预留）
+    # ANALYSIS = "analysis"  # 分析模式（预留）
+
+class ModeValidator:
+    """模式验证器 - 确保模式的互斥性和完整性"""
+    
+    @staticmethod
+    def validate_mode_exclusivity(current_mode: ResearchMode, new_mode: ResearchMode):
+        """验证模式互斥性：同一时间只能处于一种模式"""
+        if current_mode == new_mode:
+            return True  # 同一模式，无需切换
+        
+        # 检查是否可以切换
+        # 1. 保存当前模式的状态
+        # 2. 验证切换的合法性
+        return True
+    
+    @staticmethod
+    def validate_mode_completeness(mode: ResearchMode):
+        """验证模式完整性：必须处于一种模式中，不能处于"无模式"状态"""
+        if mode is None:
+            raise ValueError("研究主题必须处于一种模式中")
+        return True
 
 class ModeSwitcher:
-    """模式切换器"""
+    """模式切换器 - 支持模式互斥性和扩展性"""
     
-    def __init__(self, topic_id: str):
-        self.topic_id = topic_id
+    def __init__(self, project_id: str):
+        self.project_id = project_id
         self.current_mode = self._get_current_mode()
+        self.validator = ModeValidator()
     
     def switch_to_construction(self):
         """切换到构建模式"""
+        # 验证互斥性
+        self.validator.validate_mode_exclusivity(
+            self.current_mode, 
+            ResearchMode.CONSTRUCTION
+        )
+        
+        # 保存当前模式的状态
+        self._save_current_mode_state()
+        
+        # 切换模式
         self.current_mode = ResearchMode.CONSTRUCTION
-        self._update_topic_mode()
+        self._update_project_mode()
         self._initialize_construction_context()
     
     def switch_to_deep_research(self):
         """切换到深度研究模式"""
+        # 验证互斥性
+        self.validator.validate_mode_exclusivity(
+            self.current_mode, 
+            ResearchMode.DEEP_RESEARCH
+        )
+        
+        # 保存当前模式的状态
+        self._save_current_mode_state()
+        
+        # 切换模式
         self.current_mode = ResearchMode.DEEP_RESEARCH
-        self._update_topic_mode()
+        self._update_project_mode()
         self._initialize_deep_research_context()
+    
+    def switch_to_mode(self, target_mode: ResearchMode):
+        """通用模式切换方法 - 支持扩展性"""
+        # 验证互斥性
+        self.validator.validate_mode_exclusivity(
+            self.current_mode, 
+            target_mode
+        )
+        
+        # 保存当前模式的状态
+        self._save_current_mode_state()
+        
+        # 切换模式
+        self.current_mode = target_mode
+        self._update_project_mode()
+        self._initialize_target_mode_context(target_mode)
     
     def _get_current_mode(self) -> ResearchMode:
         """获取当前模式"""
-        topic = self.db_session.query(ResearchTopic).get(self.topic_id)
-        return ResearchMode(topic.mode) if topic.mode else ResearchMode.CONSTRUCTION
+        project = self.db_session.query(Project).get(self.project_id)
+        
+        # 验证模式完整性
+        if not project.mode:
+            # 如果没有模式，默认为构建模式
+            project.mode = ResearchMode.CONSTRUCTION.value
+            self.db_session.commit()
+        
+        return ResearchMode(project.mode)
     
-    def _update_topic_mode(self):
-        """更新主题模式"""
-        topic = self.db_session.query(ResearchTopic).get(self.topic_id)
-        topic.mode = self.current_mode.value
-        topic.updated_at = datetime.now()
+    def _update_project_mode(self):
+        """更新研究主题模式"""
+        project = self.db_session.query(Project).get(self.project_id)
+        project.mode = self.current_mode.value
+        project.updated_at = datetime.now()
         self.db_session.commit()
+    
+    def _save_current_mode_state(self):
+        """保存当前模式的状态"""
+        # 保存当前模式的关键数据快照
+        state_snapshot = {
+            "project_id": self.project_id,
+            "mode": self.current_mode.value,
+            "timestamp": datetime.now(),
+            "state_data": self._get_mode_state_data(self.current_mode)
+        }
+        
+        # 保存到数据库或缓存中
+        self._persist_state_snapshot(state_snapshot)
+    
+    def _get_mode_state_data(self, mode: ResearchMode) -> dict:
+        """获取特定模式的状态数据"""
+        if mode == ResearchMode.CONSTRUCTION:
+            return {
+                "keywords": self._get_keywords(),
+                "papers": self._get_papers(),
+                "current_stage": self._get_current_stage()
+            }
+        elif mode == ResearchMode.DEEP_RESEARCH:
+            return {
+                "knowledge_graph": self._get_knowledge_graph(),
+                "dialogue_history": self._get_dialogue_history(),
+                "research_insights": self._get_research_insights()
+            }
+    
+    def _initialize_target_mode_context(self, target_mode: ResearchMode):
+        """初始化目标模式的上下文 - 支持扩展性"""
+        if target_mode == ResearchMode.CONSTRUCTION:
+            self._initialize_construction_context()
+        elif target_mode == ResearchMode.DEEP_RESEARCH:
+            self._initialize_deep_research_context()
+        # 未来可以添加其他模式的初始化逻辑
+        # elif target_mode == ResearchMode.COLLABORATION:
+        #     self._initialize_collaboration_context()
+```
+
+#### 8.2.3 模式扩展性设计
+
+**扩展性原则**：
+1. **枚举类型设计**：使用Enum类型定义模式，便于扩展
+2. **策略模式**：不同模式对应不同的策略类，易于添加新模式
+3. **上下文隔离**：每种模式有独立的上下文管理，互不干扰
+4. **状态持久化**：模式切换时自动保存和恢复状态
+
+**扩展性实现示例**：
+
+```python
+# 1. 扩展模式枚举
+class ResearchMode(Enum):
+    CONSTRUCTION = "construction"  # 构建模式
+    DEEP_RESEARCH = "deep_research"  # 深度研究模式
+    # 未来扩展
+    # COLLABORATION = "collaboration"  # 协作模式
+    # ANALYSIS = "analysis"  # 分析模式
+
+# 2. 模式控制器策略
+class ModeController(ABC):
+    """模式控制器基类"""
+    
+    @abstractmethod
+    def initialize_context(self, project_id: str) -> dict:
+        """初始化上下文"""
+        pass
+    
+    @abstractmethod
+    def update_context(self, context: dict, new_data: dict):
+        """更新上下文"""
+        pass
+    
+    @abstractmethod
+    def get_mode_specific_features(self) -> List[str]:
+        """获取模式特定的功能列表"""
+        pass
+
+class ConstructionModeController(ModeController):
+    """构建模式控制器"""
+    
+    def initialize_context(self, project_id: str) -> dict:
+        return {
+            "mode": "construction",
+            "project_id": project_id,
+            "keywords": [],
+            "papers": [],
+            "current_stage": 1,
+            "stage_records": []
+        }
+    
+    def get_mode_specific_features(self) -> List[str]:
+        return [
+            "keyword_generation",
+            "paper_retrieval",
+            "scoring_filtering",
+            "paper_upload",
+            "email_notification",
+            "task_management",
+            "scheduled_tasks"
+        ]
+
+class DeepResearchModeController(ModeController):
+    """深度研究模式控制器"""
+    
+    def initialize_context(self, project_id: str) -> dict:
+        return {
+            "mode": "deep_research",
+            "project_id": project_id,
+            "knowledge_graph": {},
+            "dialogue_history": [],
+            "research_insights": []
+        }
+    
+    def get_mode_specific_features(self) -> List[str]:
+        return [
+            "knowledge_graph_construction",
+            "graph_rag_retrieval",
+            "dialogue_discussion",
+            "experiment_design",
+            "agent_summary",
+            "data_export"
+        ]
+
+# 3. 模式控制器工厂
+class ModeControllerFactory:
+    """模式控制器工厂 - 支持扩展性"""
+    
+    _controllers = {
+        ResearchMode.CONSTRUCTION: ConstructionModeController,
+        ResearchMode.DEEP_RESEARCH: DeepResearchModeController,
+        # 未来扩展
+        # ResearchMode.COLLABORATION: CollaborationModeController,
+        # ResearchMode.ANALYSIS: AnalysisModeController,
+    }
+    
+    @classmethod
+    def get_controller(cls, mode: ResearchMode) -> ModeController:
+        """获取模式控制器"""
+        controller_class = cls._controllers.get(mode)
+        if not controller_class:
+            raise ValueError(f"不支持的模式: {mode}")
+        return controller_class()
+    
+    @classmethod
+    def register_controller(cls, mode: ResearchMode, controller_class: type):
+        """注册新的模式控制器 - 支持动态扩展"""
+        cls._controllers[mode] = controller_class
+```
+
+**扩展性使用示例**：
+
+```python
+# 未来添加新模式的步骤：
+# 1. 在ResearchMode枚举中添加新模式
+class ResearchMode(Enum):
+    CONSTRUCTION = "construction"
+    DEEP_RESEARCH = "deep_research"
+    COLLABORATION = "collaboration"  # 新增
+
+# 2. 创建新模式控制器
+class CollaborationModeController(ModeController):
+    def initialize_context(self, project_id: str) -> dict:
+        return {"mode": "collaboration", "project_id": project_id}
+    
+    def get_mode_specific_features(self) -> List[str]:
+        return ["team_collaboration", "shared_workspace", "discussions"]
+
+# 3. 注册新模式控制器
+ModeControllerFactory.register_controller(
+    ResearchMode.COLLABORATION, 
+    CollaborationModeController
+)
+
+# 4. 在ModeSwitcher中添加切换方法
+def switch_to_collaboration(self):
+    self.switch_to_mode(ResearchMode.COLLABORATION)
 ```
 
 ### 8.3 构建模式设计
