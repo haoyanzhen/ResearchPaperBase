@@ -21,7 +21,7 @@
 
 ### 1.2 项目背景
 
-学术研究人员需要定期跟踪相关领域的最新论文，并实时查询论文中的相关内容，但手动检索、筛选、下载和分析论文的过程耗时耗力。本系统旨在通过AI Agent自动化这一流程，帮助研究人员高效获取相关论文、生成分析报告并持续提供论文库中论文的解析。
+学术研究人员需要定期跟踪相关领域的最新论文，并实时查询论文中的相关内容，但手动检索、筛选、下载和分析论文的过程耗时耗力。本系统旨在通过 AI Agent 自动化这一流程，实现课题组级的论文BASE库构建，提供论文的检索、下载、解析、互动问答、自动推送、综述生成等功能，成为科研人员安全、可靠、有用的学术论文信息平台。
 
 ### 1.3 定义与缩写
 
@@ -1338,6 +1338,10 @@
 | created_at    | DATETIME  | -    | 是   | -              | 创建时间       |
 | updated_at    | DATETIME  | -    | 是   | -              | 最后更新时间   |
 | last_login_at | DATETIME  | -    | 否   | -              | 最后登录时间   |
+| regular_push  | BOOOLEAN  | -    | 是   | DEFUALT FALSE  | 是否定期推送   |
+| push_interval | TINYINT   | -    | 否   | -              | 更新间隔(天)   |
+| last_push     | DATETIME  | -    | 否   | -              | 上次推送时间   |
+| next_push     | DATETIME  | -    | 否   | -              | 下次推送时间   |
 
 **索引**：
 - PRIMARY KEY (id)
@@ -1364,7 +1368,6 @@
 **约束**：
 - PRIMARY KEY (id)
 - FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-- UNIQUE INDEX idx_user_config (user_id, config_name)
 
 **配置示例**：
 ```
@@ -1390,10 +1393,10 @@ config_value: ["user1@example.com", "user2@example.com"]
 | user_id       | VARCHAR   | 50   | 是   | FOREIGN KEY    | 用户ID，关联users表                                       |
 | name          | VARCHAR   | 255  | 是   | -              | 研究主题名称                                              |
 | description   | TEXT      | -    | 否   | -              | 研究主题描述                                              |
-| mode          | VARCHAR   | 20   | 是   | DEFAULT "construction" | 当前模式（construction/deep_research）           |
+| mode          | VARCHAR   | 20   | 是   | DEFAULT "construction" | 当前模式（construction/deep_research/review）           |
 | status        | VARCHAR   | 20   | 是   | -              | 状态（draft/pending/running/paused/completed/failed）      |
 | current_stage | TINYINT   | -    | -    | DEFAULT 1      | 当前执行阶段（1-7）                                       |
-| total_papers | INTEGER   | -    | -    | DEFAULT 0      | 总论文数                                                  |
+| total_papers  | INTEGER   | -    | -    | DEFAULT 0      | 总论文数                                                  |
 | valid_papers  | INTEGER   | -    | -    | DEFAULT 0      | 有效论文数                                                |
 | push_status   | VARCHAR   | 20   | -    | DEFAULT "not_pushed" | 推送状态（not_pushed/pushed/failed）             |
 | created_at    | DATETIME  | -    | 是   | -              | 创建时间                                                  |
@@ -1410,10 +1413,10 @@ config_value: ["user1@example.com", "user2@example.com"]
 
 **设计说明**：
 - 以project_id为核心标识符，所有相关数据表都通过project_id关联
-- 支持双模式切换，mode字段记录当前所处模式
-- 执行阶段仅适用于构建模式，深度研究模式不使用此字段
+- 支持三模式切换，mode字段记录当前所处模式
+- 执行阶段仅适用于构建模式、综述模式，深度研究模式不使用此字段
 
-**执行阶段说明**：
+**构建模式执行阶段说明**：
 - 1: 检索词生成
 - 2: 检索与汇总
 - 3: 评分与筛选
@@ -1421,6 +1424,13 @@ config_value: ["user1@example.com", "user2@example.com"]
 - 5: 总结生成
 - 6: 格式化与储存
 - 7: 邮件发送
+
+**综述模式执行阶段说明**：
+- 1：扩写课题内容并通过用户确认
+- 2：生成综述架构并通过用户修改
+- 3：撰写章节内容
+- 4：自动审查迭代
+- 5：汇总成综述文章
 
 ---
 
@@ -1432,18 +1442,22 @@ config_value: ["user1@example.com", "user2@example.com"]
 |---------------------|-----------|------|------|----------------|-----------------------------------------------------------|
 | id                  | VARCHAR   | 50   | 是   | PRIMARY KEY    | 检索词唯一标识符                                          |
 | project_id          | VARCHAR   | 50   | 是   | FOREIGN KEY    | 研究主题ID，关联projects表                               |
-| dimension           | VARCHAR   | 50   | 是   | -              | 维度（core_concept/technical_method/metric/upper_term/lower_term） |
 | search_word         | VARCHAR   | 500  | 是   | -              | 检索词                                                    |
 | boolean_expressions | JSON      | -    | -    | -              | 各数据库的布尔表达式                                      |
+| searched_papers_arxiv           | TINYINT   | -    | -    | DEFAULT 0      | 在arXiv检索到的论文数量                             |
+| searched_papers_openalex        | TINYINT   | -    | -    | DEFAULT 0      | 在openalex检索到的论文数量                          |
+| searched_papers_semanticscholar | TINYINT   | -    | -    | DEFAULT 0      | 在semanticscholar检索到的论文数量                   |
+| searched_papers_ads | TINYINT   | -    | -    | DEFAULT 0      | 在ADS检索到的论文数量                                     |
+| searched_papers_total | TINYINT   | -    | -    | DEFAULT 0      | 总共检索到的论文数量                                     |
+| is_searched         | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否执行过搜索                                            |
 | is_selected         | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否被选中使用                                            |
 | created_at          | DATETIME  | -    | 是   | -              | 创建时间                                                  |
-| updated_at          | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
+| last_search_at      | DATETIME  | -    | 是   | -              | 最后搜索时间                                              |
 
 **约束**：
 - PRIMARY KEY (id)
 - FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 - INDEX idx_project_id (project_id)
-- INDEX idx_dimension (dimension)
 
 **boolean_expressions示例**：
 ```json
@@ -1466,18 +1480,18 @@ config_value: ["user1@example.com", "user2@example.com"]
 | id                | VARCHAR   | 50   | 是   | PRIMARY KEY    | 论文唯一标识符                                            |
 | doi               | VARCHAR   | 100  | 否   | UNIQUE         | DOI，数字对象标识符                                       |
 | arxiv_id          | VARCHAR   | 50   | 否   | UNIQUE         | ArXiv ID                                                  |
-| title             | TEXT      | -    | 是   | -              | 论文标题                                                  |
-| authors           | TEXT      | -    | 否   | -              | 作者列表（JSON格式）                                     |
+| title             | TEXT      | -    | 是   | UNIQUE         | 论文标题（小写格式）                                        |
+| authors           | TEXT      | -    | 否   | -              | 作者列表（JSON格式）                                       |
 | pub_date          | DATE      | -    | 否   | -              | 发布日期                                                  |
 | venue             | VARCHAR   | 200  | 否   | -              | 期刊/会议名称                                             |
 | abstract          | TEXT      | -    | 否   | -              | 摘要                                                      |
-| source            | VARCHAR   | 50   | 否   | -              | 检索来源（arxiv/openalex/semantic_scholar/ads）             |
+| source            | VARCHAR   | 50   | 否   | -              | 检索来源（arxiv/openalex/semantic_scholar/ads）            |
 | retrieved_at      | DATETIME  | -    | 是   | -              | 检索时间                                                  |
-| download_status   | VARCHAR   | 20   | -    | DEFAULT "not_downloaded" | 下载状态（not_downloaded/downloading/success/failed） |
+| download_status   | VARCHAR   | 20   | -    | DEFAULT "not_downloaded" | 下载状态（not_downloaded/success/failed）       |
 | pdf_path          | VARCHAR   | 500  | 否   | -              | PDF文件本地路径                                           |
 | text_path         | VARCHAR   | 500  | 否   | -              | 文本文件本地路径                                          |
 | download_error    | TEXT      | -    | 否   | -              | 下载错误信息                                              |
-| ai_analysis_status| VARCHAR   | 20   | -    | DEFAULT "not_analyzed" | AI分析状态（not_analyzed/analyzing/success/failed） |
+| ai_analysis_status| VARCHAR   | 20   | -    | DEFAULT "not_analyzed" | AI分析状态（not_analyzed/success/failed）         |
 | ai_analysis       | JSON      | -    | 否   | -              | AI分析结果                                                |
 | created_at        | DATETIME  | -    | 是   | -              | 创建时间                                                  |
 | updated_at        | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
@@ -1486,21 +1500,9 @@ config_value: ["user1@example.com", "user2@example.com"]
 - PRIMARY KEY (id)
 - UNIQUE INDEX idx_doi (doi)
 - UNIQUE INDEX idx_arxiv_id (arxiv_id)
-- INDEX idx_title (title)
+- UNIQUE INDEX idx_title (title)
 - INDEX idx_pub_date (pub_date)
 - INDEX idx_source (source)
-
-**ai_analysis示例**：
-```json
-{
-  "summary": "提出了一种新的多尺度CNN框架用于医学影像分割",
-  "highlights": ["多尺度特征融合", "注意力机制", "SOTA性能"],
-  "relevance_points": ["高度相关，技术可直接借鉴"],
-  "technical_methods": ["MS-CNN架构", "自适应注意力机制", "混合损失函数"],
-  "generated_at": "2026-02-18T15:30:00Z",
-  "model_used": "gpt-4-turbo"
-}
-```
 
 ---
 
@@ -1564,33 +1566,6 @@ config_value: ["user1@example.com", "user2@example.com"]
 
 ---
 
-#### 定时任务表 (scheduled_tasks)
-
-**说明**：存储用户的定时任务配置。
-
-| 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
-|------------------|-----------|------|------|----------------|-----------------------------------------------------------|
-| id                | VARCHAR   | 50   | 是   | PRIMARY KEY    | 定时任务唯一标识符                                        |
-| user_id           | VARCHAR   | 50   | 是   | FOREIGN KEY    | 用户ID，关联users表                                       |
-| name              | VARCHAR   | 200  | 是   | -              | 任务名称                                                  |
-| topic_description | TEXT      | -    | 是   | -              | 研究课题描述                                              |
-| schedule_type     | VARCHAR   | 20   | 是   | -              | 调度类型（daily/weekly/monthly）                         |
-| schedule_time     | TIME      | -    | 是   | -              | 调度时间                                                  |
-| enabled           | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否启用                                                  |
-| last_run_at       | DATETIME  | -    | 否   | -              | 上次运行时间                                              |
-| next_run_at       | DATETIME  | -    | 否   | -              | 下次运行时间                                              |
-| created_at        | DATETIME  | -    | 是   | -              | 创建时间                                                  |
-| updated_at        | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
-
-**约束**：
-- PRIMARY KEY (id)
-- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-- INDEX idx_user_id (user_id)
-- INDEX idx_enabled (enabled)
-- INDEX idx_next_run_at (next_run_at)
-
----
-
 ### 6.2 数据库关系图
 
 ```
@@ -1607,10 +1582,6 @@ keywords (检索词表)
 projects (研究主题表)
     ↓ 1:N
 stage_records (阶段记录表)
-
-projects (研究主题表)
-    ↓ 1:N
-scheduled_tasks (定时任务表)
 
 projects (研究主题表)
     ↓ 1:N
@@ -1639,9 +1610,9 @@ projects (研究主题表)
 
 1. **用户隔离**：所有用户数据通过user_id关联，确保多用户数据隔离
 2. **配置灵活**：user_configs表采用键值对方式存储配置，支持动态扩展
-3. **论文复用**：papers表独立存储论文元数据，通过关联表实现多课题共享
+3. **论文复用**：papers表独立存储论文元数据，通过关联表实现多课题共享可行性
 4. **状态追踪**：每个课题都有完整的阶段记录，支持执行过程追踪
-5. **评分独立**：论文评分存储在关联表中，同一论文在不同课题中可有不同评分
+5. **评分独立**：论文评分存储在关联表中，同一论文在不同课题中的评分相互独立
 
 #### 6.3.2 数据一致性保证
 
@@ -1657,134 +1628,23 @@ projects (研究主题表)
 3. **配置加载顺序**：用户配置 > 系统默认配置
 4. **配置分类**：通过config_name的命名约定实现配置分类（如llm.xxx、database.xxx、email.xxx）
 
-### 6.2 数据流图
-
-```
-用户输入课题
-    ↓
-生成检索词
-    ↓
-检索论文（4个数据库）
-    ↓
-汇总论文列表
-    ↓
-评分筛选
-    ↓
-下载PDF
-    ↓
-解析文本
-    ↓
-AI分析
-    ↓
-存储到数据库
-    ↓
-发送邮件
-    ↓
-完成
-```
-
 ---
 
 ## 7. 接口需求
 
 ### 7.1 用户接口
 
-| 接口名称 | 功能描述 |
-|---------|---------|
-| 登录页面 | 用户登录 |
-| 注册页面 | 用户注册 |
-| 配置页面 | 模型、API、邮件配置 |
-| 任务创建页面 | 创建新检索任务 |
-| 任务执行页面 | 执行任务，显示进度 |
-| 检索历史页面 | 查看历史任务 |
-| 数据库查看页面 | 查看和管理数据库 |
-| 任务详情页面 | 查看任务详情 |
-
 ### 7.2 外部接口
-
-#### arXiv API
-
-| 接口 | 功能 |
-|------|------|
-| GET /api/query | 检索论文 |
-
-#### OpenAlex API
-
-| 接口 | 功能 |
-|------|------|
-| GET /works | 检索论文 |
-
-#### Semantic Scholar API
-
-| 接口 | 功能 |
-|------|------|
-| GET /graph/v1/paper/search | 检索论文 |
-
-#### Astrophysics Data System API
-
-| 接口 | 功能 |
-|------|------|
-| GET /search/query | 检索论文 |
-
-#### LLM API（通过LiteLLM）
-
-| 接口 | 功能 |
-|------|------|
-| POST /v1/chat/completions | 聊天完成 |
 
 ### 7.3 内部接口
 
-| 接口 | 功能 |
-|------|------|
-| POST /api/auth/register | 用户注册 |
-| POST /api/auth/login | 用户登录 |
-| POST /api/config/llm | 保存LLM配置 |
-| POST /api/config/database | 保存数据库配置 |
-| POST /api/config/email | 保存邮件配置 |
-| POST /api/tasks/create | 创建任务 |
-| POST /api/tasks/{id}/pause | 暂停任务 |
-| POST /api/tasks/{id}/resume | 继续任务 |
-| POST /api/tasks/{id}/cancel | 取消任务 |
-| GET /api/tasks | 获取任务列表 |
-| GET /api/tasks/{id} | 获取任务详情 |
-| POST /api/tasks/{id}/step/confirm | 确认当前步骤 |
-| POST /api/tasks/{id}/step/edit | 编辑当前步骤 |
-| GET /api/papers | 获取论文列表 |
-| GET /api/papers/{id} | 获取论文详情 |
-| DELETE /api/papers/{id} | 删除论文 |
-| POST /api/export | 导出数据 |
-| POST /api/scheduled-tasks | 创建定时任务 |
-| GET /api/scheduled-tasks | 获取定时任务列表 |
-| POST /api/construction/topics | 创建构建模式研究主题 |
-| POST /api/construction/{session_id}/keywords/generate | 生成检索词 |
-| POST /api/construction/{session_id}/papers/retrieve | 检索论文 |
-| POST /api/construction/{session_id}/papers/upload | 上传论文 |
-| POST /api/construction/{session_id}/papers/parse | 解析论文 |
-| POST /api/construction/{session_id}/papers/analyze | AI分析论文 |
-| POST /api/construction/{session_id}/papers/store | 存储论文 |
-| POST /api/construction/{session_id}/email/send | 发送邮件提示 |
-| POST /api/deep-research/sessions | 创建深度研究会话 |
-| POST /api/deep-research/{session_id}/dialogue | 处理对话 |
-| GET /api/deep-research/{session_id}/dialogue/history | 获取对话历史 |
-| POST /api/deep-research/{session_id}/knowledge-graph/build | 构建知识图谱 |
-| GET /api/deep-research/{session_id}/knowledge-graph | 获取知识图谱 |
-| POST /api/deep-research/{session_id}/graph-rag/retrieve | Graph-RAG检索 |
-| POST /api/deep-research/{session_id}/experiments/design | 设计实验方案 |
-| GET /api/deep-research/{session_id}/history | 获取研究历史 |
-| POST /api/projects/{project_id}/switch-mode | 切换模式 |
-| GET /api/projects/{project_id}/mode | 获取当前模式 |
-| POST /api/recommendations/publish | 发布推荐内容 |
-| GET /api/recommendations | 获取推荐列表 |
-| GET /api/recommendations/{id} | 获取推荐详情 |
-| POST /api/recommendations/{id}/like | 点赞推荐 |
-
 ---
 
-## 8. 底层设计
+## 8. 底层需求
 
-### 8.1 设计原则
+### 8.1 原则
 
-本系统以**科学研究主题（Research Topic）**为核心单元进行底层设计，整个研究主题的构建分为三套模式：
+本系统以**科学研究主题（Research Topic）**为核心单元进行底层设计，整个研究主题按功能分为三套模式：
 
 1. **构建模式（Construction Mode）**：用于快速构建研究主题的基础知识库
 2. **深度研究模式（Deep Research Mode）**：用于深入探讨理论与技术，开拓新方向
@@ -1798,14 +1658,14 @@ AI分析
 
 | 特性 | 构建模式 | 深度研究模式 | 主题综述模式 |
 |------|---------|-------------|-------------|
-| **目标** | 快速构建知识库 | 深度探讨与创新 | 自动撰写综述文章 |
-| **检索方式** | 关键词检索 | Graph-RAG知识图谱检索 | 基于项目数据库检索 |
-| **LLM交互** | 任务导向 | 对话式探讨 | Agent主导工作流 |
-| **数据来源** | 学术数据库 | 学术数据库 + 网络搜索 + 用户输入 | 项目数据库 + 已有论文 |
-| **Agent角色** | 执行者 | 研究助手 | 综述撰写者 |
+| **目标**    | 快速构建知识库 | 深度探讨与创新 | 自动撰写综述文章 |
+| **检索方式** | 关键词检索 | Graph-RAG知识图谱检索 | Graph-RAG知识图谱检索 |
+| **LLM交互** | Agent主导工作流 + 人工介入 | 对话式探讨 | Agent主导工作流 + 人工介入 |
+| **数据来源** | 学术数据库 | 项目数据库 + 用户意见 | 项目数据库 |
+| **Agent角色** | 论文数据库构建者 | 研究助手 | 综述撰写者 |
 | **用户参与度** | 低（配置为主） | 高（持续对话） | 中（审查确认） |
-| **输出形式** | 论文列表 + 分析报告 | 研究结论 + 实验设计 + 创新方向 | 完整的综述文章 |
-| **适用场景** | 文献收集、现状调研 | 理论研究、技术突破 | 综述撰写、成果总结 |
+| **输出形式** | 论文列表 + 分析报告 | 通用 | 完整的综述文章 |
+| **适用场景** | 文献收集 | 理论研究、技术测试、边界突破 | 综述撰写、成果总结 |
 
 #### 8.2.2 模式切换机制
 
@@ -1820,324 +1680,38 @@ AI分析
 2. 验证切换的合法性
 3. 初始化目标模式的上下文
 
-**详细实现**：请参考《底层设计详细文档.md》
-
 #### 8.2.3 模式扩展性设计
 
 系统采用以下设计模式支持模式扩展：
 
-1. **枚举类型设计**：使用Enum类型定义模式，便于扩展
-2. **策略模式**：不同模式对应不同的策略类，易于添加新模式
-3. **上下文隔离**：每种模式有独立的上下文管理，互不干扰
-4. **状态持久化**：模式切换时自动保存和恢复状态
-
-未来添加新模式的步骤：
-1. 在ResearchMode枚举中添加新模式
-2. 创建新模式控制器
-3. 注册新模式控制器
-4. 在ModeSwitcher中添加切换方法
-
-**详细实现**：请参考《底层设计详细文档.md》
-
-### 8.3 数据库设计
-
-#### 8.3.1 核心数据表
-
-系统包含以下核心数据表：
-
-1. **用户表（users）**：存储用户基本信息
-2. **配置表（configurations）**：存储用户配置信息
-3. **项目表（projects）**：存储研究主题信息
-4. **检索词表（search_queries）**：存储检索词信息
-5. **论文表（papers）**：存储论文元数据
-6. **项目-论文关联表（project_papers）**：存储项目与论文的关联关系
-7. **研究历史表（research_history）**：存储研究操作历史
-8. **研究对话表（research_dialogues）**：存储深度研究对话记录
-9. **推荐表（recommendations）**：存储用户推荐内容
-
-**详细实现**：请参考《底层设计详细文档.md》
-
-#### 8.3.2 数据库关系
-
-数据库以项目（project）为核心单元，所有数据表都与项目表关联，形成以项目为中心的数据结构。
-
-**详细实现**：请参考《底层设计详细文档.md》
-
-### 8.4 API接口设计
-
-#### 8.4.1 API路由设计
-
-系统采用API路由隔离设计，将不同模式的API路由分开：
-
-- **全局基础层API**：`/api/*` - 用户管理、配置管理、项目管理等
-- **构建模式API**：`/api/construction/*` - 检索词生成、论文检索、评分筛选等
-- **深度研究模式API**：`/api/deep-research/*` - 知识图谱、对话探讨、实验设计等
-
-**详细实现**：请参考《底层设计详细文档.md》
-
-#### 8.4.2 模式上下文管理
-
-系统采用中间件自动管理模式上下文，确保API调用时上下文正确。
-
-**详细实现**：请参考《底层设计详细文档.md》
+1. **策略模式**：不同模式对应不同的策略类，易于添加新模式
+2. **上下文隔离**：每种模式有独立的上下文管理，互不干扰
+3. **状态持久化**：模式切换时自动保存和恢复状态
 
 ---
 
-## 9. 错误处理设计
+## 9. 验收标准
 
-### 9.1 错误分类体系
+### 9.1 功能验收
 
-系统采用分层错误分类体系，确保错误能够被准确识别和处理。
-
-#### 9.1.1 错误类型
-
-- **业务错误**：业务逻辑错误、数据验证错误、配置错误
-- **系统错误**：系统错误、数据库错误、文件系统错误
-- **网络错误**：网络错误、外部API错误、超时错误
-- **Agent错误**：Agent执行错误、LLM调用错误、检索错误
-- **用户错误**：用户操作错误、权限错误、认证错误
-
-#### 9.1.2 错误严重程度
-
-- **低**：不影响主流程
-- **中**：影响部分功能
-- **高**：影响核心功能
-- **严重**：系统无法继续运行
-
-#### 9.1.3 错误码设计
-
-采用分层错误码格式：`[系统码-模块码-错误码]`
-
-- 系统码：1-用户系统，2-主题管理系统，3-Agent系统，4-数据库系统，5-外部API系统
-- 模块码：01-认证模块，02-配置模块，03-执行模块，04-数据模块，05-通知模块
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-### 9.2 错误处理机制
-
-#### 9.2.1 全局异常处理
-
-系统提供全局异常处理器，统一处理所有异常：
-
-1. 识别错误类型
-2. 记录错误日志
-3. 通知相关人员（高严重程度错误）
-4. 尝试错误恢复
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-#### 9.2.2 错误日志记录
-
-系统记录所有错误日志，包括：
-- 错误类型和错误码
-- 错误消息和严重程度
-- 上下文信息
-- 堆栈跟踪
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-#### 9.2.3 错误通知机制
-
-系统提供错误通知机制：
-- 邮件通知：高严重程度错误发送邮件通知
-- 即时通知：集成Slack、钉钉等即时通讯工具
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-#### 9.2.4 错误恢复策略
-
-系统提供错误恢复策略：
-- 网络错误：自动重试（最多3次）
-- 超时错误：增加超时时间并重试
-- API错误：检查API配置，重新认证
-- 数据库错误：重新连接数据库
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-### 9.3 特定错误处理
-
-#### 9.3.1 LLM调用错误处理
-
-- 超时错误：自动重试（指数退避）
-- API错误：检查API密钥和配额
-- 网络错误：自动重试
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-#### 9.3.2 数据库错误处理
-
-- 连接错误：重新连接
-- 查询错误：记录日志并回滚事务
-- 插入/更新错误：记录日志并回滚事务
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-#### 9.3.3 API调用错误处理
-
-- 超时错误：自动重试
-- 连接错误：自动重试
-- 频率限制：等待并重试
-- 认证错误：提示用户重新配置
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-### 9.4 错误监控和报告
-
-#### 9.4.1 错误统计
-
-系统提供错误统计功能：
-- 按错误类型统计
-- 按时间范围统计
-- 错误趋势分析
-
-**详细实现**：请参考《错误处理设计文档.md》
-
-#### 9.4.2 错误报告
-
-系统提供错误报告功能：
-- 日报：最近24小时的错误统计
-- 周报：最近7天的错误趋势
-
-**详细实现**：请参考《错误处理设计文档.md》
-
----
-
-## 10. 状态监控设计
-
-### 10.1 监控指标定义
-
-#### 10.1.1 系统性能指标
-
-- CPU使用率、CPU核心数
-- 内存使用率、内存总量、可用内存
-- 磁盘使用率、磁盘总量、可用磁盘
-- 网络发送/接收量
-- 系统负载（1分钟、5分钟、15分钟）
-
-**详细实现**：请参考《状态监控设计文档.md》
-
-#### 10.1.2 应用性能指标
-
-- 请求指标：请求数量、成功率、错误率、平均响应时间
-- 数据库指标：查询数量、平均查询时间、连接数
-- LLM调用指标：调用数量、成功率、错误率、平均调用时间
-- API调用指标：调用数量、成功率、错误率、平均调用时间
-- 任务执行指标：任务总数、运行中、已完成、失败
-
-**详细实现**：请参考《状态监控设计文档.md》
-
-#### 10.1.3 业务指标
-
-- 用户指标：活跃用户数、新增用户数
-- 项目指标：项目总数、活跃项目数、各模式项目数
-- 论文指标：论文总数、今日新增论文、已分析论文数
-- 对话指标：对话总数、今日新增对话
-- 推荐指标：推荐总数、今日新增推荐
-
-**详细实现**：请参考《状态监控设计文档.md》
-
-### 10.2 监控架构设计
-
-#### 10.2.1 监控系统架构
-
-系统提供完整的监控系统：
-- 指标采集器：定期采集各类指标
-- 指标存储：存储历史指标数据
-- 告警管理：监控指标并触发告警
-- 仪表盘生成：生成监控仪表盘数据
-
-**详细实现**：请参考《状态监控设计文档.md》
-
-#### 10.2.2 指标采集机制
-
-- 系统指标：每60秒采集一次
-- 应用指标：每30秒采集一次
-- 业务指标：每5分钟采集一次
-
-**详细实现**：请参考《状态监控设计文档.md》
-
-### 10.3 告警机制
-
-#### 10.3.1 告警规则
-
-系统提供默认告警规则：
-- CPU使用率 > 80%（警告）/ > 90%（严重）
-- 内存使用率 > 80%（警告）
-- 磁盘使用率 > 85%（警告）
-- 系统负载 > CPU核心数 * 0.8（警告）
-- 请求错误率 > 5%（警告）
-- 请求响应时间 > 3000ms（警告）
-- LLM调用错误率 > 10%（警告）
-
-**详细实现**：请参考《状态监控设计文档.md》
-
-#### 10.3.2 告警通知
-
-- 邮件通知：警告和严重级别告警
-- 即时通知：集成Slack、钉钉等即时通讯工具
-
-**详细实现**：请参考《状态监控设计文档.md》
-
-### 10.4 监控仪表盘
-
-#### 10.4.1 仪表盘内容
-
-- 系统健康度
-- 应用健康度
-- 业务概览
-- 最近告警
-- 指标趋势
-
-**详细实现**：请参考《状态监控设计文档.md》
-
----
-
-## 11. 质量属性
-
-### 11.1 可测试性
-
-- 提供单元测试框架
-- 提供集成测试环境
-- 提供测试数据
-- 关键功能测试覆盖率≥80%
-
-### 11.2 可移植性
-
-- 支持Windows、macOS、Linux操作系统
-- 支持主流浏览器
-- 支持容器化部署（Docker）
-
-### 11.3 兼容性
-
-- 向后兼容旧版本数据
-- 支持多种LLM模型
-- 支持多种数据库
-
----
-
-## 12. 验收标准
-
-### 12.1 功能验收
-
-- 所有功能需求（FR-001至FR-024）均已实现
+- 所有功能需求（FR-001至FR-030）均已实现
 - 功能测试通过率100%
-- 用户验收测试通过
 
-### 12.2 性能验收
+### 9.2 性能验收
 
 - 页面加载时间< 2秒
 - API响应时间< 1秒
-- 完成一次完整检索（10篇论文）< 5分钟
 
-### 12.3 双模式功能验收
+### 9.3 三模式功能验收
 
-- 构建模式和深度研究模式切换功能正常
+- 三模式切换功能正常
 - 模式切换时状态正确保存和恢复
 - 构建模式的所有功能正常工作
 - 深度研究模式的所有功能正常工作
+- 主题综述模式的所有功能正常工作
 - 模式切换历史记录完整
 
-### 12.4 Graph-RAG性能验收
+### 9.4 Graph-RAG性能验收
 
 - 单次Graph-RAG检索响应时间< 3秒
 - 知识图谱构建性能达标（50篇论文< 10秒）
@@ -2145,7 +1719,7 @@ AI分析
 - Graph-RAG检索结果准确性和相关性达标
 - 多跳推理功能正常工作
 
-### 12.5 推荐模块验收
+### 9.5 推荐模块验收
 
 - 推荐内容发布功能正常
 - 推荐内容查看和点赞功能正常
@@ -2153,32 +1727,24 @@ AI分析
 - 推荐内容的排序功能正常
 - 内容审核和过滤功能有效
 
-### 12.6 安全验收
+### 9.6 安全验收
 
 - 通过安全测试
 - 无高危漏洞
 - API密钥加密存储
-- 数据传输加密
 
-### 12.7 文档验收
+### 9.7 文档验收
 
 - 用户手册完整
 - 开发文档完整
 - API文档完整
 - 部署文档完整
 
-### 12.8 监控验收
-
-- 系统监控功能正常运行
-- 告警规则准确触发
-- 监控仪表板数据准确
-- 错误日志完整记录
-
 ---
 
-## 13. 附录
+## 10. 附录
 
-### 13.1 术语表
+### 10.1 术语表
 
 | 术语 | 定义 |
 |------|------|
@@ -2190,7 +1756,7 @@ AI分析
 | Research Topic | 科学研究主题，系统的核心业务单元 |
 | Execution Stage | 执行阶段，Agent执行的7个关键步骤 |
 
-### 13.2 参考文档
+### 10.2 参考文档
 
 - design.md - 系统设计文档
 - LangGraph官方文档
@@ -2201,7 +1767,7 @@ AI分析
 - Prometheus监控文档
 - Grafana仪表板文档
 
-### 13.3 变更记录
+### 10.3 变更记录
 
 | 版本 | 日期 | 变更内容 | 变更人 |
 |------|------|---------|--------|
@@ -2211,7 +1777,7 @@ AI分析
 
 ---
 
-## 14. 签字确认
+## 10.4 签字确认
 
 | 角色 | 姓名 | 签字 | 日期 |
 |------|------|------|------|
