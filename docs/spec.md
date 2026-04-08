@@ -351,8 +351,7 @@
 系统应支持用户在构建模式和深度研究模式之间灵活切换，确保模式切换的平滑性和数据一致性。
 
 **功能要求：**
-- 支持从构建模式切换到深度研究模式
-- 支持从深度研究模式切换到构建模式
+- 支持在三种模式间进行切换
 - 记录模式切换历史（切换时间、原因、前后模式）
 - 模式切换时自动保存当前模式的状态
 - 切换后自动初始化新模式的上下文环境
@@ -360,7 +359,7 @@
 - 支持模式切换的可视化指示（当前模式显示）
 
 **输入：**
-- 目标模式（construction/deep_research）
+- 目标模式（construction/deep_research/review）
 - 切换原因（可选）
 
 **输出：**
@@ -522,7 +521,7 @@
 系统应将论文数据存储到数据库中，支持增量更新。
 
 **功能要求：**
-- 存储到SQLite（关系型数据库）
+- 存储到PostgreSQL（关系型数据库）
 - 存储到ChromaDB（向量数据库）
 - 支持增量更新（基于DOI去重）
 - 存储论文元数据、AI分析、文件路径等
@@ -577,7 +576,7 @@
 系统应在每个关键步骤暂停，让用户参与互动和修改。
 
 **功能要求：**
-- 在7个关键步骤暂停：
+- 在6个关键步骤暂停（第7阶段邮件发送为全自动执行）：
   1. 检索词生成后
   2. 检索与汇总后
   3. 评分与筛选后
@@ -1338,7 +1337,7 @@
 | created_at    | DATETIME  | -    | 是   | -              | 创建时间       |
 | updated_at    | DATETIME  | -    | 是   | -              | 最后更新时间   |
 | last_login_at | DATETIME  | -    | 否   | -              | 最后登录时间   |
-| regular_push  | BOOOLEAN  | -    | 是   | DEFUALT FALSE  | 是否定期推送   |
+| regular_push  | BOOLEAN   | -    | 是   | DEFAULT FALSE  | 是否定期推送   |
 | push_interval | TINYINT   | -    | 否   | -              | 更新间隔(天)   |
 | last_push     | DATETIME  | -    | 否   | -              | 上次推送时间   |
 | next_push     | DATETIME  | -    | 否   | -              | 下次推送时间   |
@@ -1539,14 +1538,15 @@ config_value: ["user1@example.com", "user2@example.com"]
 
 #### 阶段记录表 (stage_records)
 
-**说明**：记录课题各执行阶段的详细信息。
+**说明**：记录课题在构建模式和综述模式各执行阶段的详细信息。深度研究模式不使用此表（无固定阶段流程）。`mode` 字段区分阶段编号的语义：构建模式共7个阶段，综述模式共5个阶段。
 
 | 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
 |--------------|-----------|------|------|----------------|-----------------------------------------------------------|
 | id           | VARCHAR   | 50   | 是   | PRIMARY KEY    | 记录唯一标识符                                            |
-| topic_id     | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联research_topics表                             |
-| stage        | INTEGER   | -    | 是   | -              | 执行阶段（1-7）                                           |
-| status       | VARCHAR   | 20   | 是   | -              | 状态（running/paused/completed/failed）                    |
+| project_id   | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联projects表                                    |
+| mode         | VARCHAR   | 20   | 是   | -              | 所属模式（construction/review）                           |
+| stage        | TINYINT   | -    | 是   | -              | 执行阶段（构建模式：1-7；综述模式：1-5）                  |
+| status       | VARCHAR   | 20   | 是   | -              | 状态（running/paused/completed/failed）                   |
 | started_at   | DATETIME  | -    | 是   | -              | 开始时间                                                  |
 | completed_at | DATETIME  | -    | 否   | -              | 完成时间                                                  |
 | paused_at    | DATETIME  | -    | 否   | -              | 暂停时间                                                  |
@@ -1554,15 +1554,202 @@ config_value: ["user1@example.com", "user2@example.com"]
 | failed_at    | DATETIME  | -    | 否   | -              | 失败时间                                                  |
 | result       | JSON      | -    | 否   | -              | 阶段结果数据                                              |
 | error        | TEXT      | -    | 否   | -              | 错误信息                                                  |
-| user_actions | JSON      | -    | 否   | -              | 用户操作记录                                              |
+| user_actions | JSON      | -    | 否   | -              | 用户操作记录（编辑/跳过/重新执行等）                      |
 | created_at   | DATETIME  | -    | 是   | -              | 创建时间                                                  |
 
 **约束**：
 - PRIMARY KEY (id)
-- FOREIGN KEY (topic_id) REFERENCES research_topics(id) ON DELETE CASCADE
-- INDEX idx_topic_id (topic_id)
+- FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+- INDEX idx_project_id (project_id)
+- INDEX idx_mode (mode)
 - INDEX idx_stage (stage)
 - INDEX idx_status (status)
+
+**构建模式阶段编号说明**（mode = 'construction'）：
+
+| stage | 含义 |
+|-------|------|
+| 1 | 检索词生成 |
+| 2 | 检索与汇总 |
+| 3 | 评分与筛选 |
+| 4 | 下载与解析 |
+| 5 | 总结生成 |
+| 6 | 格式化与储存 |
+| 7 | 邮件发送（全自动，无用户交互暂停） |
+
+**综述模式阶段编号说明**（mode = 'review'）：
+
+| stage | 含义 |
+|-------|------|
+| 1 | 扩写课题内容并通过用户确认 |
+| 2 | 生成综述架构并通过用户修改 |
+| 3 | 撰写章节内容 |
+| 4 | 自动审查迭代 |
+| 5 | 汇总成综述文章 |
+
+---
+
+#### 深度研究对话表 (research_dialogues)
+
+**说明**：存储深度研究模式下的对话会话列表。每次用户开启一次主题性探讨即创建一条记录。一个课题可包含多个对话会话，每个会话的完整对话历史在 `dialogue_turns` 表中以轮次为单位存储。
+
+| 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
+|-----------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id              | VARCHAR   | 50   | 是   | PRIMARY KEY    | 对话会话唯一标识符                                        |
+| project_id      | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联projects表                                    |
+| title           | VARCHAR   | 255  | 否   | -              | 对话标题（用户自定义或由首轮用户输入自动生成）            |
+| status          | VARCHAR   | 20   | 是   | DEFAULT 'active' | 状态（active/archived）                                 |
+| turn_count      | INTEGER   | -    | 是   | DEFAULT 0      | 已完成的对话轮次数                                        |
+| summary         | TEXT      | -    | 否   | -              | Agent自动生成的对话摘要                                   |
+| tags            | JSON      | -    | 否   | -              | 用户标签列表（JSON数组）                                  |
+| created_at      | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at      | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
+| last_active_at  | DATETIME  | -    | 是   | -              | 最后活跃时间                                              |
+
+**约束**：
+- PRIMARY KEY (id)
+- FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+- INDEX idx_project_id (project_id)
+- INDEX idx_sub_mode (sub_mode)
+- INDEX idx_status (status)
+- INDEX idx_last_active_at (last_active_at)
+
+---
+
+#### 对话轮次表 (dialogue_turns)
+
+**说明**：以轮次为单位完整记录对话历史，每行对应一轮对话（用户发言一次 + Agent 回复一次）。`turn_index` 从 1 开始自增，保证轮次顺序可还原。`referenced_papers` 和 `graph_nodes_used` 属于 Agent 回复的元数据。
+
+| 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
+|--------------------|-----------|------|------|--------------|-----------------------------------------------------------|
+| id                 | VARCHAR   | 50   | 是   | PRIMARY KEY  | 轮次唯一标识符                                            |
+| dialogue_id        | VARCHAR   | 50   | 是   | FOREIGN KEY  | 对话会话ID，关联research_dialogues表                      |
+| project_id         | VARCHAR   | 50   | 是   | FOREIGN KEY  | 课题ID，关联projects表（冗余存储，便于直接查询）          |
+| turn_index         | INTEGER   | -    | 是   | -            | 轮次序号（会话内从1开始自增）                             |
+| sub_mode           | VARCHAR   | 20   | 是   | -            | 本轮采用的子模式（theory/technical/experiment）         |
+| user_content       | TEXT      | -    | 是   | -            | 用户输入的原始内容                                        |
+| assistant_content  | TEXT      | -    | 是   | -            | Agent 回复的原始内容                                      |
+| referenced_papers  | JSON      | -    | 否   | -            | Agent回复引用的论文ID列表（JSON数组）                     |
+| graph_nodes_used   | JSON      | -    | 否   | -            | Graph-RAG检索命中的知识图谱节点ID列表                     |
+| input_tokens       | INTEGER   | -    | 否   | -            | 用户输入token数（用于成本追踪）                           |
+| output_tokens      | INTEGER   | -    | 否   | -            | Agent回复token数（用于成本追踪）                          |
+| created_at         | DATETIME  | -    | 是   | -            | 本轮创建时间（即用户发送消息的时间）                      |
+
+**约束**：
+- PRIMARY KEY (id)
+- FOREIGN KEY (dialogue_id) REFERENCES research_dialogues(id) ON DELETE CASCADE
+- FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+- UNIQUE INDEX idx_dialogue_turn (dialogue_id, turn_index)
+- INDEX idx_dialogue_id (dialogue_id)
+- INDEX idx_project_id (project_id)
+- INDEX idx_created_at (created_at)
+
+---
+
+#### 综述架构表 (review_outlines)
+
+**说明**：存储综述模式下生成的综述架构版本。每次用户发起新的综述流程或手动创建版本时生成一条记录，通过版本号追踪修改历史。`status` 为 `confirmed` 时，对应的章节撰写才可以开始。
+
+| 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
+|---------------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id                  | VARCHAR   | 50   | 是   | PRIMARY KEY    | 架构唯一标识符                                            |
+| project_id          | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联projects表                                    |
+| version             | INTEGER   | -    | 是   | DEFAULT 1      | 版本号（同一课题内自增）                                  |
+| topic_expansion     | TEXT      | -    | 否   | -              | 阶段1：扩写后的课题描述（用户确认后填入）                 |
+| outline             | JSON      | -    | 否   | -              | 阶段2：综述章节架构（见下方结构说明）                     |
+| status              | VARCHAR   | 20   | 是   | DEFAULT 'draft' | 状态（draft/confirmed/archived）                        |
+| confirmed_at        | DATETIME  | -    | 否   | -              | 用户确认架构的时间                                        |
+| created_at          | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at          | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
+
+**约束**：
+- PRIMARY KEY (id)
+- FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+- UNIQUE INDEX idx_project_version (project_id, version)
+- INDEX idx_project_id (project_id)
+- INDEX idx_status (status)
+
+**`outline` 字段结构示例**：
+
+```json
+{
+  "title": "深度学习在天文图像分析中的应用综述",
+  "abstract_hint": "综述的核心观点和结构概述",
+  "sections": [
+    {
+      "index": 1,
+      "title": "引言",
+      "type": "introduction",
+      "key_points": ["研究背景", "研究意义", "文章结构"]
+    },
+    {
+      "index": 2,
+      "title": "相关工作",
+      "type": "related_work",
+      "key_points": ["传统方法综述", "深度学习方法演进"]
+    }
+  ]
+}
+```
+
+---
+
+#### 综述章节表 (review_chapters)
+
+**说明**：存储综述模式下各章节的撰写内容及审查迭代记录。与 `review_outlines` 关联，每个章节独立追踪撰写状态和迭代历史。`iteration_count` 记录自动审查迭代次数，`review_history` 保存每次审查的修改建议和结果。
+
+| 字段名 | 类型 | 长度 | 必填 | 约束 | 说明 |
+|------------------|-----------|------|------|----------------|-----------------------------------------------------------|
+| id               | VARCHAR   | 50   | 是   | PRIMARY KEY    | 章节唯一标识符                                            |
+| outline_id       | VARCHAR   | 50   | 是   | FOREIGN KEY    | 关联review_outlines表                                     |
+| project_id       | VARCHAR   | 50   | 是   | FOREIGN KEY    | 课题ID，关联projects表（冗余存储，便于直接查询）          |
+| chapter_index    | TINYINT   | -    | 是   | -              | 章节序号（与outline中的section.index对应）                |
+| title            | VARCHAR   | 255  | 是   | -              | 章节标题                                                  |
+| content          | TEXT      | -    | 否   | -              | 章节正文内容（Markdown格式）                              |
+| citations        | JSON      | -    | 否   | -              | 本章引用论文列表（含paper_id和引用格式）                  |
+| iteration_count  | TINYINT   | -    | 是   | DEFAULT 0      | 自动审查迭代次数                                          |
+| review_history   | JSON      | -    | 否   | -              | 每次审查的建议与结果列表（见下方结构说明）                |
+| status           | VARCHAR   | 20   | 是   | DEFAULT 'pending' | 状态（pending/writing/reviewing/completed）            |
+| completed_at     | DATETIME  | -    | 否   | -              | 章节完成时间                                              |
+| created_at       | DATETIME  | -    | 是   | -              | 创建时间                                                  |
+| updated_at       | DATETIME  | -    | 是   | -              | 最后更新时间                                              |
+
+**约束**：
+- PRIMARY KEY (id)
+- FOREIGN KEY (outline_id) REFERENCES review_outlines(id) ON DELETE CASCADE
+- FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+- UNIQUE INDEX idx_outline_chapter (outline_id, chapter_index)
+- INDEX idx_outline_id (outline_id)
+- INDEX idx_project_id (project_id)
+- INDEX idx_status (status)
+
+**`citations` 字段结构示例**：
+
+```json
+[
+  {
+    "paper_id": "paper_123",
+    "citation_key": "doe2024novel",
+    "format_apa": "Doe, J. (2024). Novel Method for X. Nature.",
+    "context": "如 [doe2024novel] 所提出的方法"
+  }
+]
+```
+
+**`review_history` 字段结构示例**：
+
+```json
+[
+  {
+    "iteration": 1,
+    "reviewed_at": "2026-04-08T10:00:00",
+    "issues": ["引用数量不足", "逻辑过渡不自然"],
+    "suggestions": ["补充近三年相关工作引用", "在第二段末尾增加过渡句"],
+    "accepted": true,
+    "revised_at": "2026-04-08T10:05:00"
+  }
+]
+```
 
 ---
 
@@ -1581,19 +1768,23 @@ keywords (检索词表)
 
 projects (研究主题表)
     ↓ 1:N
-stage_records (阶段记录表)
+stage_records (阶段记录表，mode区分构建模式/综述模式)
 
 projects (研究主题表)
     ↓ 1:N
-research_history (研究历史表)
-
-projects (研究主题表)
+research_dialogues (深度研究对话表)
     ↓ 1:N
-research_dialogues (研究对话表)
+dialogue_turns (对话轮次表，每行=用户+Agent各一次)
 
-research_dialogues (研究对话表)
+research_dialogues (深度研究对话表)
     ↓ 1:N
 recommendations (推荐模块表)
+
+projects (研究主题表)
+    ↓ 1:N
+review_outlines (综述架构表)
+    ↓ 1:N
+review_chapters (综述章节表)
 
 papers (论文表)
     ↓ 1:N
@@ -2248,7 +2439,7 @@ Knowledge Graph Edges (知识图谱边)
 - LangGraph官方文档
 - FastAPI官方文档
 - React官方文档
-- SQLite文档
+- PostgreSQL文档
 - ChromaDB文档
 - Prometheus监控文档
 - Grafana仪表板文档
@@ -2260,6 +2451,7 @@ Knowledge Graph Edges (知识图谱边)
 | v1.0 | 2026-02-18 | 初始版本 | haoyanzhen |
 | v1.1 | 2026-04-03 | 新增底层设计、错误处理设计、状态监控设计章节 | codearts |
 | v1.2 | 2026-04-05 | 更新基础层+多模块的框架设计、更新功能需求设计 | haoyanzhen |
+| v1.3 | 2026-04-08 | 依据ADR_design校对 | claude code |
 
 ---
 
