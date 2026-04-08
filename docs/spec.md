@@ -1323,7 +1323,7 @@
 
 ## 6. 数据需求
 
-### 6.1 数据字典
+### 6.1 关系型数据库
 
 #### 用户表 (users)
 
@@ -1566,7 +1566,7 @@ config_value: ["user1@example.com", "user2@example.com"]
 
 ---
 
-### 6.2 数据库关系图
+#### 6.1.2 数据库关系图
 
 ```
 users (用户表)
@@ -1602,11 +1602,440 @@ project_paper_relations (研究主题-论文关联表)
 projects (研究主题表)
 ```
 
+
 ---
 
-### 6.3 数据字典说明
+### 6.2 向量数据库（ChromaDB）
 
-#### 6.3.1 设计原则
+#### 6.2.1 Collection设计
+
+本系统使用ChromaDB作为向量数据库，用于存储论文内容的向量表示，支持Graph-RAG检索。
+
+**Collection命名规范**：`project_{project_id}_vectors`
+
+**Collection结构**：
+
+| 字段名 | 类型 | 说明 | 示例 |
+|--------|------|------|------|
+| **id** | STRING | 向量文档唯一标识符 | `paper_{paper_id}_chunk_{chunk_id}` |
+| **embedding** | FLOAT_ARRAY | 文本向量表示（1536维） | `[0.123, -0.456, 0.789, ...]` |
+| **metadata** | JSON | 文档元数据 | 见下方metadata结构 |
+| **document** | STRING | 原始文本内容 | `"This paper proposes a novel method..."` |
+
+**metadata结构**：
+
+```json
+{
+  "paper_id": "paper_123",
+  "project_id": "project_456",
+  "chunk_id": 1,
+  "chunk_type": "abstract|content|conclusion",
+  "section": "Introduction",
+  "start_char": 0,
+  "end_char": 500,
+  "authors": ["John Doe", "Jane Smith"],
+  "pub_date": "2024-01-15",
+  "venue": "Nature",
+  "title": "Novel Method for X",
+  "doi": "10.1234/example.doi",
+  "keywords": ["deep learning", "medical imaging"],
+  "is_valid": true,
+  "total_score": 8,
+  "reference_score": 4,
+  "technical_score": 4
+}
+```
+
+#### 6.2.2 向量化策略
+
+**文本分块策略**：
+
+| 分块类型 | 分块大小 | 重叠大小 | 适用场景 |
+|---------|---------|---------|----------|
+| **摘要分块** | 500字符 | 0字符 | 论文摘要单独存储 |
+| **内容分块** | 1000字符 | 200字符 | 论文正文内容 |
+| **结论分块** | 800字符 | 100字符 | 论文结论部分 |
+
+**向量生成配置**：
+
+| 配置项 | 值 | 说明 |
+|--------|---|------|
+| **嵌入模型** | OpenAI text-embedding-ada-002 | 1536维向量 |
+| **备用模型** | sentence-transformers/all-MiniLM-L6-v2 | 本地备选方案 |
+| **归一化** | L2归一化 | 提高检索准确性 |
+| **批处理大小** | 100 | 向量化批处理大小 |
+
+#### 6.2.3 检索策略
+
+**Graph-RAG检索流程**：
+
+1. **初始检索**：基于查询向量进行相似度检索
+2. **图扩展**：基于检索结果在知识图谱中扩展相关节点
+3. **重排序**：结合图结构和相似度进行重排序
+4. **上下文构建**：选择最相关的文档片段构建上下文
+
+**检索参数配置**：
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| **top_k** | 10 | 初始检索返回结果数 |
+| **similarity_threshold** | 0.7 | 相似度阈值 |
+| **graph_expansion_depth** | 2 | 图扩展深度 |
+| **max_context_length** | 4000 | 最大上下文长度（token） |
+
+#### 6.2.4 Collection管理
+
+**创建Collection**：
+
+```python
+# 为每个研究主题创建独立的Collection
+collection_name = f"project_{project_id}_vectors"
+collection = chroma_client.create_collection(
+    name=collection_name,
+    metadata={
+        "project_id": project_id,
+        "created_at": datetime.now().isoformat(),
+        "embedding_model": "text-embedding-ada-002"
+    }
+)
+```
+
+**删除Collection**：
+
+```python
+# 研究主题删除时删除对应的Collection
+chroma_client.delete_collection(name=f"project_{project_id}_vectors")
+```
+
+**索引优化**：
+
+- 使用HNSW索引提高检索速度
+- 设置ef_construction=200，ef_search=50
+- 定期优化索引结构
+
+---
+
+#### 6.2.5 向量数据库关系图
+
+```
+projects (研究主题表)
+    ↓ 1:1
+ChromaDB Collection: project_{project_id}_vectors
+    ↓ 1:N
+Vector Documents (论文向量文档)
+    ├─ paper_{paper_id}_chunk_{chunk_id}
+    ├─ metadata: {paper_id, project_id, chunk_id, ...}
+    ├─ embedding: [1536维向量]
+    └─ document: "原始文本内容"
+
+papers (论文表)
+    ↓ 1:N
+Vector Documents (一个论文多个向量块)
+```
+
+---
+
+### 6.3 图数据库（NetworkX）
+
+#### 6.3.1 知识图谱结构
+
+本系统使用NetworkX构建论文知识图谱，支持Graph-RAG检索和知识发现。
+
+**图谱类型**：有向多重图（DiGraph）
+
+**节点类型**：
+
+| 节点类型 | 标识符格式 | 属性字段 | 说明 |
+|---------|-----------|---------|------|
+| **论文节点** | `paper_{paper_id}` | 见论文节点属性 | 表示单篇论文 |
+| **作者节点** | `author_{author_name_normalized}` | 见作者节点属性 | 表示论文作者 |
+| **关键词节点** | `keyword_{keyword_normalized}` | 见关键词节点属性 | 表示研究关键词 |
+| **概念节点** | `concept_{concept_name_normalized}` | 见概念节点属性 | 表示研究概念 |
+| **方法节点** | `method_{method_name_normalized}` | 见方法节点属性 | 表示研究方法 |
+
+**论文节点属性**：
+
+```python
+{
+    "node_type": "paper",
+    "paper_id": "paper_123",
+    "project_id": "project_456",
+    "title": "Novel Method for X",
+    "authors": ["author_john_doe", "author_jane_smith"],
+    "pub_date": "2024-01-15",
+    "venue": "Nature",
+    "doi": "10.1234/example.doi",
+    "abstract": "This paper proposes...",
+    "total_score": 8,
+    "is_valid": true,
+    "keywords": ["keyword_deep_learning", "keyword_medical_imaging"],
+    "chunk_count": 15,
+    "citations": []
+}
+```
+
+**作者节点属性**：
+
+```python
+{
+    "node_type": "author",
+    "author_name": "John Doe",
+    "normalized_name": "john_doe",
+    "paper_count": 5,
+    "affiliation": "MIT",
+    "h_index": 25,
+    "papers": ["paper_123", "paper_456"]
+}
+```
+
+**关键词节点属性**：
+
+```python
+{
+    "node_type": "keyword",
+    "keyword": "deep learning",
+    "normalized_keyword": "deep_learning",
+    "paper_count": 150,
+    "related_keywords": ["machine_learning", "neural_networks"],
+    "growth_trend": 0.8
+}
+```
+
+**概念节点属性**：
+
+```python
+{
+    "node_type": "concept",
+    "concept_name": "convolutional neural network",
+    "normalized_name": "convolutional_neural_network",
+    "definition": "A type of deep neural network...",
+    "paper_count": 80,
+    "related_concepts": ["deep_learning", "computer_vision"]
+}
+```
+
+**方法节点属性**：
+
+```python
+{
+    "node_type": "method",
+    "method_name": "transfer learning",
+    "normalized_name": "transfer_learning",
+    "description": "A research technique...",
+    "paper_count": 45,
+    "related_methods": ["fine_tuning", "domain_adaptation"]
+}
+```
+
+#### 6.3.2 边关系类型
+
+**边类型定义**：
+
+| 边类型 | 方向 | 权重 | 说明 |
+|--------|------|------|------|
+| **AUTHORED_BY** | 论文→作者 | 1.0 | 论文由作者撰写 |
+| **HAS_KEYWORD** | 论文→关键词 | 1.0 | 论文包含关键词 |
+| **MENTIONS_CONCEPT** | 论文→概念 | 相似度 | 论文提及概念 |
+| **USES_METHOD** | 论文→方法 | 相关性 | 论文使用方法 |
+| **CITES** | 论文→论文 | 引用强度 | 论文引用关系 |
+| **COLLABORATES_WITH** | 作者→作者 | 合作次数 | 作者合作关系 |
+| **RELATED_TO** | 关键词→关键词 | 相关度 | 关键词关联关系 |
+| **SIMILAR_TO** | 概念→概念 | 相似度 | 概念相似关系 |
+
+**边属性示例**：
+
+```python
+# CITES边属性
+{
+    "edge_type": "cites",
+    "source_paper": "paper_123",
+    "target_paper": "paper_456",
+    "citation_count": 5,
+    "citation_context": "as proposed in [456]",
+    "strength": 0.8
+}
+
+# COLLABORATES_WITH边属性
+{
+    "edge_type": "collaborates_with",
+    "source_author": "author_john_doe",
+    "target_author": "author_jane_smith",
+    "collaboration_count": 3,
+    "papers_together": ["paper_123", "paper_456", "paper_789"]
+}
+```
+
+#### 6.3.3 图谱构建流程
+
+**构建步骤**：
+
+1. **节点创建**：从论文元数据中提取实体并创建对应节点
+2. **边建立**：根据实体关系建立边连接
+3. **属性填充**：为节点和边填充详细属性
+4. **权重计算**：计算边的权重（引用强度、相关度等）
+5. **图优化**：移除孤立节点，优化图结构
+
+**构建算法**：
+
+```python
+def build_knowledge_graph(project_id, papers):
+    """
+    构建研究主题的知识图谱
+    
+    Args:
+        project_id: 研究主题ID
+        papers: 论文列表
+        
+    Returns:
+        NetworkX DiGraph对象
+    """
+    G = nx.DiGraph()
+    
+    # 1. 创建论文节点
+    for paper in papers:
+        paper_node_id = f"paper_{paper['id']}"
+        G.add_node(paper_node_id, **paper)
+        
+        # 2. 创建作者节点和边
+        for author in paper['authors']:
+            author_node_id = f"author_{normalize_name(author)}"
+            G.add_node(author_node_id, node_type='author', author_name=author)
+            G.add_edge(paper_node_id, author_node_id, 
+                      edge_type='authored_by', weight=1.0)
+        
+        # 3. 创建关键词节点和边
+        for keyword in paper['keywords']:
+            keyword_node_id = f"keyword_{normalize_name(keyword)}"
+            G.add_node(keyword_node_id, node_type='keyword', keyword=keyword)
+            G.add_edge(paper_node_id, keyword_node_id,
+                      edge_type='has_keyword', weight=1.0)
+        
+        # 4. 创建引用边
+        for citation in paper['citations']:
+            citation_node_id = f"paper_{citation['paper_id']}"
+            G.add_edge(paper_node_id, citation_node_id,
+                      edge_type='cites', 
+                      strength=citation['strength'])
+    
+    # 5. 计算图统计指标
+    calculate_graph_metrics(G)
+    
+    return G
+```
+
+#### 6.3.4 图谱分析功能
+
+**中心性分析**：
+
+| 指标 | 计算方法 | 应用场景 |
+|------|---------|----------|
+| **度中心性** | `nx.degree_centrality()` | 识别重要论文 |
+| **接近中心性** | `nx.closeness_centrality()` | 识别中心论文 |
+| **介数中心性** | `nx.betweenness_centrality()` | 识别桥梁论文 |
+| **PageRank** | `nx.pagerank()` | 识别影响力论文 |
+
+**社区发现**：
+
+| 算法 | 参数 | 应用场景 |
+|------|------|----------|
+| **Louvain** | resolution=1.0 | 发现研究社区 |
+| **Label Propagation** | - | 快速社区划分 |
+| **Connected Components** | - | 识别孤立群体 |
+
+**路径分析**：
+
+| 功能 | 算法 | 应用场景 |
+|------|------|----------|
+| **最短路径** | `nx.shortest_path()` | 论文关联链 |
+| **所有路径** | `nx.all_simple_paths()` | 全面关联分析 |
+| **子图提取** | `nx.subgraph()` | 局部知识提取 |
+
+#### 6.3.5 图谱持久化
+
+**存储格式**：
+
+| 格式 | 文件扩展名 | 优点 | 缺点 |
+|------|-----------|------|------|
+| **GraphML** | .graphml | 标准格式，支持属性 | 文件较大 |
+| **GML** | .gml | 人类可读 | 性能较低 |
+| **Pickle** | .pkl | 二进制，性能高 | 不跨平台 |
+| **JSON** | .json | 通用格式 | 需要自定义序列化 |
+
+**推荐方案**：使用GraphML格式存储
+
+```python
+# 保存图谱
+nx.write_graphml(G, f"data/graphs/project_{project_id}.graphml")
+
+# 加载图谱
+G = nx.read_graphml(f"data/graphs/project_{project_id}.graphml")
+```
+
+**存储路径结构**：
+
+```
+data/
+├── graphs/
+│   ├── project_{project_id}.graphml
+│   └── project_{project_id}_metrics.json
+└── backups/
+    └── project_{project_id}_backup_{timestamp}.graphml
+```
+
+#### 6.3.6 图谱更新策略
+
+**增量更新**：
+
+1. **新论文添加**：
+   - 创建新节点
+   - 建立边连接
+   - 更新图统计
+
+2. **论文删除**：
+   - 删除节点及相关边
+   - 重新计算图指标
+
+3. **关系更新**：
+   - 更新边权重
+   - 添加新关系
+
+**全量重建**：
+
+- 当论文数量变化>20%时触发全量重建
+- 重建时间：<10秒（50篇论文）
+
+---
+
+#### 6.3.7 图数据库关系图
+
+```
+papers (论文表)
+    ↓ 1:1
+NetworkX Graph: project_{project_id}.graphml
+    ↓ 节点关系
+Knowledge Graph Nodes (知识图谱节点)
+    ├─ 论文节点 (paper_{paper_id})
+    ├─ 作者节点 (author_{author_name})
+    ├─ 关键词节点 (keyword_{keyword})
+    ├─ 概念节点 (concept_{concept})
+    └─ 方法节点 (method_{method})
+
+Knowledge Graph Edges (知识图谱边)
+    ├─ AUTHORED_BY (论文→作者)
+    ├─ HAS_KEYWORD (论文→关键词)
+    ├─ MENTIONS_CONCEPT (论文→概念)
+    ├─ USES_METHOD (论文→方法)
+    ├─ CITES (论文→论文)
+    ├─ COLLABORATES_WITH (作者→作者)
+    ├─ RELATED_TO (关键词→关键词)
+    └─ SIMILAR_TO (概念→概念)
+```
+
+---
+
+### 6.4 数据字典说明
+
+#### 6.4.1 设计原则
 
 1. **用户隔离**：所有用户数据通过user_id关联，确保多用户数据隔离
 2. **配置灵活**：user_configs表采用键值对方式存储配置，支持动态扩展
@@ -1614,19 +2043,76 @@ projects (研究主题表)
 4. **状态追踪**：每个课题都有完整的阶段记录，支持执行过程追踪
 5. **评分独立**：论文评分存储在关联表中，同一论文在不同课题中的评分相互独立
 
-#### 6.3.2 数据一致性保证
+#### 6.4.2 数据一致性保证
 
 1. **外键约束**：所有关联表都使用外键约束确保数据完整性
 2. **级联删除**：用户删除时，级联删除其所有相关数据
 3. **唯一约束**：关键字段（如DOI、ArXiv ID）设置唯一约束避免重复
 4. **索引优化**：为常用查询字段创建索引，提高查询性能
 
-#### 6.3.3 配置管理策略
+#### 6.4.3 配置管理策略
 
 1. **系统默认配置**：is_system_default=TRUE的配置为系统默认值
 2. **用户自定义配置**：用户可覆盖默认配置，优先使用用户配置
 3. **配置加载顺序**：用户配置 > 系统默认配置
 4. **配置分类**：通过config_name的命名约定实现配置分类（如llm.xxx、database.xxx、email.xxx）
+
+#### 6.4.4 三数据库协同设计原则
+
+1. **数据分层存储**：
+   - PostgreSQL存储结构化数据和元数据
+   - ChromaDB存储向量表示，支持语义检索
+   - NetworkX存储实体关系，支持图推理
+
+2. **同步机制**：
+   - 论文数据变更时触发三数据库同步
+   - 使用异步任务确保同步性能
+   - 设置同步状态监控和重试机制
+
+3. **查询优化**：
+   - 元数据查询使用PostgreSQL
+   - 语义检索使用ChromaDB
+   - 关系推理使用NetworkX
+   - 组合查询通过三数据库协同实现
+
+4. **性能保障**：
+   - ChromaDB检索响应时间 < 3秒
+   - NetworkX图谱构建时间 < 10秒（50篇论文）
+   - PostgreSQL查询响应时间 < 1秒
+
+5. **一致性保证**：
+   - 使用project_id作为统一关联键
+   - 实现事务性数据更新
+   - 定期数据一致性检查和修复
+
+#### 6.4.5 三数据库协同关系图
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    PostgreSQL (关系型数据库)             │
+│  users | projects | papers | keywords | relations      │
+└─────────────────────────────────────────────────────────┘
+                          ↓ 同步
+┌─────────────────────────────────────────────────────────┐
+│                    ChromaDB (向量数据库)                │
+│  project_{project_id}_vectors Collection                │
+│  - 存储论文内容的向量表示                               │
+│  - 支持语义检索和相似度匹配                              │
+└─────────────────────────────────────────────────────────┘
+                          ↓ 同步
+┌─────────────────────────────────────────────────────────┐
+│                    NetworkX (图数据库)                  │
+│  project_{project_id}.graphml 知识图谱                  │
+│  - 存储论文实体关系                                      │
+│  - 支持Graph-RAG检索和知识发现                          │
+└─────────────────────────────────────────────────────────┘
+
+协同工作流程：
+1. PostgreSQL存储论文元数据和结构化数据
+2. ChromaDB存储论文内容的向量表示，支持语义检索
+3. NetworkX构建知识图谱，支持关系推理和Graph-RAG
+4. 三数据库通过project_id关联，保证数据一致性
+```
 
 ---
 
@@ -1777,7 +2263,7 @@ projects (研究主题表)
 
 ---
 
-## 10.4 签字确认
+### 10.4 签字确认
 
 | 角色 | 姓名 | 签字 | 日期 |
 |------|------|------|------|
