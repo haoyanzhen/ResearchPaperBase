@@ -359,7 +359,6 @@
 
 **切换执行**（通过前置检查后）：
 
-- 记录模式切换历史（切换时间、原因、前后模式）
 - 切换后自动初始化新模式的上下文环境
 - 支持模式切换的可视化指示（当前模式显示）
 
@@ -371,14 +370,12 @@
 **输出：**
 - 切换成功/失败/拦截提示
 - 当前模式信息
-- 模式切换历史记录
 
 **验收标准：**
 - 有运行中任务时，必须弹出确认弹窗，不允许静默切换
 - 选择"离开并退出任务"后，任务应被正确终止，模式切换成功
 - 论文库为空时，切换到深度研究/综述模式的请求被拦截，提示信息清晰
 - "返回构建模式"按钮跳转到正确的步骤位置
-- 切换历史应正确记录
 
 #### FR-006 基础层-检索历史查看
 
@@ -1088,7 +1085,6 @@
 - 用户可以随时切换对话子模式
 - 切换时保留当前对话上下文
 - 不同子模式可以互相引用和补充
-- 系统记录子模式切换历史
 
 **输入：**
 - 用户输入内容
@@ -1115,7 +1111,6 @@
 - 记录所有对话历史
 - 记录所有检索操作
 - 记录所有实验设计
-- 记录模式切换历史
 - 支持历史记录的查看和搜索
 - 支持历史记录的导出
 - 支持历史记录的分类和标签
@@ -1445,7 +1440,7 @@ config_value: ["user1@example.com", "user2@example.com"]
 | searched_papers_semanticscholar | TINYINT   | -    | -    | DEFAULT 0      | 在semanticscholar检索到的论文数量                   |
 | searched_papers_ads | TINYINT   | -    | -    | DEFAULT 0      | 在ADS检索到的论文数量                                     |
 | searched_papers_total | TINYINT   | -    | -    | DEFAULT 0      | 总共检索到的论文数量                                     |
-| is_searched         | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否执行过搜索                                            |
+| is_searched         | BOOLEAN   | -    | -    | DEFAULT FALSE  | 是否执行过搜索                                            |
 | is_selected         | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否被选中使用                                            |
 | created_at          | DATETIME  | -    | 是   | -              | 创建时间                                                  |
 | last_search_at      | DATETIME  | -    | 是   | -              | 最后搜索时间                                              |
@@ -1515,7 +1510,7 @@ config_value: ["user1@example.com", "user2@example.com"]
 | technical_score  | INTEGER   | -    | -    | -              | 技术价值评分（0-5）                                       |
 | total_score      | INTEGER   | -    | -    | -              | 总分（0-10）                                             |
 | scoring_reason   | TEXT      | -    | 否   | -              | 评分理由                                                  |
-| is_valid         | BOOLEAN   | -    | -    | DEFAULT TRUE   | 是否有效（总分≥7）                                       |
+| is_valid         | BOOLEAN   | -    | -    | DEFAULT FALSE  | 是否有效（总分≥7）；评分完成后显式置为TRUE                |
 | push_status      | BOOLEAN   | -    | -    | DEFAULT FALSE  | 是否已推送给该研究主题                                    |
 | pushed_at        | DATETIME  | -    | 否   | -              | 推送时间                                                  |
 | created_at       | DATETIME  | -    | 是   | -              | 创建时间                                                  |
@@ -2385,7 +2380,6 @@ Knowledge Graph Edges (知识图谱边)
 - 构建模式的所有功能正常工作
 - 深度研究模式的所有功能正常工作
 - 主题综述模式的所有功能正常工作
-- 模式切换历史记录完整
 
 ### 9.4 Graph-RAG性能验收
 

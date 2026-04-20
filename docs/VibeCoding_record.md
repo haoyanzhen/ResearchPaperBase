@@ -122,6 +122,8 @@ Date:   2026-04-04
 
 根据spec的需求，设计前端界面草稿，存为新的文件
 
+**2026-04-20**
+
 （check ui_design）
 
 知识图谱构建应当在构建模式中进行，根据此条在docs/ADR_desgin中进行修改。
@@ -159,6 +161,84 @@ Date:   2026-04-04
 9. 重新整理FR说明顺序
 
 按照以上信息修改spec
+
+（check spec）
+
+给出建议：在有限的AI上下文下，根据spec来使用AI驱动编写一个完整的包含前后端的web app时，应当如何拆分任务保证该系统设计中各个模块的互通性不出错呢？
+
+```plaintext
+回复：第一阶段：先生成契约文件（不写业务代码）：
+
+1. docs/schema.sql — 完整的数据库建表语句（含约束、索引、注释）
+每次 AI 开发数据库相关功能时，只需喂这一个文件，不需要读完整 spec。
+
+2. docs/api.md（spec 已指向此文件）— 每个端点的 Request/Response 结构、状态码、错误格式
+前端、后端、测试三方的唯一参考。格式建议用 OpenAPI YAML，可直接生成类型。
+
+3. src/types/index.ts（或 types.py） — 所有跨模块共享的数据结构定义
+例如 Paper、Project、DialogueTurn、BuildStage 等。这是前后端的类型锚点。
+
+第二阶段：按依赖层级拆分任务
+
+数据层 → 服务层 → API层 → 前端状态层 → UI组件层
+每一层只依赖下层契约，不依赖下层实现。拆分原则：
+
+任务粒度	上下文需要喂什么
+数据库迁移脚本	schema.sql
+单个 service（如 PaperService）	schema.sql + 该 service 的 FR 段落
+单个 API 路由	api.md 对应端点 + service 接口签名
+前端单个 page/feature	api.md 对应端点 + types/index.ts
+Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口签名
+
+第三阶段：按模式边界切割，每个模式独立交付
+本项目三种模式 Agent 链互不相干，是天然的并行开发单元：
+
+基础层（FR-001~011）         ← 最先开发，其他模式依赖它
+    ↓
+构建模式（FR-012~019）       ← 优先级最高，写入三个数据库
+    ↓
+深度研究模式（FR-025~028）   ← 依赖构建模式产出的数据
+综述模式（FR-020~024）       ← 依赖构建模式产出的数据（可并行）
+
+具体操作建议
+每次给 AI 的上下文模板：
+
+任务：实现 [具体功能，如 FR-015 论文评分与筛选]
+契约文件：[粘贴 schema.sql 相关表] + [粘贴 api.md 相关端点]
+已有接口：[粘贴依赖的 service 函数签名，不粘贴实现]
+要求：只实现本任务，不修改契约文件
+```
+
+根据spec的第6章编写完整的数据库建表语句，并生成契约文件docs/schema.sql
+
+（check schema）
+
+检查schema.sql是否与spec中的设定一致，特别是在继承性和独立性方面
+
+（check output）
+
+1. keywords.is_searched DEFAULT在两个文件里都改为FALSE
+2. recommendations.project_id应当删除，推荐模块是基础层，只和用户相关，和课题无关
+3. apers → project_paper_relations 用 ON DELETE RESTRICT
+4. project_paper_relations.is_valid DEFAULT 在两个文件里改为 FALSE
+
+（check spec & schema）
+
+根据spec生成所有跨模块共享的数据结构定义，并写入src/types/index.ts
+
+（check）
+
+检查spec和index.ts的一致性
+
+（check）
+
+```
+4. 在TypeScript层面用判别联合
+5. 在spec中删除记录模式切换历史这一条
+6. 对FR-028设计指定的JSON结构化类型
+```
+
+（check spec）
 
 ## code
 
