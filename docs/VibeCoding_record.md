@@ -122,6 +122,29 @@ Date:   2026-04-04
 
 根据spec的需求，设计前端界面草稿，存为新的文件
 
+（check ui_design）
+
+知识图谱构建应当在构建模式中进行，根据此条在docs/ADR_desgin中进行修改。
+
+（check ADR）
+
+检查ADR_design是否完善，评价其设计。
+
+（check ADR）
+
+补充信息：
+框架设计：三种模式互斥是因为三种模式运行的逻辑截然不同，每种模式有自己的agent链，因此需要互斥。
+
+根据上述评价和补充信息完善ADR_design
+
+（check ADR）
+
+根据ADR_design修改docs/spec.md
+
+（check spec）
+
+检查并评价spec设计
+
 ## code
 
 
