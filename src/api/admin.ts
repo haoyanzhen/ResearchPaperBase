@@ -62,6 +62,7 @@ export interface SystemDatabaseConfig {
   enabled: boolean;
   api_key: string | null;
   rate_limit: number;
+  endpoint: string | null;
 }
 
 // ── API 方法 ──────────────────────────────────────────────────────────────────

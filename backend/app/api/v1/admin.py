@@ -96,7 +96,7 @@ async def set_user_role(
     return ok(result)
 
 
-@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/users/{user_id}")
 async def delete_user(
     user_id: str,
     current_admin: User = Depends(get_current_admin),
@@ -109,6 +109,7 @@ async def delete_user(
     success, error = await admin_service.delete_user(db, user_id, current_admin.id)
     if not success:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, error)
+    return ok({"message": "deleted"})
 
 
 @router.post("/users/{user_id}/reset-password")

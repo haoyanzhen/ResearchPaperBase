@@ -121,10 +121,12 @@ async def get_databases_config(db: AsyncSession, user_id: str) -> dict:
         enabled = await get_config(db, user_id, f"database.{db_name}.enabled")
         api_key = await get_config(db, user_id, f"database.{db_name}.api_key")
         rate_limit = await get_config(db, user_id, f"database.{db_name}.rate_limit")
+        endpoint = await get_config(db, user_id, f"database.{db_name}.endpoint")
         configs[db_name] = {
             "enabled": enabled.lower() == "true" if enabled else db_name != "ads",
             "api_key": api_key,
             "rate_limit": int(rate_limit) if rate_limit else 5,
+            "endpoint": endpoint,
         }
     return configs
 
@@ -268,10 +270,12 @@ async def get_system_databases_config(db: AsyncSession) -> dict:
         enabled = await get_system_config(db, f"database.{db_name}.enabled")
         api_key = await get_system_config(db, f"database.{db_name}.api_key")
         rate_limit = await get_system_config(db, f"database.{db_name}.rate_limit")
+        endpoint = await get_system_config(db, f"database.{db_name}.endpoint")
         configs[db_name] = {
             "enabled": enabled.lower() == "true" if enabled else db_name != "ads",
             "api_key": api_key,
             "rate_limit": int(rate_limit) if rate_limit else 5,
+            "endpoint": endpoint,
         }
     return configs
 

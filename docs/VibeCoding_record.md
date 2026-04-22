@@ -305,6 +305,8 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#4. 构建模式 + docs/ui_design.md#P04 · 构建模式主界面
 要求：根据修改的文件，更新docs/file_map.md
 
+**2026-04-22**
+
 （check）
 
 任务：搭建Agent层，并将其按照模式进行结构上的文件/文件夹命名区分。先完成构建模式的Agent功能实现。
@@ -327,3 +329,9 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 任务：在数据层、基础层前后端和API等环节中对管理员功能进行功能实现与文件更新，需要完全完成管理员功能
 设计: （copy了docs/spec.md中的管理员功能相关设计）
 要求：根据修改的文件，更新docs/file_map.md
+
+（check file_map）
+
+检查管理员功能实现与设计是否一致
+
+**2026-04-23**

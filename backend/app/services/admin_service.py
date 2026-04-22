@@ -64,10 +64,10 @@ async def set_user_active(
     启用或禁用目标用户账号。
 
     规则：
-      - 管理员不能禁用自身账号
+      - 管理员不能禁用自身账号（启用自己是合法的，禁用才拒绝）
     返回 (user_dict, error_msg)。
     """
-    if target_id == requesting_user_id:
+    if not is_active and target_id == requesting_user_id:
         return None, "管理员不能禁用自身账号"
 
     result = await db.execute(select(User).where(User.id == target_id))
@@ -128,6 +128,7 @@ async def delete_user(
 
     规则：
       - 管理员不能删除自身账号
+      - 不能删除系统最后一位管理员
     """
     if target_id == requesting_user_id:
         return False, "管理员不能删除自身账号"
@@ -136,6 +137,14 @@ async def delete_user(
     user = result.scalar_one_or_none()
     if user is None:
         return False, "用户不存在"
+
+    # 删除管理员时，确保不会让系统无管理员
+    if user.is_admin:
+        admin_count_result = await db.execute(
+            select(func.count(User.id)).where(User.is_admin == True)
+        )
+        if admin_count_result.scalar_one() <= 1:
+            return False, "系统至少需要保留一位管理员，无法删除最后一位管理员账号"
 
     await db.delete(user)
     await db.commit()

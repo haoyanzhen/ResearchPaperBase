@@ -42,6 +42,7 @@ class DatabaseConfig(BaseModel):
     enabled: bool
     api_key: str | None = None
     rate_limit: int = 5
+    endpoint: str | None = None
 
 
 class DatabasesConfigResponse(BaseModel):
@@ -55,6 +56,7 @@ class UpdateDatabaseConfigRequest(BaseModel):
     enabled: bool | None = None
     api_key: str | None = None
     rate_limit: int | None = None
+    endpoint: str | None = None
 
 
 # ── 邮件配置 ──────────────────────────────────────────────────────────────────
