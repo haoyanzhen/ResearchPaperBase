@@ -47,7 +47,8 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     return ok(LoginResponse(
         access_token=token,
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        user=UserInfo(user_id=user.id, username=user.username, email=user.email),
+        user=UserInfo(user_id=user.id, username=user.username, email=user.email,
+                      is_admin=user.is_admin),
     ))
 
 
@@ -64,6 +65,8 @@ async def me(current_user: User = Depends(get_current_user)):
         user_id=current_user.id,
         username=current_user.username,
         email=current_user.email,
+        is_admin=current_user.is_admin,
+        is_active=current_user.is_active,
         created_at=current_user.created_at,
     ))
 
@@ -86,5 +89,7 @@ async def update_me(
         user_id=user.id,
         username=user.username,
         email=user.email,
+        is_admin=user.is_admin,
+        is_active=user.is_active,
         created_at=user.created_at,
     ))

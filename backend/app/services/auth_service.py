@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
@@ -22,11 +22,17 @@ async def get_user_by_credential(db: AsyncSession, credential: str) -> User | No
 
 
 async def create_user(db: AsyncSession, username: str, email: str, password: str) -> User:
+    # 首位注册用户自动成为管理员（FR-029）
+    count_result = await db.execute(select(func.count(User.id)))
+    is_first_user = (count_result.scalar_one() == 0)
+
     user = User(
         id=new_id("u"),
         username=username,
         email=email,
         password_hash=hash_password(password),
+        is_admin=is_first_user,
+        is_active=True,
     )
     db.add(user)
     await db.commit()
@@ -37,6 +43,9 @@ async def create_user(db: AsyncSession, username: str, email: str, password: str
 async def authenticate(db: AsyncSession, credential: str, password: str) -> User | None:
     user = await get_user_by_credential(db, credential)
     if not user or not verify_password(password, user.password_hash):
+        return None
+    # 账号被管理员禁用时拒绝登录
+    if not user.is_active:
         return None
     # 更新最后登录时间
     user.last_login_at = datetime.now(timezone.utc)

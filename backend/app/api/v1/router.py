@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.v1.admin import router as admin_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.config import router as config_router
 from app.api.v1.construction import router as construction_router
@@ -14,3 +15,4 @@ router.include_router(projects_router)
 router.include_router(recommendations_router)
 router.include_router(tasks_router)
 router.include_router(construction_router)
+router.include_router(admin_router)

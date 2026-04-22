@@ -1,7 +1,7 @@
 /**
  * Research Paper Base — 跨模块共享数据结构定义
  *
- * 对齐文档：spec.md v1.6 / schema.sql v1.0
+ * 对齐文档：spec.md v1.7 / schema.sql v1.0 + migration 0002
  * 维护规则：本文件是前后端类型的唯一权威来源。
  *           任何业务模块不得在本地重复定义这些结构；
  *           表结构变更须同步更新 schema.sql 和本文件。
@@ -93,9 +93,28 @@ export interface User {
   username: string;
   email: string;
   password_hash: string;
+  /** 是否为管理员；首位注册用户自动为 true（FR-029） */
+  is_admin: boolean;
+  /** 账号是否启用；管理员禁用后为 false，禁用账号无法登录 */
+  is_active: boolean;
   created_at: ISODateString;
   updated_at: ISODateString;
   last_login_at: ISODateString | null;
+}
+
+/**
+ * system_configs 表（管理员全局配置，FR-029）
+ *
+ * 命名规范与 user_configs 一致；普通用户无个人配置时系统回落读取此表。
+ */
+export interface SystemConfig {
+  id: string;
+  config_name: string;
+  config_value: string;
+  description: string | null;
+  updated_by: string | null;
+  created_at: ISODateString;
+  updated_at: ISODateString;
 }
 
 /** user_configs 表（Key-Value 配置项） */

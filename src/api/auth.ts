@@ -1,8 +1,5 @@
 import { http, tokenStore } from "./client";
-import type {
-  ISODateString,
-  User,
-} from "../types";
+import type { ISODateString } from "../types";
 
 // ── Request / Response 类型（对齐 api.md 第 1 节）─────────────────────────────
 
@@ -28,13 +25,15 @@ export interface LoginResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
-  user: { user_id: string; username: string; email: string };
+  user: { user_id: string; username: string; email: string; is_admin: boolean };
 }
 
 export interface MeResponse {
   user_id: string;
   username: string;
   email: string;
+  is_admin: boolean;
+  is_active: boolean;
   created_at: ISODateString;
 }
 

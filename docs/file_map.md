@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.1 · 2026-04-22
+**文档版本**：v1.2 · 2026-04-22
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -51,16 +51,16 @@ agent_paperpush/
 | [core/config.py](../backend/app/core/config.py) | 应用配置（pydantic-settings）；从 .env 读取 DATABASE\_URL / SECRET\_KEY 等 |
 | [core/database.py](../backend/app/core/database.py) | 异步数据库引擎（asyncpg）；`get_db()` 依赖注入会话工厂 |
 | [core/security.py](../backend/app/core/security.py) | JWT 生成/验证；bcrypt 密码哈希；内存 token 黑名单（登出用） |
-| [core/deps.py](../backend/app/core/deps.py) | FastAPI 依赖项；`get_current_user()` — Bearer token → User 对象 |
+| [core/deps.py](../backend/app/core/deps.py) | FastAPI 依赖项；`get_current_user()` — Bearer token → User 对象；`get_current_admin()` — 额外要求 is\_admin=True，否则 403 |
 
 ### backend/app/models/ — ORM 数据层
 
-对应 schema.sql 的 12 张表，是数据库结构的 Python 映射。
+对应 schema.sql 的 12 张原始表 + migration 0002 新增的 `system_configs` 表，是数据库结构的 Python 映射。
 
 | 文件 | 对应表（schema.sql 编号） |
 |------|--------------------------|
 | [models/base.py](../backend/app/models/base.py) | SQLAlchemy `DeclarativeBase` 公共基类 |
-| [models/user.py](../backend/app/models/user.py) | `users`(1) · `user_configs`(2) |
+| [models/user.py](../backend/app/models/user.py) | `users`(1) · `user_configs`(2) · `system_configs`(13，管理员全局配置) |
 | [models/project.py](../backend/app/models/project.py) | `projects`(3) · `keywords`(4) |
 | [models/paper.py](../backend/app/models/paper.py) | `papers`(5) · `project_paper_relations`(6) |
 | [models/stage.py](../backend/app/models/stage.py) | `stage_records`(7) |
@@ -78,13 +78,15 @@ agent_paperpush/
 | [schemas/config.py](../backend/app/schemas/config.py) | FR-002~004 LLM / 数据库 / 邮件配置相关 schema |
 | [schemas/project.py](../backend/app/schemas/project.py) | FR-005~011 项目、论文、任务、导出、定时、推荐相关 schema |
 | [schemas/construction.py](../backend/app/schemas/construction.py) | FR-012~018 构建模式请求/响应 schema（启动、状态、关键词、阶段操作） |
+| [schemas/admin.py](../backend/app/schemas/admin.py) | FR-029 管理员面板 schema（用户列表条目 / 账号操作 / 重置密码响应 / 系统 LLM 与数据库配置请求） |
 
 ### backend/app/services/ — 业务逻辑层
 
 | 文件 | 职责 |
 |------|------|
-| [services/auth\_service.py](../backend/app/services/auth_service.py) | 用户注册/认证/信息更新；密码校验；last\_login\_at 更新 |
-| [services/config\_service.py](../backend/app/services/config_service.py) | 基于 user\_configs 的 Key-Value 读写；LLM / 数据库 / 邮件配置的序列化与反序列化 |
+| [services/auth\_service.py](../backend/app/services/auth_service.py) | 用户注册（首位用户自动提升为管理员）/认证（含 is\_active 禁用检查）/信息更新；密码校验 |
+| [services/config\_service.py](../backend/app/services/config_service.py) | 基于 user\_configs 的 Key-Value 读写；系统级配置（system\_configs）读写；回落函数（`get_config_with_fallback` / `get_all_llm_providers_with_fallback` / `get_databases_config_with_fallback`）；LLM / 数据库 / 邮件配置序列化 |
+| [services/admin\_service.py](../backend/app/services/admin_service.py) | FR-029 用户账号管理：列表 / 启停（`set_user_active`）/ 提权（`set_user_admin`）/ 删除（级联）/ 重置密码（含 SMTP 发信） |
 | [services/project\_service.py](../backend/app/services/project_service.py) | 项目 CRUD；模式切换；论文关联管理；评分更新；推荐 CRUD；定时配置 |
 | [services/construction\_service.py](../backend/app/services/construction_service.py) | 关键词 CRUD（含所有权校验）；阶段记录管理；启动构建；状态查询；阶段操作（confirm/retry/skip，confirm 时通过 `_apply_stage_modifications` 立即应用 removed\_ids / score\_overrides / analysis\_overrides）；FR-018 邮件发送（`send_stage7_email` / `execute_stage7`）；`get_pipeline_params` |
 
@@ -98,6 +100,7 @@ agent_paperpush/
 | [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/stage-records` · `/papers` · `/export` · `/schedule` · `/recommendations` | FR-005~011 |
 | [api/v1/tasks.py](../backend/app/api/v1/tasks.py) | `GET /tasks` · `POST /tasks/{id}/pause·resume·cancel` | FR-008 |
 | [api/v1/construction.py](../backend/app/api/v1/construction.py) | `/construction/start` · `/status` · `/keywords` · `/stages/{stage}/action` · `/stream`（SSE）；stage 6 confirm 后 BackgroundTask 自动触发 stage 7 | FR-012~019 |
+| [api/v1/admin.py](../backend/app/api/v1/admin.py) | `/admin/users` 用户列表/启停/提权/删除/重置密码；`/admin/system-config/llm` 系统 LLM CRUD + 连通性测试；`/admin/system-config/databases` 系统数据库配置；所有端点均通过 `get_current_admin` 鉴权（非管理员返回 403） | FR-029 |
 
 ### backend/app/agents/ — Agent 执行层
 
@@ -150,6 +153,7 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | [alembic/env.py](../backend/alembic/env.py) | 异步迁移环境；从 `app.core.config` 读取 DATABASE\_URL；注册完整 metadata |
 | [alembic/script.py.mako](../backend/alembic/script.py.mako) | 迁移文件模板 |
 | [alembic/versions/0001\_initial\_schema.py](../backend/alembic/versions/0001_initial_schema.py) | 初始迁移：创建全部 12 张表及索引（对应 schema.sql v1.0） |
+| [alembic/versions/0002\_admin\_columns.py](../backend/alembic/versions/0002_admin_columns.py) | 管理员迁移：users 表新增 is\_admin / is\_active 列；创建 system\_configs 表（FR-029） |
 
 ### backend/scripts/ — 运维脚本
 
@@ -177,6 +181,7 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | [src/api/auth.ts](../src/api/auth.ts) | `authApi`：注册 / 登录（自动存 token）/ 登出 / 获取&修改当前用户 | §1 |
 | [src/api/config.ts](../src/api/config.ts) | `configApi`：LLM / 学术数据库 / 邮件配置的增删改查与连接测试 | §2 |
 | [src/api/projects.ts](../src/api/projects.ts) | `projectsApi`：项目 CRUD / 模式切换 / 检索历史 / 论文管理 / 导出 / 定时配置；`recommendationsApi`：推荐内容列表、发布、点赞、删除 | §3 §5（部分）§9 |
+| [src/api/admin.ts](../src/api/admin.ts) | `adminApi`：用户列表 / 账号启停 / 提权 / 删除 / 重置密码；系统 LLM 配置 CRUD + 测试；系统数据库配置读写 | — |
 | [src/api/construction.ts](../src/api/construction.ts) | `constructionApi`：启动构建 / 状态查询 / 检索词管理 / 阶段操作 / SSE 流 URL | §4 |
 | [src/api/dialogues.ts](../src/api/dialogues.ts) | `dialoguesApi`：对话会话 CRUD / 轮次历史 / 消息发送（SSE fetch）/ 对话摘要 / 知识图谱获取与重建 | §6 |
 | [src/api/review.ts](../src/api/review.ts) | `reviewApi`：启动综述 / 架构版本管理 / 章节管理 / 汇总编译 / 导出（文件流）/ SSE 流 URL | §7 |

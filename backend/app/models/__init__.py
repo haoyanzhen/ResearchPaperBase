@@ -17,6 +17,7 @@ Alembic autogenerate 和 create_all() 依赖此处的完整注册。
   10 review_outlines        → review.py
   11 review_chapters        → review.py
   12 recommendations        → recommendation.py
+  13 system_configs         → user.py（管理员全局配置，FR-029）
 """
 
 from app.models.base import Base
@@ -26,13 +27,14 @@ from app.models.project import Keyword, Project
 from app.models.recommendation import Recommendation
 from app.models.review import ReviewChapter, ReviewOutline
 from app.models.stage import StageRecord
-from app.models.user import User, UserConfig
+from app.models.user import User, UserConfig, SystemConfig
 
 __all__ = [
     "Base",
     # 用户层
     "User",
     "UserConfig",
+    "SystemConfig",
     # 研究主题层
     "Project",
     "Keyword",

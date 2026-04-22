@@ -5,8 +5,8 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | Research Paper Base |
-| 文档版本 | v1.6 |
-| 编写日期 | 2026-04-03 |
+| 文档版本 | v1.7 |
+| 编写日期 | 2026-04-22 |
 | 编写人 | codearts |
 | 审核人 | 郝彦臻 |
 | 批准人 | - |
@@ -58,6 +58,7 @@
 **基础层设计（独立于三模式）**：
 - 用户和用户信息管理：用户注册、登录、权限管理等，全局通用
 - 系统配置管理：LLM模型配置、论文数据库API配置、邮件配置等，全局通用
+- 管理员配置面板：首位注册用户自动成为管理员，管理员可配置系统级默认模型、系统级论文库API，并管理其他用户账号
 - 数据查看与管理：检索历史查看、与自己课题关联的数据库查看等，独立于三模式，随时可以打开或关闭
 - 基础层的功能模块不依赖于特定的研究模式，用户可以在任何模式下随时访问和使用
 
@@ -118,6 +119,7 @@
 | 学术研究人员 | 需要跟踪最新研究进展，时间宝贵 | 自动化、准确性、可定制 |
 | 研究生 | 需要收集相关文献，学习新技术 | 易用性、全面性 |
 | 科研团队 | 需要共享检索结果，协作研究 | 多用户支持、数据共享 |
+| 系统管理员 | 负责系统部署和维护，通常是团队负责人 | 统一配置管理、用户账号管控 |
 
 ### 2.4 应用场景
 
@@ -168,6 +170,7 @@
 | FR-009 | 基础层-数据导出 | 中 | 待开发 |
 | FR-010 | 基础层-定时自动任务 | 低 | 待开发 |
 | FR-011 | 基础层-推荐模块 | 中 | 待开发 |
+| FR-029 | 基础层-管理员配置面板 | 高 | 待开发 |
 | **构建模式功能** | | | |
 | FR-012 | 构建模式-多源论文检索 | 高 | 待开发 |
 | FR-013 | 构建模式-智能评分与筛选 | 高 | 待开发 |
@@ -205,6 +208,7 @@
 - FR-009：基础层-数据导出
 - FR-010：基础层-定时任务
 - FR-011：基础层-推荐模块
+- FR-029：基础层-管理员配置面板
 
 **3.2.2 构建模式层功能**（仅在构建模式下可用）
 - FR-012：构建模式-多源论文检索
@@ -581,6 +585,69 @@
   - 无回复功能
   - 联系信息仅显示用户名或邮箱
   - 所有交互均为私下交流（如通过邮件）
+
+#### FR-029 基础层-管理员配置面板
+
+**需求描述：**
+系统应支持管理员角色，由首位完成注册的用户自动担任。管理员拥有专属配置面板，可设置系统级默认配置并管理其他用户账号。
+
+**管理员身份获取规则：**
+
+- 当系统中**尚无任何已注册用户**时，第一个完成注册的用户自动成为管理员（`users.is_admin = TRUE`）
+- 后续注册的用户默认为普通用户（`is_admin = FALSE`）
+- 管理员可在用户管理界面手动将其他用户提升为管理员
+
+**功能要求：**
+
+##### 子模块一：默认模型配置
+
+- 管理员可配置系统级默认 LLM 模型（提供商、模型名称、API 密钥、API 端点）
+- 普通用户未配置个人模型时，系统自动回落使用管理员设置的默认模型
+- 支持配置多个备用默认模型（优先级顺序）
+- 支持对默认模型进行连接测试
+
+##### 子模块二：论文库 API 配置
+
+- 管理员可配置系统级学术数据库 API（arXiv、OpenAlex、Semantic Scholar、ADS 的端点与 API 密钥）
+- 普通用户未配置对应数据库 API 时，系统自动回落使用管理员设置的系统级 API
+- 支持连接状态监控
+
+##### 子模块三：用户账号管理
+
+- 查看所有注册用户列表（用户名、邮箱、注册时间、最后登录时间、账号状态）
+- 启用 / 禁用用户账号（禁用后该用户无法登录）
+- 删除用户账号（含级联删除该用户所有数据，操作前需二次确认）
+- 重置用户密码（生成临时随机密码并通过邮件发送给目标用户）
+- 将指定用户提升为管理员 / 撤销管理员权限
+
+**权限控制：**
+
+- 管理员配置面板入口**仅对 `is_admin = TRUE` 的用户可见**，普通用户访问相关 API 时返回 403
+- 管理员不能删除或禁用自身账号
+- 至少保留一个管理员账号（撤销最后一位管理员权限的操作应被拒绝）
+
+**输入：**
+
+- 系统级默认模型配置参数
+- 系统级学术数据库 API 配置参数
+- 目标用户 ID 及操作类型（禁用/启用/删除/重置密码/提权）
+
+**输出：**
+
+- 配置保存成功/失败提示
+- 用户列表及账号状态
+- 操作结果（含临时密码邮件发送状态）
+
+**验收标准：**
+
+- 首位注册用户自动获得管理员权限，无需人工干预
+- 普通用户无法访问管理员配置面板及相关 API（返回 403）
+- 系统级默认配置正确回落：仅在用户无个人配置时生效，不覆盖用户已有配置
+- 禁用账号的用户在下次请求时收到 401 响应
+- 删除用户账号后，该用户全部关联数据（项目、论文关联、对话等）均被级联删除
+- 重置密码邮件成功发送到目标用户邮箱
+
+---
 
 #### FR-012 构建模式-多源论文检索
 
@@ -1324,20 +1391,23 @@
 
 **说明**：存储系统用户基本信息，每个用户唯一。
 
-| 字段名        | 类型      | 长度 | 必填 | 约束           | 说明           |
-|---------------|-----------|------|------|----------------|----------------|
-| id            | VARCHAR   | 50   | 是   | PRIMARY KEY    | 用户唯一标识符   |
-| username      | VARCHAR   | 50   | 是   | UNIQUE         | 用户名，全局唯一 |
-| email         | VARCHAR   | 100  | 是   | UNIQUE         | 邮箱，全局唯一   |
-| password_hash | VARCHAR   | 255  | 是   | -              | 密码哈希值       |
-| created_at    | DATETIME  | -    | 是   | -              | 创建时间         |
-| updated_at    | DATETIME  | -    | 是   | -              | 最后更新时间     |
-| last_login_at | DATETIME  | -    | 否   | -              | 最后登录时间     |
+| 字段名        | 类型      | 长度 | 必填 | 约束          | 说明                                    |
+|---------------|-----------|------|------|---------------|-----------------------------------------|
+| id            | VARCHAR   | 50   | 是   | PRIMARY KEY   | 用户唯一标识符                          |
+| username      | VARCHAR   | 50   | 是   | UNIQUE        | 用户名，全局唯一                        |
+| email         | VARCHAR   | 100  | 是   | UNIQUE        | 邮箱，全局唯一                          |
+| password_hash | VARCHAR   | 255  | 是   | -             | 密码哈希值                              |
+| is_admin      | BOOLEAN   | -    | 是   | DEFAULT FALSE | 是否为管理员；首位注册用户自动置为 TRUE |
+| is_active     | BOOLEAN   | -    | 是   | DEFAULT TRUE  | 账号是否启用；管理员禁用后置为 FALSE    |
+| created_at    | DATETIME  | -    | 是   | -             | 创建时间                                |
+| updated_at    | DATETIME  | -    | 是   | -             | 最后更新时间                            |
+| last_login_at | DATETIME  | -    | 否   | -             | 最后登录时间                            |
 
 **索引**：
 - PRIMARY KEY (id)
 - UNIQUE INDEX idx_username (username)
 - UNIQUE INDEX idx_email (email)
+- INDEX idx_is_admin (is_admin)
 - INDEX idx_created_at (created_at)
 
 ---
@@ -1370,6 +1440,40 @@ config_value: "smtp.gmail.com"
 
 config_name: email.recipients
 config_value: ["user1@example.com", "user2@example.com"]
+```
+
+---
+
+#### 系统配置表 (system_configs)
+
+**说明**：存储管理员设置的系统级全局配置（FR-029）。与 `user_configs` 结构对应，区别在于本表无 `user_id`，配置对所有用户生效。普通用户无个人配置时，系统回落读取本表同名配置项。
+
+| 字段名            | 类型     | 长度 | 必填 | 约束          | 说明                                              |
+|-------------------|----------|------|------|---------------|---------------------------------------------------|
+| id                | VARCHAR  | 50   | 是   | PRIMARY KEY   | 配置唯一标识符                                    |
+| config_name       | VARCHAR  | 100  | 是   | UNIQUE        | 配置名称（与 user_configs.config_name 命名一致）  |
+| config_value      | TEXT     | -    | 是   | -             | 配置值（JSON 格式存储复杂配置）                   |
+| description       | VARCHAR  | 255  | 否   | -             | 配置项说明（供管理员界面展示）                    |
+| updated_by        | VARCHAR  | 50   | 否   | FOREIGN KEY   | 最后修改的管理员用户 ID，关联 users 表            |
+| created_at        | DATETIME | -    | 是   | -             | 创建时间                                          |
+| updated_at        | DATETIME | -    | 是   | -             | 最后更新时间                                      |
+
+**约束**：
+- PRIMARY KEY (id)
+- UNIQUE INDEX idx_config_name (config_name)
+- FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+
+**配置示例**：
+
+```
+config_name: system.llm.default
+config_value: {"provider":"openai","model":"gpt-4o","api_key":"***","base_url":"https://api.openai.com/v1","priority":1}
+
+config_name: system.database.arxiv
+config_value: {"endpoint":"https://export.arxiv.org/api/query","api_key":null,"rate_limit":3}
+
+config_name: system.database.semantic_scholar
+config_value: {"endpoint":"https://api.semanticscholar.org/graph/v1","api_key":"***","rate_limit":100}
 ```
 
 ---
@@ -1750,6 +1854,10 @@ config_value: ["user1@example.com", "user2@example.com"]
 users (用户表)
     ↓ 1:N
 user_configs (用户配置表)
+
+users (用户表, is_admin=TRUE)
+    ↓ 写入
+system_configs (系统配置表，全局回落配置)
 
 users (用户表)
     ↓ 1:N

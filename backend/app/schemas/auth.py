@@ -46,12 +46,15 @@ class UserInfo(BaseModel):
     user_id: str
     username: str
     email: str
+    is_admin: bool = False
 
 
 class MeResponse(BaseModel):
     user_id: str
     username: str
     email: str
+    is_admin: bool
+    is_active: bool
     created_at: datetime
 
 
