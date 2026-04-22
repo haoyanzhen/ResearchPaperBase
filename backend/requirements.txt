@@ -11,3 +11,6 @@ python-multipart>=0.0.6
 httpx>=0.25.0
 nanoid>=2.0.0
 python-dotenv>=1.0.0
+# Agent 层依赖
+pyyaml>=6.0.0           # YAML 配置文件（提示词 + LLM 参数）
+pypdf>=4.0.0            # PDF 文本提取（阶段4）

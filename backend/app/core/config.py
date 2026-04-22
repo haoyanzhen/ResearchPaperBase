@@ -12,5 +12,9 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
 
+    # Agent 层文件存储根目录（PDF / 文本文件）
+    # 生产环境建议挂载持久化卷并通过 .env 覆盖
+    STORAGE_DIR: str = "./storage"
+
 
 settings = Settings()

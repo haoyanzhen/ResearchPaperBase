@@ -294,3 +294,30 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 制作项目文件功能目录，存在docs/新文件下作为参考契约文件。
 
 （check docs/file_map）
+
+任务：实现构建模式框架搭建
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#4. 构建模式 + docs/ui_design.md#P04 · 构建模式主界面
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+任务：检查构建模式框架实现与spec设计是否一致，完成构建模式FR-012到FR-019的功能实现
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#4. 构建模式 + docs/ui_design.md#P04 · 构建模式主界面
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+任务：搭建Agent层，并将其按照模式进行结构上的文件/文件夹命名区分。先完成构建模式的Agent功能实现。
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#4. 构建模式 + docs/ui_design.md#P04 · 构建模式主界面
+要求：根据修改的文件，更新docs/file_map.md；Agent提示词以及LLM相关参数应当单独存为配置文件
+
+（check）
+
+任务：检查Agent层中关于构建模式的实现是否与契约文件一致
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#4. 构建模式 + docs/ui_design.md#P04 · 构建模式主界面
+要求：根据修改的文件，更新docs/file_map.md；Agent提示词以及LLM相关参数应当单独存为配置文件
+
+（check file_map, spec）
+
+任务：在docs/spec.md中进行设计修改：在基础层中新增管理员配置，用户第一次登录时可设置管理员账号，管理员账号应当具备额外的管理员配置面板，管理员配置应当包含默认模型设置、论文库API设置、管理其他用户的账号等功能。
+要求：修改docs/spec.md的## 3. 功能需求和## 6. 数据需求，在数据需求中新增管理员配置数据表。

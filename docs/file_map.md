@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.0 · 2026-04-21
+**文档版本**：v1.1 · 2026-04-22
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -77,6 +77,7 @@ agent_paperpush/
 | [schemas/auth.py](../backend/app/schemas/auth.py) | FR-001 注册/登录/用户信息相关 schema |
 | [schemas/config.py](../backend/app/schemas/config.py) | FR-002~004 LLM / 数据库 / 邮件配置相关 schema |
 | [schemas/project.py](../backend/app/schemas/project.py) | FR-005~011 项目、论文、任务、导出、定时、推荐相关 schema |
+| [schemas/construction.py](../backend/app/schemas/construction.py) | FR-012~018 构建模式请求/响应 schema（启动、状态、关键词、阶段操作） |
 
 ### backend/app/services/ — 业务逻辑层
 
@@ -85,6 +86,7 @@ agent_paperpush/
 | [services/auth\_service.py](../backend/app/services/auth_service.py) | 用户注册/认证/信息更新；密码校验；last\_login\_at 更新 |
 | [services/config\_service.py](../backend/app/services/config_service.py) | 基于 user\_configs 的 Key-Value 读写；LLM / 数据库 / 邮件配置的序列化与反序列化 |
 | [services/project\_service.py](../backend/app/services/project_service.py) | 项目 CRUD；模式切换；论文关联管理；评分更新；推荐 CRUD；定时配置 |
+| [services/construction\_service.py](../backend/app/services/construction_service.py) | 关键词 CRUD（含所有权校验）；阶段记录管理；启动构建；状态查询；阶段操作（confirm/retry/skip，confirm 时通过 `_apply_stage_modifications` 立即应用 removed\_ids / score\_overrides / analysis\_overrides）；FR-018 邮件发送（`send_stage7_email` / `execute_stage7`）；`get_pipeline_params` |
 
 ### backend/app/api/v1/ — HTTP 路由层
 
@@ -95,6 +97,45 @@ agent_paperpush/
 | [api/v1/config.py](../backend/app/api/v1/config.py) | `GET/POST/PATCH/DELETE /config/llm` · `/config/databases` · `/config/email` | FR-002~004 |
 | [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/stage-records` · `/papers` · `/export` · `/schedule` · `/recommendations` | FR-005~011 |
 | [api/v1/tasks.py](../backend/app/api/v1/tasks.py) | `GET /tasks` · `POST /tasks/{id}/pause·resume·cancel` | FR-008 |
+| [api/v1/construction.py](../backend/app/api/v1/construction.py) | `/construction/start` · `/status` · `/keywords` · `/stages/{stage}/action` · `/stream`（SSE）；stage 6 confirm 后 BackgroundTask 自动触发 stage 7 | FR-012~019 |
+
+### backend/app/agents/ — Agent 执行层
+
+Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，由 FastAPI `BackgroundTasks` 调用。
+
+#### 公共基础设施
+
+| 文件 | 职责 |
+|------|------|
+| [agents/\_\_init\_\_.py](../backend/app/agents/__init__.py) | 模块入口注释 |
+| [agents/base.py](../backend/app/agents/base.py) | `LLMClient`（OpenAI 兼容 API）；`get_llm_client()` 工厂；SSE 队列（`get_sse_queue` / `emit_sse_event`）；配置加载（`load_construction_prompts` / `load_llm_defaults`）；`parse_json_response` |
+| [agents/config/construction\_prompts.yaml](../backend/app/agents/config/construction_prompts.yaml) | 构建模式 LLM 提示词配置（stage1 检索词生成 / stage3 评分 / stage5 分析）；变量占位符 `{name}` 风格 |
+| [agents/config/llm\_defaults.yaml](../backend/app/agents/config/llm_defaults.yaml) | LLM 全局默认参数 + 各阶段覆盖（temperature / max\_tokens / batch\_size）；学术数据库检索配置；PDF 下载配置 |
+
+#### 构建模式 Agent（FR-012~019）
+
+| 文件 | 职责 |
+|------|------|
+| [agents/construction/\_\_init\_\_.py](../backend/app/agents/construction/__init__.py) | `run_stage(project_id, user_id, stage, record_id)` — 统一入口；按 stage 分发到对应 handler；未捕获异常自动标记 failed |
+| [agents/construction/pipeline.py](../backend/app/agents/construction/pipeline.py) | 阶段记录生命周期：`mark_stage_paused` / `mark_stage_failed` / `mark_stage_completed`；`get_pipeline_params`（读取 stage1 启动参数） |
+| [agents/construction/stage1\_keyword\_gen.py](../backend/app/agents/construction/stage1_keyword_gen.py) | 检索词生成：调用 LLM 生成 3-5 组英文检索词 + 各 DB 布尔表达式；写入 keywords 表；paused 等待用户确认 |
+| [agents/construction/stage2\_retrieval.py](../backend/app/agents/construction/stage2_retrieval.py) | 多源检索（FR-012）：并发调用 arXiv / OpenAlex / Semantic Scholar API；三路去重（DOI / arXiv ID / 小写 title）；写入 papers + project\_paper\_relations |
+| [agents/construction/stage3\_scoring.py](../backend/app/agents/construction/stage3_scoring.py) | AI 评分（FR-013）：批量并发 LLM 评分；按 score\_threshold 设置 is\_valid；支持 score\_overrides 手动覆盖；更新 project.valid\_papers |
+| [agents/construction/stage4\_download.py](../backend/app/agents/construction/stage4_download.py) | PDF 下载与解析（FR-015）：arXiv 直链 + Unpaywall 开放获取；`pypdf` 提取文本；存储到 `STORAGE_DIR/papers/` |
+| [agents/construction/stage5\_analysis.py](../backend/app/agents/construction/stage5_analysis.py) | AI 分析生成（FR-016）：优先全文、次选摘要；LLM 生成 summary / highlights / relevance\_points / technical\_methods；支持 analysis\_overrides |
+| [agents/construction/stage6\_storage.py](../backend/app/agents/construction/stage6_storage.py) | 格式化与存储（FR-017）：完整性校验；ChromaDB 同步存根；NetworkX 图更新存根；paused 等待用户 confirm 触发 stage7 |
+
+#### 深度研究模式 Agent（待实现）
+
+| 文件 | 职责 |
+|------|------|
+| [agents/deep\_research/\_\_init\_\_.py](../backend/app/agents/deep_research/__init__.py) | FR-025~028 占位模块：Graph-RAG 对话 / 摘要生成 / 图谱重建（待实现） |
+
+#### 综述模式 Agent（待实现）
+
+| 文件 | 职责 |
+|------|------|
+| [agents/review/\_\_init\_\_.py](../backend/app/agents/review/__init__.py) | FR-019~024 占位模块：综述架构生成 / 章节撰写 / 自动审查迭代（待实现） |
 
 ### backend/app/utils/ — 工具函数
 
@@ -169,9 +210,10 @@ docs/spec.md
 |------|----------|------|
 | FR-009 数据导出 Worker | `projects.py: export_data()` | 返回占位 task\_id，实际 Excel/ZIP 生成由 Agent Worker 实现 |
 | FR-007 手动添加论文解析 | `projects.py: add_paper()` | 返回占位 paper\_id，实际 DOI/arXiv 抓取与 PDF 解析由 Agent 实现 |
-| 构建模式 Agent 链 | — | FR-012~018（7 阶段执行逻辑） |
-| 深度研究 Agent 链 | — | FR-025~028（Graph-RAG 对话、摘要生成） |
-| 综述模式 Agent 链 | — | FR-019~024（综述生成、章节审查） |
-| ChromaDB 向量库操作 | — | 与 papers 写入同事务，Agent 层负责 |
-| NetworkX 图数据库操作 | — | 构建模式阶段 6 写入，每日深夜全量重建 |
+| ChromaDB 向量同步 | `stage6_storage.py: _sync_chromadb()`（存根）| FR-017 与 PostgreSQL 同事务写入；需添加 `chromadb>=0.4.0` 依赖 |
+| NetworkX 图增量更新 | `stage6_storage.py: _update_networkx_graph()`（存根）| FR-017 论文节点 + co-author/co-venue 边；需添加 `networkx>=3.0` 依赖 |
+| 深度研究 Agent 链 | `agents/deep_research/__init__.py`（占位）| FR-025~028 Graph-RAG 对话 / 摘要生成 / 知识图谱重建 |
+| 综述模式 Agent 链 | `agents/review/__init__.py`（占位）| FR-019~024 综述架构生成 / 章节撰写 / 自动审查迭代 |
+| FR-009 数据导出 Worker | `projects.py: export_data()`（存根）| Excel/ZIP 生成由 Agent Worker 实现 |
+| FR-007 手动添加论文解析 | `projects.py: add_paper()`（存根）| DOI/arXiv 抓取与 PDF 解析由 Agent 实现 |
 | 定时调度器 | — | FR-010 next\_push\_at 计算与触发，Celery/APScheduler 实现 |

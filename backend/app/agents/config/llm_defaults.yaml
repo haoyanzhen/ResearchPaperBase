@@ -1,0 +1,73 @@
+# ============================================================================
+# LLM 默认参数配置
+# ============================================================================
+# 这里的参数作为"任务级默认值"使用，优先级：
+#   用户 API 请求参数 > 此文件的 stage 级配置 > 此文件的 defaults > 用户 user_configs 中配置
+#
+# temperature 说明：
+#   0.0-0.2  确定性输出（评分、结构化提取）
+#   0.3-0.5  平衡创造性与准确性（分析、总结）
+#   0.6-1.0  较高创造性（不用于生产解析任务）
+# ============================================================================
+
+# 全局默认值（所有阶段未覆盖时使用）
+defaults:
+  temperature: 0.3
+  max_tokens: 2000
+  request_timeout_seconds: 60      # 单次 LLM 请求超时
+  max_retries: 3                    # LLM 调用失败重试次数
+  retry_delay_seconds: 2.0          # 重试间隔（指数退避基数）
+
+# 每个阶段的独立参数（覆盖 defaults）
+stages:
+  # 阶段 1 — 检索词生成（需要一定创造性以覆盖不同角度）
+  construction_1:
+    temperature: 0.3
+    max_tokens: 2000
+    request_timeout_seconds: 60
+
+  # 阶段 3 — 论文评分（要求确定性，低 temperature）
+  construction_3:
+    temperature: 0.1
+    max_tokens: 200
+    request_timeout_seconds: 30
+    batch_size: 10                  # 每批并发评分论文数
+    batch_delay_seconds: 0.3        # 批次间延迟（避免 API 限速）
+
+  # 阶段 5 — AI 分析生成（允许适度创造性）
+  construction_5:
+    temperature: 0.4
+    max_tokens: 1000
+    request_timeout_seconds: 60
+    batch_size: 5
+    batch_delay_seconds: 0.5
+    max_text_chars: 8000            # 论文文本传入 LLM 的最大字符数（超出截断）
+
+# 学术数据库检索配置
+retrieval:
+  arxiv:
+    max_results_per_keyword: 100
+    request_timeout_seconds: 30
+    base_url: "http://export.arxiv.org/api/query"
+
+  openalex:
+    max_results_per_keyword: 100
+    request_timeout_seconds: 30
+    base_url: "https://api.openalex.org/works"
+    polite_email: "app@paperpush.local"   # Polite pool 联系邮箱
+
+  semantic_scholar:
+    max_results_per_keyword: 100
+    request_timeout_seconds: 30
+    base_url: "https://api.semanticscholar.org/graph/v1/paper/search"
+    fields: "title,authors,year,venue,abstract,externalIds"
+
+# PDF 下载配置
+pdf_download:
+  request_timeout_seconds: 60
+  max_file_size_mb: 50
+  unpaywall_email: "app@paperpush.local"
+  sources:
+    - arxiv          # 直接从 arxiv.org/pdf/{id} 下载
+    - unpaywall      # 通过 Unpaywall API 获取开放获取链接
+  max_text_chars: 100000            # 提取文本最大字符数
