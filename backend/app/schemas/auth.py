@@ -27,6 +27,7 @@ class RegisterResponse(BaseModel):
     user_id: str
     username: str
     email: str
+    is_admin: bool
     created_at: datetime
 
 

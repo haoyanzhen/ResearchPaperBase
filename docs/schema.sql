@@ -2,8 +2,8 @@
 -- Research Paper Base — PostgreSQL Schema
 -- =============================================================================
 -- Author:  haoyanzhen
--- Version: v1.0 (aligned with spec.md v1.6)
--- Date:    2026-04-20
+-- Version: v1.1 (aligned with spec.md v1.7 — FR-029 admin columns + system_configs)
+-- Date:    2026-04-23
 --
 -- 契约说明：
 --   本文件是所有模块间数据层的唯一权威契约。
@@ -33,6 +33,8 @@ CREATE TABLE users (
     username      VARCHAR(50)  NOT NULL,
     email         VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    is_admin      BOOLEAN      NOT NULL DEFAULT FALSE,  -- 首位注册用户自动置为 TRUE（FR-029）
+    is_active     BOOLEAN      NOT NULL DEFAULT TRUE,   -- FALSE 时用户无法登录
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     last_login_at TIMESTAMPTZ,
@@ -43,12 +45,15 @@ CREATE TABLE users (
 );
 
 CREATE INDEX idx_users_created_at ON users (created_at);
+CREATE INDEX idx_users_is_admin   ON users (is_admin);
 
-COMMENT ON TABLE  users              IS '系统用户基本信息，每个用户唯一';
-COMMENT ON COLUMN users.id           IS '用户唯一标识符';
-COMMENT ON COLUMN users.username     IS '用户名，全局唯一';
-COMMENT ON COLUMN users.email        IS '邮箱，全局唯一';
+COMMENT ON TABLE  users               IS '系统用户基本信息，每个用户唯一';
+COMMENT ON COLUMN users.id            IS '用户唯一标识符';
+COMMENT ON COLUMN users.username      IS '用户名，全局唯一';
+COMMENT ON COLUMN users.email         IS '邮箱，全局唯一';
 COMMENT ON COLUMN users.password_hash IS '密码哈希值（bcrypt）';
+COMMENT ON COLUMN users.is_admin      IS '是否为管理员；首位注册用户自动置为 TRUE（FR-029）';
+COMMENT ON COLUMN users.is_active     IS '账号是否启用；FALSE 时用户无法登录，由管理员禁用';
 COMMENT ON COLUMN users.last_login_at IS '最后登录时间';
 
 -- =============================================================================
@@ -500,6 +505,33 @@ COMMENT ON TABLE  recommendations                IS '用户研究观点推荐，
 COMMENT ON COLUMN recommendations.content_type   IS 'insight / conclusion / experiment_design 等';
 COMMENT ON COLUMN recommendations.contact_info   IS '仅展示用户名或邮箱，禁止存储其他联系方式';
 COMMENT ON COLUMN recommendations.is_visible     IS '内容审核开关，FALSE 时前端不展示';
+
+-- =============================================================================
+-- 13. 系统配置表 (system_configs)
+-- 说明：管理员设置的系统级全局配置（FR-029）。
+--       命名规范与 user_configs 一致；普通用户无个人配置时系统回落读取此表。
+--       updated_by 记录最后修改的管理员 ID（管理员删除时 SET NULL）。
+-- =============================================================================
+CREATE TABLE system_configs (
+    id           VARCHAR(50)  NOT NULL,
+    config_name  VARCHAR(100) NOT NULL,
+    config_value TEXT         NOT NULL,
+    description  VARCHAR(255),                        -- 配置项说明，供管理员界面展示
+    updated_by   VARCHAR(50),                         -- 最后修改的管理员 user_id
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_system_configs         PRIMARY KEY (id),
+    CONSTRAINT uq_system_configs_name    UNIQUE (config_name),
+    CONSTRAINT fk_system_configs_updater
+        FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_system_configs_config_name ON system_configs (config_name);
+
+COMMENT ON TABLE  system_configs             IS '管理员全局配置，命名规范与 user_configs 一致；普通用户无配置时回落读取（FR-029）';
+COMMENT ON COLUMN system_configs.config_name IS '配置名称，UNIQUE，如 llm.provider.openai.url / database.arxiv.api_key';
+COMMENT ON COLUMN system_configs.updated_by  IS '最后修改该配置的管理员 user_id；管理员删除时 SET NULL';
 
 -- =============================================================================
 -- END OF SCHEMA

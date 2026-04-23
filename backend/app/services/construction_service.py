@@ -358,7 +358,7 @@ async def _apply_stage_modifications(
             )
             for rel in result.scalars().all():
                 new_score = float(score_overrides[rel.paper_id])
-                rel.ai_score = new_score
+                rel.total_score = int(new_score)
                 rel.is_valid = new_score >= threshold
 
     elif stage == 5:

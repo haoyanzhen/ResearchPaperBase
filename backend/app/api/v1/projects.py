@@ -391,6 +391,38 @@ async def update_paper_score(
     ))
 
 
+@router.delete("/{project_id}/papers")
+async def clear_papers(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """清空课题所有论文关联（FR-007）"""
+    project = await project_service.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "课题不存在")
+    count = await project_service.clear_papers(db, project_id)
+    return ok({"message": "cleared", "removed_count": count})
+
+
+@router.post("/{project_id}/archive")
+async def archive_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """归档课题，状态变为 archived（FR-005）"""
+    project = await project_service.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "课题不存在")
+    if project.status in ("running", "paused"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "有任务正在运行，请先取消后再归档")
+    if project.status == "archived":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "课题已归档")
+    project = await project_service.archive_project(db, project)
+    return ok(_project_to_detail(project))
+
+
 @router.delete("/{project_id}/papers/{paper_id}")
 async def remove_paper(
     project_id: str,

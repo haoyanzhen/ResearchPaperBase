@@ -209,6 +209,13 @@ export const projectsApi = {
   removePaper: (projectId: string, paperId: string) =>
     http.delete(`/projects/${projectId}/papers/${paperId}`),
 
+  clearPapers: (projectId: string) =>
+    http.delete<{ message: string; removed_count: number }>(`/projects/${projectId}/papers`),
+
+  // FR-005 归档
+  archive: (projectId: string) =>
+    http.post<ProjectDetail>(`/projects/${projectId}/archive`),
+
   // FR-008 任务管理
   getStatus: (projectId: string) =>
     http.get(`/projects/${projectId}/status`),

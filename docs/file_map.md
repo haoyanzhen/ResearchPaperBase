@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.2 · 2026-04-22
+**文档版本**：v1.3 · 2026-04-23
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -22,9 +22,9 @@ agent_paperpush/
 
 | 文件 | 职责 |
 |------|------|
-| [spec.md](spec.md) | 需求规格说明书（v1.6）；FR-001~FR-028 完整功能需求；**修改需评审** |
+| [spec.md](spec.md) | 需求规格说明书（v1.7）；FR-001~FR-029 完整功能需求；**修改需评审** |
 | [api.md](api.md) | API 设计文档；所有 HTTP 端点请求/响应格式；前后端接口契约 |
-| [schema.sql](schema.sql) | PostgreSQL DDL（v1.0）；12 张表结构、索引、约束；**数据层唯一权威** |
+| [schema.sql](schema.sql) | PostgreSQL DDL（v1.1）；13 张表结构（含 system\_configs）、索引、约束；**数据层唯一权威** |
 | [ui_design.md](ui_design.md) | 前端界面设计草稿；ASCII 线框图；各页面布局与交互逻辑 |
 | [ADR_design.md](ADR_design.md) | 架构决策记录（ADR）；技术选型理由与取舍 |
 | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
@@ -87,7 +87,7 @@ agent_paperpush/
 | [services/auth\_service.py](../backend/app/services/auth_service.py) | 用户注册（首位用户自动提升为管理员）/认证（含 is\_active 禁用检查）/信息更新；密码校验 |
 | [services/config\_service.py](../backend/app/services/config_service.py) | 基于 user\_configs 的 Key-Value 读写；系统级配置（system\_configs）读写；回落函数（`get_config_with_fallback` / `get_all_llm_providers_with_fallback` / `get_databases_config_with_fallback`）；LLM / 数据库 / 邮件配置序列化 |
 | [services/admin\_service.py](../backend/app/services/admin_service.py) | FR-029 用户账号管理：列表 / 启停（`set_user_active`）/ 提权（`set_user_admin`）/ 删除（级联）/ 重置密码（含 SMTP 发信） |
-| [services/project\_service.py](../backend/app/services/project_service.py) | 项目 CRUD；模式切换；论文关联管理；评分更新；推荐 CRUD；定时配置 |
+| [services/project\_service.py](../backend/app/services/project_service.py) | 项目 CRUD；模式切换；论文关联管理（含 `clear_papers` 清空所有关联）；`archive_project` 归档；评分更新；推荐 CRUD；定时配置 |
 | [services/construction\_service.py](../backend/app/services/construction_service.py) | 关键词 CRUD（含所有权校验）；阶段记录管理；启动构建；状态查询；阶段操作（confirm/retry/skip，confirm 时通过 `_apply_stage_modifications` 立即应用 removed\_ids / score\_overrides / analysis\_overrides）；FR-018 邮件发送（`send_stage7_email` / `execute_stage7`）；`get_pipeline_params` |
 
 ### backend/app/api/v1/ — HTTP 路由层
@@ -97,7 +97,7 @@ agent_paperpush/
 | [api/v1/router.py](../backend/app/api/v1/router.py) | 注册所有子路由到 `/api/v1` | — |
 | [api/v1/auth.py](../backend/app/api/v1/auth.py) | `POST /auth/register` · `login` · `logout` · `GET/PATCH /auth/me` | FR-001 |
 | [api/v1/config.py](../backend/app/api/v1/config.py) | `GET/POST/PATCH/DELETE /config/llm` · `/config/databases` · `/config/email` | FR-002~004 |
-| [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/stage-records` · `/papers` · `/export` · `/schedule` · `/recommendations` | FR-005~011 |
+| [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/archive` · `/stage-records` · `/papers`（含 `DELETE /papers` 清空全部） · `/export` · `/schedule` · `/recommendations` | FR-005~011 |
 | [api/v1/tasks.py](../backend/app/api/v1/tasks.py) | `GET /tasks` · `POST /tasks/{id}/pause·resume·cancel` | FR-008 |
 | [api/v1/construction.py](../backend/app/api/v1/construction.py) | `/construction/start` · `/status` · `/keywords` · `/stages/{stage}/action` · `/stream`（SSE）；stage 6 confirm 后 BackgroundTask 自动触发 stage 7 | FR-012~019 |
 | [api/v1/admin.py](../backend/app/api/v1/admin.py) | `/admin/users` 用户列表/启停/提权/删除/重置密码；`/admin/system-config/llm` 系统 LLM CRUD + 连通性测试；`/admin/system-config/databases` 系统数据库配置；所有端点均通过 `get_current_admin` 鉴权（非管理员返回 403） | FR-029 |
@@ -180,7 +180,7 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | [src/api/client.ts](../src/api/client.ts) | 基础 HTTP 客户端；`ApiError`；`tokenStore`（localStorage 令牌管理） | §总体约定 |
 | [src/api/auth.ts](../src/api/auth.ts) | `authApi`：注册 / 登录（自动存 token）/ 登出 / 获取&修改当前用户 | §1 |
 | [src/api/config.ts](../src/api/config.ts) | `configApi`：LLM / 学术数据库 / 邮件配置的增删改查与连接测试 | §2 |
-| [src/api/projects.ts](../src/api/projects.ts) | `projectsApi`：项目 CRUD / 模式切换 / 检索历史 / 论文管理 / 导出 / 定时配置；`recommendationsApi`：推荐内容列表、发布、点赞、删除 | §3 §5（部分）§9 |
+| [src/api/projects.ts](../src/api/projects.ts) | `projectsApi`：项目 CRUD / 模式切换 / `archive()` 归档 / 检索历史 / 论文管理（含 `clearPapers()`） / 导出 / 定时配置；`recommendationsApi`：推荐内容列表、发布、点赞、删除 | §3 §5（部分）§9 |
 | [src/api/admin.ts](../src/api/admin.ts) | `adminApi`：用户列表 / 账号启停 / 提权 / 删除 / 重置密码；系统 LLM 配置 CRUD + 测试；系统数据库配置读写 | — |
 | [src/api/construction.ts](../src/api/construction.ts) | `constructionApi`：启动构建 / 状态查询 / 检索词管理 / 阶段操作 / SSE 流 URL | §4 |
 | [src/api/dialogues.ts](../src/api/dialogues.ts) | `dialoguesApi`：对话会话 CRUD / 轮次历史 / 消息发送（SSE fetch）/ 对话摘要 / 知识图谱获取与重建 | §6 |

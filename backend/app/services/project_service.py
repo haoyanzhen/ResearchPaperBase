@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import delete as sa_delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.paper import ProjectPaperRelation
@@ -213,6 +213,31 @@ async def remove_paper(db: AsyncSession, project_id: str, paper_id: str) -> bool
     await db.delete(relation)
     await db.commit()
     return True
+
+
+async def clear_papers(db: AsyncSession, project_id: str) -> int:
+    """FR-007: 清空课题所有论文关联，返回删除数量"""
+    count_result = await db.execute(
+        select(func.count(ProjectPaperRelation.id)).where(
+            ProjectPaperRelation.project_id == project_id
+        )
+    )
+    count = count_result.scalar_one()
+    await db.execute(
+        sa_delete(ProjectPaperRelation).where(
+            ProjectPaperRelation.project_id == project_id
+        )
+    )
+    await db.commit()
+    return count
+
+
+async def archive_project(db: AsyncSession, project: Project) -> Project:
+    """FR-005: 归档课题（status → archived）"""
+    project.status = "archived"
+    await db.commit()
+    await db.refresh(project)
+    return project
 
 
 # ── 推荐模块 (FR-011) ──────────────────────────────────────────────────────────
