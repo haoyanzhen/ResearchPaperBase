@@ -93,9 +93,12 @@ id: <sequence_id>
   "user_id": "u_abc123",
   "username": "haoyanzhen",
   "email": "hyz@example.com",
+  "is_admin": false,
   "created_at": "2026-04-08T10:00:00Z"
 }
 ```
+
+> `is_admin`：首位注册用户自动置为 `true`（FR-029），其他用户为 `false`。
 
 ---
 
@@ -122,7 +125,8 @@ id: <sequence_id>
   "user": {
     "user_id": "u_abc123",
     "username": "haoyanzhen",
-    "email": "hyz@example.com"
+    "email": "hyz@example.com",
+    "is_admin": false
   }
 }
 ```
@@ -146,12 +150,13 @@ id: <sequence_id>
   "user_id": "u_abc123",
   "username": "haoyanzhen",
   "email": "hyz@example.com",
-  "regular_push": false,
-  "push_interval": null,
-  "last_push": null,
+  "is_admin": false,
+  "is_active": true,
   "created_at": "2026-04-08T10:00:00Z"
 }
 ```
+
+> 推送配置（定时推送开关、推送间隔）为**研究主题级别**设置，位于 `PATCH /projects/{project_id}/schedule`，不在用户级别。
 
 ---
 
@@ -163,9 +168,7 @@ id: <sequence_id>
 {
   "username": "new_name",
   "email": "new@example.com",
-  "password": "new_password",
-  "regular_push": true,
-  "push_interval": 7
+  "password": "new_password"
 }
 ```
 
@@ -900,6 +903,25 @@ data: {
 ---
 
 ## 7. 综述模式
+
+### GET `/projects/{project_id}/review/status` — 综述模式当前状态
+
+**Response 200**：
+
+```json
+{
+  "project_id": "p_abc",
+  "current_stage": 3,
+  "stage_name": "撰写章节内容",
+  "stage_status": "running",
+  "outline_id": "ol_1",
+  "outline_status": "confirmed",
+  "total_chapters": 5,
+  "completed_chapters": 2
+}
+```
+
+---
 
 ### POST `/projects/{project_id}/review/start` — 启动综述流程
 

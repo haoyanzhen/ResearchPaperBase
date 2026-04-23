@@ -13,6 +13,7 @@ export interface RegisterResponse {
   user_id: string;
   username: string;
   email: string;
+  is_admin: boolean;
   created_at: ISODateString;
 }
 

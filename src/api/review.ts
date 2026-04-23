@@ -79,6 +79,17 @@ export interface CompileResponse {
   message: string;
 }
 
+export interface ReviewStatusResponse {
+  project_id: string;
+  current_stage: number | null;
+  stage_name: string | null;
+  stage_status: string | null;
+  outline_id: string | null;
+  outline_status: OutlineStatus | null;
+  total_chapters: number;
+  completed_chapters: number;
+}
+
 export type ReviewExportFormat = "markdown" | "pdf" | "docx";
 
 // ── SSE 事件数据类型（综述流） ────────────────────────────────────────────────
@@ -119,6 +130,9 @@ export interface SseReviewPipelineComplete {
 // ── API 方法 ──────────────────────────────────────────────────────────────────
 
 export const reviewApi = {
+  getStatus: (projectId: string) =>
+    http.get<ReviewStatusResponse>(`/projects/${projectId}/review/status`),
+
   start: (projectId: string, body?: StartReviewRequest) =>
     http.post<StartReviewResponse>(
       `/projects/${projectId}/review/start`,

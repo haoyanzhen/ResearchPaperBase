@@ -42,6 +42,7 @@ export interface DatabaseConfig {
   enabled: boolean;
   api_key?: string | null;
   rate_limit: number;
+  endpoint?: string | null;
 }
 
 export type DatabasesConfigResponse = Record<
@@ -53,6 +54,7 @@ export interface UpdateDatabaseConfigRequest {
   enabled?: boolean;
   api_key?: string;
   rate_limit?: number;
+  endpoint?: string;
 }
 
 // ── 邮件配置 (FR-004) ────────────────────────────────────────────────────────

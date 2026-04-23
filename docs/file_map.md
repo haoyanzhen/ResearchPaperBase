@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.3 · 2026-04-23
+**文档版本**：v1.6 · 2026-04-23
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -23,7 +23,7 @@ agent_paperpush/
 | 文件 | 职责 |
 |------|------|
 | [spec.md](spec.md) | 需求规格说明书（v1.7）；FR-001~FR-029 完整功能需求；**修改需评审** |
-| [api.md](api.md) | API 设计文档；所有 HTTP 端点请求/响应格式；前后端接口契约 |
+| [api.md](api.md) | API 设计文档（已对齐 schema.sql v1.1 / spec.md v1.7）；所有 HTTP 端点请求/响应格式；前后端接口契约 |
 | [schema.sql](schema.sql) | PostgreSQL DDL（v1.1）；13 张表结构（含 system\_configs）、索引、约束；**数据层唯一权威** |
 | [ui_design.md](ui_design.md) | 前端界面设计草稿；ASCII 线框图；各页面布局与交互逻辑 |
 | [ADR_design.md](ADR_design.md) | 架构决策记录（ADR）；技术选型理由与取舍 |
@@ -78,6 +78,7 @@ agent_paperpush/
 | [schemas/config.py](../backend/app/schemas/config.py) | FR-002~004 LLM / 数据库 / 邮件配置相关 schema |
 | [schemas/project.py](../backend/app/schemas/project.py) | FR-005~011 项目、论文、任务、导出、定时、推荐相关 schema |
 | [schemas/construction.py](../backend/app/schemas/construction.py) | FR-012~018 构建模式请求/响应 schema（启动、状态、关键词、阶段操作） |
+| [schemas/review.py](../backend/app/schemas/review.py) | FR-020~024 综述模式请求/响应 schema（启动、架构版本、章节、汇总、导出、状态） |
 | [schemas/admin.py](../backend/app/schemas/admin.py) | FR-029 管理员面板 schema（用户列表条目 / 账号操作 / 重置密码响应 / 系统 LLM 与数据库配置请求） |
 
 ### backend/app/services/ — 业务逻辑层
@@ -89,6 +90,7 @@ agent_paperpush/
 | [services/admin\_service.py](../backend/app/services/admin_service.py) | FR-029 用户账号管理：列表 / 启停（`set_user_active`）/ 提权（`set_user_admin`）/ 删除（级联）/ 重置密码（含 SMTP 发信） |
 | [services/project\_service.py](../backend/app/services/project_service.py) | 项目 CRUD；模式切换；论文关联管理（含 `clear_papers` 清空所有关联）；`archive_project` 归档；评分更新；推荐 CRUD；定时配置 |
 | [services/construction\_service.py](../backend/app/services/construction_service.py) | 关键词 CRUD（含所有权校验）；阶段记录管理；启动构建；状态查询；阶段操作（confirm/retry/skip，confirm 时通过 `_apply_stage_modifications` 立即应用 removed\_ids / score\_overrides / analysis\_overrides）；FR-018 邮件发送（`send_stage7_email` / `execute_stage7`）；`get_pipeline_params` |
+| [services/review\_service.py](../backend/app/services/review_service.py) | FR-020~024 综述模式业务逻辑：启动综述 `start_review`（创建 outline + stage1 record）；架构 CRUD；`confirm_outline`（创建章节记录 + stage3 record）；章节 CRUD；`trigger_chapter_review`；`compile_outline`（stage5）；`get_review_status`；`export_outline`（Markdown / PDF存根 / DOCX存根） |
 
 ### backend/app/api/v1/ — HTTP 路由层
 
@@ -100,6 +102,7 @@ agent_paperpush/
 | [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/archive` · `/stage-records` · `/papers`（含 `DELETE /papers` 清空全部） · `/export` · `/schedule` · `/recommendations` | FR-005~011 |
 | [api/v1/tasks.py](../backend/app/api/v1/tasks.py) | `GET /tasks` · `POST /tasks/{id}/pause·resume·cancel` | FR-008 |
 | [api/v1/construction.py](../backend/app/api/v1/construction.py) | `/construction/start` · `/status` · `/keywords` · `/stages/{stage}/action` · `/stream`（SSE）；stage 6 confirm 后 BackgroundTask 自动触发 stage 7 | FR-012~019 |
+| [api/v1/review.py](../backend/app/api/v1/review.py) | `/review/status` · `/review/start` · `/outlines` CRUD · `/outlines/{id}/confirm` · `/outlines/{id}/chapters` CRUD · `/outlines/{id}/chapters/{id}/review` · `/outlines/{id}/compile` · `/outlines/{id}/export`（Markdown；PDF/DOCX 返回 501）· `/stream`（SSE）；chapter review 通过独立 AsyncSession 的 `_run_chapter_review` wrapper 执行 | FR-020~024 |
 | [api/v1/admin.py](../backend/app/api/v1/admin.py) | `/admin/users` 用户列表/启停/提权/删除/重置密码；`/admin/system-config/llm` 系统 LLM CRUD + 连通性测试；`/admin/system-config/databases` 系统数据库配置；所有端点均通过 `get_current_admin` 鉴权（非管理员返回 403） | FR-029 |
 
 ### backend/app/agents/ — Agent 执行层
@@ -113,6 +116,7 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | [agents/\_\_init\_\_.py](../backend/app/agents/__init__.py) | 模块入口注释 |
 | [agents/base.py](../backend/app/agents/base.py) | `LLMClient`（OpenAI 兼容 API）；`get_llm_client()` 工厂；SSE 队列（`get_sse_queue` / `emit_sse_event`）；配置加载（`load_construction_prompts` / `load_llm_defaults`）；`parse_json_response` |
 | [agents/config/construction\_prompts.yaml](../backend/app/agents/config/construction_prompts.yaml) | 构建模式 LLM 提示词配置（stage1 检索词生成 / stage3 评分 / stage5 分析）；变量占位符 `{name}` 风格 |
+| [agents/config/review\_prompts.yaml](../backend/app/agents/config/review_prompts.yaml) | 综述模式 LLM 提示词配置（stage1 课题扩写 / stage2 架构生成 / stage3 章节撰写 / stage4 审查+修改 / stage5 摘要关键词） |
 | [agents/config/llm\_defaults.yaml](../backend/app/agents/config/llm_defaults.yaml) | LLM 全局默认参数 + 各阶段覆盖（temperature / max\_tokens / batch\_size）；学术数据库检索配置；PDF 下载配置 |
 
 #### 构建模式 Agent（FR-012~019）
@@ -134,11 +138,17 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 |------|------|
 | [agents/deep\_research/\_\_init\_\_.py](../backend/app/agents/deep_research/__init__.py) | FR-025~028 占位模块：Graph-RAG 对话 / 摘要生成 / 图谱重建（待实现） |
 
-#### 综述模式 Agent（待实现）
+#### 综述模式 Agent（FR-020~024）
 
 | 文件 | 职责 |
-|------|------|
-| [agents/review/\_\_init\_\_.py](../backend/app/agents/review/__init__.py) | FR-019~024 占位模块：综述架构生成 / 章节撰写 / 自动审查迭代（待实现） |
+| ---- | ---- |
+| [agents/review/\_\_init\_\_.py](../backend/app/agents/review/__init__.py) | `run_stage(project_id, user_id, stage, record_id)` — 统一入口；按 stage 1-5 分发到对应 handler；未捕获异常自动标记 failed + SSE 错误事件 |
+| [agents/review/pipeline.py](../backend/app/agents/review/pipeline.py) | `REVIEW_STAGE_NAMES`；阶段记录生命周期：`mark_stage_paused` / `mark_stage_failed` / `mark_stage_completed`；`load_review_prompts`（lru\_cache）；`get_record` / `get_project` / `get_latest_draft_outline` / `get_outline_chapters` |
+| [agents/review/stage1\_topic\_expansion.py](../backend/app/agents/review/stage1_topic_expansion.py) | 课题扩写：LLM 扩展课题描述，写入 `outline.topic_expansion`；自动链接 stage2（无暂停）；stage2 异常由 stage1 捕获并以 stage2 record\_id 标记失败 |
+| [agents/review/stage2\_outline\_gen.py](../backend/app/agents/review/stage2_outline_gen.py) | 综述架构生成：LLM 输出 `ReviewOutlineContent`（title / abstract\_hint / sections[]），写入 `outline.outline`；paused 等待用户确认 |
+| [agents/review/stage3\_chapter\_writing.py](../backend/app/agents/review/stage3_chapter_writing.py) | 章节撰写：按 outline.sections 为每章调用 LLM 写正文；提取 `[cite:paper_id]` 引用格式；更新章节 content / citations / status；自动链接 stage4；stage4 异常由 stage3 捕获并以 stage4 record\_id 标记失败 |
+| [agents/review/stage4\_auto\_review.py](../backend/app/agents/review/stage4_auto_review.py) | 自动审查迭代：`review_chapter_once()` 可独立调用；`run()` 遍历所有章节最多 2 轮 LLM 审查+修改；paused 等待用户触发 compile |
+| [agents/review/stage5\_compile.py](../backend/app/agents/review/stage5_compile.py) | 综述汇总：LLM 生成摘要+关键词；合并章节+参考文献为完整 Markdown；写入 `outline.outline["compiled_content"]`；project.status → idle |
 
 ### backend/app/utils/ — 工具函数
 
@@ -178,13 +188,13 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | 文件 | 职责 | 对应 api.md 章节 |
 |------|------|-----------------|
 | [src/api/client.ts](../src/api/client.ts) | 基础 HTTP 客户端；`ApiError`；`tokenStore`（localStorage 令牌管理） | §总体约定 |
-| [src/api/auth.ts](../src/api/auth.ts) | `authApi`：注册 / 登录（自动存 token）/ 登出 / 获取&修改当前用户 | §1 |
-| [src/api/config.ts](../src/api/config.ts) | `configApi`：LLM / 学术数据库 / 邮件配置的增删改查与连接测试 | §2 |
+| [src/api/auth.ts](../src/api/auth.ts) | `authApi`：注册 / 登录（自动存 token）/ 登出 / 获取&修改当前用户；`RegisterResponse` 含 `is_admin` | §1 |
+| [src/api/config.ts](../src/api/config.ts) | `configApi`：LLM / 学术数据库（含 `endpoint`）/ 邮件配置的增删改查与连接测试 | §2 |
 | [src/api/projects.ts](../src/api/projects.ts) | `projectsApi`：项目 CRUD / 模式切换 / `archive()` 归档 / 检索历史 / 论文管理（含 `clearPapers()`） / 导出 / 定时配置；`recommendationsApi`：推荐内容列表、发布、点赞、删除 | §3 §5（部分）§9 |
 | [src/api/admin.ts](../src/api/admin.ts) | `adminApi`：用户列表 / 账号启停 / 提权 / 删除 / 重置密码；系统 LLM 配置 CRUD + 测试；系统数据库配置读写 | — |
 | [src/api/construction.ts](../src/api/construction.ts) | `constructionApi`：启动构建 / 状态查询 / 检索词管理 / 阶段操作 / SSE 流 URL | §4 |
 | [src/api/dialogues.ts](../src/api/dialogues.ts) | `dialoguesApi`：对话会话 CRUD / 轮次历史 / 消息发送（SSE fetch）/ 对话摘要 / 知识图谱获取与重建 | §6 |
-| [src/api/review.ts](../src/api/review.ts) | `reviewApi`：启动综述 / 架构版本管理 / 章节管理 / 汇总编译 / 导出（文件流）/ SSE 流 URL | §7 |
+| [src/api/review.ts](../src/api/review.ts) | `reviewApi`：`getStatus` / 启动综述 / 架构版本管理 / 章节管理 / 汇总编译 / 导出（文件流）/ SSE 流 URL；含 `ReviewStatusResponse` 接口定义 | §7 |
 | [src/api/tasks.ts](../src/api/tasks.ts) | `tasksApi`：任务列表 / 暂停 / 恢复 / 取消 | §8 |
 | [src/api/index.ts](../src/api/index.ts) | 统一桶形导出（re-export 所有 API 模块及 `ApiError` / `tokenStore`） | — |
 
@@ -217,8 +227,8 @@ docs/spec.md
 | FR-007 手动添加论文解析 | `projects.py: add_paper()` | 返回占位 paper\_id，实际 DOI/arXiv 抓取与 PDF 解析由 Agent 实现 |
 | ChromaDB 向量同步 | `stage6_storage.py: _sync_chromadb()`（存根）| FR-017 与 PostgreSQL 同事务写入；需添加 `chromadb>=0.4.0` 依赖 |
 | NetworkX 图增量更新 | `stage6_storage.py: _update_networkx_graph()`（存根）| FR-017 论文节点 + co-author/co-venue 边；需添加 `networkx>=3.0` 依赖 |
+| 综述导出 PDF/DOCX | `review.py: export_outline(format=pdf\|docx)` → HTTP 501 | FR-023；后续迭代接入 WeasyPrint / python-docx |
 | 深度研究 Agent 链 | `agents/deep_research/__init__.py`（占位）| FR-025~028 Graph-RAG 对话 / 摘要生成 / 知识图谱重建 |
-| 综述模式 Agent 链 | `agents/review/__init__.py`（占位）| FR-019~024 综述架构生成 / 章节撰写 / 自动审查迭代 |
 | FR-009 数据导出 Worker | `projects.py: export_data()`（存根）| Excel/ZIP 生成由 Agent Worker 实现 |
 | FR-007 手动添加论文解析 | `projects.py: add_paper()`（存根）| DOI/arXiv 抓取与 PDF 解析由 Agent 实现 |
 | 定时调度器 | — | FR-010 next\_push\_at 计算与触发，Celery/APScheduler 实现 |

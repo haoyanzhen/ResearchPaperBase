@@ -32,6 +32,8 @@ async def get_llm_configs(
     db: AsyncSession = Depends(get_db),
 ):
     providers = await config_service.get_all_llm_providers(db, current_user.id)
+    for p in providers:
+        p.pop("api_key", None)
     return ok(providers)
 
 

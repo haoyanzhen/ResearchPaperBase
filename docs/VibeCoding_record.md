@@ -341,3 +341,22 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 任务：检查研究主题模块完成度，并补充相应的前端、数据库、Agent、API等实现。
 契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/spec.md#6.1 关系型数据库+ docs/api.md#3. 研究主题（Project）模块+ docs/schema.sql
 要求：根据修改的文件，更新docs/file_map.md
+
+（check file_map）
+
+任务：检查认证模块和配置模块完成度，进行补充、修复或删改
+契约文件：docs/file_map.md + docs/api.md#1. 认证模块 + docs/api.md#2. 配置模块 + docs/schema.sql
+要求：根据修改的文件，更新docs/file_map.md
+
+（check file_map）
+
+任务：实现主题综述模式框架搭建 + 功能 FR-020 到 FR-024 实现
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#7. 综述模式 + docs/ui_design.md#P09 · 综述模式主界面
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+任务：检查主题综述模式实现是否正确
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#7. 综述模式 + docs/ui_design.md#P09 · 综述模式主界面
+要求：根据修改的文件，更新docs/file_map.md；检查api、前端、后端、数据库等实现，是否留有隐患
+
