@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v3.1 · 2026-04-24
+**文档版本**：v2.2 · 2026-04-24
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -12,7 +12,8 @@
 agent_paperpush/
 ├── docs/          契约文档（权威来源，不含实现代码）
 ├── backend/       Python 后端（FastAPI + SQLAlchemy + Alembic）
-├── src/           TypeScript 前端 API 客户端层
+├── frontend/      TypeScript 前端层（API 客户端 / 类型定义 / 组件）
+├── e2e/           Playwright E2E 测试
 └── old_files/     废弃原型代码（仅供参考，不参与构建）
 ```
 
@@ -40,7 +41,7 @@ agent_paperpush/
 
 | 文件 | 职责 |
 |------|------|
-| [backend/app/main.py](../backend/app/main.py) | FastAPI 应用入口；注册路由、CORS 中间件、/health 端点；`lifespan` 上下文启动 APScheduler（FR-010 自动推送，每 5 分钟检查 `next_push_at <= now`） |
+| [backend/app/main.py](../backend/app/main.py) | FastAPI 应用入口；注册路由、CORS 中间件、/health 端点；`lifespan` 上下文启动 APScheduler（FR-010 自动推送，每 5 分钟检查 `next_push_at <= now`）；`_auto_push_job` 触发后立即更新 `next_push_at` 防循环，使用项目历史参数而非硬编码数据库列表 |
 | [backend/requirements.txt](../backend/requirements.txt) | Python 依赖声明（含 openpyxl / python-docx / networkx / apscheduler） |
 | [backend/.env.example](../backend/.env.example) | 环境变量模板（DATABASE\_URL / SECRET\_KEY / APP\_ENV 等） |
 | [backend/alembic.ini](../backend/alembic.ini) | Alembic 迁移配置；指向 `alembic/` 脚本目录 |
@@ -80,7 +81,7 @@ agent_paperpush/
 | [schemas/health.py](../backend/app/schemas/health.py) | 健康检查与诊断响应 schema：`CheckResult`、`ShallowHealthResponse`、`DbHealthResponse`、`DeepHealthResponse`、`PipelineHealthResponse`、`InspectResponse`（含 `StageHistoryItem`、`ConfigStatus` 等） |
 | [schemas/auth.py](../backend/app/schemas/auth.py) | FR-001 注册/登录/用户信息相关 schema |
 | [schemas/config.py](../backend/app/schemas/config.py) | FR-002~004 LLM / 数据库 / 邮件配置相关 schema |
-| [schemas/project.py](../backend/app/schemas/project.py) | FR-005~011 项目、论文、任务、导出、定时、推荐相关 schema |
+| [schemas/project.py](../backend/app/schemas/project.py) | FR-005~011 项目、论文、任务、导出、定时、推荐相关 schema；`TaskItem`（含 `updated_at`/`error`）、`TaskListResponse{total, items}`、`TaskStatusResponse{task_id, status, message}` |
 | [schemas/construction.py](../backend/app/schemas/construction.py) | FR-012~018 构建模式请求/响应 schema（启动、状态、关键词、阶段操作） |
 | [schemas/dialogue.py](../backend/app/schemas/dialogue.py) | FR-025~028 深度研究模式请求/响应 schema（对话会话列表/详情、轮次、摘要、图谱节点/边） |
 | [schemas/review.py](../backend/app/schemas/review.py) | FR-020~024 综述模式请求/响应 schema（启动、架构版本、章节、汇总、导出、状态） |
@@ -94,7 +95,7 @@ agent_paperpush/
 | [services/config\_service.py](../backend/app/services/config_service.py) | 基于 user\_configs 的 Key-Value 读写；系统级配置（system\_configs）读写；回落函数（`get_config_with_fallback` / `get_all_llm_providers_with_fallback` / `get_databases_config_with_fallback`）；LLM / 数据库 / 邮件配置序列化 |
 | [services/admin\_service.py](../backend/app/services/admin_service.py) | FR-029 用户账号管理：列表 / 启停（`set_user_active`）/ 提权（`set_user_admin`）/ 删除（级联）/ 重置密码（含 SMTP 发信） |
 | [services/project\_service.py](../backend/app/services/project_service.py) | 项目 CRUD；模式切换；论文关联管理（含 `clear_papers` 清空所有关联）；`archive_project` 归档；评分更新；推荐 CRUD；定时配置 |
-| [services/construction\_service.py](../backend/app/services/construction_service.py) | 关键词 CRUD（含所有权校验）；阶段记录管理；启动构建；状态查询；阶段操作（confirm/retry/skip，confirm 时通过 `_apply_stage_modifications` 立即应用 removed\_ids / score\_overrides / analysis\_overrides）；FR-018 邮件发送（`send_stage7_email` / `execute_stage7`）；`get_pipeline_params` |
+| [services/construction\_service.py](../backend/app/services/construction_service.py) | 关键词 CRUD（含所有权校验）；阶段记录管理；启动构建；状态查询；阶段操作（confirm/retry/skip，confirm 时通过 `_apply_stage_modifications` 立即应用 removed\_ids / score\_overrides / analysis\_overrides）；FR-018 邮件发送（`send_stage7_email` / `execute_stage7`）；`execute_stage7` 成功后重算 `next_push_at`（auto\_push=True 时）；`get_pipeline_params` |
 | [services/dialogue\_service.py](../backend/app/services/dialogue_service.py) | FR-025~028 深度研究模式业务逻辑：对话会话 CRUD；`list_turns`（分页）；`_derive_sub_mode`（从最近轮次派生）；`_parse_summary` / `_summary_preview`（AgentSummary JSON 序列化） |
 | [services/review\_service.py](../backend/app/services/review_service.py) | FR-020~024 综述模式业务逻辑：启动综述 `start_review`；架构 CRUD；`confirm_outline`；章节 CRUD；`trigger_chapter_review`；`compile_outline`（stage5）；`get_review_status`；`export_outline`（Markdown ✅ / DOCX ✅ via `_compile_docx()` / PDF 存根） |
 
@@ -106,7 +107,7 @@ agent_paperpush/
 | [api/v1/auth.py](../backend/app/api/v1/auth.py) | `POST /auth/register` · `login` · `logout` · `GET/PATCH /auth/me` | FR-001 |
 | [api/v1/config.py](../backend/app/api/v1/config.py) | `GET/POST/PATCH/DELETE /config/llm` · `/config/databases` · `/config/email` | FR-002~004 |
 | [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/archive` · `/stage-records` · `/papers`（含 `DELETE /papers` 清空全部；`POST /papers` 同步 arXiv/DOI 抓取入库，FR-007）· `/export`（同步生成 Excel/PDF-ZIP，StreamingResponse，FR-009）· `/schedule` · `/recommendations` | FR-005~011 |
-| [api/v1/tasks.py](../backend/app/api/v1/tasks.py) | `GET /tasks` · `POST /tasks/{id}/pause·resume·cancel` | FR-008 |
+| [api/v1/tasks.py](../backend/app/api/v1/tasks.py) | `GET /tasks`（返回 `TaskListResponse{total, items}`）· `POST /tasks/{id}/pause·resume·cancel`（cancel 返回 `status="failed"` 与 DB 约束一致） | FR-008 |
 | [api/v1/construction.py](../backend/app/api/v1/construction.py) | `/construction/start` · `/status` · `/keywords` · `/stages/{stage}/action` · `/stream`（SSE）；stage 6 confirm 后 BackgroundTask 自动触发 stage 7 | FR-012~019 |
 | [api/v1/dialogues.py](../backend/app/api/v1/dialogues.py) | `/dialogues` CRUD · `/dialogues/{id}/turns`（GET分页/POST SSE流）· `/dialogues/{id}/summarize` · `/graph`（JSON/GraphML）· `/graph/rebuild`（202，调用 `rebuild_graph_stub(db=db)` 真实重建+持久化）；发消息直接 StreamingResponse 不走 Queue | FR-025~028 |
 | [api/v1/review.py](../backend/app/api/v1/review.py) | `/review/status` · `/review/start` · `/outlines` CRUD · `/outlines/{id}/confirm` · `/outlines/{id}/chapters` CRUD · `/outlines/{id}/chapters/{id}/review` · `/outlines/{id}/compile` · `/outlines/{id}/export`（Markdown ✅ / DOCX ✅ / PDF 返回 501）· `/stream`（SSE）；chapter review 通过独立 AsyncSession 的 `_run_chapter_review` wrapper 执行 | FR-020~024 |
@@ -193,7 +194,7 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | [alembic/env.py](../backend/alembic/env.py) | 异步迁移环境；从 `app.core.config` 读取 DATABASE\_URL；注册完整 metadata |
 | [alembic/script.py.mako](../backend/alembic/script.py.mako) | 迁移文件模板 |
 | [alembic/versions/0001\_initial\_schema.py](../backend/alembic/versions/0001_initial_schema.py) | 初始迁移：创建全部 12 张表及索引（对应 schema.sql v1.0） |
-| [alembic/versions/0002\_admin\_columns.py](../backend/alembic/versions/0002_admin_columns.py) | 管理员迁移：users 表新增 is\_admin / is\_active 列；创建 system\_configs 表（FR-029） |
+| [alembic/versions/0002\_admin\_columns.py](../backend/alembic/versions/0002_admin_columns.py) | 管理员迁移：users 表新增 is\_admin / is\_active 列；创建 system\_configs 表（FR-029）；约束名与 schema.sql 对齐（`uq_system_configs_name` / `fk_system_configs_updater`） |
 
 ### backend/scripts/ — 运维脚本
 
@@ -203,39 +204,39 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 
 ---
 
-## src/ — TypeScript 前端 API 客户端层
+## frontend/ — TypeScript 前端层
 
-### src/types/
+### frontend/types/
 
 | 文件 | 职责 |
-|------|------|
-| [src/types/index.ts](../src/types/index.ts) | 跨模块共享类型定义（唯一权威来源）；枚举联合、12 张表实体接口、JSONB 结构类型、ChromaDB / NetworkX 图类型（含 `GraphNodeType` venue 节点、`GraphEdgeType` in\_venue 边）、业务流程类型 |
+| ---- | ---- |
+| [frontend/types/index.ts](../frontend/types/index.ts) | 跨模块共享类型定义（唯一权威来源）；枚举联合、12 张表实体接口、JSONB 结构类型、ChromaDB / NetworkX 图类型（含 `GraphNodeType` venue 节点、`GraphEdgeType` in\_venue 边）、业务流程类型 |
 
-### src/api/
+### frontend/api/
 
 所有方法通过 `http` 客户端调用，统一响应解包（`code !== 0` 时抛 `ApiError`）。
 
 | 文件 | 职责 | 对应 api.md 章节 |
 |------|------|-----------------|
-| [src/api/client.ts](../src/api/client.ts) | 基础 HTTP 客户端；`ApiError`；`tokenStore`（localStorage 令牌管理） | §总体约定 |
-| [src/api/auth.ts](../src/api/auth.ts) | `authApi`：注册 / 登录（自动存 token）/ 登出 / 获取&修改当前用户；`RegisterResponse` 含 `is_admin` | §1 |
-| [src/api/config.ts](../src/api/config.ts) | `configApi`：LLM / 学术数据库（含 `endpoint`）/ 邮件配置的增删改查与连接测试 | §2 |
-| [src/api/projects.ts](../src/api/projects.ts) | `projectsApi`：项目 CRUD / 模式切换 / `archive()` 归档 / 检索历史 / 论文管理（含 `clearPapers()`） / 导出 / 定时配置；`recommendationsApi`：推荐内容列表、发布、点赞、删除 | §3 §5（部分）§9 |
-| [src/api/admin.ts](../src/api/admin.ts) | `adminApi`：用户列表 / 账号启停 / 提权 / 删除 / 重置密码；系统 LLM 配置 CRUD + 测试；系统数据库配置读写 | — |
-| [src/api/construction.ts](../src/api/construction.ts) | `constructionApi`：启动构建 / 状态查询 / 检索词管理 / 阶段操作 / SSE 流 URL | §4 |
-| [src/api/dialogues.ts](../src/api/dialogues.ts) | `dialoguesApi`：对话会话 CRUD / 轮次历史 / 消息发送（SSE fetch）/ 对话摘要 / 知识图谱获取与重建 | §6 |
-| [src/api/review.ts](../src/api/review.ts) | `reviewApi`：`getStatus` / 启动综述 / 架构版本管理 / 章节管理 / 汇总编译 / 导出（文件流）/ SSE 流 URL；含 `ReviewStatusResponse` 接口定义 | §7 |
-| [src/api/tasks.ts](../src/api/tasks.ts) | `tasksApi`：任务列表 / 暂停 / 恢复 / 取消 | §8 |
-| [src/api/inspect.ts](../src/api/inspect.ts) | Inspector & Health API 客户端；`getHealth()` / `getDbHealth()` / `getDeepHealth()` / `getPipelineHealth(projectId)` / `getProjectInspect(projectId)`；完整 TypeScript 类型定义（`CheckResult` / `DeepHealthResponse` / `InspectResponse` 等）；`parseRecommendationSeverity()` 辅助函数（fatal/error/warning/info） | — |
-| [src/api/index.ts](../src/api/index.ts) | 统一桶形导出（re-export 所有 API 模块及 `ApiError` / `tokenStore`） | — |
+| [frontend/api/client.ts](../frontend/api/client.ts) | 基础 HTTP 客户端；`ApiError`；`tokenStore`（localStorage 令牌管理） | §总体约定 |
+| [frontend/api/auth.ts](../frontend/api/auth.ts) | `authApi`：注册 / 登录（自动存 token）/ 登出 / 获取&修改当前用户；`RegisterResponse` 含 `is_admin` | §1 |
+| [frontend/api/config.ts](../frontend/api/config.ts) | `configApi`：LLM / 学术数据库（含 `endpoint`）/ 邮件配置的增删改查与连接测试 | §2 |
+| [frontend/api/projects.ts](../frontend/api/projects.ts) | `projectsApi`：项目 CRUD / 模式切换 / `archive()` 归档 / 检索历史 / 论文管理（含 `clearPapers()`） / 导出（`exportData` 返回 raw `Response`，需 `.blob()` 下载，非 JSON 端点）/ 定时配置；`recommendationsApi`：推荐内容列表、发布、点赞、删除 | §3 §5（部分）§9 |
+| [frontend/api/admin.ts](../frontend/api/admin.ts) | `adminApi`：用户列表 / 账号启停 / 提权 / 删除 / 重置密码；系统 LLM 配置 CRUD + 测试；系统数据库配置读写 | — |
+| [frontend/api/construction.ts](../frontend/api/construction.ts) | `constructionApi`：启动构建 / 状态查询 / 检索词管理 / 阶段操作 / SSE 流 URL | §4 |
+| [frontend/api/dialogues.ts](../frontend/api/dialogues.ts) | `dialoguesApi`：对话会话 CRUD / 轮次历史 / 消息发送（SSE fetch）/ 对话摘要 / 知识图谱获取与重建；`RebuildGraphResponse` 含 `node_count`/`edge_count`/`graph_path` | §6 |
+| [frontend/api/review.ts](../frontend/api/review.ts) | `reviewApi`：`getStatus` / 启动综述 / 架构版本管理 / 章节管理 / 汇总编译 / 导出（文件流）/ SSE 流 URL；含 `ReviewStatusResponse` 接口定义 | §7 |
+| [frontend/api/tasks.ts](../frontend/api/tasks.ts) | `tasksApi`：任务列表（返回 `TaskListResponse{total, items}`，与后端一致）/ 暂停 / 恢复 / 取消；`TaskItem` 含 `updated_at`/`error` 字段；status 类型对齐 DB 约束（无 `"cancelled"`） | §8 |
+| [frontend/api/inspect.ts](../frontend/api/inspect.ts) | Inspector & Health API 客户端；`getHealth()` / `getDbHealth()` / `getDeepHealth()` / `getPipelineHealth(projectId)` / `getProjectInspect(projectId)`；完整 TypeScript 类型定义（`CheckResult` / `DeepHealthResponse` / `InspectResponse` 等）；`StageSnapshot.error_preview` 类型对齐 `StageHistoryItem.error`（`ErrorEnvelopePreview / {raw:string} / null`）；`parseRecommendationSeverity()` 辅助函数（fatal/error/warning/info） | — |
+| [frontend/api/index.ts](../frontend/api/index.ts) | 统一桶形导出（re-export 所有 API 模块及 `ApiError` / `tokenStore`） | — |
 
-### src/components/
+### frontend/components/
 
 | 文件 | 职责 |
 | ---- | ---- |
-| [src/components/InspectorPanel/types.ts](../src/components/InspectorPanel/types.ts) | InspectorPanel 组件内部类型：`PanelLoadState`、`InspectorPanelState`、`ParsedRecommendation`、`StageHistoryRow`、`DependencyRow`、`InspectorPanelProps` |
-| [src/components/InspectorPanel/InspectorPanel.tsx](../src/components/InspectorPanel/InspectorPanel.tsx) | 项目诊断面板 React 组件（qa_design §8）；并发调用 `/inspect` + `/health/pipeline` + `/health/deep`；渲染建议列表（fatal/error/warning/info 严重级别）、论文库统计、配置状态、外部依赖格、活跃阶段、阶段历史；支持自动刷新（refreshInterval）；无 UI 库依赖，通过 CSS 类名传递样式 |
-| [src/components/InspectorPanel/index.ts](../src/components/InspectorPanel/index.ts) | 桶形导出 `InspectorPanel` 组件及相关类型 |
+| [frontend/components/InspectorPanel/types.ts](../frontend/components/InspectorPanel/types.ts) | InspectorPanel 组件内部类型：`PanelLoadState`、`InspectorPanelState`、`ParsedRecommendation`、`StageHistoryRow`、`DependencyRow`、`InspectorPanelProps` |
+| [frontend/components/InspectorPanel/InspectorPanel.tsx](../frontend/components/InspectorPanel/InspectorPanel.tsx) | 项目诊断面板 React 组件（qa_design §8）；并发调用 `/inspect` + `/health/pipeline` + `/health/deep`；渲染建议列表（fatal/error/warning/info 严重级别）、论文库统计、配置状态、外部依赖格、活跃阶段、阶段历史；支持自动刷新（refreshInterval）；无 UI 库依赖，通过 CSS 类名传递样式 |
+| [frontend/components/InspectorPanel/index.ts](../frontend/components/InspectorPanel/index.ts) | 桶形导出 `InspectorPanel` 组件及相关类型 |
 
 ---
 
@@ -268,10 +269,10 @@ docs/schema.sql
 
 docs/api.md
   └── backend/app/schemas/                              （请求/响应 schema）
-  └── src/api/                                          （前端 API 客户端）
+  └── frontend/api/                                     （前端 API 客户端）
 
 docs/spec.md
-  └── src/types/index.ts                                （共享类型定义）
+  └── frontend/types/index.ts                           （共享类型定义）
 ```
 
 ---

@@ -39,10 +39,10 @@ def upgrade() -> None:
         sa.Column("updated_at",   sa.TIMESTAMP(timezone=True), nullable=False,
                   server_default=sa.text("NOW()")),
         sa.PrimaryKeyConstraint("id", name="pk_system_configs"),
-        sa.UniqueConstraint("config_name", name="uq_system_configs_config_name"),
+        sa.UniqueConstraint("config_name", name="uq_system_configs_name"),
         sa.ForeignKeyConstraint(
             ["updated_by"], ["users.id"],
-            name="fk_system_configs_updated_by", ondelete="SET NULL"
+            name="fk_system_configs_updater", ondelete="SET NULL"
         ),
     )
     op.create_index("idx_system_configs_config_name", "system_configs", ["config_name"])

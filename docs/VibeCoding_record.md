@@ -175,7 +175,7 @@ Date:   2026-04-04
 2. docs/api.md（spec 已指向此文件）— 每个端点的 Request/Response 结构、状态码、错误格式
 前端、后端、测试三方的唯一参考。格式建议用 OpenAPI YAML，可直接生成类型。
 
-3. src/types/index.ts（或 types.py） — 所有跨模块共享的数据结构定义
+3. frontend/types/index.ts（或 types.py） — 所有跨模块共享的数据结构定义
 例如 Paper、Project、DialogueTurn、BuildStage 等。这是前后端的类型锚点。
 
 第二阶段：按依赖层级拆分任务
@@ -224,7 +224,7 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 
 （check spec & schema）
 
-根据spec生成所有跨模块共享的数据结构定义，并写入src/types/index.ts
+根据spec生成所有跨模块共享的数据结构定义，并写入frontend/types/index.ts
 
 （check）
 
@@ -395,4 +395,52 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 （check）
 
 任务：根据file_map#未实现（存根 / 待后续阶段开发），逐个检查其条目，并进行开发、修正或补充
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+为什么当前项目下并行存在src和backend两个文件夹？
+
+```Plaintext
+重构已完成：src/ → frontend/
+agent_paperpush/
+├── backend/        ← Python FastAPI
+├── frontend/       ← TypeScript API 客户端 + 类型 + 组件
+│   ├── api/
+│   ├── types/
+│   └── components/
+├── e2e/
+└── docs/
+```
+
+按照这个对称命名方案进行项目重构，并检查API。在修改之后，根据修改更新docs/file_map.md
+
+（check）
+
+任务：检查任务管理模块、系统的调度层等是否功能实现完毕，检查是否存在bug并修正。
+契约文件：docs/file_map.md + docs/api.md
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+任务：根据 docs/schema.sql 逐条检查数据层是否实现完毕，检查是否存在bug并修正。检查数据调度层是否功能齐全，是否存在bug并修正。
+契约文件：docs/file_map.md + docs/schema.sql
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+任务：根据 docs/ui_design.md 逐条检查其中包含的设计是否实现完毕，检查是否存在bug并修正。若有不在该文档里的新前端，检测其实现并更新 ui_design.md
+契约文件：docs/file_map.md + docs/ui_design.md
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+任务：参考 docs/ui_design.md 实现前端
+参考文件：docs/file_map.md, docs/api.md, docs/ui_design.md, frontend/api/*
+要求：根据修改的文件，更新docs/file_map.md，docs/ui_design.md
+
+
+
+任务：检查普通用户和管理员的服务层是否实现完毕，该 web app 是否可以正常打开并访问。
+契约文件：docs/file_map.md
 要求：根据修改的文件，更新docs/file_map.md

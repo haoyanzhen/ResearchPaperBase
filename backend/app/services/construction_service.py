@@ -688,6 +688,10 @@ async def execute_stage7(
             }
             if project:
                 project.status = "idle"
+                # P0 Fix：pipeline 完成后重算 next_push_at，确保调度器按间隔精确触发
+                if project.auto_push and project.push_interval:
+                    from datetime import timedelta
+                    project.next_push_at = _utcnow() + timedelta(days=project.push_interval)
             emit_sse_event(project_id, "pipeline_complete", {
                 "total_papers": project.total_papers if project else 0,
                 "valid_papers": project.valid_papers if project else 0,

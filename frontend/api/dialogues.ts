@@ -86,6 +86,9 @@ export interface GraphData {
 export interface RebuildGraphResponse {
   task_id: string;
   message: string;
+  node_count?: number | null;
+  edge_count?: number | null;
+  graph_path?: string | null;
 }
 
 // ── SSE 事件数据类型（对话流） ────────────────────────────────────────────────

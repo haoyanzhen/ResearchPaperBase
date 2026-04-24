@@ -9,14 +9,22 @@ export interface TaskItem {
   task_id: string;
   project_id: string;
   task_type: TaskType;
-  status: StageStatus | "cancelled";
+  status: StageStatus;
   stage: number | null;
   created_at: ISODateString;
+  updated_at: ISODateString | null;
+  error: string | null;
+}
+
+export interface TaskListResponse {
+  total: number;
+  items: TaskItem[];
 }
 
 export interface TaskStatusResponse {
   task_id: string;
-  status: StageStatus | "cancelled";
+  status: StageStatus;
+  message?: string;
 }
 
 // ── API 方法 ──────────────────────────────────────────────────────────────────
@@ -32,7 +40,7 @@ function qs(params: Record<string, unknown>): string {
 
 export const tasksApi = {
   list: (params?: { status?: string; project_id?: string }) =>
-    http.get<TaskItem[]>(`/tasks${qs(params ?? {})}`),
+    http.get<TaskListResponse>(`/tasks${qs(params ?? {})}`),
 
   pause: (taskId: string) =>
     http.post<TaskStatusResponse>(`/tasks/${taskId}/pause`),

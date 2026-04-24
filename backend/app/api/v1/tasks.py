@@ -19,7 +19,7 @@ from app.models.project import Project
 from app.models.stage import StageRecord
 from app.models.user import User
 from app.schemas.common import ok
-from app.schemas.project import TaskItem, TaskStatusResponse
+from app.schemas.project import TaskItem, TaskListResponse, TaskStatusResponse
 
 router = APIRouter(prefix="/tasks", tags=["任务管理"])
 
@@ -64,7 +64,7 @@ async def list_tasks(
     user_project_ids = [row[0] for row in proj_result.all()]
 
     if not user_project_ids:
-        return ok([])
+        return ok(TaskListResponse(total=0, items=[]))
 
     query = (
         select(StageRecord)
@@ -78,7 +78,11 @@ async def list_tasks(
     result = await db.execute(query)
     records = result.scalars().all()
 
-    return ok([
+    def _latest_ts(r: StageRecord):
+        """返回该记录最后一次状态变更时间，用于 updated_at。"""
+        return r.completed_at or r.failed_at or r.paused_at or r.resumed_at
+
+    items = [
         TaskItem(
             task_id=r.id,
             project_id=r.project_id,
@@ -86,9 +90,12 @@ async def list_tasks(
             status=r.status,
             stage=r.stage,
             created_at=r.started_at,
+            updated_at=_latest_ts(r),
+            error=r.error,
         )
         for r in records
-    ])
+    ]
+    return ok(TaskListResponse(total=len(items), items=items))
 
 
 @router.post("/{task_id}/pause")
@@ -134,7 +141,8 @@ async def cancel_task(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "该任务已结束，无法取消")
 
     record.status = "failed"
-    record.error = "用户取消"
+    record.error = "用户主动取消"
     project.status = "idle"
     await db.commit()
-    return ok(TaskStatusResponse(task_id=task_id, status="cancelled"))
+    # DB status constraint 只允许 failed/completed/paused/running，返回与 DB 一致
+    return ok(TaskStatusResponse(task_id=task_id, status="failed"))

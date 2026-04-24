@@ -70,7 +70,7 @@ class StageRecord(Base):
     resumed_at:   Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failed_at:    Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    # 阶段产出物（各阶段 JSONB 结构见 src/types/index.ts Stage1Result~Stage7Result）
+    # 阶段产出物（各阶段 JSONB 结构见 frontend/types/index.ts Stage1Result~Stage7Result）
     result:       Mapped[dict | None] = mapped_column(JSONB)
     error:        Mapped[str | None]  = mapped_column(Text)
     # 用户在交互暂停点的操作记录（接受/编辑/重新执行/继续，见 UserAction 类型）

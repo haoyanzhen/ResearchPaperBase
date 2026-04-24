@@ -930,5 +930,5 @@ ERR-VAL-{001-005}         业务验证层
 | §7.3 集成测试 | `backend/tests/integration/` |
 | §7.4 契约测试 | `backend/tests/contract/`（CI pipeline） |
 | §7.5 E2E 测试 | `e2e/`（Playwright） |
-| §8 Inspector Panel | `src/components/InspectorPanel/`（前端待实现） |
+| §8 Inspector Panel | `frontend/components/InspectorPanel/`（前端待实现） |
 | §9 日志规范 | `backend/app/core/logging.py`（待实现） |

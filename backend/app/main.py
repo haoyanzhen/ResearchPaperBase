@@ -41,24 +41,40 @@ async def _auto_push_job() -> None:
 
     logger.info("auto_push_job: %d project(s) due for push", len(projects))
 
-    from app.agents.construction.pipeline import run_stage
-    from app.services import construction_service
+    from app.agents.construction.pipeline import run_stage, get_pipeline_params
+    from app.services import construction_service, project_service
+
+    import asyncio
 
     for project in projects:
         try:
+            # 读取上次构建使用的数据库列表；找不到则用全套默认值
             async with AsyncSessionLocal() as db:
+                try:
+                    params = await get_pipeline_params(db, project.id)
+                    databases = params.get("databases") or ["arxiv", "openalex", "semantic_scholar"]
+                    score_threshold = params.get("score_threshold") or 7
+                except Exception:
+                    databases = ["arxiv", "openalex", "semantic_scholar"]
+                    score_threshold = 7
+
                 record, err = await construction_service.start_construction(
                     db=db,
                     project_id=project.id,
                     user_id=project.user_id,
-                    databases=["arxiv", "openalex"],
-                    score_threshold=7,
+                    databases=databases,
+                    score_threshold=score_threshold,
                 )
-            if err:
-                logger.warning("auto_push start_construction error for %s: %s", project.id, err)
-                continue
-            # 在独立协程中运行阶段，避免阻塞调度循环
-            import asyncio
+                if err:
+                    logger.warning("auto_push start_construction error for %s: %s", project.id, err)
+                    continue
+
+                # P0 Fix：立即推进 next_push_at 防止调度循环重复触发
+                # （Stage 7 完成后会再次精确重算；此处仅防止短期重入）
+                await project_service.update_schedule(
+                    db, project, project.auto_push, project.push_interval
+                )
+
             asyncio.create_task(run_stage(project.id, project.user_id, 1, record.id))
             logger.info("auto_push triggered for project %s (record=%s)", project.id, record.id)
         except Exception as exc:

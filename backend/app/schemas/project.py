@@ -155,11 +155,19 @@ class TaskItem(BaseModel):
     status: str
     stage: int | None
     created_at: datetime
+    updated_at: datetime | None = None  # 最近状态变更时间（ended_at / paused_at 等）
+    error: str | None = None            # 失败或取消原因
+
+
+class TaskListResponse(BaseModel):
+    total: int
+    items: list[TaskItem]
 
 
 class TaskStatusResponse(BaseModel):
     task_id: str
     status: str
+    message: str | None = None  # 操作附加说明（如失败原因）
 
 
 # ── 推荐模块 (FR-011) ──────────────────────────────────────────────────────────

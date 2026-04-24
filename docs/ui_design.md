@@ -692,8 +692,79 @@ Date:   2026-04-08
 
 ---
 
+---
+
+## P14 · Inspector 诊断面板（已实现）
+
+> 对应实现：`frontend/components/InspectorPanel/InspectorPanel.tsx`（qa_design §8）
+>
+> 本面板为叠加层（overlay），可挂载到任何需要诊断信息的页面上，不独占路由。
+
+```
+┌─────────────────────────────────────────────┐
+│  Inspector  [刷新]  [×]                     │
+├─────────────────────────────────────────────┤
+│  诊断建议                                   │
+│  🔴 FATAL: LLM 未配置，流水线无法运行       │
+│  🟠 ERROR: 阶段3 评分失败（ERR-LLM-001）   │
+│  🟡 WARNING: arXiv 响应延迟偏高             │
+├───────────────┬─────────────────────────────┤
+│  论文库        │  配置状态                    │
+│  总数   230   │  LLM     gpt-4o ✓           │
+│  有效   47    │  论文库  arxiv, openalex     │
+│  已下载 38    │  邮件    已配置              │
+│  已分析 35    │                              │
+├───────────────┴─────────────────────────────┤
+│  外部依赖                                   │
+│  LLM (主) ✓ 120ms   LLM (备) ✓ 95ms        │
+│  arXiv    ✓ 45ms    OpenAlex ✓ 78ms         │
+│  Semantic ✓ 62ms    ADS      ✗ 超时         │
+│  SMTP     ✓ 33ms                            │
+├─────────────────────────────────────────────┤
+│  活跃阶段                                   │
+│  construction  评分筛选  running  45s        │
+├─────────────────────────────────────────────┤
+│  阶段历史（最近 10 条）                      │
+│  construction 阶段3 failed  ERR-LLM-002      │
+│  construction 阶段2 completed  42s           │
+│  construction 阶段1 completed  8s            │
+└─────────────────────────────────────────────┘
+```
+
+**交互规则：**
+- `open` prop 控制面板展开/折叠（默认展开）
+- `refreshInterval` prop 设置自动刷新间隔（毫秒，0 = 不刷新）
+- 并发调用 `/inspect` + `/health/pipeline` + `/health/deep`（带 AbortController）
+- 建议按严重程度分四级：`fatal` 🔴 / `error` 🟠 / `warning` 🟡 / `info` 🔵
+- 依赖格每个格子带悬浮提示（message / suggestion）
+- 无 UI 库依赖，通过 CSS 类名约定传递样式
+
+---
+
+## 实现现状
+
+| 页面 / 组件 | 状态 | 说明 |
+|------------|------|------|
+| P01 登录/注册 | ⭕ 未实现 | API 层就绪（`authApi`） |
+| P02 项目列表 | ⭕ 未实现 | API 层就绪（`projectsApi`） |
+| P03 模式切换弹窗 | ⭕ 未实现 | API 层就绪（`projectsApi.switchMode`） |
+| P04 构建模式主界面 | ⭕ 未实现 | API 层就绪（`constructionApi`） |
+| P05 论文评分详情弹窗 | ⭕ 未实现 | API 层就绪（`projectsApi.updatePaperScore`） |
+| P06 论文库页 | ⭕ 未实现 | API 层就绪（`projectsApi.listPapers`） |
+| P07 深度研究主界面 | ⭕ 未实现 | API 层就绪（`dialoguesApi`） |
+| P08 知识图谱页 | ⭕ 未实现 | API 层就绪（`dialoguesApi.getGraph`） |
+| P09 综述模式主界面 | ⭕ 未实现 | API 层就绪（`reviewApi`） |
+| P10 综述汇总与导出 | ⭕ 未实现 | API 层就绪（`reviewApi.exportOutline`） |
+| P11 全局设置页 | ⭕ 未实现 | API 层就绪（`configApi`） |
+| P12 推荐模块页 | ⭕ 未实现 | API 层就绪（`recommendationsApi`） |
+| P13 定时推送设置 | ⭕ 未实现 | API 层就绪（`projectsApi.updateSchedule`） |
+| P14 InspectorPanel | ✅ 已实现 | `frontend/components/InspectorPanel/` |
+
+---
+
 ## 变更记录
 
 | 版本 | 日期 | 变更内容 |
 |------|------|---------|
 | v1.0 | 2026-04-08 | 初始版本，覆盖全部核心页面 |
+| v1.1 | 2026-04-24 | 新增 P14 InspectorPanel 设计说明（已实现组件）；新增"实现现状"汇总表 |

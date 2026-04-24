@@ -1,4 +1,4 @@
-import { http } from "./client";
+import { http, tokenStore } from "./client";
 import type {
   ExportFilters,
   ExportResult,
@@ -123,12 +123,6 @@ export interface ScheduleConfig {
   next_push_at: ISODateString | null;
 }
 
-export interface ExportTaskResponse {
-  task_id: string;
-  status: string;
-  message: string;
-}
-
 export interface RecommendationItem {
   recommendation_id: string;
   user_id: string;
@@ -223,15 +217,19 @@ export const projectsApi = {
   cancelTask: (projectId: string) =>
     http.post(`/projects/${projectId}/cancel`),
 
-  // FR-009 数据导出
+  // FR-009 数据导出（返回原始 Response，调用方通过 response.blob() 下载文件）
   exportData: (
     projectId: string,
     exportType: "excel" | "pdf_zip",
     filters?: { is_valid?: boolean; push_status?: boolean },
   ) =>
-    http.post<ExportTaskResponse>(`/projects/${projectId}/export`, {
-      export_type: exportType,
-      ...filters,
+    fetch(`/api/v1/projects/${projectId}/export`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(tokenStore.get() ? { Authorization: `Bearer ${tokenStore.get()}` } : {}),
+      },
+      body: JSON.stringify({ export_type: exportType, ...filters }),
     }),
 
   // FR-010 定时任务

@@ -91,7 +91,7 @@ export interface StageSnapshot {
   started_at: string;
   elapsed_seconds: number | null;
   result_preview: Record<string, unknown> | null;
-  error_preview: Record<string, unknown> | null;
+  error_preview: ErrorEnvelopePreview | { raw: string } | null;
   pending_user_action: string | null;
 }
 
