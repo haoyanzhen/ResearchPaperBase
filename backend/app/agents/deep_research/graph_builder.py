@@ -203,17 +203,47 @@ async def get_graphml(
     return "\n".join(lines)
 
 
-async def rebuild_graph_stub(project_id: str) -> dict:
+async def rebuild_graph_stub(project_id: str, db: AsyncSession | None = None) -> dict:
     """
-    知识图谱重建存根（FR-025）。
+    知识图谱重建（FR-025）。
 
-    FR-025 说明：深度研究模式以只读方式使用知识图谱；
-    实际的图数据库写入应在构建模式 stage6_storage 中进行。
-    此处仅返回一个任务 ID 表示"已接受重建请求"。
-
-    后续迭代可在此触发 ChromaDB embedding 重建 + NetworkX 图更新。
+    若传入 db session，调用 build_graph_data() 重建图并持久化到
+    STORAGE_DIR/graphs/{project_id}.json；否则仅返回任务 ID。
     """
     from app.utils.ids import new_id
     task_id = new_id("gt")
-    logger.info("graph rebuild requested for project %s (stub, task_id=%s)", project_id, task_id)
-    return {"task_id": task_id, "message": "知识图谱重建任务已提交"}
+
+    if db is None:
+        logger.info("graph rebuild requested for project %s (no db, task_id=%s)", project_id, task_id)
+        return {"task_id": task_id, "message": "知识图谱重建任务已提交（无数据库连接）"}
+
+    try:
+        import json
+        import os
+
+        from app.core.config import settings
+
+        graph_data = await build_graph_data(db, project_id)
+        node_count = len(graph_data.get("nodes", []))
+        edge_count = len(graph_data.get("edges", []))
+
+        graph_dir = os.path.join(settings.STORAGE_DIR, "graphs")
+        os.makedirs(graph_dir, exist_ok=True)
+        graph_path = os.path.join(graph_dir, f"{project_id}.json")
+        with open(graph_path, "w", encoding="utf-8") as fh:
+            json.dump(graph_data, fh, ensure_ascii=False, default=str)
+
+        logger.info(
+            "graph rebuild complete for project %s: %d nodes, %d edges → %s",
+            project_id, node_count, edge_count, graph_path,
+        )
+        return {
+            "task_id": task_id,
+            "message": "知识图谱重建完成",
+            "node_count": node_count,
+            "edge_count": edge_count,
+            "graph_path": graph_path,
+        }
+    except Exception as exc:
+        logger.error("graph rebuild failed for project %s: %s", project_id, exc)
+        return {"task_id": task_id, "message": f"知识图谱重建失败：{exc}"}

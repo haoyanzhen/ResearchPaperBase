@@ -12,7 +12,10 @@ ChromaDB 和 NetworkX 的实际集成需要在添加相应依赖后实现（见 
 论文关系型数据（papers / project_paper_relations）已由前序阶段写入。
 """
 
+import json
 import logging
+import os
+import re
 from typing import Any
 
 from sqlalchemy import func, select
@@ -20,52 +23,119 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base import emit_sse_event
 from app.agents.construction.pipeline import mark_stage_paused
+from app.core.config import settings
 from app.models.paper import Paper, ProjectPaperRelation
 from app.models.stage import StageRecord
 
 logger = logging.getLogger(__name__)
 
 
+def _normalize(s: str) -> str:
+    """规范化字符串为合法节点 ID：小写、空格→下划线、删除特殊字符。"""
+    s = s.lower().strip()
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(r"[^\w\-]", "", s)
+    return s[:80]
+
+
 async def _sync_chromadb(project_id: str, papers: list[Paper]) -> dict:
     """
-    TODO: ChromaDB 向量同步存根。
-    添加 chromadb>=0.4.0 依赖并实现后替换此函数。
+    将论文元数据序列化为 JSON 缓存（轻量替代方案，无 ChromaDB 依赖）。
 
-    预期实现：
-      1. 使用 Paper.ai_analysis["summary"] + abstract 构建文档文本
-      2. 调用 embedding API（复用 LLM provider）生成向量
-      3. 将 (paper_id, vector, metadata) 写入 ChromaDB collection = project_id
+    存储路径：STORAGE_DIR/chroma_cache/{project_id}.json
+    每条文档包含 id、title、abstract、venue、pub_date、authors、ai_summary，
+    供 graph_rag_retrieve() 作为全文检索基础。
     """
-    logger.info(
-        "ChromaDB sync stub: would sync %d papers for project %s (not implemented)",
-        len(papers), project_id
-    )
+    cache_dir = os.path.join(settings.STORAGE_DIR, "chroma_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_path = os.path.join(cache_dir, f"{project_id}.json")
+
+    docs = []
+    for p in papers:
+        docs.append({
+            "id": p.id,
+            "title": p.title,
+            "abstract": p.abstract or "",
+            "venue": p.venue or "",
+            "pub_date": str(p.pub_date) if p.pub_date else None,
+            "authors": p.authors or [],
+            "ai_summary": (p.ai_analysis or {}).get("summary", ""),
+        })
+
+    with open(cache_path, "w", encoding="utf-8") as fh:
+        json.dump({"project_id": project_id, "docs": docs}, fh, ensure_ascii=False, default=str)
+
+    logger.info("Chroma cache written: %d docs → %s", len(docs), cache_path)
     return {
-        "chromadb_synced": False,
-        "chromadb_count": 0,
-        "chromadb_note": "ChromaDB 集成待实现（缺少依赖 chromadb）",
+        "chromadb_synced": True,
+        "chromadb_count": len(docs),
+        "chromadb_note": "JSON 元数据缓存（轻量替代，无向量嵌入）",
     }
 
 
 async def _update_networkx_graph(project_id: str, papers: list[Paper]) -> dict:
     """
-    TODO: NetworkX 知识图谱增量更新存根。
-    添加 networkx>=3.0 依赖并实现后替换此函数。
+    构建 NetworkX DiGraph 并序列化为 JSON 持久化存储。
 
-    预期实现：
-      1. 每篇论文作为节点（paper_id, title, pub_date, venue 等属性）
-      2. 相同作者的论文间建立 co-author 边
-      3. 同一期刊的论文间建立 co-venue 边
-      4. 序列化为 JSON（或 GraphML）持久化存储
+    节点类型：paper、author、venue
+    边类型：authored_by（paper→author）、in_venue（paper→venue）、co_author（author↔author）
+
+    存储路径：STORAGE_DIR/graphs/{project_id}.json（node-link 格式）
     """
+    try:
+        import networkx as nx
+    except ImportError:
+        logger.warning("networkx not installed; skipping graph update for project %s", project_id)
+        return {
+            "graph_updated": False,
+            "graph_node_count": 0,
+            "graph_note": "networkx 未安装，跳过图更新",
+        }
+
+    G: nx.DiGraph = nx.DiGraph()
+
+    # 建立论文节点与 author/venue 节点及边
+    for paper in papers:
+        G.add_node(paper.id, type="paper", title=(paper.title or "")[:120],
+                   pub_date=str(paper.pub_date) if paper.pub_date else "")
+
+        author_ids: list[str] = []
+        for author in (paper.authors or []):
+            au_id = f"au_{_normalize(author)}"
+            if not G.has_node(au_id):
+                G.add_node(au_id, type="author", name=author)
+            G.add_edge(paper.id, au_id, type="authored_by")
+            author_ids.append(au_id)
+
+        # co_author 边（同一篇论文的作者互连）
+        for i in range(len(author_ids)):
+            for j in range(i + 1, len(author_ids)):
+                if not G.has_edge(author_ids[i], author_ids[j]):
+                    G.add_edge(author_ids[i], author_ids[j], type="co_author")
+
+        if paper.venue:
+            v_id = f"v_{_normalize(paper.venue)}"
+            if not G.has_node(v_id):
+                G.add_node(v_id, type="venue", name=paper.venue)
+            G.add_edge(paper.id, v_id, type="in_venue")
+
+    graph_dir = os.path.join(settings.STORAGE_DIR, "graphs")
+    os.makedirs(graph_dir, exist_ok=True)
+    graph_path = os.path.join(graph_dir, f"{project_id}.json")
+
+    graph_data = nx.node_link_data(G)
+    with open(graph_path, "w", encoding="utf-8") as fh:
+        json.dump(graph_data, fh, ensure_ascii=False, default=str)
+
     logger.info(
-        "NetworkX graph update stub: would update %d nodes for project %s (not implemented)",
-        len(papers), project_id
+        "NetworkX graph written: %d nodes, %d edges → %s",
+        G.number_of_nodes(), G.number_of_edges(), graph_path,
     )
     return {
-        "graph_updated": False,
-        "graph_node_count": 0,
-        "graph_note": "NetworkX 图数据库集成待实现（缺少依赖 networkx）",
+        "graph_updated": True,
+        "graph_node_count": G.number_of_nodes(),
+        "graph_edge_count": G.number_of_edges(),
+        "graph_path": graph_path,
     }
 
 

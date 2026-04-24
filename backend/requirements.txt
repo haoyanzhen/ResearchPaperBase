@@ -14,3 +14,11 @@ python-dotenv>=1.0.0
 # Agent 层依赖
 pyyaml>=6.0.0           # YAML 配置文件（提示词 + LLM 参数）
 pypdf>=4.0.0            # PDF 文本提取（阶段4）
+# 数据导出（FR-009）
+openpyxl>=3.1.0         # Excel 导出
+# 综述导出（FR-023/024）
+python-docx>=1.1.0      # DOCX 导出
+# 知识图谱（stage6 / FR-025）
+networkx>=3.3           # 图构建与序列化
+# 定时调度（FR-010）
+apscheduler>=3.10.0     # 自动推送定时触发

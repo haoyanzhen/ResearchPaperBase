@@ -434,6 +434,69 @@ async def export_outline(
 
     if fmt == "markdown":
         return content_bytes, "text/markdown; charset=utf-8"
-    # PDF / DOCX: 存根，尚未实现，返回 None 由路由层报 501
-    # TODO: 后续迭代接入 WeasyPrint / python-docx
+
+    if fmt == "docx":
+        docx_bytes = _compile_docx(compiled, outline_data, project.name)
+        return docx_bytes, (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    # pdf: 未实现
     return None
+
+
+def _compile_docx(markdown_text: str, outline_data: dict, project_name: str) -> bytes:
+    """将 Markdown 综述文本转换为 DOCX 字节流。"""
+    import io
+    import re
+
+    from docx import Document
+
+    doc = Document()
+
+    # 文档标题
+    title_text = outline_data.get("title") or project_name
+    doc.add_heading(title_text, level=0)
+
+    abstract = outline_data.get("abstract", "")
+    if abstract:
+        p = doc.add_paragraph()
+        p.add_run("摘要：").bold = True
+        p.add_run(abstract)
+
+    keywords = outline_data.get("keywords") or []
+    if keywords:
+        p = doc.add_paragraph()
+        p.add_run("关键词：").bold = True
+        p.add_run("，".join(keywords))
+
+    def _add_inline(para, text: str) -> None:
+        """处理行内 **加粗** 和 *斜体*。"""
+        parts = re.split(r"(\*\*[^*]+\*\*|\*[^*]+\*)", text)
+        for part in parts:
+            if part.startswith("**") and part.endswith("**"):
+                para.add_run(part[2:-2]).bold = True
+            elif part.startswith("*") and part.endswith("*"):
+                para.add_run(part[1:-1]).italic = True
+            else:
+                para.add_run(part)
+
+    for line in markdown_text.split("\n"):
+        stripped = line.rstrip()
+        if stripped.startswith("#### "):
+            doc.add_heading(stripped[5:], level=4)
+        elif stripped.startswith("### "):
+            doc.add_heading(stripped[4:], level=3)
+        elif stripped.startswith("## "):
+            doc.add_heading(stripped[3:], level=2)
+        elif stripped.startswith("# "):
+            pass  # 顶级标题已由 outline_data.title 添加，跳过重复行
+        elif stripped == "---":
+            doc.add_paragraph()
+        elif stripped:
+            para = doc.add_paragraph()
+            _add_inline(para, stripped)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()

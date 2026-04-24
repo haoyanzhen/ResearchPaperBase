@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v3.0 · 2026-04-24
+**文档版本**：v3.1 · 2026-04-24
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -40,8 +40,8 @@ agent_paperpush/
 
 | 文件 | 职责 |
 |------|------|
-| [backend/app/main.py](../backend/app/main.py) | FastAPI 应用入口；注册路由、CORS 中间件、/health 端点 |
-| [backend/requirements.txt](../backend/requirements.txt) | Python 依赖声明 |
+| [backend/app/main.py](../backend/app/main.py) | FastAPI 应用入口；注册路由、CORS 中间件、/health 端点；`lifespan` 上下文启动 APScheduler（FR-010 自动推送，每 5 分钟检查 `next_push_at <= now`） |
+| [backend/requirements.txt](../backend/requirements.txt) | Python 依赖声明（含 openpyxl / python-docx / networkx / apscheduler） |
 | [backend/.env.example](../backend/.env.example) | 环境变量模板（DATABASE\_URL / SECRET\_KEY / APP\_ENV 等） |
 | [backend/alembic.ini](../backend/alembic.ini) | Alembic 迁移配置；指向 `alembic/` 脚本目录 |
 
@@ -96,7 +96,7 @@ agent_paperpush/
 | [services/project\_service.py](../backend/app/services/project_service.py) | 项目 CRUD；模式切换；论文关联管理（含 `clear_papers` 清空所有关联）；`archive_project` 归档；评分更新；推荐 CRUD；定时配置 |
 | [services/construction\_service.py](../backend/app/services/construction_service.py) | 关键词 CRUD（含所有权校验）；阶段记录管理；启动构建；状态查询；阶段操作（confirm/retry/skip，confirm 时通过 `_apply_stage_modifications` 立即应用 removed\_ids / score\_overrides / analysis\_overrides）；FR-018 邮件发送（`send_stage7_email` / `execute_stage7`）；`get_pipeline_params` |
 | [services/dialogue\_service.py](../backend/app/services/dialogue_service.py) | FR-025~028 深度研究模式业务逻辑：对话会话 CRUD；`list_turns`（分页）；`_derive_sub_mode`（从最近轮次派生）；`_parse_summary` / `_summary_preview`（AgentSummary JSON 序列化） |
-| [services/review\_service.py](../backend/app/services/review_service.py) | FR-020~024 综述模式业务逻辑：启动综述 `start_review`（创建 outline + stage1 record）；架构 CRUD；`confirm_outline`（创建章节记录 + stage3 record）；章节 CRUD；`trigger_chapter_review`；`compile_outline`（stage5）；`get_review_status`；`export_outline`（Markdown / PDF存根 / DOCX存根） |
+| [services/review\_service.py](../backend/app/services/review_service.py) | FR-020~024 综述模式业务逻辑：启动综述 `start_review`；架构 CRUD；`confirm_outline`；章节 CRUD；`trigger_chapter_review`；`compile_outline`（stage5）；`get_review_status`；`export_outline`（Markdown ✅ / DOCX ✅ via `_compile_docx()` / PDF 存根） |
 
 ### backend/app/api/v1/ — HTTP 路由层
 
@@ -105,11 +105,11 @@ agent_paperpush/
 | [api/v1/router.py](../backend/app/api/v1/router.py) | 注册所有子路由到 `/api/v1` | — |
 | [api/v1/auth.py](../backend/app/api/v1/auth.py) | `POST /auth/register` · `login` · `logout` · `GET/PATCH /auth/me` | FR-001 |
 | [api/v1/config.py](../backend/app/api/v1/config.py) | `GET/POST/PATCH/DELETE /config/llm` · `/config/databases` · `/config/email` | FR-002~004 |
-| [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/archive` · `/stage-records` · `/papers`（含 `DELETE /papers` 清空全部） · `/export` · `/schedule` · `/recommendations` | FR-005~011 |
+| [api/v1/projects.py](../backend/app/api/v1/projects.py) | `/projects` CRUD · `/mode` · `/archive` · `/stage-records` · `/papers`（含 `DELETE /papers` 清空全部；`POST /papers` 同步 arXiv/DOI 抓取入库，FR-007）· `/export`（同步生成 Excel/PDF-ZIP，StreamingResponse，FR-009）· `/schedule` · `/recommendations` | FR-005~011 |
 | [api/v1/tasks.py](../backend/app/api/v1/tasks.py) | `GET /tasks` · `POST /tasks/{id}/pause·resume·cancel` | FR-008 |
 | [api/v1/construction.py](../backend/app/api/v1/construction.py) | `/construction/start` · `/status` · `/keywords` · `/stages/{stage}/action` · `/stream`（SSE）；stage 6 confirm 后 BackgroundTask 自动触发 stage 7 | FR-012~019 |
-| [api/v1/dialogues.py](../backend/app/api/v1/dialogues.py) | `/dialogues` CRUD · `/dialogues/{id}/turns`（GET分页/POST SSE流）· `/dialogues/{id}/summarize` · `/graph`（JSON/GraphML）· `/graph/rebuild`（202存根）；发消息直接 StreamingResponse 不走 Queue | FR-025~028 |
-| [api/v1/review.py](../backend/app/api/v1/review.py) | `/review/status` · `/review/start` · `/outlines` CRUD · `/outlines/{id}/confirm` · `/outlines/{id}/chapters` CRUD · `/outlines/{id}/chapters/{id}/review` · `/outlines/{id}/compile` · `/outlines/{id}/export`（Markdown；PDF/DOCX 返回 501）· `/stream`（SSE）；chapter review 通过独立 AsyncSession 的 `_run_chapter_review` wrapper 执行 | FR-020~024 |
+| [api/v1/dialogues.py](../backend/app/api/v1/dialogues.py) | `/dialogues` CRUD · `/dialogues/{id}/turns`（GET分页/POST SSE流）· `/dialogues/{id}/summarize` · `/graph`（JSON/GraphML）· `/graph/rebuild`（202，调用 `rebuild_graph_stub(db=db)` 真实重建+持久化）；发消息直接 StreamingResponse 不走 Queue | FR-025~028 |
+| [api/v1/review.py](../backend/app/api/v1/review.py) | `/review/status` · `/review/start` · `/outlines` CRUD · `/outlines/{id}/confirm` · `/outlines/{id}/chapters` CRUD · `/outlines/{id}/chapters/{id}/review` · `/outlines/{id}/compile` · `/outlines/{id}/export`（Markdown ✅ / DOCX ✅ / PDF 返回 501）· `/stream`（SSE）；chapter review 通过独立 AsyncSession 的 `_run_chapter_review` wrapper 执行 | FR-020~024 |
 | [api/v1/admin.py](../backend/app/api/v1/admin.py) | `/admin/users` 用户列表/启停/提权/删除/重置密码；`/admin/system-config/llm` 系统 LLM CRUD + 连通性测试；`/admin/system-config/databases` 系统数据库配置；所有端点均通过 `get_current_admin` 鉴权（非管理员返回 403） | FR-029 |
 | [api/v1/health.py](../backend/app/api/v1/health.py) | `GET /health`（浅层，公开）· `GET /health/db`（PostgreSQL 连通性，公开，503+ErrorEnvelope on fail）· `GET /health/deep`（全依赖并发探针：LLM主/备+arXiv/OpenAlex/SS/ADS+SMTP，需认证，返回 `DeepHealthResponse`）· `GET /health/pipeline/{id}`（流水线活跃阶段快照，需认证，ErrorEnvelope 解析）| — |
 | [api/v1/inspect.py](../backend/app/api/v1/inspect.py) | `GET /projects/{id}/inspect`（项目诊断快照，需认证，项目所有者或管理员）；返回阶段历史、论文/关键词统计、配置状态、自动修复建议（`recommendations` 按优先级生成） | — |
@@ -140,7 +140,7 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | [agents/construction/stage3\_scoring.py](../backend/app/agents/construction/stage3_scoring.py) | AI 评分（FR-013）：批量并发 LLM 评分；按 score\_threshold 设置 is\_valid；支持 score\_overrides 手动覆盖；更新 project.valid\_papers |
 | [agents/construction/stage4\_download.py](../backend/app/agents/construction/stage4_download.py) | PDF 下载与解析（FR-015）：arXiv 直链 + Unpaywall 开放获取；`pypdf` 提取文本；存储到 `STORAGE_DIR/papers/` |
 | [agents/construction/stage5\_analysis.py](../backend/app/agents/construction/stage5_analysis.py) | AI 分析生成（FR-016）：优先全文、次选摘要；LLM 生成 summary / highlights / relevance\_points / technical\_methods；支持 analysis\_overrides |
-| [agents/construction/stage6\_storage.py](../backend/app/agents/construction/stage6_storage.py) | 格式化与存储（FR-017）：完整性校验；ChromaDB 同步存根；NetworkX 图更新存根；paused 等待用户 confirm 触发 stage7 |
+| [agents/construction/stage6\_storage.py](../backend/app/agents/construction/stage6_storage.py) | 格式化与存储（FR-017）：完整性校验；`_sync_chromadb()`（JSON 元数据缓存→`STORAGE_DIR/chroma_cache/{project_id}.json`）；`_update_networkx_graph()`（networkx DiGraph 含 co-author 边→`STORAGE_DIR/graphs/{project_id}.json`）；paused 等待用户 confirm 触发 stage7 |
 
 #### 深度研究模式 Agent（FR-025~028）
 
@@ -148,7 +148,7 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | ---- | ---- |
 | [agents/deep\_research/\_\_init\_\_.py](../backend/app/agents/deep_research/__init__.py) | 公开接口：`run_dialogue_turn` / `generate_summary` / `build_graph_data` / `get_graphml` / `rebuild_graph_stub` |
 | [agents/deep\_research/pipeline.py](../backend/app/agents/deep_research/pipeline.py) | `SUB_MODE_NAMES`；`load_deep_research_prompts()`（lru\_cache）；`get_project_valid_papers`；`graph_rag_retrieve`（关键词匹配简化版 Graph-RAG）；`build_context_from_papers`；`build_history_text`；`extract_referenced_papers` |
-| [agents/deep\_research/graph\_builder.py](../backend/app/agents/deep_research/graph_builder.py) | `build_graph_data(db, project_id, node_types)`：从 DB 动态构建图（paper/author/keyword/venue 节点 + authored\_by/has\_keyword/in\_venue 边）；`get_graphml()`：手动生成 GraphML XML；`rebuild_graph_stub()`：图重建存根（FR-025 只读约束，实际写入在 stage6） |
+| [agents/deep\_research/graph\_builder.py](../backend/app/agents/deep_research/graph_builder.py) | `build_graph_data(db, project_id, node_types)`：从 DB 动态构建图（paper/author/keyword/venue 节点 + authored\_by/has\_keyword/in\_venue 边）；`get_graphml()`：手动生成 GraphML XML；`rebuild_graph_stub(db)`：若传入 db 则调用 `build_graph_data()` 并持久化到 `STORAGE_DIR/graphs/{project_id}.json`，返回 node/edge 计数 |
 | [agents/deep\_research/dialogue\_agent.py](../backend/app/agents/deep_research/dialogue_agent.py) | `run_dialogue_turn()`：Graph-RAG 检索→LLM 调用→提取引用→持久化 turn→yield SSE 事件（turn\_start / text\_delta / turn\_complete）；`generate_summary()`：FR-028 生成 AgentSummary JSON 并写入 dialogue.summary |
 
 #### 综述模式 Agent（FR-020~024）
@@ -276,15 +276,11 @@ docs/spec.md
 
 ---
 
-## 未实现（存根 / 待后续阶段开发）
+## 未完全实现（仍有改进空间）
 
-| 功能 | 存根位置 | 说明 |
-|------|----------|------|
-| FR-009 数据导出 Worker | `projects.py: export_data()` | 返回占位 task\_id，实际 Excel/ZIP 生成由 Agent Worker 实现 |
-| FR-007 手动添加论文解析 | `projects.py: add_paper()` | 返回占位 paper\_id，实际 DOI/arXiv 抓取与 PDF 解析由 Agent 实现 |
-| ChromaDB 向量同步 | `stage6_storage.py: _sync_chromadb()`（存根）| FR-017 与 PostgreSQL 同事务写入；需添加 `chromadb>=0.4.0` 依赖 |
-| NetworkX 图增量更新 | `stage6_storage.py: _update_networkx_graph()`（存根）| FR-017 论文节点 + co-author/co-venue 边；需添加 `networkx>=3.0` 依赖 |
-| 综述导出 PDF/DOCX | `review.py: export_outline(format=pdf\|docx)` → HTTP 501 | FR-023；后续迭代接入 WeasyPrint / python-docx |
-| Graph-RAG 向量检索 | `pipeline.py: graph_rag_retrieve()`（关键词降级） | FR-026；当前为 DB 关键词匹配，后续接入 ChromaDB embedding 检索 + 图多跳扩展 |
-| 知识图谱持久化重建 | `graph_builder.py: rebuild_graph_stub()` → 202 | FR-025；实际写入应在 construction stage6；深度研究模式只读 |
-| 定时调度器 | — | FR-010 next\_push\_at 计算与触发，Celery/APScheduler 实现 |
+| 功能 | 位置 | 当前状态 | 剩余工作 |
+| ---- | ---- | -------- | -------- |
+| 综述导出 PDF | `review.py: export_outline(format=pdf)` → HTTP 501 | ❌ 存根 | 接入 WeasyPrint 或 Pandoc |
+| Graph-RAG 向量检索 | `pipeline.py: graph_rag_retrieve()` | ⚠️ 关键词降级 | 接入 ChromaDB embedding + 图多跳扩展（FR-026） |
+| ChromaDB 真实向量 | `stage6_storage.py: _sync_chromadb()` | ⚠️ JSON 元数据缓存 | 添加 `chromadb` 依赖，存储真实 embedding |
+| PDF base64 解析 | `projects.py: add_paper(pdf_file=...)` | ⚠️ 仅保存文件 | 接入 pypdf 提取标题/作者/摘要 |

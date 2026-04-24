@@ -379,5 +379,5 @@ async def rebuild_graph(
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
 
-    result = await rebuild_graph_stub(project_id)
+    result = await rebuild_graph_stub(project_id, db=db)
     return ok(RebuildGraphResponse(**result))

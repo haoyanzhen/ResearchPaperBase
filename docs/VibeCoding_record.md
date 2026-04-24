@@ -393,3 +393,6 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 要求：根据修改的文件，更新docs/file_map.md
 
 （check）
+
+任务：根据file_map#未实现（存根 / 待后续阶段开发），逐个检查其条目，并进行开发、修正或补充
+要求：根据修改的文件，更新docs/file_map.md

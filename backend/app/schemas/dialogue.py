@@ -117,3 +117,6 @@ class GraphDataResponse(BaseModel):
 class RebuildGraphResponse(BaseModel):
     task_id: str
     message: str
+    node_count: int | None = None
+    edge_count: int | None = None
+    graph_path: str | None = None

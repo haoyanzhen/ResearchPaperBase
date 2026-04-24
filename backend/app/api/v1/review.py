@@ -474,11 +474,11 @@ async def export_outline(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # PDF / DOCX 尚未实现，先行返回 501
-    if format in ("pdf", "docx"):
+    # PDF 尚未实现
+    if format == "pdf":
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail=f"{format.upper()} 导出尚未实现，请使用 markdown 格式",
+            detail="PDF 导出尚未实现，请使用 markdown 或 docx 格式",
         )
 
     result = await review_service.export_outline(
@@ -492,7 +492,8 @@ async def export_outline(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="综述架构不存在")
 
     content_bytes, media_type = result
-    filename = f"review_{outline_id}.md"
+    ext = {"markdown": "md", "docx": "docx"}.get(format, "md")
+    filename = f"review_{outline_id}.{ext}"
 
     return StreamingResponse(
         iter([content_bytes]),

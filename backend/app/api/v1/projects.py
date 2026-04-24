@@ -1,8 +1,22 @@
+import io
+import logging
+import os
+import zipfile
+from datetime import date, datetime, timezone
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.models.paper import Paper, ProjectPaperRelation
 from app.models.user import User
 from app.schemas.common import ok
 from app.schemas.project import (
@@ -30,7 +44,8 @@ from app.schemas.project import (
 )
 from app.services import project_service
 from app.utils.ids import new_id
-from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects", tags=["研究主题"])
 
@@ -303,13 +318,157 @@ async def add_paper(
     if not any([body.doi, body.arxiv_id, body.pdf_file]):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "须提供 doi、arxiv_id 或 pdf_file 之一")
 
-    # 实际解析与下载由 Agent 层异步处理；此处仅创建占位记录
-    placeholder_id = new_id("paper")
+    paper_data: dict | None = None
+
+    # ── arXiv ID 获取元数据 ────────────────────────────────────────────────────
+    if body.arxiv_id:
+        arxiv_id = body.arxiv_id.strip()
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.get(
+                    f"https://export.arxiv.org/api/query?id_list={arxiv_id}"
+                )
+            if resp.status_code == 200:
+                from app.agents.construction.stage2_retrieval import _parse_arxiv
+                parsed = _parse_arxiv(resp.text, "")
+                if parsed:
+                    paper_data = {**parsed[0], "source": "arxiv"}
+        except Exception as exc:
+            logger.warning("arXiv fetch failed for %s: %s", arxiv_id, exc)
+        if paper_data is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"无法从 arXiv 获取 {arxiv_id} 的元数据，请检查 ID 是否正确",
+            )
+
+    # ── DOI → OpenAlex 获取元数据 ─────────────────────────────────────────────
+    elif body.doi:
+        doi = body.doi.strip()
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.get(
+                    f"https://api.openalex.org/works/https://doi.org/{doi}",
+                    headers={"User-Agent": "PaperPush/1.0 (mailto:app@paperpush.local)"},
+                )
+            if resp.status_code == 200:
+                w = resp.json()
+                title = (w.get("title") or "").strip()
+                if title:
+                    authors = [
+                        (a.get("author", {}) or {}).get("display_name", "")
+                        for a in (w.get("authorships") or [])
+                    ]
+                    pub_year = w.get("publication_year")
+                    venue_obj = w.get("primary_location", {}) or {}
+                    venue_source = (venue_obj.get("source") or {}) or {}
+                    paper_data = {
+                        "title": title,
+                        "doi": doi,
+                        "arxiv_id": None,
+                        "authors": [a for a in authors if a],
+                        "pub_date": f"{pub_year}-01-01" if pub_year else None,
+                        "venue": venue_source.get("display_name") or "OpenAlex",
+                        "abstract": w.get("abstract") or None,
+                        "source": "openalex",
+                    }
+        except Exception as exc:
+            logger.warning("OpenAlex fetch failed for doi %s: %s", doi, exc)
+        if paper_data is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"无法通过 DOI {doi} 获取论文元数据",
+            )
+
+    # ── PDF base64 — 保存文件，元数据待后续解析 ────────────────────────────────
+    elif body.pdf_file:
+        import base64
+        paper_id_tmp = new_id("paper")
+        try:
+            pdf_bytes = base64.b64decode(body.pdf_file)
+        except Exception:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "pdf_file 不是有效的 base64 编码")
+        pdf_dir = os.path.join(settings.STORAGE_DIR, "papers")
+        os.makedirs(pdf_dir, exist_ok=True)
+        pdf_path = os.path.join(pdf_dir, f"{paper_id_tmp}.pdf")
+        with open(pdf_path, "wb") as fh:
+            fh.write(pdf_bytes)
+        paper_data = {
+            "title": f"（待解析）{paper_id_tmp}",
+            "doi": None,
+            "arxiv_id": None,
+            "authors": [],
+            "pub_date": None,
+            "venue": None,
+            "abstract": None,
+            "source": "manual",
+            "_pdf_path": pdf_path,
+        }
+
+    # ── 写入数据库（ON CONFLICT DO NOTHING 去重）────────────────────────────────
+    now = datetime.now(timezone.utc)
+    title_lower = (paper_data.get("title") or "").strip().lower()
+    if not title_lower:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "无法获取论文标题")
+
+    pub_date_obj: date | None = None
+    if paper_data.get("pub_date"):
+        try:
+            pub_date_obj = date.fromisoformat(paper_data["pub_date"])
+        except ValueError:
+            pass
+
+    paper_id = new_id("paper")
+    insert_stmt = (
+        pg_insert(Paper)
+        .values(
+            id=paper_id,
+            doi=paper_data.get("doi") or None,
+            arxiv_id=paper_data.get("arxiv_id") or None,
+            title=title_lower,
+            authors=paper_data.get("authors") or [],
+            pub_date=pub_date_obj,
+            venue=paper_data.get("venue") or None,
+            abstract=paper_data.get("abstract") or None,
+            source=paper_data.get("source"),
+            retrieved_at=now,
+            download_status="not_downloaded",
+            ai_analysis_status="not_analyzed",
+            pdf_path=paper_data.get("_pdf_path"),
+            created_at=now,
+            updated_at=now,
+        )
+        .on_conflict_do_nothing()
+    )
+    result = await db.execute(insert_stmt)
+    if result.rowcount == 0:
+        # 已存在，查找已有 ID
+        existing = await db.execute(select(Paper.id).where(Paper.title == title_lower))
+        row = existing.scalar_one_or_none()
+        if row:
+            paper_id = row
+
+    # 建立课题-论文关联
+    rel_stmt = (
+        pg_insert(ProjectPaperRelation)
+        .values(
+            id=new_id("ppr"),
+            project_id=project_id,
+            paper_id=paper_id,
+            is_valid=False,
+            push_status=False,
+            created_at=now,
+            updated_at=now,
+        )
+        .on_conflict_do_nothing()
+    )
+    await db.execute(rel_stmt)
+    await db.commit()
+
     return ok(AddPaperResponse(
-        paper_id=placeholder_id,
-        title="（解析中）",
-        status="analyzing",
-        message="论文已提交，正在解析入库...",
+        paper_id=paper_id,
+        title=paper_data.get("title", "（解析中）"),
+        status="added",
+        message="论文已入库",
     ))
 
 
@@ -504,13 +663,65 @@ async def export_data(
     if body.export_type not in ("excel", "pdf_zip"):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "无效的导出类型")
 
-    # 生成任务 ID（实际导出由后台 worker 处理）
-    task_id = new_id("exp")
-    return ok(ExportResponse(
-        task_id=task_id,
-        status="pending",
-        message=f"{body.export_type} 导出任务已提交，完成后可通过 /tasks/{task_id} 获取下载链接",
-    ))
+    # ── 查询论文 ─────────────────────────────────────────────────────────────────
+    stmt = (
+        select(Paper, ProjectPaperRelation)
+        .join(ProjectPaperRelation, Paper.id == ProjectPaperRelation.paper_id)
+        .where(ProjectPaperRelation.project_id == project_id)
+        .order_by(ProjectPaperRelation.total_score.desc().nullslast())
+    )
+    if body.is_valid is not None:
+        stmt = stmt.where(ProjectPaperRelation.is_valid == body.is_valid)
+    if body.push_status is not None:
+        stmt = stmt.where(ProjectPaperRelation.push_status == body.push_status)
+
+    rows = (await db.execute(stmt)).all()
+
+    # ── Excel 导出 ───────────────────────────────────────────────────────────────
+    if body.export_type == "excel":
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Papers"
+        headers = ["标题", "作者", "期刊/会议", "发表日期", "总分", "DOI", "arXiv ID", "摘要"]
+        ws.append(headers)
+        for paper, rel in rows:
+            ws.append([
+                paper.title,
+                "；".join(paper.authors) if paper.authors else "",
+                paper.venue or "",
+                str(paper.pub_date) if paper.pub_date else "",
+                rel.total_score,
+                paper.doi or "",
+                paper.arxiv_id or "",
+                (paper.abstract or "")[:500],
+            ])
+        # 自动列宽
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[get_column_letter(col[0].column)].width = min(max_len + 4, 60)
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        filename = f"papers_{project_id}.xlsx"
+        return StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    # ── PDF ZIP 导出 ─────────────────────────────────────────────────────────────
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for paper, _ in rows:
+            if paper.pdf_path and os.path.isfile(paper.pdf_path):
+                zf.write(paper.pdf_path, arcname=os.path.basename(paper.pdf_path))
+    buf.seek(0)
+    filename = f"pdfs_{project_id}.zip"
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ── FR-010 定时任务配置 ────────────────────────────────────────────────────────
