@@ -813,42 +813,89 @@ schemathesis run http://localhost:8000/openapi.json \
 
 ## 10. 验收检查清单
 
-以下检查项应在每次功能发布前逐一验证：
+以下检查项应在每次功能发布前逐一验证。
+
+**图例**：✅ 已实现 · ⚠️ 部分实现 · ❌ 未实现 · 🔁 需运行时验证
+
+---
 
 ### 10.1 健康检查层
 
-- [ ] `GET /health` 在 50ms 内响应 200
-- [ ] `GET /health/db` 在 DB 故障时返回 503 + `ERR-SYS-DB-001`
-- [ ] `GET /health/deep` 并发探测所有外部依赖，5s 内返回
-- [ ] 健康检查不需要认证（`/health`, `/health/db`），`/health/deep` 需认证
+- ✅ `GET /health` 在 50ms 内响应 200
+  - `health_shallow()` 不访问数据库，仅返回进程存活信息
+- ✅ `GET /health/db` 在 DB 故障时返回 503 + `ERR-SYS-DB-001`
+  - `health.py:158-176`：catch 后返回 `JSONResponse(503)` + `AppErrorCode.DB_CONNECTION_FAILED`
+- ✅ `GET /health/deep` 并发探测所有外部依赖，5s 内返回
+  - `asyncio.gather` 并发探测 LLM×2 + arXiv/OpenAlex/SS/ADS + SMTP，均设 5s timeout
+- ✅ 健康检查不需要认证（`/health`, `/health/db`），`/health/deep` 需认证
+  - `/health` 和 `/health/db` 无 `Depends(get_current_user)`；`/health/deep` 和 `/health/pipeline/{id}` 有
 
 ### 10.2 错误信封层
 
-- [ ] 所有 `stage_error` SSE 事件包含：code, message, retryable, suggestion
-- [ ] `stage_records.error` 字段存储完整 ErrorEnvelope JSON（非裸字符串）
-- [ ] `retryable: true` 的错误在前端显示「重试」按钮
-- [ ] `retryable: false` 的错误在前端显示「查看帮助」而非「重试」
-- [ ] 对话 SSE `error` 事件不写入 DB（turn 不存在）
+- ✅ 所有 `stage_error` SSE 事件包含：code, message, retryable, suggestion
+  - `emit_error_event()` 发送完整 `ErrorEnvelope.model_dump()`，含所有字段
+- ✅ `stage_records.error` 字段存储完整 ErrorEnvelope JSON（非裸字符串）
+  - `construction/__init__.py` 和 `review/__init__.py` 均调用 `mark_stage_failed(db, id, envelope.model_dump_json())`
+  - 旧记录（裸字符串）在 `/inspect` 和 `/health/pipeline` 读取时降级处理
+- ⚠️ `retryable: true` 的错误在前端显示「重试」按钮
+  - `InspectorPanel.tsx` 仅显示文字标签 `(可重试)`；实际重试按钮（绑定 API 调用）**尚未实现**
+- ❌ `retryable: false` 的错误在前端显示「查看帮助」而非「重试」
+  - InspectorPanel 未区分 `retryable:false` 场景的操作按钮，**尚未实现**
+- ✅ 对话 SSE `error` 事件不写入 DB（turn 不存在）
+  - `dialogue_agent.py`：`db.add(turn)` + `db.commit()` 在 LLM 成功返回后才执行；LLM 异常不触发写入
 
 ### 10.3 诊断快照层
 
-- [ ] `GET /projects/{id}/inspect` 返回完整 `stage_history`（含 error 字段）
-- [ ] `recommendations` 数组包含针对当前错误状态的具体修复建议
-- [ ] 非项目所有者和非管理员访问返回 403
+- ✅ `GET /projects/{id}/inspect` 返回完整 `stage_history`（含 error 字段）
+  - `inspect.py:_build_history_item()` 解析 `record.error`（JSON 或裸字符串），填充 `StageHistoryItem`
+- ✅ `recommendations` 数组包含针对当前错误状态的具体修复建议
+  - `inspect.py:_generate_recommendations()` 按优先级生成 fatal/error/warning/info 建议
+- ⚠️ 非项目所有者和非管理员访问返回 403
+  - **实现为 404**（不是 403），以防止项目 ID 枚举攻击（`inspect.py:71-73`）
+  - 这是有意的安全设计偏差，符合 qa_design §6 的安全要求；如需对齐 403 可修改
 
 ### 10.4 测试覆盖层
 
-- [ ] 单元测试覆盖率 ≥ 80%（core/models/schemas/utils）
-- [ ] 集成测试覆盖所有 stage 的成功路径和失败路径
-- [ ] E2E 测试覆盖 7 个关键场景（E2E-001 ~ E2E-007）
-- [ ] 契约测试无 5xx 响应
+- 🔁 单元测试覆盖率 ≥ 80%（core/models/schemas/utils）
+  - 已创建 4 个单元测试文件覆盖 `errors`/`schemas`/`ids`/`base`；实际覆盖率需运行 `pytest --cov` 验证
+- ✅ 集成测试覆盖所有 stage 的成功路径和失败路径
+  - `test_construction_pipeline.py`：ErrorEnvelope 写入、旧格式降级、链式阶段 record 正确标记
+  - `test_dialogue.py`：LLM 错误不写 turns；`test_mode_switch.py`：FR-005/FR-029 权限
+- ✅ E2E 测试覆盖 7 个关键场景（E2E-001 ~ E2E-007）
+  - `e2e/specs/` 包含 7 个 Playwright spec 文件（auth/construction/review/dialogue/inspector/health/sse-error）
+- 🔁 契约测试无 5xx 响应
+  - `schemathesis.toml` + `run_contract_tests.sh` 已配置；需启动真实服务后执行验证
 
 ### 10.5 前端 Inspector 层
 
-- [ ] 收到 `stage_error` 后 Inspector Panel 在 200ms 内自动弹出
-- [ ] Inspector Panel 显示错误码、人类可读原因、修复建议
-- [ ] `fatal` 级错误触发全屏遮罩，阻断所有操作入口
-- [ ] 修复后（重试成功）Inspector Panel 自动收起
+- ❌ 收到 `stage_error` 后 Inspector Panel 在 200ms 内自动弹出
+  - `InspectorPanel.tsx` 通过 `open` prop 控制显示，无内置 SSE 监听器；**需宿主页面监听 `stage_error` 并设置 `open=true`**
+- ✅ Inspector Panel 显示错误码、人类可读原因、修复建议
+  - `StageHistoryRow` 渲染 `error.code + error.message`；`RecommendationItem` 渲染 recommendations
+- ❌ `fatal` 级错误触发全屏遮罩，阻断所有操作入口
+  - InspectorPanel 无全屏遮罩逻辑；`fatal` 级别仅通过 CSS 类 `.inspector-rec--fatal` 高亮显示，**尚未实现**
+- ❌ 修复后（重试成功）Inspector Panel 自动收起
+  - 无阶段状态轮询或重试成功回调，**尚未实现**
+
+---
+
+### 汇总
+
+| 分类 | 总项 | 完成 | 部分 | 未完成 | 待验证 |
+| ---- | ---- | ---- | ---- | ------ | ------ |
+| 10.1 健康检查层 | 4 | 4 | 0 | 0 | 0 |
+| 10.2 错误信封层 | 5 | 3 | 1 | 1 | 0 |
+| 10.3 诊断快照层 | 3 | 2 | 1 | 0 | 0 |
+| 10.4 测试覆盖层 | 4 | 2 | 0 | 0 | 2 |
+| 10.5 前端 Inspector 层 | 4 | 1 | 0 | 3 | 0 |
+| **合计** | **20** | **12** | **2** | **4** | **2** |
+
+**待完成的核心工作（按优先级）：**
+
+1. **10.5.1** — 宿主页面监听 SSE `stage_error` 事件 → 设置 `InspectorPanel open=true`
+2. **10.5.3** — `fatal` 级错误全屏遮罩组件（宿主页面集成）
+3. **10.2.3/4** — 前端重试按钮 / 查看帮助按钮（绑定 `POST /stages/{stage}/action` retry）
+4. **10.5.4** — 重试成功后关闭 Inspector Panel（轮询或 SSE `stage_complete` 触发）
 
 ---
 

@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v2.0 · 2026-04-24
+**文档版本**：v3.0 · 2026-04-24
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -28,7 +28,7 @@ agent_paperpush/
 | [ui_design.md](ui_design.md) | 前端界面设计草稿；ASCII 线框图；各页面布局与交互逻辑 |
 | [ADR_design.md](ADR_design.md) | 架构决策记录（ADR）；技术选型理由与取舍 |
 | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
-| [qa_design.md](qa_design.md) | QA 与错误诊断设计（v1.0）；错误码体系（ERR-* 分类）、结构化错误信封、SSE 错误事件协议、健康检查探针规范、诊断快照端点（/inspect）、分层测试策略（单元/集成/E2E/契约）、前端 Inspector Panel 规范 |
+| [qa_design.md](qa_design.md) | QA 与错误诊断设计（v1.0）；错误码体系、结构化错误信封、SSE 错误事件协议、健康检查探针规范、诊断快照端点、分层测试策略、Inspector Panel 规范；§10 验收检查清单含逐项完成状态，20 项中 12 项完成、4 项待完成（均为前端交互逻辑） |
 | [VibeCoding_record.md](VibeCoding_record.md) | 开发过程记录；设计演进历史 |
 | [media/](media/) | 文档附图（logo、RAG 结构图等） |
 
@@ -54,6 +54,7 @@ agent_paperpush/
 | [core/security.py](../backend/app/core/security.py) | JWT 生成/验证；bcrypt 密码哈希；内存 token 黑名单（登出用） |
 | [core/deps.py](../backend/app/core/deps.py) | FastAPI 依赖项；`get_current_user()` — Bearer token → User 对象；`get_current_admin()` — 额外要求 is\_admin=True，否则 403 |
 | [core/errors.py](../backend/app/core/errors.py) | 错误码体系（`AppErrorCode` 枚举，40+ 个 ERR-* 码）；`ErrorEnvelope` Pydantic 模型；`make_envelope()` 构造函数（自动填充 retryable/suggestion/traceback）；`classify_agent_error()` 按模式+阶段推断错误码；`RETRYABLE_CODES` / `SUGGESTIONS` 映射表 |
+| [core/logging.py](../backend/app/core/logging.py) | 结构化 JSON 日志（qa_design §9）；`JsonFormatter`（LogRecord → 单行 JSON，含 timestamp/level/logger/message + 上下文字段）；`setup_logging()` — 应用启动时配置根日志器，读取 `APP_ENV` 决定日志级别；`bind_log_context()` 上下文管理器（通过 `contextvars` 注入 project_id/user_id/stage 等字段） |
 
 ### backend/app/models/ — ORM 数据层
 
@@ -168,6 +169,23 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 |------|------|
 | [utils/ids.py](../backend/app/utils/ids.py) | `new_id(prefix)` — 生成带前缀的 nanoid 短 ID（如 `p_x3k9mz1abcde`） |
 
+### backend/tests/ — 后端测试套件（qa_design §7）
+
+| 文件 | 职责 |
+|------|------|
+| [backend/pytest.ini](../backend/pytest.ini) | pytest 配置；`asyncio_mode=auto`；testpaths；markers（unit/integration/contract/e2e） |
+| [backend/tests/conftest.py](../backend/tests/conftest.py) | 顶层 fixtures：`mock_llm_complete`（正常返回）/ `mock_llm_rate_limit`（429 模拟）/ `mock_llm_raise`（可配置异常）/ `sse_event_type_parser`（解析 SSE 格式） |
+| [backend/tests/unit/test_errors.py](../backend/tests/unit/test_errors.py) | 单元测试：`ErrorEnvelope` 字段校验；`make_envelope()` 自动填充（retryable/suggestion/traceback）；`classify_agent_error()` 阶段映射；`classify_llm_error()` 关键词识别；RETRYABLE_CODES/SUGGESTIONS 完整性检查 |
+| [backend/tests/unit/test_schemas.py](../backend/tests/unit/test_schemas.py) | 单元测试：`CheckResult`/`ShallowHealthResponse`/`DbHealthResponse`/`DeepHealthResponse`/`PipelineHealthResponse` Pydantic 校验；`ErrorEnvelope` JSON 往返序列化；`InspectResponse.recommendations` 字段 |
+| [backend/tests/unit/test_ids.py](../backend/tests/unit/test_ids.py) | 单元测试：`new_id()` 前缀格式、字符集约束、唯一性（500 次）、跨前缀不重叠 |
+| [backend/tests/unit/test_base.py](../backend/tests/unit/test_base.py) | 单元测试：`parse_json_response()`（正常/markdown/代码块/无效 JSON）；`emit_sse_event()`（格式/JSON 有效性/队列满降级）；`emit_error_event()`（stage_error 事件类型/code 字段） |
+| [backend/tests/integration/conftest.py](../backend/tests/integration/conftest.py) | 集成测试 fixtures：真实 PostgreSQL 引擎（session scoped）；事务回滚隔离 db_session；ASGI httpx client；test_user/admin_user 创建；auth_headers/admin_auth_headers JWT |
+| [backend/tests/integration/test_construction_pipeline.py](../backend/tests/integration/test_construction_pipeline.py) | 集成测试：阶段失败时 `stage_records.error` 存储 `ErrorEnvelope` JSON；旧版纯文本错误降级解析；链式阶段失败标记正确 record_id |
+| [backend/tests/integration/test_dialogue.py](../backend/tests/integration/test_dialogue.py) | 集成测试：`POST /dialogues` 返回正确结构；LLM 错误时不写入 dialogue_turns；SSE 解析辅助函数格式验证 |
+| [backend/tests/integration/test_mode_switch.py](../backend/tests/integration/test_mode_switch.py) | 集成测试：FR-005 空论文库阻止综述/深度研究模式（4xx）；FR-029 非所有者权限拦截；未认证请求 401 |
+| [backend/tests/contract/schemathesis.toml](../backend/tests/contract/schemathesis.toml) | Schemathesis 契约测试配置；启用全量检查（status_code/content_type/response_schema conformance）；排除 SSE 流端点；响应时间限制 1000ms |
+| [backend/tests/contract/run_contract_tests.sh](../backend/tests/contract/run_contract_tests.sh) | CI 契约测试执行脚本；等待 API 就绪（30s）；生成 JUnit XML + HTML 报告 |
+
 ### backend/alembic/ — 数据库迁移
 
 | 文件 | 职责 |
@@ -208,7 +226,34 @@ Agent 层按模式分为三个子包，对外仅暴露 `run_stage()` 接口，�
 | [src/api/dialogues.ts](../src/api/dialogues.ts) | `dialoguesApi`：对话会话 CRUD / 轮次历史 / 消息发送（SSE fetch）/ 对话摘要 / 知识图谱获取与重建 | §6 |
 | [src/api/review.ts](../src/api/review.ts) | `reviewApi`：`getStatus` / 启动综述 / 架构版本管理 / 章节管理 / 汇总编译 / 导出（文件流）/ SSE 流 URL；含 `ReviewStatusResponse` 接口定义 | §7 |
 | [src/api/tasks.ts](../src/api/tasks.ts) | `tasksApi`：任务列表 / 暂停 / 恢复 / 取消 | §8 |
+| [src/api/inspect.ts](../src/api/inspect.ts) | Inspector & Health API 客户端；`getHealth()` / `getDbHealth()` / `getDeepHealth()` / `getPipelineHealth(projectId)` / `getProjectInspect(projectId)`；完整 TypeScript 类型定义（`CheckResult` / `DeepHealthResponse` / `InspectResponse` 等）；`parseRecommendationSeverity()` 辅助函数（fatal/error/warning/info） | — |
 | [src/api/index.ts](../src/api/index.ts) | 统一桶形导出（re-export 所有 API 模块及 `ApiError` / `tokenStore`） | — |
+
+### src/components/
+
+| 文件 | 职责 |
+| ---- | ---- |
+| [src/components/InspectorPanel/types.ts](../src/components/InspectorPanel/types.ts) | InspectorPanel 组件内部类型：`PanelLoadState`、`InspectorPanelState`、`ParsedRecommendation`、`StageHistoryRow`、`DependencyRow`、`InspectorPanelProps` |
+| [src/components/InspectorPanel/InspectorPanel.tsx](../src/components/InspectorPanel/InspectorPanel.tsx) | 项目诊断面板 React 组件（qa_design §8）；并发调用 `/inspect` + `/health/pipeline` + `/health/deep`；渲染建议列表（fatal/error/warning/info 严重级别）、论文库统计、配置状态、外部依赖格、活跃阶段、阶段历史；支持自动刷新（refreshInterval）；无 UI 库依赖，通过 CSS 类名传递样式 |
+| [src/components/InspectorPanel/index.ts](../src/components/InspectorPanel/index.ts) | 桶形导出 `InspectorPanel` 组件及相关类型 |
+
+---
+
+## e2e/ — Playwright E2E 测试（qa_design §7）
+
+| 文件 | 职责 |
+| ---- | ---- |
+| [e2e/playwright.config.ts](../e2e/playwright.config.ts) | Playwright 配置；Chromium 单 worker 串行执行；HTML + JUnit 报告；全局 setup/teardown 钩子 |
+| [e2e/global-setup.ts](../e2e/global-setup.ts) | 测试前创建/登录 E2E 用户，将 JWT 写入 `process.env.E2E_JWT` |
+| [e2e/global-teardown.ts](../e2e/global-teardown.ts) | 全局清理（预留，当前为空） |
+| [e2e/specs/helpers.ts](../e2e/specs/helpers.ts) | 辅助函数：`createTestProject` / `deleteTestProject`（API 调用）；`setAuthToken`（注入 localStorage）；`waitForSseEvent`（等待自定义 SSE CustomEvent） |
+| [e2e/specs/e2e-001-auth.spec.ts](../e2e/specs/e2e-001-auth.spec.ts) | E2E-001：登录成功跳转；错误密码显示提示；未认证重定向 |
+| [e2e/specs/e2e-002-construction.spec.ts](../e2e/specs/e2e-002-construction.spec.ts) | E2E-002：构建模式启动；LLM 请求 route 拦截（mock 返回）；阶段进度指示器可见 |
+| [e2e/specs/e2e-003-review.spec.ts](../e2e/specs/e2e-003-review.spec.ts) | E2E-003：空论文库阻止综述启动；架构确认界面渲染不崩溃 |
+| [e2e/specs/e2e-004-dialogue.spec.ts](../e2e/specs/e2e-004-dialogue.spec.ts) | E2E-004：深度研究对话输入发送；LLM 401 错误显示提示 |
+| [e2e/specs/e2e-005-inspector-panel.spec.ts](../e2e/specs/e2e-005-inspector-panel.spec.ts) | E2E-005：注入 mock /inspect 响应；LLM 未配置时 Inspector 显示 FATAL 建议；论文库统计数字可见 |
+| [e2e/specs/e2e-006-health-degraded.spec.ts](../e2e/specs/e2e-006-health-degraded.spec.ts) | E2E-006：注入 degraded DeepHealthResponse；页面显示降级状态；DB 503 不崩溃 |
+| [e2e/specs/e2e-007-sse-error.spec.ts](../e2e/specs/e2e-007-sse-error.spec.ts) | E2E-007：注入 stage_error SSE 事件；LLM API Key 错误码 ERR-LLM-001 在 UI 可见；Inspector 显示 suggestion 文字 |
 
 ---
 

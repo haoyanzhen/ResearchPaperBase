@@ -1,0 +1,32 @@
+# Schemathesis 契约测试配置（qa_design §7）
+# 运行命令：schemathesis run http://localhost:8000/openapi.json --config=tests/contract/schemathesis.toml
+
+[checks]
+# 启用全部内置检查项
+not_a_server_error = true
+status_code_conformance = true
+content_type_conformance = true
+response_schema_conformance = true
+use_after_free = true
+ensure_resource_availability = true
+
+[hypothesis]
+# 每个操作生成的测试用例数量
+max_examples = 50
+# 抑制 HealthCheck 以允许在 CI 中运行
+suppress_health_check = ["too_slow", "data_too_large"]
+
+[response_time]
+# 所有端点响应时间上限（毫秒）
+limit = 1000
+
+[network]
+timeout = 30
+
+# 排除不适合 fuzz 的端点
+[operations.exclude]
+# SSE 流式端点：schemathesis 无法处理 text/event-stream
+path = [
+    "/api/v1/projects/{project_id}/sse",
+    "/api/v1/dialogues/{dialogue_id}/stream",
+]

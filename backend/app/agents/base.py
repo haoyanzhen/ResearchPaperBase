@@ -10,6 +10,7 @@ Agent 基础设施层
   - load_llm_defaults()— 加载并缓存 LLM 默认参数（来自 config/llm_defaults.yaml）
   - parse_json_response()— 健壮解析 LLM 返回的 JSON（处理 Markdown 代码块包装）
 """
+# qa_design §9: 日志埋点在 LLMClient.complete() 及 emit_sse_event() 中注入
 
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -54,8 +56,15 @@ def emit_sse_event(project_id: str, event_type: str, data: dict) -> None:
     event_str = f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
     try:
         queue.put_nowait(event_str)
+        logger.debug(
+            "SSE event emitted",
+            extra={"project_id": project_id, "event_type": event_type},
+        )
     except asyncio.QueueFull:
-        logger.debug("SSE queue full for project %s, dropping event: %s", project_id, event_type)
+        logger.warning(
+            "SSE queue full, event dropped",
+            extra={"project_id": project_id, "event_type": event_type},
+        )
 
 
 def emit_error_event(project_id: str, envelope: "ErrorEnvelope") -> None:
@@ -140,6 +149,7 @@ class LLMClient:
             url, api_key, default_model, temperature, max_tokens
         stage_key: 阶段标识（如 'construction_1'），用于加载阶段级 LLM 参数
         """
+        self._stage_key = stage_key
         self._base_url = provider_config.get("url", "").rstrip("/")
         self._api_key = provider_config.get("api_key", "")
         self._default_model = provider_config.get("default_model", "gpt-4o-mini")
@@ -184,19 +194,51 @@ class LLMClient:
         }
 
         last_exc: Exception | None = None
+        t0 = time.monotonic()
+        msg_count = len(messages)
+        logger.debug(
+            "LLM request start",
+            extra={
+                "prompt_key": self._stage_key,
+                "message_count": msg_count,
+                "model": self._default_model,
+            },
+        )
         for attempt in range(self._max_retries):
             try:
                 async with httpx.AsyncClient(timeout=self._timeout) as client:
                     resp = await client.post(url, json=payload, headers=headers)
                     resp.raise_for_status()
                     data = resp.json()
-                    return data["choices"][0]["message"]["content"]
+                    content = data["choices"][0]["message"]["content"]
+                    latency_ms = int((time.monotonic() - t0) * 1000)
+                    output_tokens = (
+                        data.get("usage", {}).get("completion_tokens")
+                    )
+                    logger.debug(
+                        "LLM request success",
+                        extra={
+                            "prompt_key": self._stage_key,
+                            "message_count": msg_count,
+                            "latency_ms": latency_ms,
+                            "output_tokens": output_tokens,
+                        },
+                    )
+                    return content
             except Exception as exc:
                 last_exc = exc
                 if attempt < self._max_retries - 1:
                     delay = self._retry_delay * (2 ** attempt)
-                    logger.warning("LLM request failed (attempt %d/%d): %s — retrying in %.1fs",
-                                   attempt + 1, self._max_retries, exc, delay)
+                    logger.warning(
+                        "LLM request failed, retrying",
+                        extra={
+                            "prompt_key": self._stage_key,
+                            "attempt": attempt + 1,
+                            "max_attempts": self._max_retries,
+                            "retry_delay_seconds": delay,
+                            "error": str(exc),
+                        },
+                    )
                     await asyncio.sleep(delay)
 
         raise RuntimeError(f"LLM 请求失败（已重试 {self._max_retries} 次）: {last_exc}") from last_exc

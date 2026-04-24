@@ -381,3 +381,15 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 （check qa_design）
 
 根据qa_design，完成 3. 错误码体系 到 6. 诊断快照端点（Inspector） 的框架搭建、功能实现和API对齐
+
+（check）
+
+任务：根据qa_design，完成 7. 分层测试策略 到 9. 日志规范 的框架搭建、功能实现和API对齐
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）
+
+任务：根据qa_design#10. 验收检查清单检查完成情况
+要求：根据修改的文件，更新docs/file_map.md
+
+（check）

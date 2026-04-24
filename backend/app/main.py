@@ -4,6 +4,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import router as v1_router
+from app.core.logging import setup_logging
+
+# 在所有其他初始化之前配置结构化日志（qa_design §9）
+setup_logging()
 
 app = FastAPI(
     title="Research Paper Base API",

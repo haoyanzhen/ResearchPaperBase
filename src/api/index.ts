@@ -3,6 +3,7 @@ export * from "./auth";
 export * from "./config";
 export * from "./construction";
 export * from "./dialogues";
+export * from "./inspect";
 export * from "./projects";
 export * from "./review";
 export * from "./tasks";
