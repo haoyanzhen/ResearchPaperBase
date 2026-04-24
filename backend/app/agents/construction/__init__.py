@@ -7,7 +7,7 @@ run_stage() 是对外暴露的唯一公共接口，由 FastAPI BackgroundTasks �
 
 import logging
 
-from app.agents.base import emit_sse_event
+from app.agents.base import emit_error_event, emit_sse_event
 from app.agents.construction import (
     stage1_keyword_gen,
     stage2_retrieval,
@@ -21,6 +21,7 @@ from app.agents.construction.pipeline import (
     mark_stage_failed,
 )
 from app.core.database import AsyncSessionLocal
+from app.core.errors import classify_agent_error, make_envelope
 from app.services.construction_service import STAGE_NAMES
 
 logger = logging.getLogger(__name__)
@@ -73,9 +74,19 @@ async def run_stage(
             await handler(db, project_id, user_id, record, modifications)
         except Exception as exc:
             logger.exception("Stage %d failed for project %s: %s", stage, project_id, exc)
-            await mark_stage_failed(db, record_id, str(exc))
-            emit_sse_event(project_id, "stage_error", {
-                "stage": stage,
-                "error": str(exc),
-                "retryable": True,
-            })
+            error_code = classify_agent_error(exc, "construction", stage)
+            envelope = make_envelope(
+                error_code,
+                str(exc),
+                exc=exc,
+                detail={
+                    "stage": stage,
+                    "stage_name": STAGE_NAMES.get(stage, f"阶段{stage}"),
+                },
+                project_id=project_id,
+                stage_record_id=record_id,
+            )
+            # 持久化结构化错误信封（JSON 字符串写入 stage_records.error）
+            await mark_stage_failed(db, record_id, envelope.model_dump_json())
+            # SSE 推送完整 ErrorEnvelope 给前端 Inspector Panel
+            emit_error_event(project_id, envelope)

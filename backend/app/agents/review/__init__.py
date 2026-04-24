@@ -19,7 +19,7 @@ run_stage() 是对外暴露的唯一公共接口，由 FastAPI BackgroundTasks �
 
 import logging
 
-from app.agents.base import emit_sse_event
+from app.agents.base import emit_error_event, emit_sse_event
 from app.agents.review import (
     stage1_topic_expansion,
     stage2_outline_gen,
@@ -33,6 +33,7 @@ from app.agents.review.pipeline import (
     mark_stage_failed,
 )
 from app.core.database import AsyncSessionLocal
+from app.core.errors import classify_agent_error, make_envelope
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +82,17 @@ async def run_stage(
             await handler(db, project_id, user_id, record, modifications)
         except Exception as exc:
             logger.exception("Review Stage %d failed for project %s: %s", stage, project_id, exc)
-            await mark_stage_failed(db, record_id, str(exc))
-            emit_sse_event(project_id, "stage_error", {
-                "stage": stage,
-                "error": str(exc),
-                "retryable": True,
-            })
+            error_code = classify_agent_error(exc, "review", stage)
+            envelope = make_envelope(
+                error_code,
+                str(exc),
+                exc=exc,
+                detail={
+                    "stage": stage,
+                    "stage_name": REVIEW_STAGE_NAMES.get(stage, f"综述阶段{stage}"),
+                },
+                project_id=project_id,
+                stage_record_id=record_id,
+            )
+            await mark_stage_failed(db, record_id, envelope.model_dump_json())
+            emit_error_event(project_id, envelope)

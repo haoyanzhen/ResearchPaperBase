@@ -18,7 +18,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agents.base import emit_sse_event, get_llm_client
+from app.agents.base import emit_error_event, emit_sse_event, get_llm_client
 from app.agents.review.pipeline import (
     get_latest_draft_outline,
     get_project,
@@ -26,6 +26,7 @@ from app.agents.review.pipeline import (
     mark_stage_completed,
     mark_stage_failed,
 )
+from app.core.errors import AppErrorCode, make_envelope
 from app.models.stage import StageRecord
 from app.utils.ids import new_id
 
@@ -130,9 +131,12 @@ async def run(
     except Exception as exc:
         # 阶段 2 失败：用阶段 2 的 record_id 标记失败，阶段 1 本身已正常完成，不再抛出
         logger.exception("Stage2 failed (chained from Stage1) for project %s: %s", project_id, exc)
-        await mark_stage_failed(db, record2.id, str(exc))
-        emit_sse_event(project_id, "stage_error", {
-            "stage": 2,
-            "error": str(exc),
-            "retryable": True,
-        })
+        from app.core.errors import classify_agent_error
+        error_code = classify_agent_error(exc, "review", 2)
+        envelope = make_envelope(
+            error_code, str(exc), exc=exc,
+            detail={"stage": 2, "stage_name": "综述架构生成"},
+            project_id=project_id, stage_record_id=record2.id,
+        )
+        await mark_stage_failed(db, record2.id, envelope.model_dump_json())
+        emit_error_event(project_id, envelope)

@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.8 · 2026-04-24
+**文档版本**：v2.0 · 2026-04-24
 **维护规则**：新增或删除文件时同步更新本文档；重命名文件时同步更新所有引用路径。
 **用途**：作为参考契约文件，供 AI 辅助开发快速定位文件职责、避免重复创建或误改。
 
@@ -28,6 +28,7 @@ agent_paperpush/
 | [ui_design.md](ui_design.md) | 前端界面设计草稿；ASCII 线框图；各页面布局与交互逻辑 |
 | [ADR_design.md](ADR_design.md) | 架构决策记录（ADR）；技术选型理由与取舍 |
 | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
+| [qa_design.md](qa_design.md) | QA 与错误诊断设计（v1.0）；错误码体系（ERR-* 分类）、结构化错误信封、SSE 错误事件协议、健康检查探针规范、诊断快照端点（/inspect）、分层测试策略（单元/集成/E2E/契约）、前端 Inspector Panel 规范 |
 | [VibeCoding_record.md](VibeCoding_record.md) | 开发过程记录；设计演进历史 |
 | [media/](media/) | 文档附图（logo、RAG 结构图等） |
 
@@ -52,6 +53,7 @@ agent_paperpush/
 | [core/database.py](../backend/app/core/database.py) | 异步数据库引擎（asyncpg）；`get_db()` 依赖注入会话工厂 |
 | [core/security.py](../backend/app/core/security.py) | JWT 生成/验证；bcrypt 密码哈希；内存 token 黑名单（登出用） |
 | [core/deps.py](../backend/app/core/deps.py) | FastAPI 依赖项；`get_current_user()` — Bearer token → User 对象；`get_current_admin()` — 额外要求 is\_admin=True，否则 403 |
+| [core/errors.py](../backend/app/core/errors.py) | 错误码体系（`AppErrorCode` 枚举，40+ 个 ERR-* 码）；`ErrorEnvelope` Pydantic 模型；`make_envelope()` 构造函数（自动填充 retryable/suggestion/traceback）；`classify_agent_error()` 按模式+阶段推断错误码；`RETRYABLE_CODES` / `SUGGESTIONS` 映射表 |
 
 ### backend/app/models/ — ORM 数据层
 
@@ -74,6 +76,7 @@ agent_paperpush/
 | 文件 | 职责 |
 |------|------|
 | [schemas/common.py](../backend/app/schemas/common.py) | 统一响应结构 `ApiResponse[T]`；`ok()` / `err()` 工厂函数 |
+| [schemas/health.py](../backend/app/schemas/health.py) | 健康检查与诊断响应 schema：`CheckResult`、`ShallowHealthResponse`、`DbHealthResponse`、`DeepHealthResponse`、`PipelineHealthResponse`、`InspectResponse`（含 `StageHistoryItem`、`ConfigStatus` 等） |
 | [schemas/auth.py](../backend/app/schemas/auth.py) | FR-001 注册/登录/用户信息相关 schema |
 | [schemas/config.py](../backend/app/schemas/config.py) | FR-002~004 LLM / 数据库 / 邮件配置相关 schema |
 | [schemas/project.py](../backend/app/schemas/project.py) | FR-005~011 项目、论文、任务、导出、定时、推荐相关 schema |
@@ -107,6 +110,8 @@ agent_paperpush/
 | [api/v1/dialogues.py](../backend/app/api/v1/dialogues.py) | `/dialogues` CRUD · `/dialogues/{id}/turns`（GET分页/POST SSE流）· `/dialogues/{id}/summarize` · `/graph`（JSON/GraphML）· `/graph/rebuild`（202存根）；发消息直接 StreamingResponse 不走 Queue | FR-025~028 |
 | [api/v1/review.py](../backend/app/api/v1/review.py) | `/review/status` · `/review/start` · `/outlines` CRUD · `/outlines/{id}/confirm` · `/outlines/{id}/chapters` CRUD · `/outlines/{id}/chapters/{id}/review` · `/outlines/{id}/compile` · `/outlines/{id}/export`（Markdown；PDF/DOCX 返回 501）· `/stream`（SSE）；chapter review 通过独立 AsyncSession 的 `_run_chapter_review` wrapper 执行 | FR-020~024 |
 | [api/v1/admin.py](../backend/app/api/v1/admin.py) | `/admin/users` 用户列表/启停/提权/删除/重置密码；`/admin/system-config/llm` 系统 LLM CRUD + 连通性测试；`/admin/system-config/databases` 系统数据库配置；所有端点均通过 `get_current_admin` 鉴权（非管理员返回 403） | FR-029 |
+| [api/v1/health.py](../backend/app/api/v1/health.py) | `GET /health`（浅层，公开）· `GET /health/db`（PostgreSQL 连通性，公开，503+ErrorEnvelope on fail）· `GET /health/deep`（全依赖并发探针：LLM主/备+arXiv/OpenAlex/SS/ADS+SMTP，需认证，返回 `DeepHealthResponse`）· `GET /health/pipeline/{id}`（流水线活跃阶段快照，需认证，ErrorEnvelope 解析）| — |
+| [api/v1/inspect.py](../backend/app/api/v1/inspect.py) | `GET /projects/{id}/inspect`（项目诊断快照，需认证，项目所有者或管理员）；返回阶段历史、论文/关键词统计、配置状态、自动修复建议（`recommendations` 按优先级生成） | — |
 
 ### backend/app/agents/ — Agent 执行层
 

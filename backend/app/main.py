@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -21,6 +23,10 @@ app.add_middleware(
 app.include_router(v1_router, prefix="/api/v1")
 
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+@app.get("/health", tags=["健康检查"], summary="进程存活探针（根路径，供 Docker 使用）")
+async def health_root():
+    """
+    轻量存活探针，无需认证，不访问数据库。
+    详细健康检查请使用 GET /api/v1/health/*。
+    """
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}

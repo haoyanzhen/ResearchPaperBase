@@ -373,3 +373,11 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 任务：检查深度研究模式实现是否正确
 契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#6. 深度研究模式 + docs/ui_design.md#P07 · 深度研究模式主界面
 要求：根据修改的文件，更新docs/file_map.md；检查api、前端、后端、数据库等实现，是否留有隐患
+
+（check）
+
+根据 docs/spec 生成一份包含状态检查、测试、错误报告等多种过程与结果审查机制设计，并选取能够实时、细致输出错误信息和检查错误原因的设计版本，并保存在docs的新文档中。
+
+（check qa_design）
+
+根据qa_design，完成 3. 错误码体系 到 6. 诊断快照端点（Inspector） 的框架搭建、功能实现和API对齐

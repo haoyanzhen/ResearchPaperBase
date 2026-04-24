@@ -11,19 +11,24 @@ Agent 基础设施层
   - parse_json_response()— 健壮解析 LLM 返回的 JSON（处理 Markdown 代码块包装）
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 import yaml
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.config_service import get_all_llm_providers
+
+if TYPE_CHECKING:
+    from app.core.errors import ErrorEnvelope
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +56,16 @@ def emit_sse_event(project_id: str, event_type: str, data: dict) -> None:
         queue.put_nowait(event_str)
     except asyncio.QueueFull:
         logger.debug("SSE queue full for project %s, dropping event: %s", project_id, event_type)
+
+
+def emit_error_event(project_id: str, envelope: "ErrorEnvelope") -> None:
+    """
+    将结构化 ErrorEnvelope 以 stage_error SSE 事件推送给前端。
+
+    比直接调用 emit_sse_event 更语义化：data 字段直接为 envelope dict，
+    前端 Inspector Panel 可按 qa_design.md §8 解析渲染。
+    """
+    emit_sse_event(project_id, "stage_error", envelope.model_dump())
 
 
 # ── 配置加载（模块级缓存，进程内只读一次）──────────────────────────────────────
