@@ -360,3 +360,16 @@ Agent 链（构建/综述/深研）	对应模式的 FR 段落 + service 接口�
 契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#7. 综述模式 + docs/ui_design.md#P09 · 综述模式主界面
 要求：根据修改的文件，更新docs/file_map.md；检查api、前端、后端、数据库等实现，是否留有隐患
 
+（check）
+
+任务：实现深度研究模式框架搭建 + 功能 FR-025 到 FR-028 实现
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#6. 深度研究模式 + docs/ui_design.md#P07 · 深度研究模式主界面
+要求：根据修改的文件，更新docs/file_map.md
+
+**2026-04-23**
+
+（check）
+
+任务：检查深度研究模式实现是否正确
+契约文件：docs/file_map.md + docs/spec.md#3. 功能需求 + docs/api.md#6. 深度研究模式 + docs/ui_design.md#P07 · 深度研究模式主界面
+要求：根据修改的文件，更新docs/file_map.md；检查api、前端、后端、数据库等实现，是否留有隐患

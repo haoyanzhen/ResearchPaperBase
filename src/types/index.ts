@@ -494,12 +494,13 @@ export interface VectorDocument {
 // =============================================================================
 
 /** 知识图谱节点类型 */
-export type GraphNodeType = 'paper' | 'author' | 'keyword' | 'concept' | 'method';
+export type GraphNodeType = 'paper' | 'author' | 'keyword' | 'venue' | 'concept' | 'method';
 
 /** 知识图谱边类型 */
 export type GraphEdgeType =
   | 'authored_by'
   | 'has_keyword'
+  | 'in_venue'
   | 'mentions_concept'
   | 'uses_method'
   | 'cites'
