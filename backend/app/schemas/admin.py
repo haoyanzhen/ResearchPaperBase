@@ -4,7 +4,7 @@ Pydantic Schema — 管理员配置面板（FR-029）
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # ── 用户管理 ──────────────────────────────────────────────────────────────────
@@ -61,3 +61,21 @@ class UpdateSystemDatabaseRequest(BaseModel):
     api_key: str | None = None
     rate_limit: int | None = None
     endpoint: str | None = None
+
+
+# ── 系统级邮件配置 ─────────────────────────────────────────────────────────────
+
+class SystemEmailConfigResponse(BaseModel):
+    smtp_host: str | None = None
+    smtp_port: int | None = None
+    sender_email: str | None = None
+    sender_password_configured: bool = False
+
+
+class UpdateSystemEmailConfigRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    smtp_host: str | None = None
+    smtp_port: int | None = None
+    sender_email: str | None = None
+    sender_password: str | None = None

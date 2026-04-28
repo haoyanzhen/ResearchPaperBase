@@ -1,5 +1,5 @@
 """
-用户配置服务 — 基于 user_configs 键值表的配置读写。
+用户配置服务 — 基于 user_configs / system_configs 键值表的配置读写。
 
 config_name 命名约定（来自 spec 6.4.3）：
   llm.provider.{provider}.url         → LLM 提供商 URL
@@ -11,11 +11,13 @@ config_name 命名约定（来自 spec 6.4.3）：
   database.{db_name}.enabled
   database.{db_name}.api_key
   database.{db_name}.rate_limit
+  email.recipients                    → JSON 数组字符串（用户级收件人）
+
+system_configs:
   email.smtp.host
   email.smtp.port
   email.smtp.sender_email
-  email.smtp.sender_password          → 加密存储
-  email.recipients                    → JSON 数组字符串
+  email.smtp.sender_password          → 系统级发件身份，仅管理员可维护
 """
 
 import json
@@ -139,26 +141,15 @@ async def update_database_config(
             await set_config(db, user_id, f"database.{db_name}.{field}", str(value))
 
 
-async def get_email_config(db: AsyncSession, user_id: str) -> dict:
+async def get_user_email_config(db: AsyncSession, user_id: str) -> dict:
     recipients_raw = await get_config(db, user_id, "email.recipients")
     return {
-        "smtp_host": await get_config(db, user_id, "email.smtp.host"),
-        "smtp_port": int(p) if (p := await get_config(db, user_id, "email.smtp.port")) else None,
-        "sender_email": await get_config(db, user_id, "email.smtp.sender_email"),
         "recipients": json.loads(recipients_raw) if recipients_raw else [],
+        "sender_configured": await get_system_email_ready(db),
     }
 
 
-async def update_email_config(db: AsyncSession, user_id: str, updates: dict) -> None:
-    mapping = {
-        "smtp_host": "email.smtp.host",
-        "smtp_port": "email.smtp.port",
-        "sender_email": "email.smtp.sender_email",
-        "sender_password": "email.smtp.sender_password",
-    }
-    for field, config_name in mapping.items():
-        if updates.get(field) is not None:
-            await set_config(db, user_id, config_name, str(updates[field]))
+async def update_user_email_config(db: AsyncSession, user_id: str, updates: dict) -> None:
     if updates.get("recipients") is not None:
         await set_config(db, user_id, "email.recipients", json.dumps(updates["recipients"]))
 
@@ -288,6 +279,33 @@ async def update_system_database_config(
             await set_system_config(db, f"database.{db_name}.{field}", str(value), admin_id)
 
 
+async def get_system_email_config(db: AsyncSession) -> dict:
+    sender_password = await get_system_config(db, "email.smtp.sender_password")
+    return {
+        "smtp_host": await get_system_config(db, "email.smtp.host"),
+        "smtp_port": int(p) if (p := await get_system_config(db, "email.smtp.port")) else None,
+        "sender_email": await get_system_config(db, "email.smtp.sender_email"),
+        "sender_password_configured": bool(sender_password),
+    }
+
+
+async def update_system_email_config(db: AsyncSession, admin_id: str, updates: dict) -> None:
+    mapping = {
+        "smtp_host": "email.smtp.host",
+        "smtp_port": "email.smtp.port",
+        "sender_email": "email.smtp.sender_email",
+        "sender_password": "email.smtp.sender_password",
+    }
+    for field, config_name in mapping.items():
+        if updates.get(field) is not None:
+            await set_system_config(db, config_name, str(updates[field]), admin_id)
+
+
+async def get_system_email_ready(db: AsyncSession) -> bool:
+    cfg = await get_system_email_config(db)
+    return bool(cfg.get("smtp_host") and cfg.get("sender_email"))
+
+
 # =============================================================================
 # 回落函数：用户配置 → 系统配置（FR-029 核心逻辑）
 # =============================================================================
@@ -324,3 +342,20 @@ async def get_databases_config_with_fallback(db: AsyncSession, user_id: str) -> 
         user_has_config = await get_config(db, user_id, f"database.{db_name}.enabled")
         result[db_name] = user_cfg[db_name] if user_has_config else sys_cfg[db_name]
     return result
+
+
+async def get_effective_email_config(db: AsyncSession, user_id: str) -> dict:
+    """
+    返回用户可用的邮件配置：
+    - 发件 SMTP 参数来自系统级配置
+    - 收件人来自用户个人配置
+    """
+    user_cfg = await get_user_email_config(db, user_id)
+    sys_cfg = await get_system_email_config(db)
+    return {
+        "smtp_host": sys_cfg.get("smtp_host"),
+        "smtp_port": sys_cfg.get("smtp_port"),
+        "sender_email": sys_cfg.get("sender_email"),
+        "recipients": user_cfg.get("recipients", []),
+        "sender_password_configured": sys_cfg.get("sender_password_configured", False),
+    }

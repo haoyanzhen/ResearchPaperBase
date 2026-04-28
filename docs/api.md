@@ -292,12 +292,12 @@ id: <sequence_id>
 
 ```json
 {
-  "smtp_host": "smtp.gmail.com",
-  "smtp_port": 587,
-  "sender_email": "sender@gmail.com",
-  "recipients": ["r1@example.com", "r2@example.com"]
+  "recipients": ["r1@example.com", "r2@example.com"],
+  "sender_configured": true
 }
 ```
+
+> 普通用户接口仅返回当前账号的收件人偏好；发件 SMTP / 发件邮箱由管理员在系统配置中统一维护。
 
 ---
 
@@ -307,19 +307,17 @@ id: <sequence_id>
 
 ```json
 {
-  "smtp_host": "smtp.gmail.com",
-  "smtp_port": 587,
-  "sender_email": "sender@gmail.com",
-  "sender_password": "app_password",
   "recipients": ["r1@example.com"]
 }
 ```
 
-**Response 200**：返回更新后的配置（不含 `sender_password` 明文）。
+**Response 200**：返回更新后的个人邮件偏好。
 
 ---
 
 ### POST `/config/email/test` — 发送测试邮件
+
+使用当前用户的 `recipients`，以及管理员维护的系统级 SMTP / 发件邮箱配置发送测试邮件。
 
 **Response 200**：
 
@@ -1249,6 +1247,40 @@ data: {"outline_id": "ol_1", "total_chapters": 5, "compiled": true}
 ### POST `/recommendations/{rec_id}/like` — 点赞
 
 **Response 200**：`{ "rec_id": "...", "like_count": 13 }`
+
+---
+
+## 9. 管理员模块
+
+### GET `/admin/system-config/email` — 获取系统邮件配置
+
+**Response 200**：
+
+```json
+{
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 587,
+  "sender_email": "sender@gmail.com",
+  "sender_password_configured": true
+}
+```
+
+---
+
+### PATCH `/admin/system-config/email` — 更新系统邮件配置
+
+**Request Body**（所有字段可选）：
+
+```json
+{
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 587,
+  "sender_email": "sender@gmail.com",
+  "sender_password": "app_password"
+}
+```
+
+**Response 200**：返回更新后的系统邮件配置；不返回 `sender_password` 明文。
 
 ---
 

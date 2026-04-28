@@ -10,12 +10,12 @@ from app.schemas.common import ok
 from app.schemas.config import (
     CreateLLMConfigRequest,
     DatabasesConfigResponse,
-    EmailConfigResponse,
     TestEmailResponse,
     TestLLMResponse,
     UpdateDatabaseConfigRequest,
-    UpdateEmailConfigRequest,
     UpdateLLMConfigRequest,
+    UpdateUserEmailConfigRequest,
+    UserEmailConfigResponse,
 )
 from app.services import config_service
 
@@ -135,19 +135,19 @@ async def get_email_config(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    config = await config_service.get_email_config(db, current_user.id)
-    return ok(EmailConfigResponse(**config))
+    config = await config_service.get_user_email_config(db, current_user.id)
+    return ok(UserEmailConfigResponse(**config))
 
 
 @router.patch("/email")
 async def update_email_config(
-    body: UpdateEmailConfigRequest,
+    body: UpdateUserEmailConfigRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await config_service.update_email_config(db, current_user.id, body.model_dump(exclude_none=True))
-    config = await config_service.get_email_config(db, current_user.id)
-    return ok(EmailConfigResponse(**config))
+    await config_service.update_user_email_config(db, current_user.id, body.model_dump(exclude_none=True))
+    config = await config_service.get_user_email_config(db, current_user.id)
+    return ok(UserEmailConfigResponse(**config))
 
 
 @router.post("/email/test")
@@ -155,12 +155,12 @@ async def test_email(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    config = await config_service.get_email_config(db, current_user.id)
+    config = await config_service.get_effective_email_config(db, current_user.id)
     if not config.get("smtp_host") or not config.get("recipients"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "邮件配置不完整")
 
     sender_email = config.get("sender_email") or ""
-    sender_pwd = await config_service.get_config(db, current_user.id, "email.smtp.sender_password")
+    sender_pwd = await config_service.get_system_config(db, "email.smtp.sender_password")
     to = config["recipients"][0]
     try:
         with smtplib.SMTP(config["smtp_host"], config.get("smtp_port") or 587, timeout=10) as s:

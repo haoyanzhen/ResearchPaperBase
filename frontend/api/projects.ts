@@ -148,9 +148,9 @@ export interface CreateRecommendationRequest {
 
 // ── 辅助：构建 query string ───────────────────────────────────────────────────
 
-function qs(params: Record<string, unknown>): string {
+function qs(params: object): string {
   const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
+  for (const [k, v] of Object.entries(params as Record<string, unknown>)) {
     if (v !== undefined && v !== null) p.append(k, String(v));
   }
   const s = p.toString();

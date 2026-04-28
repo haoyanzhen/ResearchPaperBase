@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # ── LLM 配置 ──────────────────────────────────────────────────────────────────
 
@@ -61,18 +61,14 @@ class UpdateDatabaseConfigRequest(BaseModel):
 
 # ── 邮件配置 ──────────────────────────────────────────────────────────────────
 
-class EmailConfigResponse(BaseModel):
-    smtp_host: str | None = None
-    smtp_port: int | None = None
-    sender_email: str | None = None
+class UserEmailConfigResponse(BaseModel):
     recipients: list[str] = []
+    sender_configured: bool = False
 
 
-class UpdateEmailConfigRequest(BaseModel):
-    smtp_host: str | None = None
-    smtp_port: int | None = None
-    sender_email: str | None = None
-    sender_password: str | None = None
+class UpdateUserEmailConfigRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     recipients: list[str] | None = None
 
 

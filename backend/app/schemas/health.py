@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 
 # =============================================================================
@@ -118,25 +118,61 @@ class StageHistoryItem(BaseModel):
 
 class KeywordSummary(BaseModel):
     total: int
-    selected: int
-    is_searched: bool
+    search_done: int = Field(validation_alias=AliasChoices("search_done", "selected"))
+    pending: int
+
+    @model_validator(mode="before")
+    @classmethod
+    def fill_pending(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "pending" not in data:
+            total = int(data.get("total", 0) or 0)
+            search_done = int(data.get("search_done", data.get("selected", 0)) or 0)
+            data = {**data, "pending": max(total - search_done, 0)}
+        return data
 
 
 class PaperSummary(BaseModel):
-    total_in_db: int
+    total: int = Field(validation_alias=AliasChoices("total", "total_in_db"))
     valid: int
-    download_success: int
-    ai_analyzed: int
+    invalid: int
+    downloaded: int = Field(validation_alias=AliasChoices("downloaded", "download_success"))
+    analyzed: int = Field(validation_alias=AliasChoices("analyzed", "ai_analyzed"))
+
+    @model_validator(mode="before")
+    @classmethod
+    def fill_invalid(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "invalid" not in data:
+            total = int(data.get("total", data.get("total_in_db", 0)) or 0)
+            valid = int(data.get("valid", 0) or 0)
+            data = {**data, "invalid": max(total - valid, 0)}
+        return data
 
 
 class ConfigStatus(BaseModel):
     llm_configured: bool
-    llm_provider: str | None
-    email_configured: bool
-    arxiv_configured: bool
-    openalex_configured: bool
-    semantic_scholar_configured: bool
-    ads_configured: bool
+    llm_active_provider: str | None = Field(
+        validation_alias=AliasChoices("llm_active_provider", "llm_provider")
+    )
+    paper_db_sources: list[str] = Field(default_factory=list)
+    smtp_configured: bool = Field(
+        validation_alias=AliasChoices("smtp_configured", "email_configured")
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def fill_sources(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "paper_db_sources" not in data:
+            sources: list[str] = []
+            if data.get("arxiv_configured"):
+                sources.append("arxiv")
+            if data.get("openalex_configured"):
+                sources.append("openalex")
+            if data.get("semantic_scholar_configured"):
+                sources.append("semantic_scholar")
+            if data.get("ads_configured"):
+                sources.append("ads")
+            data = {**data, "paper_db_sources": sources}
+        return data
 
 
 class InspectResponse(BaseModel):

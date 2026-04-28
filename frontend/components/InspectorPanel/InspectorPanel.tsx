@@ -285,7 +285,7 @@ export function InspectorPanel({
           <div className="inspector-summary__block">
             <h4 className="inspector-section__title">论文库</h4>
             <dl className="inspector-dl">
-              <dt>总数</dt><dd>{inspect.paper_summary.total}</dd>
+              <dt>总数</dt><dd data-testid="paper-total">{inspect.paper_summary.total}</dd>
               <dt>有效</dt><dd>{inspect.paper_summary.valid}</dd>
               <dt>已下载</dt><dd>{inspect.paper_summary.downloaded}</dd>
               <dt>已分析</dt><dd>{inspect.paper_summary.analyzed}</dd>
@@ -301,7 +301,7 @@ export function InspectorPanel({
                   : "未配置"}
               </dd>
               <dt>论文库</dt>
-              <dd>{inspect.config_status.paper_db_sources.join(", ") || "未配置"}</dd>
+              <dd>{inspect.config_status.paper_db_sources?.join(", ") || "未配置"}</dd>
               <dt>邮件</dt>
               <dd>{inspect.config_status.smtp_configured ? "已配置" : "未配置"}</dd>
             </dl>

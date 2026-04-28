@@ -5,7 +5,7 @@
  * 所有业务方法在 code !== 0 时抛出 ApiError，调用方只需处理成功数据。
  */
 
-const BASE_URL = "/api/v1";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
 export class ApiError extends Error {
   constructor(
@@ -24,7 +24,20 @@ export const tokenStore = {
   clear: () => localStorage.removeItem("access_token"),
 };
 
-type ApiResponse<T> = { code: number; data: T; message: string };
+type ApiResponse<T> = {
+  code?: number;
+  data?: T;
+  message?: string;
+  detail?: string;
+};
+
+async function parseResponse<T>(res: Response): Promise<ApiResponse<T> | null> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return null;
+  }
+  return (await res.json()) as ApiResponse<T>;
+}
 
 async function request<T>(
   method: string,
@@ -45,12 +58,22 @@ async function request<T>(
     signal,
   });
 
-  const json: ApiResponse<T> = await res.json();
+  const json = await parseResponse<T>(res);
+
+  if (!res.ok) {
+    const message = json?.message ?? json?.detail ?? `HTTP ${res.status}`;
+    const code = json?.code ?? res.status;
+    throw new ApiError(code, message);
+  }
+
+  if (!json) {
+    throw new ApiError(res.status, "响应格式错误");
+  }
 
   if (json.code !== 0) {
-    throw new ApiError(json.code, json.message);
+    throw new ApiError(json.code ?? res.status, json.message ?? "请求失败");
   }
-  return json.data;
+  return json.data as T;
 }
 
 export const http = {

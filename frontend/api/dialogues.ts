@@ -16,7 +16,7 @@ export interface DialogueSummaryItem {
   sub_mode: SubMode;
   status: DialogueStatus;
   turn_count: number;
-  summary: string | null;
+  summary: string | AgentSummary | null;
   tags: string[] | null;
   created_at: ISODateString;
   last_active_at: ISODateString;

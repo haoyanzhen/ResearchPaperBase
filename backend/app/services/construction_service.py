@@ -28,7 +28,7 @@ from sqlalchemy import delete as sa_delete
 from app.models.paper import Paper, ProjectPaperRelation
 from app.models.project import Keyword, Project
 from app.models.stage import StageRecord
-from app.services.config_service import get_config, get_email_config
+from app.services.config_service import get_effective_email_config, get_system_config
 from app.utils.ids import new_id
 
 # ── 阶段名称映射（构建模式 1-7）────────────────────────────────────────────────
@@ -582,12 +582,12 @@ async def send_stage7_email(
         return {"sent_count": 0, "skipped": True, "error": None}
 
     # 3. 读取邮件配置
-    email_cfg = await get_email_config(db, user_id)
+    email_cfg = await get_effective_email_config(db, user_id)
     smtp_host = email_cfg.get("smtp_host")
     smtp_port = email_cfg.get("smtp_port") or 587
     sender = email_cfg.get("sender_email")
     recipients: list[str] = email_cfg.get("recipients") or []
-    sender_password = await get_config(db, user_id, "email.smtp.sender_password")
+    sender_password = await get_system_config(db, "email.smtp.sender_password")
 
     if not smtp_host or not sender or not recipients:
         return {"sent_count": 0, "skipped": False, "error": "邮件配置不完整，请先配置 SMTP"}

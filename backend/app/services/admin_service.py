@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models.user import User
-from app.services.config_service import get_config
+from app.services.config_service import get_system_config
 
 
 def _utcnow() -> datetime:
@@ -177,8 +177,8 @@ async def reset_user_password(
     """
     重置目标用户密码：生成临时密码 → 更新哈希 → 通过邮件发送给目标用户。
 
-    邮件配置取自管理员（requesting_user_id）的用户配置；
-    若管理员无邮件配置则返回临时密码（不发送邮件，由调用方告知前端）。
+    邮件配置取自系统级发件配置；
+    若系统未配置发件邮箱则返回临时密码（不发送邮件，由调用方告知前端）。
 
     返回 (result_dict, error_msg)：
       result_dict 含 email_sent(bool)，email_sent=False 时含 temp_password 明文（管理员手动转告）。
@@ -192,11 +192,11 @@ async def reset_user_password(
     user.password_hash = hash_password(temp_pwd)
     await db.commit()
 
-    # 尝试通过管理员的 SMTP 配置发送邮件
-    smtp_host = await get_config(db, requesting_user_id, "email.smtp.host")
-    smtp_port_raw = await get_config(db, requesting_user_id, "email.smtp.port")
-    sender = await get_config(db, requesting_user_id, "email.smtp.sender_email")
-    sender_pwd = await get_config(db, requesting_user_id, "email.smtp.sender_password")
+    # 尝试通过系统级 SMTP 配置发送邮件
+    smtp_host = await get_system_config(db, "email.smtp.host")
+    smtp_port_raw = await get_system_config(db, "email.smtp.port")
+    sender = await get_system_config(db, "email.smtp.sender_email")
+    sender_pwd = await get_system_config(db, "email.smtp.sender_password")
 
     if not smtp_host or not sender:
         # 无邮件配置，返回临时密码供管理员手动转告

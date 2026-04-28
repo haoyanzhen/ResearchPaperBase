@@ -39,7 +39,11 @@ from app.schemas.health import (
     PaperSummary,
     StageHistoryItem,
 )
-from app.services.config_service import get_all_llm_providers, get_databases_config, get_email_config
+from app.services.config_service import (
+    get_all_llm_providers,
+    get_databases_config,
+    get_effective_email_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +93,7 @@ async def inspect_project(
         _get_paper_summary(db, project_id),
         get_all_llm_providers(db, user_id),
         get_databases_config(db, user_id),
-        get_email_config(db, user_id),
+        get_effective_email_config(db, user_id),
         return_exceptions=True,
     )
 
@@ -98,9 +102,9 @@ async def inspect_project(
         logger.warning("inspect: stage_records query failed: %s", stage_records)
         stage_records = []
     if isinstance(keyword_stats, Exception):
-        keyword_stats = {"total": 0, "selected": 0, "is_searched": False}
+        keyword_stats = {"total": 0, "search_done": 0, "pending": 0}
     if isinstance(paper_stats, Exception):
-        paper_stats = {"total_in_db": 0, "valid": 0, "download_success": 0, "ai_analyzed": 0}
+        paper_stats = {"total": 0, "valid": 0, "invalid": 0, "downloaded": 0, "analyzed": 0}
     if isinstance(providers, Exception):
         providers = []
     if isinstance(db_cfgs, Exception):
@@ -110,14 +114,15 @@ async def inspect_project(
 
     # ── 3. 构建 config_status ────────────────────────────────────────────────
     active_llm = next((p for p in providers if p.get("is_active")), None) or (providers[0] if providers else None)
+    paper_db_sources = [
+        db_name for db_name, config in db_cfgs.items()
+        if config.get("enabled")
+    ]
     config_status = ConfigStatus(
         llm_configured=active_llm is not None,
-        llm_provider=active_llm.get("provider") if active_llm else None,
-        email_configured=bool(email_cfg.get("smtp_host")),
-        arxiv_configured=db_cfgs.get("arxiv", {}).get("enabled", True),
-        openalex_configured=db_cfgs.get("openalex", {}).get("enabled", True),
-        semantic_scholar_configured=db_cfgs.get("semantic_scholar", {}).get("enabled", True),
-        ads_configured=bool(db_cfgs.get("ads", {}).get("api_key")),
+        llm_active_provider=active_llm.get("provider") if active_llm else None,
+        paper_db_sources=paper_db_sources,
+        smtp_configured=bool(email_cfg.get("smtp_host")),
     )
 
     # ── 4. 构建 stage_history 列表 ───────────────────────────────────────────
@@ -174,15 +179,16 @@ async def _get_keyword_summary(db, project_id: str) -> dict:
     res = await db.execute(
         select(
             func.count().label("total"),
-            func.sum(Keyword.is_selected.cast(int)).label("selected"),
-            func.bool_or(Keyword.is_searched).label("is_searched"),
+            func.sum(Keyword.is_searched.cast(int)).label("search_done"),
         ).where(Keyword.project_id == project_id)
     )
     row = res.one()
+    total = int(row.total or 0)
+    search_done = int(row.search_done or 0)
     return {
-        "total": row.total or 0,
-        "selected": int(row.selected or 0),
-        "is_searched": bool(row.is_searched),
+        "total": total,
+        "search_done": search_done,
+        "pending": max(total - search_done, 0),
     }
 
 
@@ -221,10 +227,11 @@ async def _get_paper_summary(db, project_id: str) -> dict:
     ai_analyzed = ai_res.scalar() or 0
 
     return {
-        "total_in_db": rel_row.total_in_db or 0,
+        "total": int(rel_row.total_in_db or 0),
         "valid": int(rel_row.valid or 0),
-        "download_success": download_success,
-        "ai_analyzed": ai_analyzed,
+        "invalid": max(int(rel_row.total_in_db or 0) - int(rel_row.valid or 0), 0),
+        "downloaded": download_success,
+        "analyzed": ai_analyzed,
     }
 
 
@@ -299,8 +306,7 @@ def _generate_recommendations(
     # ── 1. LLM 未配置（最高优先级）────────────────────────────────────────────
     if not config_status.llm_configured:
         recs.append(
-            "【严重】未配置任何 LLM 模型，所有 AI 功能不可用。"
-            "请前往「设置 → LLM 配置」添加模型，或联系管理员配置系统级默认模型。"
+            "[FATAL] LLM 未配置，所有 Agent 任务将立即失败，请在「设置 → LLM 配置」添加模型"
         )
 
     # ── 2. 最近失败的阶段记录 ────────────────────────────────────────────────
@@ -325,7 +331,7 @@ def _generate_recommendations(
             error_info = "未知错误"
             retry_hint = ""
 
-        rec = f"【错误】阶段「{sname}」执行失败：{error_info}"
+        rec = f"[ERROR] 最近阶段 {latest_failed.mode}-stage{latest_failed.stage} 失败：{error_info}"
         if suggestion_text:
             rec += f" 建议：{suggestion_text}"
         if retry_hint:
@@ -335,8 +341,7 @@ def _generate_recommendations(
     # ── 3. 论文库为空（切换模式前置检查） ────────────────────────────────────
     if project.valid_papers == 0 and project.mode in ("deep_research", "review"):
         recs.append(
-            f"【警告】当前模式为「{project.mode}」但有效论文数为0，"
-            "AI 功能将无法引用任何论文。请切换到构建模式完成论文收集。"
+            "[WARNING] 当前模式缺少有效论文，深度研究和综述功能将无法引用论文，请先完成构建模式"
         )
 
     # ── 4. 检索到论文但全部未通过评分 ────────────────────────────────────────
@@ -344,37 +349,31 @@ def _generate_recommendations(
     valid = paper_stats.get("valid", 0)
     if total > 20 and valid == 0:
         recs.append(
-            f"【警告】已检索到 {total} 篇论文但有效论文数为0（评分阈值过高或 LLM 评分异常）。"
-            "建议在构建模式「评分与筛选」阶段降低评分阈值（当前默认7分）或重新评分。"
+            f"[WARNING] 已检索到 {total} 篇论文但有效论文数为 0，建议降低评分阈值或重新评分"
         )
     elif total > 0 and valid == 0 and total <= 20:
         recs.append(
-            f"【提示】共 {total} 篇论文，有效数为0。检索词可能过于精确，建议扩大检索范围。"
+            f"[INFO] 共 {total} 篇论文但有效数为 0，检索词可能过于精确，建议扩大检索范围"
         )
 
     # ── 5. 配置不完整的数据源 ────────────────────────────────────────────────
     unconfigured_apis: list[str] = []
-    if not config_status.openalex_configured:
-        unconfigured_apis.append("OpenAlex")
-    if not config_status.semantic_scholar_configured:
-        unconfigured_apis.append("Semantic Scholar")
-    if not config_status.ads_configured:
-        unconfigured_apis.append("ADS")
+    for name in ("openalex", "semantic_scholar", "ads"):
+        if name not in config_status.paper_db_sources:
+            unconfigured_apis.append(name)
     if unconfigured_apis:
         recs.append(
-            f"【提示】{', '.join(unconfigured_apis)} 未配置，构建模式将跳过这些数据源，"
-            "可能影响论文覆盖度。可在「设置 → 论文数据库」中配置。"
+            f"[INFO] {', '.join(unconfigured_apis)} 未配置，构建模式会跳过这些数据源，可能影响论文覆盖度"
         )
 
     # ── 6. 邮件未配置 ────────────────────────────────────────────────────────
-    if not config_status.email_configured:
+    if not config_status.smtp_configured:
         recs.append(
-            "【提示】邮件 SMTP 未配置，构建模式第7阶段（邮件推送）将被跳过。"
-            "如需邮件通知，请在「设置 → 邮件」中配置 SMTP。"
+            "[INFO] 邮件 SMTP 未配置，构建模式第 7 阶段会跳过邮件推送"
         )
 
     # ── 7. 全部正常 ──────────────────────────────────────────────────────────
     if not recs:
-        recs.append("所有检查正常，项目状态健康。")
+        recs.append("[INFO] 所有检查正常，项目状态健康")
 
     return recs

@@ -65,6 +65,20 @@ export interface SystemDatabaseConfig {
   endpoint: string | null;
 }
 
+export interface SystemEmailConfig {
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  sender_email?: string | null;
+  sender_password_configured: boolean;
+}
+
+export interface UpdateSystemEmailRequest {
+  smtp_host?: string;
+  smtp_port?: number;
+  sender_email?: string;
+  sender_password?: string;
+}
+
 // ── API 方法 ──────────────────────────────────────────────────────────────────
 
 export const adminApi = {
@@ -114,4 +128,11 @@ export const adminApi = {
 
   updateSystemDatabaseConfig: (dbName: string, body: UpdateSystemDatabaseRequest) =>
     http.patch<SystemDatabaseConfig>(`/admin/system-config/databases/${dbName}`, body),
+
+  // 系统级邮件配置
+  getSystemEmailConfig: () =>
+    http.get<SystemEmailConfig>("/admin/system-config/email"),
+
+  updateSystemEmailConfig: (body: UpdateSystemEmailRequest) =>
+    http.patch<SystemEmailConfig>("/admin/system-config/email", body),
 };

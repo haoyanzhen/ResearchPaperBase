@@ -26,7 +26,7 @@ from app.main import app
 from app.core.deps import get_db
 from app.models.base import Base
 from app.models.user import User
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import create_access_token, hash_password
 from app.utils.ids import new_id
 
 
@@ -38,7 +38,7 @@ TEST_DATABASE_URL = os.getenv(
 )
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def engine():
     """会话级别的独立测试引擎，在 session 开始时建表，结束时不删表（保留调试）。"""
     eng = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -48,7 +48,7 @@ async def engine():
     await eng.dispose()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def db_session(engine):
     """
     每个测试独立事务，测试后自动回滚，保证测试隔离。
@@ -56,20 +56,19 @@ async def db_session(engine):
     """
     SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
     async with SessionLocal() as session:
-        async with session.begin():
-            # 覆盖依赖注入
-            async def _override_get_db():
-                yield session
-
-            app.dependency_overrides[get_db] = _override_get_db
+        # 覆盖依赖注入
+        async def _override_get_db():
             yield session
-            # 回滚而非提交，保证测试隔离
-            await session.rollback()
+
+        app.dependency_overrides[get_db] = _override_get_db
+        yield session
+        # 服务层内部会自行 commit；测试结束后尽量回滚剩余事务
+        await session.rollback()
 
     app.dependency_overrides.pop(get_db, None)
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def client(db_session):
     """使用 ASGI Transport 创建 httpx.AsyncClient，无需启动真实服务器。"""
     async with AsyncClient(
@@ -81,14 +80,15 @@ async def client(db_session):
 
 # ── 用户与认证 Fixtures ───────────────────────────────────────────────────────
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def test_user(db_session: AsyncSession):
     """在测试 DB 中创建一个测试用户，测试后随事务回滚清除。"""
+    user_id = new_id("u")
     user = User(
-        id=new_id("u"),
-        username="testuser",
-        email="test@example.com",
-        hashed_password=get_password_hash("testpassword"),
+        id=user_id,
+        username=f"testuser_{user_id[-6:]}",
+        email=f"{user_id[-6:]}@example.com",
+        password_hash=hash_password("testpassword"),
         is_active=True,
         is_admin=False,
     )
@@ -97,14 +97,15 @@ async def test_user(db_session: AsyncSession):
     return user
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def admin_user(db_session: AsyncSession):
     """管理员测试用户。"""
+    user_id = new_id("u")
     user = User(
-        id=new_id("u"),
-        username="adminuser",
-        email="admin@example.com",
-        hashed_password=get_password_hash("adminpassword"),
+        id=user_id,
+        username=f"adminuser_{user_id[-6:]}",
+        email=f"admin_{user_id[-6:]}@example.com",
+        password_hash=hash_password("adminpassword"),
         is_active=True,
         is_admin=True,
     )
@@ -116,12 +117,12 @@ async def admin_user(db_session: AsyncSession):
 @pytest.fixture
 def auth_headers(test_user):
     """返回带有效 JWT 的 Authorization 请求头。"""
-    token = create_access_token({"sub": test_user.id})
+    token = create_access_token(test_user.id)
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
 def admin_auth_headers(admin_user):
     """管理员 JWT 请求头。"""
-    token = create_access_token({"sub": admin_user.id})
+    token = create_access_token(admin_user.id)
     return {"Authorization": f"Bearer {token}"}

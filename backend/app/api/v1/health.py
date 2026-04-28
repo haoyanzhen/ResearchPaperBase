@@ -45,7 +45,7 @@ from app.schemas.health import (
 from app.services.config_service import (
     get_all_llm_providers,
     get_databases_config,
-    get_email_config,
+    get_effective_email_config,
 )
 from sqlalchemy import select
 
@@ -201,7 +201,7 @@ async def health_deep(
     providers, db_configs, email_cfg = await asyncio.gather(
         get_all_llm_providers(db, user_id),
         get_databases_config(db, user_id),
-        get_email_config(db, user_id),
+        get_effective_email_config(db, user_id),
         return_exceptions=True,
     )
 
@@ -417,7 +417,7 @@ async def _check_smtp(email_cfg: dict) -> CheckResult:
         return CheckResult(
             status="not_configured",
             message="SMTP 未配置，邮件推送功能不可用",
-            suggestion="在「设置 → 邮件」配置 SMTP 服务器",
+            suggestion="请管理员在「设置 → 系统邮件」配置 SMTP 服务器",
         )
 
     port = port or 587

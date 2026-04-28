@@ -60,17 +60,11 @@ export interface UpdateDatabaseConfigRequest {
 // ── 邮件配置 (FR-004) ────────────────────────────────────────────────────────
 
 export interface EmailConfig {
-  smtp_host?: string | null;
-  smtp_port?: number | null;
-  sender_email?: string | null;
   recipients: string[];
+  sender_configured: boolean;
 }
 
 export interface UpdateEmailConfigRequest {
-  smtp_host?: string;
-  smtp_port?: number;
-  sender_email?: string;
-  sender_password?: string;
   recipients?: string[];
 }
 

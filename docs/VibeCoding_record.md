@@ -435,12 +435,15 @@ agent_paperpush/
 
 （check）
 
-任务：参考 docs/ui_design.md 实现前端
+**2026-04-28**(转到codex)
+
+任务：参考 docs/ui_design.md 实现前端，检查普通用户和管理员的服务层是否实现完毕，该 web app 是否可以正常打开并访问。
 参考文件：docs/file_map.md, docs/api.md, docs/ui_design.md, frontend/api/*
 要求：根据修改的文件，更新docs/file_map.md，docs/ui_design.md
 
+1. 审计上述实现。
+2. 设计前端的各项单元测试，测试每个面板和交互能否正常响应。
 
+根据当前的项目情况，整理并书写一版包含用户如何使用该app的安装、配置和启动的README.md
 
-任务：检查普通用户和管理员的服务层是否实现完毕，该 web app 是否可以正常打开并访问。
-契约文件：docs/file_map.md
-要求：根据修改的文件，更新docs/file_map.md
+审计当前设置界面中邮件配置的权限，发送邮箱的配置理应只有管理员能够设置。

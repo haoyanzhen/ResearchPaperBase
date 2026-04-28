@@ -21,6 +21,10 @@ HTTP 路由 — 管理员配置面板（FR-029）
   系统级数据库配置（子模块二）：
     GET    /admin/system-config/databases            列出所有系统数据库配置
     PATCH  /admin/system-config/databases/{db_name} 更新某个系统数据库配置
+
+  系统级邮件配置（子模块四）：
+    GET    /admin/system-config/email                获取系统发件邮箱配置
+    PATCH  /admin/system-config/email                更新系统发件邮箱配置
 """
 
 import time
@@ -38,7 +42,9 @@ from app.schemas.admin import (
     ResetPasswordResponse,
     SetUserActiveRequest,
     SetUserAdminRequest,
+    SystemEmailConfigResponse,
     UpdateSystemDatabaseRequest,
+    UpdateSystemEmailConfigRequest,
     UpdateSystemLLMRequest,
 )
 from app.schemas.common import ok
@@ -242,3 +248,31 @@ async def update_system_database_config(
     )
     configs = await config_service.get_system_databases_config(db)
     return ok(configs[db_name])
+
+
+# =============================================================================
+# 系统级邮件配置（子模块四）
+# =============================================================================
+
+@router.get("/system-config/email")
+async def get_system_email_config(
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """读取系统级发件邮箱配置。"""
+    config = await config_service.get_system_email_config(db)
+    return ok(SystemEmailConfigResponse(**config))
+
+
+@router.patch("/system-config/email")
+async def update_system_email_config(
+    body: UpdateSystemEmailConfigRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新系统级发件邮箱配置。"""
+    await config_service.update_system_email_config(
+        db, current_admin.id, body.model_dump(exclude_none=True)
+    )
+    config = await config_service.get_system_email_config(db)
+    return ok(SystemEmailConfigResponse(**config))
