@@ -447,3 +447,9 @@ agent_paperpush/
 根据当前的项目情况，整理并书写一版包含用户如何使用该app的安装、配置和启动的README.md
 
 审计当前设置界面中邮件配置的权限，发送邮箱的配置理应只有管理员能够设置。
+
+常规的 web app design 是如何分层构建完整设计的？审计设计文档，评估是否能够在没有额外信息的前提下实现完整的 web app 并且不引起恶心bug或设计冲突？如果不能，还缺失哪些设计？将审查报告更新到 docs/design_audit.md 中。（设计文档包括 docs/ADR_design.md, docs/spec.md, docs/api.md, docs/schema.sql, docs/ui_design.md, docs/qa_design.md）（若存在缺失，更新到 design_audit 中）
+
+1. 按照这样的分层，生成一个设计分层参考模版文件
+2. 按照 参考模版 对整个 docs 中的设计文档进行内容重整和结构重调
+3. 按照 design_audit 对修改后的 docs 设计文档中缺失的设计进行重新审计，并生成选择和建议文稿，保存为新的文件等待人工确认
