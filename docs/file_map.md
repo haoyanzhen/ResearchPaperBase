@@ -23,17 +23,22 @@ agent_paperpush/
 
 | 文件 | 职责 |
 |------|------|
-| [spec.md](spec.md) | 需求规格说明书（v1.7）；FR-001~FR-029 完整功能需求；**修改需评审** |
-| [api.md](api.md) | API 设计文档（已对齐 schema.sql v1.1 / spec.md v1.7）；所有 HTTP 端点请求/响应格式；前后端接口契约 |
-| [schema.sql](schema.sql) | PostgreSQL DDL（v1.1）；13 张表结构（含 system\_configs）、索引、约束；**数据层唯一权威** |
-| [ui_design.md](ui_design.md) | 前端界面设计草稿；ASCII 线框图；各页面布局与交互逻辑 |
-| [ADR_design.md](ADR_design.md) | 架构决策记录（ADR）；技术选型理由与取舍 |
+| [design/01_design_layer_template.md](design/01_design_layer_template.md) | Web App Design 分层参考模板；用于简单到复杂 Web App 的产品、流程、状态、数据、API、UI、权限、QA、部署分层设计 |
+| [design/README.md](design/README.md) | 分层设计文档群入口；列出各分层文档与旧路径兼容入口 |
+| [design/00_index.md](design/00_index.md) | 分层设计总览；按层组织当前设计文档群，标记权威来源、冲突点与待确认项 |
+| [design/02_product_requirements.md](design/02_product_requirements.md) | 产品与需求层；需求规格说明书（v1.7）；FR-001~FR-029 完整功能需求；**修改需评审** |
+| [design/03_architecture_decisions.md](design/03_architecture_decisions.md) | 架构决策层；核心架构设计、三模式互斥、RAG 数据库分层和关键取舍 |
+| [design/04_information_architecture_ui.md](design/04_information_architecture_ui.md) | 信息架构与 UI 交互层；ASCII 线框图、路由、页面布局与交互逻辑 |
+| [design/05_state_workflow.md](design/05_state_workflow.md) | 状态机与业务流程层；占位文档，待补 Project/Stage/Task、调度、取消、暂停、恢复和补偿策略 |
+| [design/06_data_model.sql](design/06_data_model.sql) | 数据模型层；PostgreSQL DDL（v1.1）；13 张表结构（含 system\_configs）、索引、约束；**数据层唯一权威** |
+| [design/07_api_contract.md](design/07_api_contract.md) | API 契约层；所有 HTTP 端点请求/响应格式、前后端接口契约、SSE 通信 |
 | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
-| [qa_design.md](qa_design.md) | QA 与错误诊断设计（v1.0）；错误码体系、结构化错误信封、SSE 错误事件协议、健康检查探针规范、诊断快照端点、分层测试策略、Inspector Panel 规范；§10 验收检查清单含逐项完成状态，20 项中 12 项完成、4 项待完成（均为前端交互逻辑） |
-| [design_layer_template.md](design_layer_template.md) | Web App Design 分层参考模板；用于简单到复杂 Web App 的产品、流程、状态、数据、API、UI、权限、QA、部署分层设计 |
-| [design_layers.md](design_layers.md) | 按分层模板对现有设计文档进行结构重整后的总览；保留原文档作为来源，标记权威来源、冲突点与待确认项 |
-| [design_audit.md](design_audit.md) | 设计文档审计报告；评估现有设计是否足以无额外信息实现完整 Web App，并列出缺失设计 |
-| [design_gap_decisions.md](design_gap_decisions.md) | 基于审计和分层重整生成的缺失设计选择与建议；待人工确认后回写各契约文档 |
+| [design/08_security_permissions.md](design/08_security_permissions.md) | 权限与安全层；占位文档，待补权限矩阵、管理员边界、敏感信息保护、审计日志和 SSE 认证策略 |
+| [design/09_quality_observability.md](design/09_quality_observability.md) | QA 与可观测层；错误码体系、结构化错误信封、SSE 错误事件协议、健康检查、诊断快照、测试策略、Inspector Panel |
+| [design/10_operations_deployment.md](design/10_operations_deployment.md) | 运维部署与演进层；占位文档，待补环境变量、部署拓扑、迁移、备份恢复、监控告警和版本演进 |
+| [design/11_design_audit.md](design/11_design_audit.md) | 设计审计层；评估设计是否足以无额外信息实现完整 Web App，并列出缺失设计 |
+| [design/12_gap_decisions.md](design/12_gap_decisions.md) | 决策待确认层；基于审计和分层重整生成的缺失设计选择与建议，待人工确认后回写各契约文档 |
+| [spec.md](spec.md) / [api.md](api.md) / [schema.sql](schema.sql) / [ui_design.md](ui_design.md) / [ADR_design.md](ADR_design.md) / [qa_design.md](qa_design.md) / [design_layers.md](design_layers.md) 等 | 兼容旧路径；Markdown 文件为跳转入口，`schema.sql` 为指向 `design/06_data_model.sql` 的符号链接 |
 | [VibeCoding_record.md](VibeCoding_record.md) | 开发过程记录；设计演进历史 |
 | [media/](media/) | 文档附图（logo、RAG 结构图等） |
 
