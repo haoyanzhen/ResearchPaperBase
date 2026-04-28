@@ -3,6 +3,9 @@
 Author: haoyanzhen
 Date:   2026-04-08
 
+> 分层定位：API 契约层、实时通信契约层。
+> 重整入口：参见 `design_layers.md`；当前存在待确认的响应 envelope、错误码、SSE 认证和缺失端点问题，详见 `design_gap_decisions.md`。
+
 本文档描述 Research Paper Base 系统的前后端通信设计，包含所有 REST API 接口定义和实时通信协议规范。
 
 ---

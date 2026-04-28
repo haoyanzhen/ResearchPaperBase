@@ -4,6 +4,7 @@
 -- Author:  haoyanzhen
 -- Version: v1.1 (aligned with spec.md v1.7 — FR-029 admin columns + system_configs)
 -- Date:    2026-04-23
+-- Layer:   数据模型层唯一权威契约；分层总览见 docs/design_layers.md
 --
 -- 契约说明：
 --   本文件是所有模块间数据层的唯一权威契约。

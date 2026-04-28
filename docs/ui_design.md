@@ -3,6 +3,9 @@
 Author: haoyanzhen
 Date:   2026-04-28
 
+> 分层定位：UI 与交互层、信息架构层。
+> 重整入口：参见 `design_layers.md`；当前仍有待确认的阶段跳过、图谱重建、响应式和权限态问题，详见 `design_gap_decisions.md`。
+
 本文档用 ASCII 线框图描述各页面的布局结构与交互逻辑，作为前端开发的参考草稿。
 
 ---

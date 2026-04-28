@@ -30,6 +30,10 @@ agent_paperpush/
 | [ADR_design.md](ADR_design.md) | 架构决策记录（ADR）；技术选型理由与取舍 |
 | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
 | [qa_design.md](qa_design.md) | QA 与错误诊断设计（v1.0）；错误码体系、结构化错误信封、SSE 错误事件协议、健康检查探针规范、诊断快照端点、分层测试策略、Inspector Panel 规范；§10 验收检查清单含逐项完成状态，20 项中 12 项完成、4 项待完成（均为前端交互逻辑） |
+| [design_layer_template.md](design_layer_template.md) | Web App Design 分层参考模板；用于简单到复杂 Web App 的产品、流程、状态、数据、API、UI、权限、QA、部署分层设计 |
+| [design_layers.md](design_layers.md) | 按分层模板对现有设计文档进行结构重整后的总览；保留原文档作为来源，标记权威来源、冲突点与待确认项 |
+| [design_audit.md](design_audit.md) | 设计文档审计报告；评估现有设计是否足以无额外信息实现完整 Web App，并列出缺失设计 |
+| [design_gap_decisions.md](design_gap_decisions.md) | 基于审计和分层重整生成的缺失设计选择与建议；待人工确认后回写各契约文档 |
 | [VibeCoding_record.md](VibeCoding_record.md) | 开发过程记录；设计演进历史 |
 | [media/](media/) | 文档附图（logo、RAG 结构图等） |
 
