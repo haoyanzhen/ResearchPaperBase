@@ -1,1 +1,0 @@
-design/06_data_model.sql
