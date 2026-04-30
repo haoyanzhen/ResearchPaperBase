@@ -8,6 +8,7 @@
 - `docs/design/02_product_requirements.md`
 - `docs/design/07_api_contract.md`
 - `docs/design/06_data_model.sql`
+- `docs/design/06_data_requirements.md`
 - `docs/design/04_information_architecture_ui.md`
 - `docs/design/09_quality_observability.md`
 

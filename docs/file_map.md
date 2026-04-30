@@ -30,6 +30,7 @@ agent_paperpush/
 | [design/03_architecture_decisions.md](design/03_architecture_decisions.md) | 架构决策层；核心架构设计、三模式互斥、RAG 数据库分层和关键取舍 |
 | [design/04_information_architecture_ui.md](design/04_information_architecture_ui.md) | 信息架构与 UI 交互层；ASCII 线框图、路由、页面布局与交互逻辑 |
 | [design/05_state_workflow.md](design/05_state_workflow.md) | 状态机与业务流程层；占位文档，待补 Project/Stage/Task、调度、取消、暂停、恢复和补偿策略 |
+| [design/06_data_requirements.md](design/06_data_requirements.md) | 数据需求设计；从 `02_product_requirements.md` 迁出的原第 6 章，说明关系库、向量库、图数据库和多数据库协同 |
 | [design/06_data_model.sql](design/06_data_model.sql) | 数据模型层；PostgreSQL DDL（v1.1）；13 张表结构（含 system\_configs）、索引、约束；**数据层唯一权威** |
 | [design/07_api_contract.md](design/07_api_contract.md) | API 契约层；所有 HTTP 端点请求/响应格式、前后端接口契约、SSE 通信 |
 | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |

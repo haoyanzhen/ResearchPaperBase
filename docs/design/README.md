@@ -10,7 +10,7 @@
 | 架构决策层 | [03_architecture_decisions.md](03_architecture_decisions.md) |
 | 信息架构与 UI 交互层 | [04_information_architecture_ui.md](04_information_architecture_ui.md) |
 | 状态机与业务流程层 | [05_state_workflow.md](05_state_workflow.md) |
-| 数据模型层 | [06_data_model.sql](06_data_model.sql) |
+| 数据模型层 | [06_data_model.sql](06_data_model.sql), [06_data_requirements.md](06_data_requirements.md) |
 | API 契约层 | [07_api_contract.md](07_api_contract.md) |
 | 权限与安全层 | [08_security_permissions.md](08_security_permissions.md) |
 | QA 与可观测层 | [09_quality_observability.md](09_quality_observability.md) |

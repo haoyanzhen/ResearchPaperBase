@@ -14,7 +14,11 @@ Accomplish a web app as a deep search & research scholar base.
 - Can make graph-RAG based on paper database and interact with users.
 - Can make literature review on a research topic based on paper database.
 
-## structure
+## Version control
+
+- The major version of the current project is: 1
+- The major version number of all files should be consistent with the major version of the project.
+- The minor version should increase on the basis of the original version number. 
 
 ## Work Style
 

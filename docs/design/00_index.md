@@ -13,7 +13,7 @@
 | 产品与领域层 | `02_product_requirements.md`, `03_architecture_decisions.md` | `02_product_requirements.md` 定义 FR；`03_architecture_decisions.md` 定义顶层架构意图 |
 | 信息架构与用户流程层 | `04_information_architecture_ui.md`, `02_product_requirements.md` | `04_information_architecture_ui.md` 定义页面与路由；`02_product_requirements.md` 定义业务入口条件 |
 | 状态机与业务流程层 | `05_state_workflow.md`, `03_architecture_decisions.md`, `02_product_requirements.md`, `06_data_model.sql`, `07_api_contract.md` | `05_state_workflow.md` 为占位入口；状态枚举应以 `06_data_model.sql` 为准，待人工确认 |
-| 数据模型层 | `06_data_model.sql`, `02_product_requirements.md` | `06_data_model.sql` 自声明为数据层唯一权威契约 |
+| 数据模型层 | `06_data_model.sql`, `06_data_requirements.md` | `06_data_model.sql` 自声明为数据层唯一权威契约；`06_data_requirements.md` 承载解释性数据需求 |
 | API 契约层 | `07_api_contract.md`, `09_quality_observability.md` | `07_api_contract.md` 是接口入口，但响应结构和错误码需统一 |
 | UI 与交互层 | `04_information_architecture_ui.md` | 页面草稿完整度较高，但视觉系统、响应式、可访问性缺失 |
 | 权限与安全层 | `08_security_permissions.md`, `02_product_requirements.md`, `07_api_contract.md`, `06_data_model.sql`, `09_quality_observability.md` | `08_security_permissions.md` 为占位入口；有用户隔离和管理员规则，但缺少完整权限矩阵 |
@@ -209,7 +209,7 @@
 
 ## 4. 数据模型层
 
-来源：`06_data_model.sql` 为权威，`02_product_requirements.md` 数据需求章节作为解释性材料。
+来源：`06_data_model.sql` 为权威，`06_data_requirements.md` 作为解释性数据需求与多数据库协同说明。
 
 数据设计原则：
 
