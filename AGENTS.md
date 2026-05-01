@@ -32,19 +32,3 @@ For each task:
 5. Run relevant tests if possible.
 6. Summarize the diff.
 7. Explain remaining risks or unknowns.
-
-## Final Response Format
-
-Use this format after completing a task:
-
-### Summary
-- What changed
-
-### Tests(if meaningful codes are changed)
-- Commands run and results
-
-### Risks / Notes
-- Remaining concerns
-
-### Human Review Checklist
-- Specific things the human should inspect

@@ -51,3 +51,19 @@
 7. 如何验证 & 测试
 8. 有哪些风险或限制
 9. 有哪些知识点（在 web app 方面）
+
+## Final Response Format
+
+Use this format after completing a task:
+
+### Summary
+- What changed
+
+### Tests(if meaningful codes are changed)
+- Commands run and results
+
+### Risks / Notes
+- Remaining concerns
+
+### Human Review Checklist
+- Specific things the human should inspect

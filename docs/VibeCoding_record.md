@@ -685,6 +685,404 @@ FR 只需要定义“用户需要看到什么能力和结果”，例如：
 
 重新设计这个切换后对 Agent 工作流状态的影响，重启、新增、修改已有工作流内容+新建工作流的需求，抛去对设计文档规模的考虑，单纯从 FR 设计上判断修改方案。（不要写入任何文件）
 
-从 FR 设计看，应当新增一组横切 FR，而不是把“切换、重启、新增、修改已有工作流、新建工作流”塞进 FR-015~FR-030。原因是这些行为影响所有 Agent 模式，是 Project 级工作流生命周期，不是某个阶段的局部能力。建议设计为 4 个横切 FR。
+> 从 FR 设计看，应当新增一组横切 FR，而不是把“切换、重启、新增、修改已有工作流、新建工作流”塞进 FR-015~FR-030。原因是这些行为影响所有 Agent 模式，是 Project 级工作流生命周期，不是某个阶段的局部能力。建议设计为 4 个横切 FR。
 
-#TODO: Agent三模式似乎不需要互斥，为什么不可以同时开多个session呢？
+将这四条用 FR-AGENT-* 来编号，暂存入 02 文件中。
+
+或许三个Agent模式互斥的设计是错误的。其实我们根本没有必要管理Agent模式的互斥性，比如深度研究模式和综述模式应该可以同时异步运行？以Session的架构来管理Agent模式的启动是不是更合理？
+
+```markdown
+是的，当前“三个 Agent 模式互斥”的设计很可能过度约束了系统。对这个项目来说，用 **Session / Run 架构管理 Agent 启动**更合理。
+
+更准确的模型应当是：
+
+- `Project` 是长期研究容器。
+- `Agent Mode` 是能力类型，不是 Project 的唯一状态。
+- `Session / Run` 是一次具体 Agent 工作实例。
+- 构建、深研、综述可以在同一 Project 下并存多个实例。
+- 是否能并发，不由“模式互斥”决定，而由资源冲突和数据写入冲突决定。
+
+建议从“模式互斥”改成“工作流并发控制”。
+
+**新的核心规则**
+- 深度研究对话 `Research Session` 可以多个并行，因为主要是读知识库、写自己的对话历史。
+- 综述 `Review Session` 可以多个并行，因为不同综述版本/草稿可独立写入。
+- 构建 `Construction Run` 需要严格控制并发，因为它会写论文库、向量库和 Graph。
+- 构建运行时，深研和综述可以继续读旧知识库，但 UI 必须提示“知识库正在更新，当前结果基于某个快照”。
+- 构建完成后，深研和综述可以选择继续使用旧快照，或刷新到新知识库版本。
+- 同一 Review Session 内，章节生成可以按设计串行或有限并发，但同一章节不能被多个任务同时写。
+- 同一 Research Session 内，一次只允许一个流式回复，避免对话轮次顺序冲突。
+
+也就是说，真正需要互斥的不是“模式”，而是：
+
+- 同一个 Project 的知识库写入任务。
+- 同一个 session 的同一份内容写入。
+- 同一个导出任务对同一版本产物的生成。
+- 同一个对话 session 的消息追加顺序。
+```
+
+那么在设计上不需要模式互斥的话，但是构建模式和另外两个模式还是有明显区别。是否需要在设计上进行区分？特别是希望构建模式每次完成后对另外两个模式进行默认知识库更新，但又不希望打断另外两个模式的会话运行状态。另外，构建模式是否要改为 session/run 设计？
+
+```markdown
+需要区分，而且要明确区分得更强。不是用“模式互斥”区分，而是用 **读写角色、生命周期、并发规则、知识库版本传播规则** 区分。
+
+**1. 构建模式应该改为 Run，不建议叫 Session**
+构建模式本质是批处理/流水线任务：
+
+- 有明确开始和结束。
+- 有阶段：检索词、检索、去重评分、下载解析、AI 分析、入库、图谱更新、推送。
+- 会写论文库、向量库、Graph。
+- 需要失败恢复、重试、取消、补偿。
+- 同一 Project 通常只能有一个 active `Construction Run`。
+
+所以它应设计为 `Construction Run`，不是普通 session。
+
+深度研究和综述更适合叫 Session：
+
+- `Research Session`：持续对话，可多开。
+- `Review Session`：持续写作工作区，可多开，也可包含多个版本。
+
+**2. 三类 Agent 应按角色区分**
+推荐这样建模：
+
+| Agent 类型 | 实例名称 | 主要角色 | 是否写知识库 | 是否可多开 |
+| --- | --- | --- | --- | --- |
+| 构建 Agent | `Construction Run` | 构建/更新 Project Knowledge Base | 是 | 同 Project 通常不并发 |
+| 深度研究 Agent | `Research Session` | 基于知识库快照对话研究 | 否，只写对话 | 可多开 |
+| 综述 Agent | `Review Session` | 基于知识库快照生成综述 | 否，只写综述内容 | 可多开 |
+
+这里的关键是：构建 Agent 是 **知识库写入者**，另外两个是 **知识库消费者**。
+
+**3. 构建完成后默认更新知识库，但不打断已有会话**
+这需要引入 `Knowledge Snapshot` 或 `Knowledge Version`。
+
+规则应是：
+
+- 每次成功构建完成后，生成新的 Project 知识库版本，例如 `KB v12`。
+- Project 的默认知识库指针更新到最新版本。
+- 新开的 Research Session / Review Session 默认使用最新版本。
+- 已经运行中的 Research Session / Review Session 不被强制切换。
+- 已有 session 显示提示：有新知识库版本可用。
+- 用户可选择：
+  - 继续使用当前版本。
+  - 刷新到最新版本。
+  - 基于最新版本创建新 session / 新 review version。
+- 如果 Agent 正在生成回复或章节，不允许中途自动替换知识库上下文。
+- 刷新知识库必须产生可追溯记录，说明从哪个版本切到哪个版本。
+
+这能满足你的两个目标：
+
+- 构建完成后默认影响后续工作。
+- 不打断正在运行的深研/综述会话。
+```
+
+将以上对Agent模式的设计修改，更新到02文件中，并在结束后报告更新内容
+
+为什么同一 Research Session 内一次只允许一个流式回复追加？
+
+```markdown
+因为同一个 `Research Session` 的对话历史是有顺序的。如果同时允许两个流式回复写入同一个 Session，会出现几类实现和体验问题：
+
+- **消息顺序冲突**：用户连续发出 A、B 两个问题，如果两个 Agent 同时流式回复，系统很难保证最终历史是 `A -> answer A -> B -> answer B`，还是交错成不可理解的顺序。
+- **上下文基准不一致**：第二个回复应该基于哪些历史？如果第一个回复还没完成，第二个回复是否能引用它？这会导致上下文不确定。
+- **流式内容交错**：两个 SSE/WebSocket 流同时追加到同一对话，前端容易出现 token 交错、引用错位、结束状态覆盖等问题。
+- **引用追溯混乱**：每个回答都有引用论文、文段和图谱节点。如果两个回答并发写，引用可能绑定到错误的轮次。
+- **取消/失败语义复杂**：如果用户取消其中一个回复，另一个是否继续？如果一个失败，是否影响 session 状态？会明显增加状态机复杂度。
+- **数据库写入竞争**：同一个 session 的 `turn_index`、message append、summary update、last_active_at 等字段容易发生竞争。
+
+所以这里的限制不是说用户不能开多个研究任务，而是：
+
+- 同一个 `Research Session` 内，一次只允许一个 active reply stream。
+- 用户如果想并行探索，可以创建多个 `Research Session`。
+- 同一个 Project 下可以并行多个 Research Session。
+- 每个 Session 内保持线性对话顺序。
+
+这个设计相当于聊天产品里的常见规则：一个 chat thread 一次只生成一个 assistant reply；并行研究通过新建 thread/session 实现。
+```
+
+不同session的流式回复区别是通过不同的API来保证纯净的吗？
+
+> 不是靠“不同 API”来保证，而是靠 同一个流式接口中的 session 作用域隔离 来保证。
+
+构建run和其他模式的session同时运行是否会造成数据库读写冲突？
+
+> 会有潜在冲突，但可以通过 知识库版本隔离 + 写入边界 控制到可接受范围。
+
+避免这四类冲突在实现上简单吗？
+
+```markdown
+不算简单，但可以做到“设计简单、实现可控”。关键取决于你是否接受 **版本化写入 + 默认指针切换**。如果接受，这四类冲突不会变成难以维护的分布式并发问题。
+
+复杂度判断：
+
+- **关系库冲突：中等复杂度**。Postgres 本来擅长处理事务、唯一约束、upsert、行级锁。主要难点是把 `knowledge_version_id` 设计清楚。
+- **向量库冲突：中等偏高**。如果每个知识库版本一个 collection/namespace，实现会清晰，但需要管理存储膨胀和旧版本清理。
+- **Graph 冲突：中等复杂度**。不要原地覆盖 graph 文件；用版本化文件路径或临时文件 + 原子发布，复杂度可控。
+- **默认指针冲突：低到中等复杂度**。只要 Session 创建时绑定 `knowledge_version_id`，后续查询不读“当前默认值”，就能避免大多数问题。
+
+最简单可行实现是：
+
+```text
+construction_run starts
+  -> create knowledge_version status=building
+  -> write vectors to project_{id}_kb_{version}
+  -> write graph to graph/project_{id}/kb_{version}.graphml.tmp
+  -> write relational rows with knowledge_version_id
+  -> validate
+  -> rename graph tmp to final
+  -> mark knowledge_version status=active
+  -> update project.default_knowledge_version_id
+```
+
+Research / Review：
+
+```text
+session created
+  -> bind session.knowledge_version_id = project.default_knowledge_version_id
+
+session queries
+  -> always read by session.knowledge_version_id
+  -> never read floating default pointer during generation
+```
+
+这样实现的好处是：
+
+- 不需要暂停 Research/Review。
+- 不需要复杂锁住整个 Project。
+- 构建失败不会污染旧知识库。
+- 新旧知识库可以共存。
+- 用户刷新 Session 是显式动作。
+
+真正会增加的成本：
+
+- 需要 `knowledge_versions` 概念。
+- 所有 RAG 查询都要带 `knowledge_version_id`。
+- 向量库和 Graph 要支持版本命名。
+- 需要旧版本清理策略。
+- UI 要提示“当前 Session 使用 v3，新版本 v4 可用”。
+
+如果想做 MVP，建议先采用更简单但安全的版本：
+
+- 一个 Project 同时只允许一个 active Construction Run。
+- Research/Review Session 绑定构建完成时的 `knowledge_version_id`。
+- 每次成功构建生成一个完整新版本。
+- 暂不做局部增量更新旧版本。
+- 旧版本保留最近 N 个，例如 3 个或 5 个。
+- 暂不支持 Session 自动迁移，只支持用户手动“刷新到最新版本”。
+
+这个方案实现不轻，但比“允许边写当前知识库边读”简单得多，也更可靠。
+```
+
+我考虑采取一个新的版本：
+1. 一个 Project 同时只允许一个 active Construction Run。
+2. Research/Review Session 绑定构建完成时的 knowledge_version_id。
+3. 每次成功构建生成一个完整新版本。
+4. 暂不做局部增量更新旧版本。
+5. 旧版本保留最近 1 个
+6. 待全部旧版本的Session当前运行任务结束后，提醒用户将强制更新新版本，然后将新版本覆盖掉旧版本，并让所有Session的版本指针改到新版本。
+
+评估这个版本的实现难度和可靠性
+
+> 这个方案比“保留多版本并由用户手动刷新”更省存储，但可靠性更差，状态机也更复杂。核心问题在第 6 条：强制把所有 Session 指针改到新版本 会破坏 Session 的可追溯性。
+
+提问： Session 在旧版本完成的文本内容和论文数据库的更新有什么关系？
+
+> 论文数据库是知识来源，Session 文本是生成产物；更新知识来源不应自动改写生成产物，只能影响后续生成或显式修订。
+
+不对，我的问题是，Session采用旧版本的论文生成的文本应该只受Session自身的上下文数据库版本管理，而和论文数据库的版本更新似乎没有关系，只要在论文数据库版本更新时保留论文的unique id即可？
+
+> 是的，你这个判断更准确。如果 Session 已经把生成文本所需的上下文证据固化到自己的上下文记录里，那么旧 Session 的已完成文本确实不需要依赖论文数据库旧版本继续存在。论文数据库更新时只要保留稳定的论文 unique id，历史文本就能保持可追溯。
+
+等会儿，我现在有点乱。请重新整理构建run和其他模式session同时运行时的论文数据库版本管理问题，描述各个session在运行时的不同数据库管理交互，以及可能引起的冲突问题和可能的解决方案。
+
+```markdown
+可以把问题拆成三层，不要把它们都叫“论文数据库版本”。
+
+**1. 三类数据**
+**Paper Identity / 论文身份库**
+这是长期稳定层。保存 `paper_id`、DOI、arXiv ID、标题、作者、PDF 地址等。目标是让同一篇论文在多次构建后仍是同一个 `paper_id`。
+
+这个层不应该按 Session 复制。构建 Run 可以新增论文、更新元数据，但不能随意改变已有论文的稳定 ID。
+
+**Knowledge Index / 知识索引**
+这是 RAG 检索层。包括解析文本 chunk、向量索引、Graph、评分、有效论文集合等。构建 Run 会重建或更新它。深研/综述 Session 运行时会读取它。
+
+这个层最容易发生读写冲突。
+
+**Session Evidence / 会话证据快照**
+这是 Session 生成文本时实际用过的证据。包括引用过的 `paper_id`、引用文段快照、chunk 文本快照、检索分数、Graph 节点快照、生成时使用的上下文记录等。
+
+这个层随 Session 保存。已生成文本的可追溯性主要依赖它，而不是依赖完整旧知识索引继续存在。
+
+**2. 各模式怎么交互**
+**Construction Run**
+- 写 Paper Identity：新增 paper，upsert 元数据，保持 `paper_id` 稳定。
+- 写 Knowledge Index：解析文本、chunk、向量、Graph、有效论文集合。
+- 发布“当前可用知识索引版本”或直接替换最新索引。
+- 不应该修改已有 Session 的文本内容。
+- 不应该删除已完成 Session 的 evidence snapshot。
+
+**Research Session**
+- 启动生成时读取当前可用 Knowledge Index。
+- 一轮回复开始后，应固定本轮使用的检索结果。
+- 回复完成后，把实际使用的 evidence snapshot 存入 Session。
+- 已完成回复以后，不依赖旧 Knowledge Index，只依赖自己的 evidence snapshot 做追溯。
+- 后续新一轮提问可以选择使用最新 Knowledge Index。
+
+**Review Session**
+- 生成大纲、章节、终审时读取当前可用 Knowledge Index。
+- 每个章节或产物生成时，应保存自己的 evidence snapshot。
+- 已完成章节不因 Construction Run 更新而自动变化。
+- 后续新章节或重生成章节可以选择使用最新 Knowledge Index。
+- 同一篇综述可能存在不同章节基于不同检索时点生成，必须能标记或提示。
+
+**3. 同时运行时的主要冲突**
+**冲突 A：Session 正在检索时，Construction Run 正在改 Knowledge Index**
+风险：检索到半成品 chunk、向量和 Graph，结果不一致。
+
+解决：
+- 构建写入 staging index。
+- 构建完成后原子发布为 latest index。
+- Session 一轮生成开始时绑定当时的 index version 或 index snapshot marker。
+- 不允许边写 latest 边读 latest。
+
+**冲突 B：Construction Run 更新 paper 元数据，Session 引用旧 metadata**
+风险：旧回答里显示的标题、作者、年份和当前论文库不一致。
+
+解决：
+- Session evidence snapshot 保存引用时必要元数据快照。
+- 论文详情页可以显示当前 metadata，同时引用卡片显示“生成时 metadata”。
+- `paper_id` 必须稳定。
+
+**冲突 C：Construction Run 清理旧 Knowledge Index，旧 Session 还没生成完**
+风险：正在生成的回复或章节需要继续读取旧索引，但索引被删了。
+
+解决：
+- active generation 持有 index lease。
+- 旧 index 只有在无 active lease 后才能清理。
+- 或者一轮生成开始时先取完整检索上下文，之后生成只依赖已取出的上下文，不再访问旧 index。
+
+**冲突 D：Session 已完成文本的引用追溯依赖旧 Knowledge Index**
+风险：旧索引删除后无法查看引用依据。
+
+解决：
+- 不让历史追溯依赖旧 index。
+- 每条回复、章节、段落保存 evidence snapshot。
+- snapshot 至少包含 `paper_id`、引用文段、chunk 标识、必要 metadata、检索分数或来源说明。
+
+**冲突 E：Review Session 不同章节使用不同 Knowledge Index**
+风险：整篇综述引用口径不一致。
+
+解决：
+- 每个章节记录 `generated_from_index_version` 或 `generated_at`.
+- 终审时提示“本文包含多个知识索引版本生成的章节”。
+- 用户可选择统一刷新/重审。
+- 不强制自动重写。
+
+**冲突 F：Construction Run 与 Session 同时写 Project 状态**
+风险：Project 状态被覆盖，例如构建 running 覆盖综述 running。
+
+解决：
+- Project 不再只有一个 `mode/status`。
+- Run/Session 各自有状态。
+- Project 只保存摘要状态，例如 latest_knowledge_index、active_construction_run_id、counts。
+
+**4. 推荐的简单可靠方案**
+我建议采用这个模型：
+
+- 一个 Project 同时只允许一个 active Construction Run。
+- Construction Run 不直接改正在服务的 Knowledge Index，而是写 staging。
+- 构建成功后原子发布 latest Knowledge Index。
+- Paper Identity 长期稳定，`paper_id` 不变。
+- Research/Review 一次生成开始时读取 latest index，并记录本次使用的 `index_version`。
+- 每次生成完成后保存 Session Evidence Snapshot。
+- 已完成文本只依赖 evidence snapshot 追溯，不依赖旧 index。
+- 旧 index 只保留到没有 active generation 使用它，然后可以清理。
+- 后续 Session 新生成默认使用最新 index，但不自动改历史文本。
+- Review 终审时检查章节是否来自不同 index version，并提示用户。
+
+**5. 一句话结论**
+构建 Run 和其他 Session 同时运行时，真正需要版本管理的是 **Knowledge Index 的读写发布** 和 **Session Evidence 的历史追溯**。论文身份库只需要稳定 ID，不需要为每个 Session 保留完整旧版本。
+```
+
+你说的 Session Evidence / 会话证据快照，总觉得有些奇怪，为什么需要会话证据呢？旧的生成信息只看结果不可以吗，新的生成信息用新的数据库来生成，这不是解耦的吗？引用的时候每个chunk都有对应的paper id，所以说到底还是锁在paper id上的，只要保证论文数据库跨版本的paper id一致性，应该就不会造成引用错误。那么还有什么冲突呢？为什么要追溯？
+你说的冲突A：构建run更改的知识默认版本，不会更改session自身指向的版本，只有session当前任务完成后才会修改其指向的版本
+冲突B：保持paper id一致性做增量更新的话，引用旧metadata也是准确的吧？
+冲突C：同A，只有session生成完了才会进行清理旧版本，根本不会发现生成截断的问题吧？
+冲突D：同B，引用应当不会因为数据库版本修改而变？
+冲突E：如果用户非要在写同一篇综述中间更新知识库，ta应该接受不同章节采用不同的知识库版本才对，如果ta不能接受就重开一个session或者重新运行，这不应该是设计问题而应该是用户选择
+冲突F：Project什么时候有状态了？不是只有Run/Session有状态吗？
+
+> 你的反驳基本成立。之前我把“强审计/可复现”的要求提前放进了基础设计，导致方案显得过重。按你现在的产品目标，可以更简单：不需要把 Session Evidence Snapshot 作为必选设计。
+
+保持增量更新原则和数据库内部自设的paper id独立在技术上困难吗？
+
+> 不困难，属于常规数据库设计，但要把“论文身份解析”设计严谨。难点不在 paper_id 本身，而在 跨来源去重和合并规则。
+
+不，增量更新的原则应该是，命中已有paper_id时排除该文章才对
+
+> 对，如果你的目标是“构建 Run 只处理新增论文”，那增量更新原则应改成：命中已有 paper_id 时排除该文章，不进入后续下载、解析、分析、入库、推送流程。
+
+将当前对构建run和其他模式session同时运行时的论文数据库版本管理问题的解决方案进行总结
+
+```markdown
+当前更清晰的解决方案是：**不做 Project 三模式互斥，用 Project + Construction Run + Research/Review Session + Knowledge Version 管理并发；默认增量构建只处理新增论文，旧 Session 不被构建更新打断。**
+
+**核心对象**
+- `Project`：长期研究容器，不保存全局运行状态，不持有唯一当前模式。
+- `Paper`：稳定论文身份，内部 `paper_id` 跨构建版本不变。连接到当前 project 的研究主题-论文关联表的 `id` 跨构建版本不变
+- `Knowledge Version`：一次成功构建后的知识索引版本，包括可检索文本、向量索引、Graph 等。
+- `Construction Run`：构建 Agent 的一次运行，负责检索新增论文并生成新的 Knowledge Version。
+- `Research Session`：深度研究会话，读取某个 `knowledge_version_id`，写自己的对话历史。
+- `Review Session`：综述写作会话，读取某个 `knowledge_version_id`，写自己的大纲、章节、终审和导出产物。
+
+**并发规则**
+- 同一 Project 同时只允许一个 active `Construction Run`。
+- `Research Session` 和 `Review Session` 可以与 `Construction Run` 同时运行。
+- Session 当前生成任务运行中，不切换其 `knowledge_version_id`。
+- Construction Run 成功后生成新的 `Knowledge Version`，并更新 Project 默认知识库版本。
+- 新建 Research/Review Session 默认使用最新 Knowledge Version。
+- 已有 Research/Review Session 不被强制打断，在当前所有 active Session 任务完成后提示知识库依赖将刷新到最新版本。
+- 旧 Knowledge Version 只有在没有 active Session 任务依赖时才可清理。
+
+**默认增量构建原则**
+- 候选论文先做 identity resolution。
+- 命中已有 `paper_id` 和研究主题-论文关联表 `id` 时，标记为已存在并从本次新增处理流水线中排除。
+- 未命中已有 `paper_id` 和研究主题-论文关联表 `id` 的候选论文才进入新增处理流程。
+
+**引用与论文数据库关系**
+- 引用长期绑定稳定研究主题-论文关联表 `id` 和 `paper_id`。
+- 只要 `paper_id` 跨版本一致，旧文本引用不会因为论文数据库更新而指向错误论文。
+- 已完成的 Research 回复或 Review 章节不会因新构建自动改写。
+- 新生成内容使用当前 Session 绑定的 Knowledge Version。
+- 同一 Review Session 如果用户选择中途刷新知识库版本，不同章节可能来自不同版本，这是用户选择，不作为系统冲突。
+```
+
+（进行了某种手动简化）
+
+```markdown
+**知识库版本并行更新**
+
+1. `paper_id` 和研究主题-论文关联表的关联 `id` 保持跨构建版本不变。
+2. 在构建模式增量更新中，候选论文先进行 identity resolution；若命中已有 `paper_id` 和关联 `id`，则标记为已存在并从本次新增处理流水线中排除。只有未命中的新论文才创建新的 `paper_id` 和关联 `id`，并进入下载、解析、分析、入库和图谱更新流程。
+3. 同一 Project 同时只允许一个 active `Construction Run`，但可与其他 `Research Session` / `Review Session` 并行运行。
+4. 每个 Session 新建时绑定当前 Project 默认的 `knowledge_version_id`。
+5. 当 Construction Run 产生新的 Knowledge Version 时，如果存在依赖旧版本的 active Session，则只发布新版本并更新 Project 默认版本，不修改 active Session 的版本号。
+6. 当最后一个依赖旧版本的 active Session 结束后，系统提示用户知识库依赖将刷新到最新版本；确认后将非 active Session 的知识库依赖刷新到新版本，并清理可安全删除的旧知识索引。
+7. 已完成的 Research 回复、Review 章节和导出产物不会因知识库刷新而自动改写。
+```
+
+严格遵照如下设定：
+```markdown
+**知识库版本并行更新**
+1. `paper_id` 和研究主题-论文关联表的关联 `id` 保持跨构建版本不变。
+2. 在构建模式增量更新中，候选论文先进行 identity resolution；若命中论文库中已存在论文，则标记为已存在并从本次增量处理流水线中排除。
+3. 同一 Project 同时只允许一个 active `Construction Run`，但可与其他 `Research Session` / `Review Session` 并行运行。
+4. 每个 Session 新建时绑定当前 Project 默认的 `knowledge_version_id`。
+5. 当 Construction Run 产生新的 Knowledge Version 时，如果存在依赖旧版本的 active Session，则只发布新版本并更新 Project 默认版本，不修改 active Session 的版本号。
+6. 当最后一个依赖旧版本的 active Session 结束后，系统提示用户知识库依赖将刷新到最新版本；确认后将非 active Session 的知识库依赖刷新到新版本，并清理可安全删除的旧版本数据库。
+7. 已完成的 Research 回复、Review 章节和导出产物不会因知识库刷新而自动改写。
+```
+并判断哪些部分应该放入FR，如何用FR完整地描述这个并行更新的需求？
+
+更新在01FR文件中
