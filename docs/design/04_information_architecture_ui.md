@@ -7,10 +7,10 @@
 | 项目 | 内容 |
 | --- | --- |
 | 项目名称 | Research Paper Base |
-| 文档版本 | v1.2 |
+| 文档版本 | v1.3 |
 | 编写日期 | 2026-05-02 |
 | 编写人 | Codex |
-| 依据文档 | `01_functional_requirements.md` v1.15 |
+| 依据文档 | `01_functional_requirements.md` v1.19 |
 
 ---
 
@@ -28,15 +28,15 @@
 | P08 | 管理员 / 用户管理 | `FR-005` |
 | P09 | 管理员 / 系统配置 | `FR-006` |
 | P10 | 健康检查 | `FR-006` |
-| P11 | Project Workspace 总体框架 | `FR-WORKSPACE-001~008` |
+| P11 | Project Workspace 总体框架 | `FR-WORKSPACE-001~009` |
 | P12 | Construction Run 工作台 | `FR-015~022` |
 | P13 | 论文详情抽屉 | `FR-WORKSPACE-002` |
 | P14 | Research Session 工作台 | `FR-023~026` |
-| P15 | Review Session 工作台 | `FR-027~030` |
-| P16 | 导出中心弹窗 | `FR-WORKSPACE-008` |
-| P17 | 新建 / 继续实例弹窗 | `FR-WORKSPACE-005` |
-| P18 | 知识库版本刷新弹窗 | `FR-WORKSPACE-007` |
-| P19 | 冲突 / 锁定提示弹窗 | `FR-WORKSPACE-003,006,007` |
+| P15 | Review Run 工作台 | `FR-027~030` |
+| P16 | 导出中心弹窗 | `FR-WORKSPACE-009` |
+| P17 | 新建 / 继续实例弹窗 | `FR-WORKSPACE-004` |
+| P18 | 知识库版本刷新弹窗 | `FR-WORKSPACE-008` |
+| P19 | 冲突 / 锁定提示弹窗 | `FR-WORKSPACE-005,007,008` |
 
 ---
 
@@ -294,11 +294,11 @@
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## P15 · Review Session 工作台
+## P15 · Review Run 工作台
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ Review Session: RV-008        Bound KV: KV-12        [导出] [新版本]     │
+│ Review Run: RV-008            Bound KV: KV-12        [导出] [新版本]     │
 ├──────────────────────┬────────────────────────────────────────────────────┤
 │ Outline / Chapters   │ Main Editor                                        │
 │ 1 引言               │ 标题 / 大纲 / 当前章节                             │

@@ -32,7 +32,7 @@ Update: 2026-04-08
 | React | 18+ | 生态丰富，组件化强，适合复杂交互、多视图切换和长任务状态展示 |
 | TypeScript | 5+ | 强类型支持，提高代码质量，适合复杂业务逻辑和 API 契约对齐 |
 
-性能约束：页面加载时间应满足 `02_product_requirements.md` 中定义的性能需求。
+性能约束：页面加载时间应满足 `01_functional_requirements.md` 中定义的性能需求。
 
 ### 后端技术栈
 
@@ -40,7 +40,7 @@ Update: 2026-04-08
 | --- | --- | --- |
 | FastAPI | 0.104+ | 性能优秀，异步支持，自动生成 OpenAPI 文档，类型注解完善 |
 
-性能约束：API 响应时间应满足 `02_product_requirements.md` 中定义的性能需求。
+性能约束：API 响应时间应满足 `01_functional_requirements.md` 中定义的性能需求。
 
 ### Agent 框架
 
@@ -98,33 +98,38 @@ Update: 2026-04-08
 
 ## 框架设计
 
-总体框架为**基础层 + 多模式**：基础层始终启用，随时可访问；多模式中必须启用且仅启用一个。
+总体框架为**基础层 + Project Workspace + Agent 实例**。基础层始终启用，Project 是长期研究容器，Workspace 是 Project 内部工作台，Agent 能力通过 Run/Session 实例运行。
 
-多模式目前设计有三种：**构建模式、综述模式、深度研究模式**。
+本系统不采用 Project 三模式互斥。构建、深度研究和综述可以在同一 Project 下通过不同实例并存；系统只在明确的写入冲突点做互斥控制。
 
-### 三种模式的职责
+### 核心对象
 
-|模式|核心职责|Agent 角色|
-|---|---|---|
-|构建模式|检索、筛选、下载、解析论文，建立论文数据库底座|论文数据库构建者，线性工作流驱动|
-|深度研究模式|基于已有论文库进行对话式深度探讨，支持 Graph-RAG 检索|研究助手，持续对话式驱动|
-|综述模式|基于已有论文库自动撰写综述文章|综述撰写者，分阶段工作流驱动|
+| 对象 | 职责 | 生命周期 |
+| --- | --- | --- |
+| Project | 长期研究容器，保存研究主题、状态和默认 Knowledge Version | 长期存在 |
+| Construction Workspace | 每 Project 唯一的构建配置和构建入口 | 随 Project 长期存在 |
+| Construction Run | 构建 Agent 的一次执行记录，负责写论文库、向量库、Graph 和 Knowledge Version | 可多次创建，历史保留 |
+| Research Session | 深度研究 Agent 的开放式对话会话 | 可多开并发 |
+| Review Run | 主题综述 Agent 的流程式写作运行 | 可多开并发 |
+| Knowledge Version | 一次成功 Construction Run 之后的可检索知识库版本 | 供 Research Session / Review Run 读取 |
 
-### 模式互斥设计理由
+### 三类 Agent 职责
 
-**三种模式运行逻辑截然不同，每种模式有自己独立的 Agent 链：**
+| Agent | 核心职责 | 运行形态 | 数据写入 |
+| --- | --- | --- | --- |
+| 构建 Agent | 检索、筛选、下载、解析论文，建立论文数据库底座 | Construction Workspace + Construction Run | 写论文库、向量库、Graph、Knowledge Version |
+| 深度研究 Agent | 基于已有知识库做 Graph-RAG 对话 | Research Session | 只写对话、引用和总结 |
+| 综述 Agent | 基于已有知识库生成大纲、章节、审查和导出 | Review Run | 只写综述大纲、章节、审查和导出产物 |
 
-- 构建模式的 Agent 链是**线性流水线**：按顺序执行七个阶段，每个阶段有明确的输入输出，阶段间有用户交互暂停点
-- 深度研究模式的 Agent 链是**持续对话循环**：无固定终点，用户每次输入触发一轮 Graph-RAG 检索 + LLM 推理，结果实时流式返回
-- 综述模式的 Agent 链是**多阶段审查工作流**：有固定阶段数，每个阶段需要用户确认才能推进，Agent 在各章节之间并行或顺序撰写
+### 并发与互斥原则
 
-三条 Agent 链的状态管理、上下文结构、与用户的交互方式均不兼容，同时运行会造成状态混乱，因此设计为互斥模式。
-
-### 模式切换规则
-
-- 切换前若有运行中任务，弹窗询问用户：留在页面等待完成，或退出任务后切换
-- 论文库（valid_papers）为 0 时，不允许切换到深度研究模式或综述模式
-- 切换不影响各模式已有的历史数据（对话记录、综述草稿等均保留）
+- 同一 Project 同时只允许一个 active Construction Run 写入知识库。
+- Research Session 和 Review Run 可以与 Construction Run 并行运行。
+- Construction Run 成功发布新 Knowledge Version 后，不强制打断 active Research Session / Review Run。
+- Research Session / Review Run 新建时默认绑定当前 Project 默认 Knowledge Version。
+- 同一 Research Session 内一次只允许一个 active reply stream 追加。
+- 同一 Review Run 内，同一章节或同一最终稿不能被多个任务同时写入。
+- 具体状态转换、暂停、恢复、取消、重试和版本刷新流程见 `05_state_workflow.md`。
 
 ---
 

@@ -8,7 +8,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | Research Paper Base |
-| 文档版本 | v1.16 |
+| 文档版本 | v1.19 |
 | 编写日期 | 2026-04-22 |
 | 编写人 | codearts |
 | 审核人 | 郝彦臻 |
@@ -40,7 +40,7 @@
 **核心设计原则**：
 - 支持小组级科研人员使用和论文库共享、观点分享和帐号管理
 - 以研究主题（Project）为长期研究容器，支持构建 Agent、深度研究 Agent、主题综述 Agent 等多种 AI Agent 模式
-- **Agent 实例化**：每一个 Agent 模式不唯一，而是通过实例化，支持用户在同一 Project 下创建或继续多个 Agent Run/Session
+- **Agent 实例化**：构建模式以每 Project 唯一 Construction Workspace 承载长期配置，每次执行生成 Construction Run；深度研究以 Research Session 承载开放式对话；主题综述以 Review Run 承载流程式写作运行
 - **并发控制**：系统对知识库写入、同一实例内容写入和同一对话流式回复等冲突点做并发限制
 - **模式扩展性**：系统架构设计预留扩展性，支持未来扩展为更多模式，无需对核心架构进行重大改造
 
@@ -50,18 +50,27 @@
 - 管理员配置管理：首位注册用户自动成为管理员，管理员可配置发送邮箱、系统级默认模型、系统级默认论文库API，并管理其他用户账号
 - 界面管理：独立于Agent模式，可随时进行信息面板的打开和关闭
   - 课题选择栏：（可以展开或折叠）显示用户的所有课题列表选项
-  - Agent Session 选择栏：（可以展开或折叠）显示当前所选课题的所有 Agent Run/Session 选项，以及各自的运行状态
-  - 主体流程栏：（可以为空，不可折叠）显示当前所选 Session 的主体内容
-  - 课题论文库自动检索设置栏：（可以展开或折叠）显示当前构建 Run 下自动推送的相关设置（如启用哪些检索词；启用哪些论文检索数据库等）
+  - Agent Run/Session 选择栏：（可以展开或折叠）显示当前所选课题的所有 Agent Run/Session 选项，以及各自的运行状态
+  - 主体流程栏：（可以为空，不可折叠）显示当前所选 Run/Session 的主体内容
+  - 课题论文库自动检索设置栏：（可以展开或折叠）显示当前 Project 的 Construction Workspace 自动更新设置（如哪些检索词参与自动更新、每个检索词适用哪些论文检索数据库等）
   - 课题相关信息：（可以展开或折叠）显示当前课题的论文数据库；知识关系图谱等
-  - Session 相关信息：（可以展开或折叠）显示当前 Run/Session 的相关信息
+  - Run/Session 相关信息：（可以展开或折叠）显示当前 Run/Session 的相关信息
   - 观点广场：（可以跳入新的页面）查看其他用户发表的观点，或者发表观点（禁止讨论，显示发布者的用户名或邮箱）
+
+**Agent 工作台设计原则**：
+1. **Project 长期容器**：Project 作为 Agent Run/Session 的长期容器，其下有且仅有一个 Construction Workspace 用于整个容器的知识库背景。但可同时存在或运行多个其他模式的 Run/Session，具体的并发限制参考各 Agent 的设计。
+2. **工作台控制**：用户可以访问系统主页面，也可以中断或销毁 Run/Session。
+3. **构建配置与执行分离**：Construction Workspace 保存 Project 级长期构建配置；其管理和记录所有历史和正在运行的 Construction Run， 每个 Construction Run 表示一次手动或自动构建执行。
+4. **读写区分**：Construction Run 是知识库写入者，负责项目的知识库维护；Research Session 和 Review Run 是知识库消费者，只记录历史会话或综述内容。
+5. **知识库版本并行更新**：构建 Run 完成后更新 Project 默认知识库版本；新建 Research Session / Review Run 默认使用最新版本；依赖旧版本的 active Research Session / Review Run 不被打断，待最后一个依赖旧版本的 active 实例结束后再提示刷新依赖。
+6. **冲突控制**：同一 Project 的知识库写入、同一 Run/Session 的同一内容写入、同一对话的流式回复追加等冲突点进行互斥控制，禁止发起冲突操作。
+7. **扩展性**：Agent 类型和 Run/Session 模型预留扩展性，支持未来添加新的 Agent 能力。
 
 ---
 
 目前的 Agent 类型设计包含三类：
 
-**构建 Agent / Construction Run**：
+**构建 Agent / Construction Workspace + Construction Run**：
 - 用户借助Agent工具结合研究主题自动生成检索词
 - 从多个学术数据库检索论文
 - 智能评分和筛选相关论文
@@ -70,8 +79,10 @@
 - Agent自动完成分析和后台入库
 - 根据论文数据库构建 Graph 知识图谱数据库
 - 将自动下载和分析的结果通过邮件推送给用户
-- 每日0时自动在后台运行检索-评估-下载-分析-入库的全流程，并根据课题关联将新的论文自动发送邮件推送给用户
-- Construction Run 是 Project 级知识库写入任务，同一 Project 可允许多个 run 存在，但只允许一个 active run。自动化任务中，多个run将会依序依次运行。
+- 每个 Project 有且仅有一个 Construction Workspace，用于长期维护检索词、检索词级数据源策略、检索待确认列表、检索历史结果和自动更新开关等内容
+- 每次手动构建或系统自动更新都会创建一个 Construction Run，作为一次构建流水线执行记录
+- 系统级调度器会扫描 active Project 的 Construction Workspace，按自动更新检索词创建自动 Construction Run
+- 同一 Project 可保留多个历史 Construction Run，但只允许一个 active Construction Run 写入知识库
 
 **深度研究 Agent / Research Session**：
 - 基于某个 Project 知识库版本进行 Graph-RAG 检索，作为 LLM 的知识库背景
@@ -81,7 +92,7 @@
   - 总结：记录对话探讨历史和结论
 - Research Session 主要读取知识库并写入自己的对话历史，同一 Project 下可多开并发。同一 Research Session 内一次只允许一个流式回复追加，避免对话轮次顺序冲突
 
-**主题综述 Agent / Review Session**：
+**主题综述 Agent / Review Run**：
 - 基于某个 Project 知识库版本进行 Graph-RAG 检索，作为 LLM 的知识库背景
 - 根据用户的课题设计综述文章架构
 - 撰写每章内容并引用相关论文
@@ -90,15 +101,7 @@
 - 支持用户对综述文章进行修改和完善
 - 支持导出综述文章为多种格式（Markdown、PDF、Word）
 - 提供综述文章的版本管理
-- Review Session 主要读取知识库并写入自己的大纲、章节、审查记录和导出版本，同一 Project 下可多开并发。同一 Review Session 内同一章节或同一最终稿不能被多个任务同时写入
-
-**Agent 工作台设计原则**：
-1. **Project 长期容器**：Project 作为 Agent Run/Session 的长期容器，其下可同时存在或运行多个 Run/Session，具体的并发限制参考各 Agent 的设计。
-2. **工作台控制**：用户可以切换前端工作台，也可以中断或销毁 Run/Session。
-3. **读写区分**：Construction Run 是知识库写入者；Research Session 和 Review Session 是知识库消费者，只写自己的会话或综述内容。
-4. **知识库版本并行更新**：构建 Run 完成后更新 Project 默认知识库版本；新建 Research/Review Session 默认使用最新版本；依赖旧版本的 active Session 不被打断，待最后一个依赖旧版本的 active Session 结束后再提示刷新依赖。
-5. **冲突控制**：同一 Project 的知识库写入、同一 Session 的同一内容写入、同一对话的流式回复追加等冲突点进行互斥控制，禁止发起冲突操作。
-6. **扩展性**：Agent 类型和 Run/Session 模型预留扩展性，支持未来添加新的 Agent 能力。
+- Review Run 主要读取知识库并写入自己的大纲、章节、审查记录和导出版本，同一 Project 下可多开并发。同一 Review Run 内同一章节或同一最终稿不能被多个任务同时写入
 
 ### 2.2 用户特征
 
@@ -146,20 +149,20 @@
 | FR-005 | 基础层/管理员模块 | 管理员账号管理 | P0 | 首位用户为管理员，维护用户账号状态和管理员权限 |
 | FR-006 | 基础层/管理员模块 | 管理员系统级配置管理 | P0 | 维护系统默认 LLM、论文数据库 API、SMTP 和安全配置 |
 | FR-007 | 基础层 | 用户配置与系统配置解析规则 | P0 | 定义用户配置、系统默认配置、硬限制、密钥隔离和运行时取值优先级 |
-| FR-008 | 基础层 | 系统级页面入口与 Project 可用性约束 | P0 | 管理登录后的系统级页面入口、Project 列表/维护入口和进入 Project Workspace 的可用性约束 |
-| FR-WORKSPACE-001 | 基础层-项目工作台 | Project Workspace 内部入口与框架 | P0 | 管理 Project 内构建、深研、综述入口、Run/Session 选择、主体流程栏和信息面板 |
-| FR-WORKSPACE-009 | 基础层-项目工作台 | 流程式 Agent 步骤容器 | P0 | 承载构建、综述等流程式 Agent 的当前步骤页面、步骤状态、步骤动作和步骤上下文 |
+| FR-008 | 基础层 | 系统级页面入口与 Project 可用性约束 | P0 | 管理系统级页面入口、Project 状态、Project 列表/维护入口和进入 Project Workspace 的可用性约束 |
+| FR-WORKSPACE-001 | 基础层-项目工作台 | Project Workspace 内部入口与框架 | P0 | 管理 Project 状态展示、Construction Workspace 入口、深研/综述入口、Run/Session 选择、主体流程栏和信息面板 |
 | FR-WORKSPACE-002 | 基础层-项目工作台 | Project 知识资产面板 | P0 | 只读查看 Project 论文库、论文详情、PDF 访问入口、Graph 图谱和 Knowledge Version |
-| FR-WORKSPACE-003 | 基础层-项目工作台 | Run/Session 状态控制 | P0 | 查看 Run/Session 状态、阶段、错误、等待项、日志摘要，并执行暂停/恢复/取消/重试 |
-| FR-WORKSPACE-004 | 基础层-项目工作台 | Run/Session 切换与上下文恢复 | P0 | 切换工作台后恢复最近实例、历史实例和可继续上下文 |
-| FR-WORKSPACE-005 | 基础层-项目工作台 | Run/Session 新建、继续、重跑与复制 | P0 | 支持 Construction Run、Research Session、Review Session 的新建、继续、增量、重跑和复制 |
-| FR-WORKSPACE-006 | 基础层-项目工作台 | 内容修改与版本保护 | P0 | 保护人工修改内容，区分 Agent 草稿、人工确认和人工修改状态 |
-| FR-WORKSPACE-007 | 基础层-项目工作台 | 知识库版本并行更新 | P0 | 构建完成后发布新 Knowledge Version；新 Session 默认使用新版本，active Session 不被打断 |
-| FR-WORKSPACE-008 | 基础层-项目工作台 | Project/Session 导出 | P1 | 按 Project 或具体 Run/Session 导出论文库数据、PDF 集合、对话、总结或综述产物 |
-| FR-013 | 基础层 | 定时自动构建与推送 | P1 | 按 Project 周期后台执行构建流水线并推送新论文，配置入口可由 Project Workspace 承载 |
+| FR-WORKSPACE-003 | 基础层-项目工作台 | Run/Session 间切换与上下文恢复 | P0 | 在不同 Construction Workspace / Construction Run / Research Session / Review Run 间切换并恢复可继续上下文 |
+| FR-WORKSPACE-004 | 基础层-项目工作台 | Run/Session 实例操作 | P0 | 提供新建、继续、复制、重跑、归档、删除和历史查看等实例操作 |
+| FR-WORKSPACE-005 | 基础层-项目工作台 | Run/Session 状态展示与运行控制 | P0 | 查看状态、阶段、错误、等待项和日志摘要，并执行暂停、恢复、取消、重试 |
+| FR-WORKSPACE-006 | 基础层-项目工作台 | 流程式 Agent 步骤容器 | P0 | 承载构建、综述等流程式 Agent 的当前步骤页面、步骤状态、步骤动作和步骤上下文 |
+| FR-WORKSPACE-007 | 基础层-项目工作台 | 内容修改与版本保护 | P0 | 保护人工修改内容，区分 Agent 草稿、人工确认和人工修改状态 |
+| FR-WORKSPACE-008 | 基础层-项目工作台 | 知识库版本刷新提示与不打断规则 | P0 | 新 Knowledge Version 发布后提示刷新；active Research Session / Review Run 不被打断，已完成内容不自动改写 |
+| FR-WORKSPACE-009 | 基础层-项目工作台 | Project/Run/Session 导出 | P1 | 按 Project 或具体 Run/Session 导出论文库数据、PDF 集合、对话、总结或综述产物 |
+| FR-013 | 基础层 | 系统级自动构建调度与推送 | P1 | 系统级调度器扫描 active Project 的 Construction Workspace，创建自动 Construction Run 并推送新论文 |
 | FR-014 | 基础层 | 观点广场 | P2 | 独立系统级观点发布与查看页面，禁止评论和讨论，仅展示联系信息 |
-| FR-015 | 构建模式 | 检索词生成 | P0 | Agent 基于 Project 主题生成、解释并等待用户确认检索词 |
-| FR-016 | 构建模式 | 多源论文检索 | P0 | 使用已确认检索词检索多学术数据库并汇总候选论文 |
+| FR-015 | 构建模式 | 检索词生成与构建检索词管理 | P0 | 管理 Project 检索词、检索词级数据源策略和自动更新开关 |
+| FR-016 | 构建模式 | 多源论文检索 | P0 | 手动 Run 使用本次 selected 检索词，自动 Run 使用自动更新检索词，并按检索词级数据源策略检索 |
 | FR-017 | 构建模式 | 论文去重、评分与筛选 | P0 | 对候选论文去重、评分、筛选有效论文，支持用户确认与调整 |
 | FR-018 | 构建模式 | 论文补充与手动上传 | P1 | 用户通过 PDF、DOI、arXiv ID 或 URL 补充论文 |
 | FR-019 | 构建模式 | PDF 下载与文本解析 | P0 | 自动下载 PDF、解析文本，失败时降级使用摘要 |
@@ -344,15 +347,20 @@
 #### FR-008 系统级页面入口与 Project 可用性约束
 
 **需求描述：**
-系统应在用户登录后提供系统级页面入口和 Project 入口管理能力，支持用户创建、选择、维护 Project，并在满足权限和可用性约束时进入对应 Project Workspace。本 FR 只定义系统级入口、Project 管理和进入 Workspace 的前置条件，不定义 Project Workspace 内部布局、Run/Session 切换、运行控制或知识库版本刷新。
+系统应在用户登录后提供系统级页面入口和 Project 入口管理能力，支持用户创建、选择、维护 Project，并在满足权限和可用性约束时进入对应 Project Workspace。本 FR 定义系统级入口、Project 管理、Project 状态和进入 Workspace 的前置条件，不定义 Project Workspace 内部布局、Run/Session 切换、运行控制或知识库版本刷新。
 
 **功能范围：**
 - 用户可创建、查看、更新、删除或归档自己的 Project。
+- Project 应支持 `active`、`paused`、`archived`、`deleted` 等状态。
 - 系统级入口应至少包含 Project 列表/创建入口、用户配置入口、观点广场入口；管理员用户还应看到管理员配置入口。
 - 用户可从 Project 列表选择自己有权限访问的 Project，并进入该 Project Workspace。且在 Project Workspace 中，用户应当能够看到或通过简单操作看到全部系统级入口。
-- 已删除的 Project 不得进入 Workspace。
+- `active` Project 可进入 Workspace，并可参与系统级自动构建调度。
+- `paused` Project 可进入 Workspace 和查看历史，也可手动构建，但不参与系统级自动构建调度。
+- `archived` Project 默认只读保留历史，不参与系统级自动构建调度。
+- `deleted` Project 不得进入 Workspace。
+- 用户应能一键暂停或恢复 Project 自动追踪。
 - 进入 Project Workspace 前，系统应完成 Project 可用性检查。
-- Project 列表应展示进入 Workspace 所需的基础可用性信息，例如 Project 状态、是否存在可用 Knowledge Version、最近构建时间或最近活动时间。
+- Project 列表应展示进入 Workspace 所需的基础可用性信息，例如 Project 状态、是否存在可用 Knowledge Version、最近构建时间、最近活动时间、自动追踪状态。
 
 **验收标准：**
 - 用户可创建、查看、更新、删除或归档自己的 Project。
@@ -360,34 +368,46 @@
 - 登录后用户能看到 Project 列表/创建入口、用户配置入口和观点广场入口。
 - 管理员用户能看到及访问管理员配置入口，非管理员不能看到或访问管理员配置入口。
 - 用户选择有权限且未删除的 Project 后，可进入该 Project Workspace。
-- 无权限、已删除 Project 不能进入 Workspace，并应给出明确原因。
-- Project 列表能展示 Project 状态、Knowledge Version 是否可用、最近构建或最近活动信息。
+- 无权限或已删除 Project 不能进入 Workspace，并应给出明确原因。
+- Project 列表能展示 Project 状态、Knowledge Version 是否可用、最近构建、最近活动和自动追踪状态。
+- 用户可将 Project 从 `active` 暂停为 `paused`，暂停后系统级自动构建调度不再扫描该 Project。
+- 用户可将 `paused` Project 恢复为 `active`，恢复后可重新参与系统级自动构建调度。
+- `archived` Project 默认只读展示历史，不参与自动构建调度。
 - `FR-008` 不定义 Run/Session 列表、工作台切换、暂停/恢复/取消/重试、知识库版本刷新或导出流程。
 - 删除或归档 Project 不得破坏其他 Project 的数据。
 
-#### FR-013 定时自动构建与推送
+#### FR-013 系统级自动构建调度与推送
 
 **需求描述：**
-系统应支持以 Project 为单位配置周期性自动构建任务，在无人值守情况下后台更新论文库并推送新有效论文。本 FR 定义定时任务的业务规则和执行结果，不定义 Project Workspace 内部面板布局；配置入口可由 `FR-WORKSPACE-001` 承载，任务状态展示可由 `FR-WORKSPACE-003` 承载。
+系统应提供系统级自动构建调度器，周期性扫描所有用户的 active Project，读取其 Construction Workspace 中参与自动更新的检索词，创建自动 Construction Run，在无人值守情况下后台增量更新论文库并推送新有效论文。本 FR 定义系统级调度、过滤、自动 Run 创建和推送规则；配置入口由 Project Workspace 承载，任务状态展示由 `FR-WORKSPACE-005` 承载。
 
 **功能范围：**
-- 用户可启用/禁用 Project 自动任务。
-- 用户可配置执行间隔或计划时间。
-- 自动任务使用 Project 已保存并已确认的检索词和运行时配置快照。
+- 系统级 scheduler 应周期性扫描所有用户的 Project。
+- scheduler 的全局启用状态、执行周期、执行时间窗口和并发上限应来自管理员系统级配置；单个 Project 不维护独立调度器。
+- scheduler 只调度 `active` Project，跳过 `paused`、`archived`、`deleted` Project。
+- scheduler 对每个 active Project 读取其唯一 Construction Workspace。
+- 仅当 Construction Workspace 中存在至少一个 `auto_update_enabled=true` 的检索词时，系统才创建自动 Construction Run。
+- 自动 Construction Run 使用自动更新检索词集合，并按每个检索词的数据源策略解析可用数据源。
+- 自动 Construction Run 启动时应保存配置快照，包括检索词、检索词数据源策略、解析后的数据源、用户/系统配置来源和调度时间。
 - 自动任务执行构建模式全流程，并使用自动确认策略跳过人工等待。
-- Project 已有 active Construction Run 时，应跳过本次调度或延后执行，不得并发写入同一 Project 知识库。
-- 自动任务完成后触发邮件推送。
-- 自动任务应当将当前 Project 中已有的所有 Construction Run 依序依次执行，不生成新的 Run，将其结果更新，并按 `FR-WORKSPACE-007` 生成或更新 Knowledge Version。
+- 同一 Project 已有 active Construction Run 时，应跳过本次调度或延后执行，不得并发写入同一 Project 知识库。
+- 自动 Construction Run 成功后按 `FR-WORKSPACE-008` 提示知识库版本刷新。
+- 自动 Construction Run 完成后触发 `FR-022` 邮件推送。
+- 自动 Construction Run 失败时应记录失败原因，并可在 Project Workspace 查看。
 
 **验收标准：**
-- 用户可按 Project 启用或禁用自动任务，并配置执行间隔或计划时间。
-- 自动任务使用 Project 已保存并已确认的检索词和任务启动时配置快照。
-- 自动任务能执行构建模式全流程，并按自动确认策略处理人工等待点。
+- 系统级 scheduler 能周期性扫描所有用户的 Project。
+- scheduler 的全局启用状态、周期、时间窗口和并发上限能由管理员系统级配置控制。
+- `paused`、`archived`、`deleted` Project 不会被系统级自动构建调度。
+- 没有自动更新检索词的 active Project 不会创建自动 Construction Run，并能记录跳过原因。
+- 自动 Construction Run 使用 `auto_update_enabled=true` 的检索词和对应数据源策略。
+- 自动 Construction Run 启动时保存配置快照。
+- 自动 Construction Run 能执行构建模式全流程，并按自动确认策略处理人工等待点。
 - 不同 Project 的调度互不影响。
-- 自动任务不会在同一 Project 上并发重复运行。
+- 自动调度不会在同一 Project 上并发创建多个 active Construction Run。
 - 任务完成后能更新上次执行和下次执行信息。
-- 自动任务完成后能触发邮件推送。
-- 自动任务更新的 Construction Run 可在 Project Workspace 中查看更新后的状态和结果。
+- 自动 Construction Run 成功后能生成新的 Knowledge Version，并触发邮件推送。
+- 自动 Construction Run 可在 Project Workspace 中查看状态、配置快照和结果。
 - 自动执行失败时能记录错误并通知用户查看。
 
 #### FR-014 观点广场
@@ -418,66 +438,36 @@
 #### FR-WORKSPACE-001 Project Workspace 内部入口与框架
 
 **需求描述：**
-系统应在用户进入某个 Project 后提供 Project Workspace，用于管理 Project 内构建、深度研究、主题综述入口，Agent Run/Session 选择，主体流程展示，Project 级信息面板和 Session 级信息面板。Workspace 只负责 Project 内研究工作台的展示、切换、展开/折叠和跳转，不负责系统级页面导航，也不直接执行 Agent 写操作。
+系统应在用户进入某个 Project 后提供 Project Workspace（项目工作台），用于承载 Project 内的研究入口、主体工作区、信息面板和 Run/Session 选择。Workspace 只定义 Project 内工作界面的用户可见框架，不负责系统级页面导航，也不直接定义具体 Agent 业务步骤。
 
 **功能范围：**
 - Project Workspace 必须绑定用户当前选择的 Project。
-- Workspace 可提供返回 Project 列表或切换 Project 的入口，但不定义 Project CRUD。
-- Workspace 内部应展示构建、深度研究、主题综述三个 Project 级 Agent 模式新建入口。
-- 构建入口在用户拥有 Project 权限时可用；是否允许启动新 Construction Run 由 `FR-WORKSPACE-005` 和 `FR-WORKSPACE-007` 约束。
+- Workspace 应展示当前 Project 状态，包括 active、paused、archived、deleted 中的可见状态。
+- Workspace 应提供一键暂停或恢复 Project 自动追踪的入口；具体 Project 状态规则由 `FR-008` 定义。
+- Workspace 应展示 Construction Workspace、Research Session、Review Run 的入口。
+- 构建入口打开当前 Project 唯一 Construction Workspace。
 - 深度研究和主题综述入口在 Project 存在可用 Knowledge Version 时可用；不可用时应显示原因和返回构建入口的建议。
-- Agent Session 选择栏展示当前 Project 下所有 Agent Run/Session，包括 Construction Run、Research Session、Review Session 及其运行状态。
-- 主体流程栏展示当前所选 Run/Session 的主体内容；未选择 Run/Session 时可为空或展示新建入口。
-- 课题论文库自动检索设置栏展示当前构建 Run 下自动推送相关设置，例如启用检索词、启用论文检索数据库等。
-- Project 信息面板展示当前 Project 的论文数据库、知识关系图谱和 Project 级统计信息；具体查阅能力由 `FR-WORKSPACE-002` 定义。
-- Session 信息面板展示当前 Run/Session 的知识库版本、运行状态、引用、章节、任务阶段或错误信息；具体状态控制由 `FR-WORKSPACE-003` 定义。
-- 导出入口可在 Workspace 中展示；具体导出能力由 `FR-WORKSPACE-008` 定义。
+- Workspace 应展示当前 Project 下已有 Construction Run、Research Session 和 Review Run 的列表入口。
+- Workspace 应提供主体流程栏，用于展示当前选中的 Construction Workspace、Construction Run、Research Session 或 Review Run 内容。
+- Workspace 应提供 Project 信息面板和 Run/Session 信息面板。
+- Workspace 应展示当前 Project 的 Construction Workspace 自动更新设置摘要，例如哪些检索词参与自动更新、每个检索词适用哪些论文检索数据库等。
+- Workspace 应记录用户上次离开该 Project 时的页面位置，并在再次进入时恢复。
 - 各信息面板应支持展开/折叠，且展开/折叠状态不应破坏当前 Run/Session 上下文。
-- 切换 Run/Session 时，主体流程栏和 Session 信息面板应同步到目标 Run/Session。
 - Workspace 不得绕过对应 Agent 工作台直接执行上传、删除、重建、重试、生成、推送或导出等写操作。
 
 **验收标准：**
 - 用户从系统级 Project 入口进入某 Project 后，Workspace 只展示该 Project 的研究入口和数据。
-- 用户可在 Workspace 内看到构建、深度研究和主题综述新建入口，以及所有已有的 Run/Session 的入口和运行状态。
+- Workspace 能展示当前 Project 的 active、paused 或 archived 状态。
+- 用户可在 Workspace 中暂停或恢复 Project 自动追踪，且不会删除历史 Run、Research Session、Review Run 或 Knowledge Version。
+- 用户可看到 Construction Workspace、Research Session 和 Review Run 的入口。
 - 无可用 Knowledge Version 时，深度研究和主题综述入口禁用并显示需要至少一次 Construction Run 完成作为前置条件的提示。
-- 用户可在 Agent Session 选择栏查看当前 Project 下所有 Run/Session 及其运行状态。
-- 用户选择某个 Run/Session 后，主体流程栏展示对应主体内容。
-- 未选择 Run/Session 时，主体流程栏不会展示错误上下文，可展示空状态或新建入口。
-- 用户可展开/折叠 Agent Session 选择栏、自动检索设置栏、Project 信息面板和 Session 信息面板。
-- Run/Session 切换后，主体流程栏和 Session 信息面板均切换到目标实例。
-- 面板展开、折叠、切换和跳转不应中断正在运行的 Construction Run、Research Session 或 Review Session。
+- 构建入口打开当前 Project 唯一 Construction Workspace。
+- 用户可查看当前 Project 下已有 Construction Run、Research Session 和 Review Run 的列表入口。
+- 用户选择一个入口后，主体流程栏展示对应内容。
+- 未选择入口时，主体流程栏不会展示错误上下文，可展示空状态或新建入口。
+- 用户可展开或折叠 Project 信息面板、Run/Session 信息面板和自动检索设置摘要。
+- 面板展开、折叠、切换和跳转不应中断正在运行的 Construction Run、Research Session 或 Review Run。
 - Workspace 不提供绕过 Agent 工作台的写操作入口。
-
-#### FR-WORKSPACE-009 流程式 Agent 步骤容器
-
-**需求描述：**
-Project Workspace 应为构建模式和主题综述模式这类流程式 Agent 提供统一的步骤容器能力，使主体流程栏能够承载当前步骤页面，Session 信息面板能够随当前步骤展示对应上下文。该 FR 只定义步骤容器、步骤状态和步骤动作的承载规则，不定义具体步骤业务内容；构建模式步骤内容由 `FR-015~022` 定义，主题综述模式步骤内容由 `FR-027~030` 定义。
-
-**功能范围：**
-- 主体流程栏应能展示流程式 Agent 当前步骤页面。
-- 步骤页面应展示步骤名称、步骤状态、输入摘要、输出摘要、等待用户确认项、错误信息和下一步操作。
-- 步骤状态至少应能区分未开始、运行中、等待用户、已完成、失败、已取消和已跳过。
-- 步骤动作必须来自对应 Agent FR，不得由 Workspace 自行定义具体业务操作。
-- 构建模式的步骤动作和展示内容应由 `FR-015~022` 定义。
-- 主题综述模式的步骤动作和展示内容应由 `FR-027~030` 定义。
-- 深度研究模式不是固定步骤流，仍可使用主体流程栏承载对话页面，但不强制使用步骤容器。
-- 步骤切换不得绕过对应 Agent FR 的确认门槛、状态机、权限检查和人工修改保护。
-- 当前步骤变化时，Session 信息面板应同步展示该步骤的上下文摘要，例如检索词、候选论文、下载解析状态、章节引用、审查问题或导出状态。
-- 用户应能从步骤页面跳转到对应 Project 知识资产面板或 Session 信息面板中的相关上下文，但跳转不得触发越权写操作。
-- 步骤容器应支持失败步骤的错误展示和重试入口；具体是否允许重试由对应 Agent FR 和 `FR-WORKSPACE-003` 约束。
-- 步骤容器应支持在同一 Run/Session 内恢复最近步骤和已完成步骤的结果查看。
-
-**验收标准：**
-- 构建模式和主题综述模式的当前步骤能在主体流程栏中清晰展示。
-- 用户能看到当前步骤名称、状态、输入摘要、输出摘要、等待项、错误和下一步操作。
-- 用户能区分未开始、运行中、等待用户、已完成、失败、已取消和已跳过的步骤。
-- Workspace 中展示的步骤动作均能追溯到对应 Agent FR。
-- 步骤页面不得提供绕过 `FR-015~022`、`FR-027~030` 或 `FR-WORKSPACE-003` 的写操作。
-- 用户确认门槛未满足时，步骤容器不得允许进入下一业务步骤。
-- 当前步骤变化后，Session 信息面板同步更新为当前步骤上下文。
-- 用户可查看已完成步骤的结果，但查看历史结果不得自动重跑或覆盖当前结果。
-- 失败步骤能展示失败原因和可用恢复动作。
-- 切换 Run/Session 后，步骤容器能恢复目标 Run/Session 的当前步骤和步骤历史。
 
 #### FR-WORKSPACE-002 Project 知识资产面板
 
@@ -491,7 +481,7 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 展示当前 Project 的 Graph 关系图谱，包括论文、作者、关键词、概念、方法等节点和关系边。
 - 展示当前 Project 默认 Knowledge Version，以及当前 Run/Session 绑定的 Knowledge Version。
 - 支持在论文详情和 Graph 图谱节点展示间切换。
-- 支持从 Research Session 引用、Review Session 引用（来自`FR-WORKSPACE-003`）跳转到论文详情、PDF/远程访问入口或 Graph 节点。
+- 支持从 Research Session 或 Review Run 的引用跳转到论文详情、PDF/远程访问入口或 Graph 节点。
 - Project 知识资产面板只提供查阅、跳转、筛选、下载/打开，不提供上传、删除、重新下载、重新解析、重新评分、重新分析、入库、推送或图谱重建动作。
 
 **验收标准：**
@@ -501,103 +491,118 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 用户可从论文详情打开有权限访问的 PDF 或远程文件。
 - 用户可在论文详情与 Graph 节点之间互相跳转。
 - 用户可看到当前 Project 默认 Knowledge Version 和当前 Run/Session 绑定的 Knowledge Version。
-- 用户可从 Research Session 或 Review Session 的引用跳转到对应论文详情、PDF/远程访问入口或 Graph 节点。
+- 用户可从 Research Session 或 Review Run 的引用跳转到对应论文详情、PDF/远程访问入口或 Graph 节点。
 - 深度研究和主题综述工作台下，Project 知识资产查阅保持只读。
 - Project 知识资产面板不提供上传、删除、重新下载、重新解析、重新评分、重新分析、入库、推送或图谱重建操作。
 
-#### FR-WORKSPACE-003 Run/Session 状态控制
+#### FR-WORKSPACE-003 Run/Session 间切换与上下文恢复
 
 **需求描述：**
-用户应能查看已有 Construction Run、Research Session 和 Review Session 的运行状态，并对可控实例执行暂停、恢复、取消、重试等运行控制。该能力通常由 `FR-WORKSPACE-001` 的 Agent Session 选择栏和 Session 信息面板承载，但不定义 Run/Session 的创建、复制、重跑、知识库版本刷新或内容版本保护。
+用户应能在同一 Project 内切换 Construction Workspace、历史 Construction Run、Research Session 和 Review Run，并恢复目标实例的可继续上下文。切换只改变用户当前查看和操作的工作区，不销毁、不暂停、不覆盖已有 Agent Run/Session。
+
+**功能范围：**
+- 用户可从 Workspace 的入口或列表切换到 Construction Workspace、历史 Construction Run、Research Session 或 Review Run。
+- 切换到 Construction Workspace 时，应显示长期检索词、自动更新设置、最近 Construction Run 摘要和可启动操作。
+- 切换到历史 Construction Run 时，应显示该 Run 的配置快照、执行结果、日志摘要和失败信息。
+- 切换到 Research Session 时，应显示最近对话、历史轮次、知识库摘要和可提问入口。
+- 切换到 Review Run 时，应显示大纲、章节、审查状态、导出状态和最近可继续步骤。
+- 如果目标实例运行中，应显示运行状态、阶段和等待用户输入项。
+- 如果目标入口没有历史实例，应显示新建入口和启动说明。
+- 如果知识库为空或过期，Research Session 和 Review Run 入口应提示返回 Construction Workspace 补充或更新。
+- 如果 Construction Run 正在运行，Research Session 和 Review Run 可继续读取已绑定的 Knowledge Version，并提示 Project 默认知识库正在更新。
+
+**验收标准：**
+- 从任一 Run/Session 切到另一 Run/Session，原实例上下文仍可恢复。
+- 再次进入已使用过的 Research Session 或 Review Run，不出现空白工作台。
+- 切换到 Construction Workspace 时，用户能看到长期构建配置和最近构建结果。
+- 切换到历史 Construction Run 时，用户只能查看其快照、结果和日志，不会把历史 Run 当作长期配置容器。
+- 有运行中任务时，系统明确提示任务状态，不静默中断。
+- 目标入口可用性受当前 Project 知识库状态约束。
+- 构建运行中不会打断正在运行或正在查看的 Research Session / Review Run。
+- 用户能从目标入口明确选择继续已有实例或创建新实例。
+
+#### FR-WORKSPACE-004 Run/Session 实例操作
+
+**需求描述：**
+用户应能在 Workspace 中执行 Run/Session 的用户可见实例操作，包括新建、继续、复制、重跑、归档、删除和查看历史。完整状态转换、并发锁和幂等语义不在本 FR 展开，由 `05_state_workflow.md` 定义。
+
+**功能范围：**
+- 用户可进入当前 Project 唯一 Construction Workspace。
+- 用户可从 Construction Workspace 手动选择本次检索词集合并创建 manual Construction Run。
+- 用户可查看历史 Construction Run，并从历史 Run 复制配置创建新的 Construction Run。
+- 用户可创建新的 Research Session，或继续、归档、删除已有 Research Session。
+- 用户可创建新的 Review Run，或继续、复制、重跑、归档、删除已有 Review Run。
+- 用户执行重跑、复制、新版本、删除、归档等操作前，系统应说明影响范围。
+- 删除实例必须要求权限校验和二次确认。
+- Construction Workspace 本身不作为可复制的新实例。
+- 自动 Construction Run 由 `FR-013` 创建，但应能在 Workspace 中查看。
+
+**验收标准：**
+- 用户进入构建模式时默认进入该 Project 的唯一 Construction Workspace。
+- 用户手动启动 Construction Run 前必须选择本次使用的检索词集合。
+- 手动 Run 的 selected 检索词集合不改变自动更新检索词集合。
+- 自动 Run 由 `FR-013` 基于自动更新检索词集合创建，并能在 Workspace 中查看。
+- 用户能区分 `Construction Workspace`、`Construction Run`、`Research Session` 和 `Review Run`。
+- 用户能查看各类实例的历史列表和最近实例。
+- 用户能继续、复制、重跑、归档或删除适用实例。
+- 新建、复制或重跑不会破坏原实例。
+- 删除实例前必须进行权限校验和二次确认。
+- 所有重跑、复制、归档、删除类操作都应在执行前说明影响范围。
+
+#### FR-WORKSPACE-005 Run/Session 状态展示与运行控制
+
+**需求描述：**
+用户应能查看已有 Construction Run、Research Session 和 Review Run 的运行状态，并对可控实例执行暂停、恢复、取消、重试等运行控制。状态枚举、状态转换、并发互斥和幂等语义由 `05_state_workflow.md` 定义。
 
 **功能范围：**
 - 展示当前 Run/Session 的状态、阶段、开始时间、更新时间、错误信息、等待用户输入项和阶段结果。
-- 支持对可控的 Construction Run、Research Session 生成任务、Review Session 生成任务执行暂停、恢复、取消或重试。
+- 支持对可控的 Construction Run、Research Session 生成任务、Review Run 生成任务执行暂停、恢复、取消或重试。
 - 支持查看历史阶段记录、运行日志摘要和失败原因。
-- 支持展示深度研究流式回复状态，并保证同一 Research Session 内一次只允许一个 active reply stream。
-- 支持展示 Review Session 中章节生成、终审、导出等任务状态。
-- 控制操作必须遵守 `FR-WORKSPACE-004~007` 定义的上下文恢复、实例启动、内容保护和知识库版本规则。
-- 本 FR 不定义 Run/Session 的创建、复制、重跑、新版本、知识库刷新或人工修改保护；这些规则由 `FR-WORKSPACE-004~007` 定义。
+- 支持展示深度研究流式回复状态。
+- 支持展示 Review Run 中章节生成、终审、导出等任务状态。
+- 取消或重试应给出明确反馈，不应让用户误以为同时存在多个重复运行任务。
 
 **验收标准：**
 - 用户可查看当前 Run/Session 的状态、阶段、时间、等待项、错误信息和阶段结果。
 - 可控 Run/Session 支持暂停、恢复、取消和重试，并能给出明确结果。
-- 取消或重试操作不产生重复运行的隐性任务。
+- 取消或重试操作不产生用户不可见的重复任务。
 - 用户可查看历史阶段记录、运行日志摘要和失败原因。
-- 深度研究流式回复状态可见，同一 Research Session 内不会同时追加多个 active reply stream。
-- Review Session 的章节生成、终审和导出任务状态可见。
+- 深度研究流式回复状态可见。
+- Review Run 的章节生成、终审和导出任务状态可见。
 - 失败任务应展示可诊断错误和下一步建议。
-- 控制操作不得绕过 `FR-WORKSPACE-004~007` 的上下文恢复、实例启动、内容保护和知识库版本规则。
+- 控制操作不得绕过状态机、权限检查、人工修改保护或知识库版本刷新规则。
 
-#### FR-WORKSPACE-004 Run/Session 切换与上下文恢复
+#### FR-WORKSPACE-006 流程式 Agent 步骤容器
 
 **需求描述：**
-系统应将构建、深度研究和主题综述入口设计为 Project Workspace 内的工作台切换。切换工作台不销毁、不暂停、不覆盖已有 Agent Run/Session，并在目标工作台恢复用户可继续工作的上下文。本 FR 定义工作台切换和上下文恢复规则；具体界面容器由 `FR-WORKSPACE-001` 定义，具体运行控制由 `FR-WORKSPACE-003` 定义。
+Project Workspace 应为构建模式和主题综述模式这类流程式 Agent 提供统一的步骤容器能力，使主体流程栏能够承载当前步骤页面，Run/Session 信息面板能够随当前步骤展示对应上下文。该 FR 只定义步骤容器和步骤切换的用户可见能力，不定义具体步骤业务内容。
 
 **功能范围：**
-- 工作台切换只是切换前端查看和操作区域，不销毁已有工作流实例。
-- 切换到构建模式时，显示最近构建 run、知识库状态、构建结果摘要和可执行操作。
-- 切换到深度研究模式时，显示最近对话、历史对话列表、知识库摘要和可提问入口。
-- 切换到主题综述模式时，显示最近综述版本、大纲/章节状态、审查状态和导出状态。
-- 如果目标模式没有历史实例，应显示新建入口和启动说明。
-- 如果目标模式有运行中实例，应显示运行状态、阶段和等待用户输入项。
-- 如果知识库为空或过期，深度研究模式和主题综述模式应提示返回构建模式补充或更新。
-- 如果构建运行中，深度研究和主题综述可继续读取已绑定的知识库版本，并提示 Project 默认知识库正在更新。
+- 主体流程栏应能展示流程式 Agent 当前步骤页面。
+- 步骤页面应展示步骤名称、步骤状态、输入摘要、输出摘要、等待用户确认项、错误信息和下一步操作。
+- 构建模式的步骤动作和展示内容应由 `FR-015~022` 定义。
+- 主题综述模式的步骤动作和展示内容应由 `FR-027~030` 定义。
+- 深度研究模式不是固定步骤流，仍可使用主体流程栏承载对话页面，但不强制使用步骤容器。
+- 用户可在同一流程式 Run 内查看当前步骤、最近步骤和已完成步骤结果。
+- 当前步骤变化时，Run/Session 信息面板应同步展示该步骤的上下文摘要，例如检索词、候选论文、下载解析状态、章节引用、审查问题或导出状态。
+- 用户应能从步骤页面跳转到对应 Project 知识资产面板或 Run/Session 信息面板中的相关上下文，但跳转不得触发越权写操作。
+- 失败步骤应展示失败原因和可用恢复动作；具体是否允许重试由对应 Agent FR 和状态机设计约束。
 
 **验收标准：**
-- 从任一工作台切到另一工作台，原工作台上下文仍可恢复。
-- 再次进入已使用过的工作台，不出现空白工作台。
-- 有运行中任务时，系统明确提示任务状态，不静默中断。
-- 目标模式可用性受当前 Project 知识库状态约束。
-- 构建运行中不会打断正在运行或正在查看的 Research Session / Review Session。
-- 用户能从目标模式入口明确选择继续已有实例或创建新实例。
+- 构建模式和主题综述模式的当前步骤能在主体流程栏中清晰展示。
+- 用户能看到当前步骤名称、状态、输入摘要、输出摘要、等待项、错误和下一步操作。
+- Workspace 中展示的步骤动作均能追溯到对应 Agent FR。
+- 步骤页面不得提供绕过 `FR-015~022`、`FR-027~030`、权限检查或人工修改保护的写操作。
+- 用户确认门槛未满足时，步骤容器不得允许进入下一业务步骤。
+- 当前步骤变化后，Run/Session 信息面板同步更新为当前步骤上下文。
+- 用户可查看已完成步骤的结果，但查看历史结果不得自动重跑或覆盖当前结果。
+- 失败步骤能展示失败原因和可用恢复动作。
+- 切换 Run/Session 后，步骤容器能恢复目标 Run/Session 的当前步骤和步骤历史。
 
-#### FR-WORKSPACE-005 Run/Session 新建、继续、重跑与复制
-
-**需求描述：**
-系统应将每次 Agent 启动或长期工作空间表达为可识别、可恢复、可审计的 Run/Session 实例，并在用户再次启用同一 Agent 能力时提供明确的新建、继续、增量、重跑、复制新建或新版本选择。已启动任务的暂停、恢复、取消、重试由 `FR-WORKSPACE-003` 定义。
-
-**功能范围：**
-- 每个 Project 下可存在多个 Run/Session 实例。
-- 构建模式工作流实例为 `Construction Run`。
-- 深度研究模式工作流实例为 `Research Session`。
-- 主题综述模式工作流实例为 `Review Session`，可包含 `Review Draft / Review Version`。
-- 每个 Run/Session 应具备可识别状态，例如 draft、running、waiting_user、completed、failed、cancelled、archived。
-- 用户可查看某模式下的历史实例列表。
-- 用户可继续、归档、删除或查看历史实例。
-- 同一 Project 可保留多个历史实例。
-- 同一 Project 通常只允许一个 active `Construction Run` 写入知识库。
-- 同一 Project 可同时存在多个 active `Research Session` 和 `Review Session`，但同一 Session 内的内容写入必须按状态机控制。
-- 用户可选择继续最近 Run/Session。
-- 用户可基于最近实例增量执行。
-- 用户可从头重跑，并创建新的 Run/Session。
-- 用户可基于已有实例复制生成新实例。
-- 构建模式增量执行应复用已确认检索词，也允许修改检索词。
-- 构建模式重跑应明确是否重下载、重解析、重分析或重建图谱。
-- 深度研究模式可继续旧对话或创建新对话。
-- 主题综述模式可继续当前版本、基于当前版本修订或创建新版本。
-- Research Session / Review Session 重跑或刷新时必须明确使用哪个知识库版本。
-- 所有重跑、覆盖、刷新类操作必须在执行前说明影响范围。
-
-**验收标准：**
-- 切换工作台不会删除任何 Run/Session。
-- 再次进入某模式时，用户能看到最近实例和历史实例列表。
-- 用户能区分正在运行、等待用户、已完成、失败、已取消、已归档的实例。
-- 用户能区分 `Construction Run`、`Research Session` 和 `Review Session` 三类实例。
-- 归档实例不再继续执行，但仍可查阅。
-- 删除实例必须遵守权限、二次确认和数据保留策略。
-- 用户启动 Agent 前必须能选择继续、增量、重跑、复制新建或新版本中的适用操作。
-- 增量构建不会重复关联已有论文。
-- 已存在论文不会重复下载、重复分析、重复推送，除非用户明确选择重新处理。
-- 综述刷新不会静默覆盖用户手动编辑内容。
-- 新建实例不会破坏旧实例。
-- 重跑结果与旧结果可区分和追溯。
-- 重跑、增量和刷新操作应记录所使用的知识库版本。
-
-#### FR-WORKSPACE-006 内容修改与版本保护
+#### FR-WORKSPACE-007 内容修改与版本保护
 
 **需求描述：**
-系统应允许用户修改 Agent 生成或中间确认内容，并保护人工修改成果不被后续 Agent 运行静默覆盖。本 FR 定义内容所有权、人工修改标记和覆盖保护；运行状态显示和控制由 `FR-WORKSPACE-003` 定义。
+系统应允许用户修改 Agent 生成或中间确认内容，并保护人工修改成果不被后续 Agent 运行静默覆盖。本 FR 定义用户可见的人工修改标记、覆盖提示和版本保护能力；具体状态转换和冲突处理由 `05_state_workflow.md` 定义。
 
 **功能范围：**
 - 用户可修改检索词、筛选结果、论文有效性和 AI 分析。
@@ -616,35 +621,30 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 版本或历史记录能支持回溯关键修改。
 - 失败或取消的重新生成不得破坏原内容。
 
-#### FR-WORKSPACE-007 知识库版本并行更新
+#### FR-WORKSPACE-008 知识库版本刷新提示与不打断规则
 
 **需求描述：**
-系统应支持 Construction Run 与 Research Session / Review Session 在同一 Project 下并行运行。Construction Run 成功后生成新的 Knowledge Version，并更新 Project 默认知识库版本；正在运行的 Session 不被打断，已完成内容不被自动改写。本 FR 定义知识库版本并行更新规则；具体任务状态展示和运行控制由 `FR-WORKSPACE-003` 定义。
+当 Construction Run 成功发布新的 Knowledge Version 后，系统应向用户清楚展示哪些 Research Session / Review Run 仍依赖旧版本，何时可以刷新，以及刷新后会影响哪些后续生成内容。该 FR 只定义用户可见提示、确认和不打断规则；版本生成、稳定 ID、旧版本清理和并发策略由 `03_architecture_decisions.md`、`05_state_workflow.md` 和 `06_data_requirements.md` 定义。
 
 **功能范围：**
-- `paper_id` 和研究主题-论文关联表的关联 `id` 应保持跨构建版本不变。
-- 构建模式增量更新时，候选论文应先进行 identity resolution。
-- 若候选论文命中论文库中已存在论文，应标记为已存在，并从本次增量处理流水线中排除。
-- 同一 Project 同时只允许一个 active `Construction Run`。
-- active `Construction Run` 可与其他 `Research Session` / `Review Session` 并行运行。
-- 每个 Research Session / Review Session 新建时，应绑定当前 Project 默认的 Knowledge Version。
-- 当 Construction Run 产生新的 Knowledge Version 时，如果存在依赖旧版本的 active Session，系统只发布新版本并更新 Project 默认版本，不修改 active Session 的知识库版本。
-- 当最后一个依赖旧版本的 active Session 结束后，系统应提示用户知识库依赖将刷新到最新版本。
-- 用户确认刷新后，系统将非 active Session 的知识库依赖刷新到新版本，并清理可安全删除的旧版本数据库。
+- Construction Run 成功后，Workspace 应提示 Project 默认 Knowledge Version 已更新。
+- 正在运行的 Research Session / Review Run 不应被强制切换 Knowledge Version。
+- 用户应能看到当前 Research Session / Review Run 绑定的 Knowledge Version。
+- 当依赖旧版本的 active Research Session / Review Run 结束后，系统应提示用户知识库依赖可刷新到最新版本。
+- 用户确认刷新后，系统将非 active Research Session / Review Run 的知识库依赖刷新到新版本。
 - 已完成的 Research 回复、Review 章节和导出产物不会因知识库刷新而自动改写。
+- 如果用户选择在同一 Review Run 内中途刷新知识库，应提示后续章节可能使用新版本，已有章节仍保持原内容。
 
 **验收标准：**
-- 同一 Project 无法同时启动两个 active `Construction Run`。
-- Research Session / Review Session 可在 Construction Run 运行期间继续执行。
-- 新建 Session 默认绑定当前 Project 默认 Knowledge Version。
-- Construction Run 成功后，Project 默认 Knowledge Version 更新为新版本。
-- active Session 在运行期间不会被强制切换 Knowledge Version。
-- 依赖旧版本的最后一个 active Session 结束后，系统能提示用户刷新知识库依赖。
-- 用户确认后，非 active Session 的知识库依赖刷新到最新版本。
+- Construction Run 成功后，用户能看到 Project 默认 Knowledge Version 已更新。
+- 用户能看到当前 Research Session / Review Run 绑定的 Knowledge Version。
+- active Research Session / Review Run 在运行期间不会被强制切换 Knowledge Version。
+- 依赖旧版本的最后一个 active Research Session / Review Run 结束后，系统能提示用户刷新知识库依赖。
+- 用户确认后，非 active Research Session / Review Run 的知识库依赖刷新到最新版本。
 - 已完成的 Research 回复、Review 章节和导出产物内容保持不变。
-- 增量构建中命中已有论文的候选项不会进入下载、解析、AI 分析、入库、图谱更新或推送流程。
+- 中途刷新 Review Run 知识库版本时，系统明确提示后续生成与既有章节可能来自不同 Knowledge Version。
 
-#### FR-WORKSPACE-008 Project/Session 导出
+#### FR-WORKSPACE-009 Project/Run/Session 导出
 
 **需求描述：**
 用户应能按 Project 或具体 Run/Session 导出关键研究资产，用于本地备份、汇报和论文写作。导出能力可以由 `FR-WORKSPACE-001` 提供入口，但不负责界面容器布局，也不负责生成 Research/Review 内容。
@@ -653,9 +653,9 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 按 Project 导出论文库结构化数据。
 - 按 Project 导出已下载 PDF 集合。
 - 按 Research Session 导出对话、引用列表或总结文件。
-- 按 Review Session 导出大纲、章节、终审稿、参考文献或完整综述产物。
+- 按 Review Run 导出大纲、章节、终审稿、参考文献或完整综述产物。
 - 导出应支持筛选条件、导出范围预览和导出统计。
-- 大文件或多文件导出应作为异步任务执行，并通过 `FR-WORKSPACE-003` 展示导出任务状态。
+- 大文件或多文件导出应作为异步任务执行，并通过 `FR-WORKSPACE-005` 展示导出任务状态。
 - 缺失文件、无权限文件或生成失败项应记录为跳过项或失败项，不导致可导出部分整体失败。
 - 导出内容必须绑定当前用户有权限访问的 Project 或 Run/Session。
 
@@ -663,33 +663,43 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 导出内容只包含用户有权限访问的数据。
 - 用户可按 Project 导出论文库结构化数据和已下载 PDF 集合。
 - 用户可按 Research Session 导出对话、引用列表或总结文件。
-- 用户可按 Review Session 导出大纲、章节、终审稿、参考文献或完整综述产物。
+- 用户可按 Review Run 导出大纲、章节、终审稿、参考文献或完整综述产物。
 - 用户可设置导出筛选条件，并在导出前查看导出范围和统计。
-- 大文件或多文件导出不阻塞用户继续使用系统，并能在 `FR-WORKSPACE-003` 中查看导出任务状态。
+- 大文件或多文件导出不阻塞用户继续使用系统，并能在 `FR-WORKSPACE-005` 中查看导出任务状态。
 - 缺失文件、无权限文件或生成失败项应记录为跳过项或失败项，不导致可导出部分整体失败。
 - 导出完成后用户能获取文件或失败报告。
 
 ### 3.5 构建模式功能需求
 
-#### FR-015 检索词生成
+#### FR-015 检索词生成与构建检索词管理
 
 **需求描述：**
-构建模式应根据 Project 主题生成可解释、可编辑、可复用的检索词集合，为多源论文检索提供输入。
+构建模式应在每个 Project 的 Construction Workspace 中生成并维护可解释、可编辑、可复用的检索词集合。检索词用于手动 Construction Run 的 selected 检索词选择，也可单独配置是否参与系统自动更新任务。
 
 **功能范围：**
 - Agent 基于 Project 名称、描述、研究范围和用户补充要求生成检索词。
 - 检索词应包含自然语言关键词、布尔表达式、同义词/缩写和排除词建议。
 - 系统应展示每组检索词的生成理由、预期覆盖方向和适用数据源。
-- 用户可审查、编辑、启用、禁用、删除或新增检索词。
-- 右侧数据侧栏的构建模式上下文应展示当前检索词版本、待确认状态和将用于检索的数据源范围。
-- 用户确认后，检索词版本应保存到 Project，用于手动构建和定时自动构建。
+- 检索词属于当前 Project 的唯一 Construction Workspace。
+- 用户可审查、编辑、删除或新增检索词。
+- 每个检索词可设置是否参与系统自动更新任务。
+- 每个检索词可设置适用数据源策略。
+- 检索词数据源策略支持默认使用当前用户和系统可解析的全部数据源。
+- 检索词数据源策略支持用户显式选择 arXiv、OpenAlex、Semantic Scholar、ADS 等具体数据源。
+- 不设置独立的检索词 `enabled` 标签；手动 Construction Run 通过本次 selected 检索词集合决定使用哪些检索词。
+- 自动更新开关不影响用户手动构建时选择该检索词。
+- 右侧数据侧栏的构建模式上下文应展示当前检索词版本、待确认状态、自动更新状态、检索词级数据源策略和最近自动运行摘要。
+- 用户确认后，检索词版本应保存到 Construction Workspace，用于手动 selected 构建和系统自动构建。
 
 **验收标准：**
 - 检索词生成结果可被用户查看、修改和确认。
 - 检索词结果包含自然语言关键词、布尔表达式、同义词/缩写和排除词建议。
 - 每组检索词应展示生成理由、预期覆盖方向和适用数据源。
-- 用户可启用、禁用、删除或新增检索词。
-- 右侧数据侧栏能展示当前检索词版本、待确认状态和将用于检索的数据源范围。
+- 用户可新增、编辑或删除检索词。
+- 用户可为每个检索词设置是否参与系统自动更新任务。
+- 用户可为每个检索词设置适用数据源；未显式设置时默认使用用户和系统当前可解析的全部数据源。
+- 手动 Construction Run 可选择任意已保存检索词作为本次 selected 检索词，不受自动更新开关限制。
+- 右侧数据侧栏能展示当前检索词版本、待确认状态、自动更新状态、检索词级数据源策略和最近自动运行摘要。
 - 未确认检索词时，手动构建不得进入多源检索阶段。
 - 检索词确认记录应可追溯到当前 Project。
 - 检索词生成失败时，用户可手动输入检索词继续流程。
@@ -697,26 +707,40 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 #### FR-016 多源论文检索
 
 **需求描述：**
-构建模式应使用已确认检索词调用多个学术数据库，汇总当前 Project 的候选论文集合。
+构建模式应根据 Construction Run 的启动方式解析本次检索词集合和数据源集合，调用多个学术数据库，汇总当前 Project 的候选论文集合。手动 Run 使用用户本次 selected 检索词；自动 Run 使用 `auto_update_enabled=true` 的检索词。
 
 **功能范围：**
 - 支持 arXiv、OpenAlex、Semantic Scholar、ADS 等已启用数据源。
+- 手动 Construction Run 使用用户本次选择的 selected 检索词集合。
+- 自动 Construction Run 使用 Construction Workspace 中 `auto_update_enabled=true` 的检索词集合。
+- 每个检索词使用自己的数据源策略解析可用数据源。
+- 检索词未显式选择数据源时，默认使用当前用户和系统可解析的全部数据源。
+- Construction Run 启动时应生成配置快照，包括检索词内容、检索词来源、数据源策略、解析后的数据源、用户/系统配置来源。
 - 系统根据数据源能力转换检索表达式和请求参数。
-- 支持配置检索时间范围、返回数量上限和数据源启用状态。
+- 支持在 Run 启动参数中配置检索时间范围和返回数量上限。
+- 数据源可用性由 `FR-003`、`FR-007` 和检索词级数据源策略共同解析，不维护 Project 默认数据源。
 - 单个数据源失败时应记录原因，并允许其他数据源继续。
+- 配置解析失败的检索词或数据源应记录为失败项，不应破坏其他可执行检索词。
 - 检索完成后展示各数据源命中数量、失败原因、候选列表和下一步操作。
 - 右侧数据侧栏的构建模式上下文应展示查询结果摘要，包括各数据源命中数、失败数据源、候选论文数量和可跳转的检索结果分组。
-- 用户可确认进入去重评分，也可调整检索词后重新检索。
+- 检索结果应记录来源检索词和来源数据源，便于邮件解释、去重审计和后续诊断。
+- 用户可确认进入去重评分，也可调整检索词后重新发起新的 Construction Run。
 
 **验收标准：**
 - 检索请求只使用已启用数据源，并能覆盖 arXiv、OpenAlex、Semantic Scholar、ADS。
+- 手动 Construction Run 只使用用户本次 selected 检索词集合。
+- 自动 Construction Run 只使用 `auto_update_enabled=true` 的检索词集合。
+- 检索词级数据源策略能正确解析为本次 Run 的实际数据源集合。
+- Run 配置快照能记录检索词内容、来源、数据源策略、解析后的数据源和配置来源。
 - 系统能按数据源能力转换检索表达式和请求参数。
-- 用户可配置检索时间范围、返回数量上限和数据源启用状态。
+- 用户可配置本次 Run 的检索时间范围和返回数量上限。
+- 实际数据源集合来自用户/系统配置解析和检索词级数据源策略，不依赖 Project 默认数据源。
 - 检索结果包含标题、作者、日期、来源、摘要、外部 ID 或 URL 等基础元数据。
 - 数据源失败有明确提示，不应导致已成功数据源结果丢失。
 - 检索完成后能展示各数据源命中数量、失败原因、候选列表和下一步操作。
 - 右侧数据侧栏能展示查询结果摘要、失败数据源、候选论文数量和可跳转结果分组。
 - 用户能区分每篇候选论文来自哪些数据源。
+- 用户能区分每篇候选论文来自哪些检索词。
 - 用户确认后，候选论文才能进入去重、评分与筛选阶段。
 
 #### FR-017 论文去重、评分与筛选
@@ -836,7 +860,8 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 入库前向用户展示即将入库的有效论文、跳过项和风险提示。
 - 入库过程应支持增量更新和失败回滚/补偿。
 - 入库完成后展示入库、向量化、图谱更新结果和失败项。
-- 成功完成入库和图谱更新后，应生成或标记新的 Project 知识库版本，并按 `FR-WORKSPACE-007` 更新默认知识库版本。
+- 成功完成入库和图谱更新后，当前 Construction Run 应生成新的 Project Knowledge Version，并按 `FR-WORKSPACE-008` 提示知识库版本刷新。
+- Construction Workspace 不直接生成 Knowledge Version。
 - 右侧数据侧栏的构建模式上下文应展示入库、向量化、Graph 节点/边更新和失败项摘要，并支持跳转到基础层论文库或 Graph 图谱查看结果。
 
 **验收标准：**
@@ -846,10 +871,11 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 入库前用户能看到即将入库的有效论文、跳过项和风险提示。
 - 入库成功后，论文可在 Project 论文库中查看。
 - 图谱更新成功后，基础层 Graph 图谱可展示最新节点和关系。
-- 成功完成 Construction Run 后，Project 默认知识库版本应更新到最新成功构建版本。
+- 成功完成 Construction Run 后，应生成新的 Knowledge Version，并将 Project 默认知识库版本更新到最新成功构建版本。
+- Construction Workspace 本身不应被当作 Knowledge Version。
 - 入库过程支持增量更新，并在失败时能回滚或补偿。
-- Research Session 和 Review Session 只能使用已入库且有效的数据对应的知识库版本。
-- Research Session、Review Session 和基础层只读查阅入口不得触发图谱重建或写入。
+- Research Session 和 Review Run 只能使用已入库且有效的数据对应的知识库版本。
+- Research Session、Review Run 和基础层只读查阅入口不得触发图谱重建或写入。
 - 向量库或图谱更新失败时应可诊断并可恢复。
 - 用户能明确看到哪些论文成功进入知识库，哪些论文被跳过或失败。
 - 右侧数据侧栏能展示入库、向量化、Graph 节点/边更新和失败项摘要，并支持跳转到论文库或 Graph 图谱。
@@ -862,16 +888,21 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 **功能范围：**
 - 构建流程完成后自动触发邮件推送，用户也可在结果页手动触发发送。
 - 邮件内容包含 Project 名称、有效论文统计和论文摘要列表。
-- 仅发送当前 Project 中未推送的有效论文。
+- 自动 Construction Run 完成后只推送本次新增有效论文。
+- 手动 Construction Run 完成后可由用户预览并手动触发发送。
+- 仅发送当前 Project 中未推送且用户有权限接收的有效论文。
 - 发送前应允许用户预览本次推送范围；自动任务可按默认策略直接发送。
+- 邮件内容应能展示论文来源检索词和来源数据源。
 - 发送成功后记录推送状态。
 - 手动重发属于 P1 支撑能力。
 
 **验收标准：**
 - 构建流程完成后能自动触发邮件推送，用户也可在结果页手动触发。
 - 邮件内容包含 Project 名称、有效论文统计和论文摘要列表。
-- 邮件只包含当前 Project 中未推送的有效论文。
+- 自动 Construction Run 成功后，邮件只包含本次新增有效论文。
+- 邮件只包含当前 Project 中未推送且用户有权限接收的有效论文。
 - 发送前用户能预览本次推送范围；自动任务可按默认策略直接发送。
+- 邮件能展示论文来源检索词和来源数据源。
 - 无未推送有效论文时不发送空邮件。
 - 发送成功后能记录推送状态。
 - 邮件发送失败不应回滚已完成的论文入库。
@@ -896,7 +927,7 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 右侧数据侧栏的深度研究模式上下文应展示当前对话使用的知识库版本、引用论文、引用文段、Graph-RAG 命中来源和相关图谱节点摘要。
 - 用户可从回复引用跳转到基础层论文详情或 Graph 图谱节点。
 - Construction Run 完成并产生新知识库版本时，已有 Research Session 应提示可刷新，但不得中断当前会话或正在生成的回复。
-- Research Session 的知识库版本刷新应遵守 `FR-WORKSPACE-007`。
+- Research Session 的知识库版本刷新应遵守 `FR-WORKSPACE-008`。
 
 **验收标准：**
 - 无可用知识库版本时不能创建新的 Research Session。
@@ -909,7 +940,7 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 每轮成功对话都应保存用户输入、Agent 回复和引用信息。
 - 对话引用必须能跳转到当前 Project 的论文详情或图谱节点。
 - 新 Construction Run 完成后，已有 Research Session 不自动切换知识库版本。
-- Research Session 的知识库依赖刷新应在 active Session 任务结束后按 `FR-WORKSPACE-007` 执行。
+- Research Session 的知识库依赖刷新应在 active Research Session 任务结束后按 `FR-WORKSPACE-008` 执行。
 - LLM 或检索失败时不得写入半成品对话轮次。
 
 #### FR-024 深度研究输出倾向
@@ -985,11 +1016,11 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 #### FR-027 综述架构设计
 
 **需求描述：**
-综述模式应以 Review Session 形式基于 Project 主题和某个知识库版本，帮助用户生成、审查并确认综述文章架构。
+综述模式应以 Review Run 形式基于 Project 主题和某个知识库版本，帮助用户生成、审查并确认综述文章架构。
 
 **功能范围：**
 - Agent 扩写研究主题、范围和背景。
-- Review Session 应绑定一个知识库版本。
+- Review Run 应绑定一个知识库版本。
 - Agent 生成综述标题、摘要提示和章节结构。
 - Agent 对大纲覆盖度、章节顺序、主题边界和论文支撑度进行自审。
 - 用户可查看审查结果，编辑章节标题、类型、顺序和要点。
@@ -997,11 +1028,11 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 右侧数据侧栏的主题综述模式上下文应展示知识库版本、大纲章节、每章论文支撑度、低支撑章节和建议补充的论文方向。
 - 用户可重新生成、局部修改或确认架构。
 - 用户确认架构后，系统才能开始章节撰写。
-- Review Session 的知识库版本刷新应遵守 `FR-WORKSPACE-007`。
+- Review Run 的知识库版本刷新应遵守 `FR-WORKSPACE-008`。
 
 **验收标准：**
-- 无可用知识库版本时不能创建新的 Review Session。
-- 新建 Review Session 默认绑定 Project 当前默认知识库版本。
+- 无可用知识库版本时不能创建新的 Review Run。
+- 新建 Review Run 默认绑定 Project 当前默认知识库版本。
 - Agent 能扩写研究主题、范围和背景。
 - Agent 能生成综述标题、摘要提示和章节结构。
 - Agent 能对大纲覆盖度、章节顺序、主题边界和论文支撑度进行自审。
@@ -1011,17 +1042,17 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 - 架构确认前不得自动撰写章节。
 - 确认后的架构应保存版本记录。
 - 架构审查结果必须和当前大纲版本绑定，不得覆盖历史版本。
-- 新 Construction Run 完成后，已有 Review Session 不自动切换知识库版本。
-- Review Session 的知识库依赖刷新应在 active Session 任务结束后按 `FR-WORKSPACE-007` 执行。
+- 新 Construction Run 完成后，已有 Review Run 不自动切换知识库版本。
+- Review Run 的知识库依赖刷新应在 active Review Run 任务结束后按 `FR-WORKSPACE-008` 执行。
 
 #### FR-028 章节撰写、引用与修订
 
 **需求描述：**
-系统应按已确认的综述架构和 Review Session 绑定的知识库版本撰写章节内容，自动引用 Project 论文库中的相关论文，并支持章节级审查和人工修订。
+系统应按已确认的综述架构和 Review Run 绑定的知识库版本撰写章节内容，自动引用 Project 论文库中的相关论文，并支持章节级审查和人工修订。
 
 **功能范围：**
 - Agent 按章节逐章生成 Markdown 正文。
-- 每章撰写前基于 Review Session 绑定的知识库版本检索相关论文或文段作为上下文。
+- 每章撰写前基于 Review Run 绑定的知识库版本检索相关论文或文段作为上下文。
 - 章节内容应包含可追溯引用。
 - 用户可从章节引用跳转到基础层论文详情、PDF/远程访问入口或 Graph 图谱节点。
 - 右侧数据侧栏的主题综述模式上下文应展示知识库版本、当前章节引用论文、引用段落、引用覆盖状态、未引用的重要论文和相关 Graph 节点摘要。
@@ -1032,7 +1063,7 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 **验收标准：**
 - 章节只能基于已确认大纲生成。
 - Agent 能按章节逐章生成 Markdown 正文。
-- 每章撰写前应基于 Review Session 绑定的知识库版本检索相关论文或文段作为上下文。
+- 每章撰写前应基于 Review Run 绑定的知识库版本检索相关论文或文段作为上下文。
 - 章节内容应包含可追溯引用。
 - 引用必须能映射到当前 Project 论文库。
 - 用户可从章节引用跳转到基础层论文详情、PDF/远程访问入口或 Graph 图谱节点。
@@ -1048,7 +1079,7 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 #### FR-029 综述汇总、终审与多格式导出
 
 **需求描述：**
-系统应将 Review Session 中已完成章节汇总为完整综述文章，执行全文级终审，并支持导出为常用格式。
+系统应将 Review Run 中已完成章节汇总为完整综述文章，执行全文级终审，并支持导出为常用格式。
 
 **功能范围：**
 - 自动合并已确认章节。
@@ -1111,14 +1142,17 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 ### 5.1 结构审查结论
 
 - 本章按基础层、Project Workspace、构建 Agent、深度研究 Agent 和主题综述 Agent 组织 FR，层级与当前产品结构一致。
-- `FR-001~008` 与 `FR-013~030` 保持原编号；`FR-009~012` 由 `FR-WORKSPACE-001~008` 正式替代；`FR-WORKSPACE-009` 作为新增流程式 Agent 步骤容器，逻辑位于 `FR-WORKSPACE-001` 之后。
+- `FR-001~008` 与 `FR-013~030` 保持原编号；`FR-009~012` 由 `FR-WORKSPACE-001~009` 正式替代，Project Workspace 功能族按用户工作顺序重新编号。
 - 管理员能力已下放到基础层管理员模块，不再作为独立顶层模式。
 - 系统级页面入口与 Project 内研究工作台已分层：`FR-008` 定义登录后的全局入口、Project 管理和进入 Workspace 的前置检查；`FR-WORKSPACE-*` 定义进入 Project 后的内部入口、布局、流程式步骤容器、Run/Session 操作和知识库版本规则。
-- Project 不再采用三模式互斥；Agent 类型通过 Construction Run、Research Session、Review Session 实例化管理。
+- Project 状态已明确为自动追踪边界：active Project 可被系统级 scheduler 扫描；paused / archived / deleted Project 不参与自动构建调度。
+- 构建模式已分离长期配置和一次执行：每个 Project 有且仅有一个 Construction Workspace；每次手动或自动构建生成一个 Construction Run；成功 Run 生成 Knowledge Version。
+- 检索词配置已归入 Construction Workspace：每个检索词可设置是否参与自动更新和检索词级数据源策略；手动 Run 使用本次 selected 检索词，自动 Run 使用自动更新检索词。
+- Project 不再采用三模式互斥；Agent 类型通过 Construction Run、Research Session、Review Run 实例化管理。
 - 论文库、Graph、导出、工作台上下文入口已归入 Project Workspace 的信息面板；各 Agent 工作台只定义自己的上下文内容和写操作边界。
-- Construction Run 是知识库写入者；Research Session 和 Review Session 是知识库消费者，并通过知识库版本绑定保持运行稳定。
+- Construction Run 是知识库写入者；Research Session 和 Review Run 是知识库消费者，并通过知识库版本绑定保持运行稳定。
 - 数据字段、索引、存储结构不在本章维护，数据需求已迁移到 `06_data_requirements.md`。
-- 本次更新采用设计 B：将原 `FR-009~FR-012` 与 `FR-AGENT-*` 合并为 `FR-WORKSPACE-001~008`，并新增 `FR-WORKSPACE-009` 承接流程式 Agent 步骤容器；Project Workspace 功能族统一定义界面容器、步骤容器、知识资产、运行控制、切换恢复、新建/重跑、内容保护、知识库版本并行更新和导出。
+- 本次更新采用设计 B 的重排版：将原 `FR-009~FR-012` 与 `FR-AGENT-*` 合并为 `FR-WORKSPACE-001~009`，并按框架、知识资产、跨实例切换、实例操作、状态控制、步骤容器、内容保护、知识库刷新提示和导出顺序组织。
 
 ### 5.2 逐项审计结果
 
@@ -1131,31 +1165,31 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 | FR-005 | 充分 | 必要 | 覆盖用户列表、启禁用、删除、密码重置、管理员授撤权、最后管理员保护、审计 | 通过 |
 | FR-006 | 充分 | 必要 | 覆盖系统 LLM、数据源、SMTP、安全配置、连接测试、密钥脱敏、审计 | 通过 |
 | FR-007 | 充分 | 必要 | 覆盖配置解析、个人优先、系统回落、硬限制、邮件组合、密钥隔离、快照、失败拦截 | 通过 |
-| FR-008 | 充分 | 必要 | 覆盖系统级页面入口、Project CRUD/归档、用户隔离、Project 列表可用性信息、进入 Workspace 的权限和状态前置检查，并排除 Workspace 内部操作 | 通过 |
-| FR-WORKSPACE-001 | 充分 | 必要 | 覆盖 Project Workspace 内部构建/深研/综述入口、Run/Session 选择、主体流程栏、Project/Session 信息面板、展开折叠和非写操作边界 | 通过 |
-| FR-WORKSPACE-009 | 充分 | 必要 | 覆盖流程式 Agent 的步骤容器、步骤状态、步骤动作承载、当前步骤上下文同步、确认门槛、失败恢复和步骤历史查看，并排除具体业务步骤内容 | 通过 |
+| FR-008 | 充分 | 必要 | 覆盖系统级页面入口、Project CRUD/归档、active/paused/archived/deleted 状态、用户隔离、Project 列表可用性信息、进入 Workspace 的权限和状态前置检查，并排除 Workspace 内部操作 | 通过 |
+| FR-WORKSPACE-001 | 充分 | 必要 | 覆盖 Project Workspace 内部 Project 状态展示、Construction Workspace 入口、深研/综述入口、Run/Session 选择、主体流程栏、Project 与 Run/Session 信息面板、展开折叠和非写操作边界 | 通过 |
 | FR-WORKSPACE-002 | 充分 | 必要 | 覆盖 Project 论文库、PDF、Graph、Knowledge Version、筛选、详情互跳、引用跳转和只读边界 | 通过 |
-| FR-WORKSPACE-003 | 充分 | 必要 | 覆盖已有 Run/Session 状态、阶段、等待项、暂停/恢复/取消/重试、日志摘要、流式回复状态和横切规则边界 | 通过 |
-| FR-WORKSPACE-004 | 充分 | 必要 | 覆盖工作台切换、Session 恢复、构建中不打断深研/综述、目标工作台可用性提示 | 通过 |
-| FR-WORKSPACE-005 | 充分 | 必要 | 覆盖 Construction Run、Research Session、Review Session 实例类型、身份、历史、归档、删除、继续、增量、重跑、复制新建和新版本 | 通过 |
-| FR-WORKSPACE-006 | 充分 | 必要 | 覆盖人工修改标记、覆盖确认、版本保护和失败不破坏原内容 | 通过 |
-| FR-WORKSPACE-007 | 充分 | 必要 | 覆盖稳定 `paper_id` / 关联 `id`、已有论文排除、Construction Run 并发限制、Session 版本绑定、active Session 不切版本、旧版本依赖结束后刷新和清理 | 通过 |
-| FR-WORKSPACE-008 | 充分 | 必要 | 覆盖 Project 论文库/PDF 导出、Research Session 导出、Review Session 导出、筛选统计、权限、异步导出和失败项处理 | 通过 |
-| FR-013 | 充分 | 必要 | 覆盖 Project 调度、间隔/计划、检索词和配置快照、自动确认、并发保护、自动 Construction Run 记录、邮件触发、失败通知，并排除 Workspace 布局 | 通过 |
+| FR-WORKSPACE-003 | 充分 | 必要 | 覆盖 Construction Workspace、历史 Construction Run、Research Session、Review Run 间切换、上下文恢复、运行中提示和知识库可用性提示 | 通过 |
+| FR-WORKSPACE-004 | 充分 | 必要 | 覆盖用户可见的新建、继续、复制、重跑、归档、删除、历史查看和影响范围提示，并将完整生命周期细节下沉到状态机设计 | 通过 |
+| FR-WORKSPACE-005 | 充分 | 必要 | 覆盖已有 Run/Session 状态、阶段、等待项、暂停/恢复/取消/重试、日志摘要、流式回复状态和运行控制反馈 | 通过 |
+| FR-WORKSPACE-006 | 充分 | 必要 | 覆盖流程式 Agent 的步骤容器、步骤状态、步骤动作承载、当前步骤上下文同步、确认门槛、失败恢复和步骤历史查看，并排除具体业务步骤内容 | 通过 |
+| FR-WORKSPACE-007 | 充分 | 必要 | 覆盖人工修改标记、覆盖确认、版本保护和失败不破坏原内容 | 通过 |
+| FR-WORKSPACE-008 | 充分 | 必要 | 覆盖 Knowledge Version 更新提示、active Research Session / Review Run 不打断、非 active 实例刷新确认、已完成内容不自动改写和中途刷新提醒 | 通过 |
+| FR-WORKSPACE-009 | 充分 | 必要 | 覆盖 Project 论文库/PDF 导出、Research Session 导出、Review Run 导出、筛选统计、权限、异步导出和失败项处理 | 通过 |
+| FR-013 | 充分 | 必要 | 覆盖系统级 scheduler 配置、active Project 扫描、paused/archived/deleted 跳过、自动更新检索词选择、检索词级数据源解析、自动 Construction Run 创建、配置快照、邮件触发、失败通知，并排除 Workspace 布局 | 通过 |
 | FR-014 | 充分 | 必要 | 覆盖独立系统级观点页面、发布、查看、搜索、筛选、删除、联系信息、从系统入口或 Workspace 跳转、禁止评论、P2 点赞边界 | 通过 |
-| FR-015 | 充分 | 必要 | 覆盖检索词生成内容、解释、编辑、确认、侧栏上下文、失败手动输入 | 通过 |
-| FR-016 | 充分 | 必要 | 覆盖多数据源、表达式转换、检索范围、失败隔离、候选元数据、侧栏摘要、用户确认 | 通过 |
+| FR-015 | 充分 | 必要 | 覆盖 Construction Workspace 检索词生成、解释、编辑、删除、新增、自动更新开关、检索词级数据源策略、默认全部可解析数据源、侧栏上下文、失败手动输入 | 通过 |
+| FR-016 | 充分 | 必要 | 覆盖手动 selected 检索词、自动更新检索词、检索词级数据源解析、无 Project 默认数据源边界、Run 配置快照、多数据源、表达式转换、失败隔离、候选元数据、来源检索词/数据源记录、侧栏摘要 | 通过 |
 | FR-017 | 充分 | 必要 | 覆盖 identity resolution、已有论文排除、去重依据、评分结果、人工调整、重新评分、补充检索词、侧栏统计、进入下一阶段门槛 | 通过 |
 | FR-018 | 充分 | 必要 | 覆盖 DOI/arXiv/URL/PDF 补充、元数据确认、流程衔接、权限、移除/清空关联、只读入口边界 | 通过 |
 | FR-019 | 充分 | 必要 | 覆盖 PDF 下载、文本解析、失败降级、重试/替代上传、PDF 访问、阶段统计、侧栏摘要 | 通过 |
 | FR-020 | 充分 | 必要 | 覆盖总结、亮点、相关性、方法创新、编辑/确认/重生成、覆盖保护、失败重试、后续上下文门槛 | 通过 |
-| FR-021 | 充分 | 必要 | 覆盖持久化、向量化、图谱构建、Construction Run 写边界、知识库版本更新、入库预览、增量/补偿、失败诊断、侧栏摘要 | 通过 |
-| FR-022 | 充分 | 必要 | 覆盖自动/手动发送、邮件内容、未推送有效论文、预览、空邮件保护、推送状态、失败不回滚 | 通过 |
+| FR-021 | 充分 | 必要 | 覆盖持久化、向量化、图谱构建、Construction Run 写边界、成功 Run 生成 Knowledge Version、Workspace 不生成版本、入库预览、增量/补偿、失败诊断、侧栏摘要 | 通过 |
+| FR-022 | 充分 | 必要 | 覆盖自动 Run 新增有效论文推送、手动发送、邮件内容、来源检索词/数据源、未推送有效论文、预览、空邮件保护、推送状态、失败不回滚 | 通过 |
 | FR-023 | 充分 | 必要 | 覆盖 Research Session、知识库版本绑定、Graph-RAG、历史上下文、流式回复、引用展示、侧栏来源、保存与失败原子性 | 通过 |
 | FR-024 | 充分 | 必要 | 覆盖创新、实验、总结三类倾向、切换不中断上下文、输出结构差异 | 通过 |
 | FR-025 | 充分 | 必要 | 覆盖对话列表、轮次、标题、标签、摘要、搜索筛选归档、总结生成、导出 | 通过 |
 | FR-026 | 充分 | 必要 | 覆盖引用、文段来源、图谱节点、右侧上下文、论文/PDF/Graph 跳转、深研只读边界 | 通过 |
-| FR-027 | 充分 | 必要 | 覆盖 Review Session、知识库版本绑定、主题扩写、大纲生成、自审、人工编辑、论文/Graph 支撑、侧栏支撑度、确认门槛、版本绑定 | 通过 |
+| FR-027 | 充分 | 必要 | 覆盖 Review Run、知识库版本绑定、主题扩写、大纲生成、自审、人工编辑、论文/Graph 支撑、侧栏支撑度、确认门槛、版本绑定 | 通过 |
 | FR-028 | 充分 | 必要 | 覆盖逐章生成、基于知识库版本的章节检索、可追溯引用、跳转、侧栏引用覆盖、自审、人工修订、历史记录 | 通过 |
 | FR-029 | 充分 | 必要 | 覆盖章节汇总、摘要/关键词/参考文献、全文终审、人工确认、知识库版本展示、侧栏状态、多格式导出 | 通过 |
 | FR-030 | 充分 | 必要 | 覆盖大纲版本、章节版本、审查记录、当前/历史识别、回退确认、追溯关系、P2 边界 | 通过 |
@@ -1183,11 +1217,13 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 | Vector Database | 向量数据库，存储和检索向量数据的数据库 |
 | Knowledge Graph | 知识图谱，结构化的知识表示 |
 | Research Topic | 科学研究主题，系统的核心业务单元 |
+| Construction Workspace | 每个 Project 唯一的构建模式长期工作台和配置容器，用于维护检索词、检索词级数据源策略、自动更新开关和最近构建摘要 |
 | Construction Run | 构建 Agent 的一次运行实例，负责写入 Project 论文库、向量库、Graph 和知识库版本 |
 | Research Session | 深度研究 Agent 的会话实例，读取某个知识库版本并写入对话历史 |
-| Review Session | 主题综述 Agent 的写作会话实例，读取某个知识库版本并写入大纲、章节、审查和导出版本 |
+| Review Run | 主题综述 Agent 的一次流程式写作运行实例，读取某个知识库版本并写入大纲、章节、审查和导出版本 |
 | Knowledge Snapshot / Knowledge Version | Project 知识库版本，标识某次成功构建后可供深研和综述引用的知识库状态 |
 | Workspace | 前端当前查看和操作的 Agent 工作台，不等同于后端 Run/Session 的生命周期状态 |
+| Selected Search Terms | 手动 Construction Run 启动时由用户选择的本次检索词集合，不等同于自动更新检索词集合 |
 | Execution Stage | 执行阶段，Agent执行的7个关键步骤 |
 | LLM | Large Language Model，大语言模型 |
 | RAG | Retrieval Augmented Generation，检索增强生成 |
@@ -1208,9 +1244,12 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 | v1.6 | 2026-04-20 | 根据设计评审逐条更新：FR-007澄清删除语义为移除关联、新增FR-009数据导出、重新设计projects.status状态机（idle/running/paused/error/archived）、FR-018明确邮件发送范围为所有未推送有效论文、FR-010扩展为全流程无人工自动任务、FR-019取消跳过阶段、8.2.1构建模式参与度修正为中（分步审查）、原FR-026并入FR-026（对话式探讨）、FR说明顺序重整为编号升序、原FR-027/029/030重编号为FR-026/027/028 | haoyanzhen |
 | v1.9 | 2026-04-30 | 执行 Task 002：全量审查 FR-001~FR-030，补强每条 FR 的验收标准，新增 FR 全量审计报告和 Web App FR 审查知识点 | Codex |
 | v1.10 | 2026-05-01 | 暂存 `FR-AGENT-001~004`，补充 Agent 工作流实例、模式切换恢复、重跑/增量执行和内容版本保护需求 | Codex |
-| v1.11 | 2026-05-01 | 取消 Project 三模式互斥设计，改为 Project + Construction Run / Research Session / Review Session + Knowledge Version；新增 `FR-AGENT-005` 知识库版本与默认更新 | Codex |
+| v1.11 | 2026-05-01 | 取消 Project 三模式互斥设计，改为 Project + Construction Run / Research Session / Review Run + Knowledge Version；新增 `FR-AGENT-005` 知识库版本与默认更新 | Codex |
 | v1.12 | 2026-05-01 | 严格按“知识库版本并行更新”设定修订 `FR-AGENT-005`，补充增量构建命中已有论文时排除处理流水线的规则 | Codex |
 | v1.13 | 2026-05-01 | 重设 `FR-009~FR-012` 的功能边界，并收窄 `FR-AGENT-*` 为横切生命周期规则，避免与 `FR-011` 运行控制重叠 | Codex |
 | v1.14 | 2026-05-01 | 采用设计 B：将 `FR-009~FR-012` 与 `FR-AGENT-*` 正式替换为 `FR-WORKSPACE-001~008`，统一 Project Workspace 功能族 | Codex |
 | v1.15 | 2026-05-01 | 重新审计并调整 `FR-008~FR-014` 与 `FR-WORKSPACE-*` 边界：`FR-008` 改为系统级页面入口与 Project 可用性约束，Project 内部研究工作台由 `FR-WORKSPACE-*` 定义 | Codex |
 | v1.16 | 2026-05-02 | 新增 `FR-WORKSPACE-009` 流程式 Agent 步骤容器，逻辑插入 `FR-WORKSPACE-001` 后，承接构建和综述流程式步骤页面的通用容器能力 | Codex |
+| v1.17 | 2026-05-02 | 将主题综述 Agent 实例统一命名为 `Review Run`，与 `Construction Run` 同归流程式 Agent 运行实例，保留 `Research Session` 作为开放式对话会话 | Codex |
+| v1.18 | 2026-05-02 | 重构自动构建与推送 FR：新增 Project 状态边界，明确每 Project 唯一 Construction Workspace、多次 Construction Run 执行记录、检索词级数据源策略、手动 selected 检索词与自动更新检索词分离、成功 Run 生成 Knowledge Version | Codex |
+| v1.19 | 2026-05-02 | 重排并瘦身 `FR-WORKSPACE-001~009`：FR 只保留用户可见工作台能力，将生命周期状态机、并发互斥、知识库版本生成与清理等设计下沉到状态机、架构和数据设计文档 | Codex |

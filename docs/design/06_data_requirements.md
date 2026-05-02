@@ -1,10 +1,46 @@
 # 数据需求设计
 
 > 分层定位：数据模型层、数据存储层、数据一致性说明。
-> 本文承接从 `02_product_requirements.md` 迁出的原“第 6 章 数据需求”。
+> 本文承接从早期需求文档迁出的原“第 6 章 数据需求”，并按 `01_functional_requirements.md` 当前 FR 更新数据边界。
 > 字段、索引、约束和删除语义的最终实现契约以 `06_data_model.sql` 为准；本文作为数据层解释性设计与多数据库协同说明。
 
 ## 6. 数据需求
+
+### 6.0 当前数据层边界更新
+
+本节承接 `01_functional_requirements.md` v1.19 与 `05_state_workflow.md` 的设计调整，用于说明当前数据层应支持的核心边界。现有表结构仍需在 `06_data_model.sql` 中进一步落地。
+
+#### Project、Construction Workspace 与 Run/Session
+
+- Project 是长期研究容器，应保存 Project 基础信息、所属用户、Project 状态和默认 `knowledge_version_id`。
+- Project 状态应表达研究主题是否参与自动追踪，建议采用 `active`、`paused`、`archived`、`deleted`。
+- Project 不应通过单一 `mode` 字段表达三模式互斥；Construction Run、Research Session、Review Run 应作为独立实例记录管理。
+- 每个 Project 有且仅有一个 Construction Workspace，用于保存长期构建配置。
+- Construction Workspace 保存检索词、检索词级数据源策略、自动更新开关和最近构建摘要，不生成 Knowledge Version。
+- 每次手动或自动构建都应生成一条 Construction Run 记录。
+- Construction Run 应保存启动时配置快照，包括 selected 检索词、检索词数据源策略、解析后的数据源、运行时配置来源和启动方式。
+- Research Session 应保存其绑定的 `knowledge_version_id`、对话历史、引用和总结。
+- Review Run 应保存其绑定的 `knowledge_version_id`、大纲、章节、审查记录和导出产物。
+
+#### Knowledge Version 与稳定引用
+
+- 每个成功 Construction Run 应生成新的 Knowledge Version。
+- Knowledge Version 表示一次成功构建后可供 Research Session 和 Review Run 检索的知识库状态，包括关系型论文集合、向量索引和 Graph 状态。
+- `paper_id` 必须作为全局稳定论文身份，跨 Knowledge Version 不变。
+- Project 与 Paper 的关联 `id` 必须作为当前 Project 内稳定引用身份，跨 Knowledge Version 不变。
+- Research 回复、Review 章节和导出产物中的论文引用应绑定稳定 Project-Paper 关联 `id` 和 `paper_id`。
+- 只要稳定 ID 不变，旧文本引用不会因后续 Knowledge Version 更新而指向错误论文。
+- 旧 Knowledge Version 的可清理条件由 `05_state_workflow.md` 定义；数据层必须保证清理旧版本不会破坏已完成文本中的稳定引用。
+
+#### 增量构建数据原则
+
+- 候选论文进入新增流水线前必须进行 identity resolution。
+- 若候选论文命中已有 `paper_id`，应标记为已存在并从本次新增处理流水线中排除。
+- 若候选论文已存在当前 Project-Paper 关联，关联 `id` 应保持不变。
+- 未命中已有论文和当前 Project-Paper 关联的候选论文，才进入下载、解析、AI 分析、入库、向量化、Graph 更新和推送流程。
+- 自动 Construction Run 只推送本次新增且有效的论文。
+
+---
 
 ### 6.1 关系型数据库
 
@@ -101,7 +137,7 @@ config_value: {"endpoint":"https://api.semanticscholar.org/graph/v1","api_key":"
 
 #### 研究主题表 (projects)
 
-**说明**：存储用户创建的各个研究主题（Project）及其执行进展，每个研究主题唯一。这是系统的核心实体，所有功能都围绕研究主题展开。
+**说明**：存储用户创建的各个研究主题（Project）及其可用性状态，每个研究主题唯一。这是系统的核心实体，所有功能都围绕研究主题展开。Project 不保存唯一当前模式，也不保存某个 Agent 的运行状态。
 
 | 字段名        | 类型      | 长度 | 必填 | 约束                    | 说明                                                      |
 |---------------|-----------|------|------|-------------------------|-----------------------------------------------------------|
@@ -109,12 +145,12 @@ config_value: {"endpoint":"https://api.semanticscholar.org/graph/v1","api_key":"
 | user_id       | VARCHAR   | 50   | 是   | FOREIGN KEY             | 用户ID，关联users表                                       |
 | name          | VARCHAR   | 255  | 是   | -                       | 研究主题名称                                              |
 | description   | TEXT      | -    | 否   | -                       | 研究主题描述                                              |
-| mode          | VARCHAR   | 20   | 是   | DEFAULT 'construction'  | 当前模式（construction/deep_research/review）             |
-| status        | VARCHAR   | 20   | 是   | DEFAULT 'idle'          | 当前任务状态（idle/running/paused/error/archived）        |
+| status        | VARCHAR   | 20   | 是   | DEFAULT 'active'        | Project 可用性状态（active/paused/archived/deleted）      |
+| default_knowledge_version_id | VARCHAR | 50 | 否 | FOREIGN KEY | 当前 Project 默认知识库版本 ID                            |
 | total_papers  | INTEGER   | -    | -    | DEFAULT 0               | 总论文数                                                  |
 | valid_papers  | INTEGER   | -    | -    | DEFAULT 0               | 有效论文数                                                |
-| auto_push     | BOOLEAN   | -    | 是   | DEFAULT FALSE           | 是否启用定时自动检索推送                                  |
-| push_interval | TINYINT   | -    | 否   | -                       | 自动推送间隔（天），auto_push=TRUE 时有效                 |
+| auto_push     | BOOLEAN   | -    | 否   | DEPRECATED              | 旧设计字段；自动更新应迁移到 Construction Workspace 检索词级配置 |
+| push_interval | TINYINT   | -    | 否   | DEPRECATED              | 旧设计字段；调度周期应迁移到系统级 scheduler 配置         |
 | last_push_at  | DATETIME  | -    | 否   | -                       | 上次成功推送时间                                          |
 | next_push_at  | DATETIME  | -    | 否   | -                       | 下次计划推送时间（由调度器写入）                          |
 | created_at    | DATETIME  | -    | 是   | -                       | 创建时间                                                  |
@@ -125,28 +161,28 @@ config_value: {"endpoint":"https://api.semanticscholar.org/graph/v1","api_key":"
 - FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 - INDEX idx_user_id (user_id)
 - INDEX idx_status (status)
-- INDEX idx_mode (mode)
+- INDEX idx_default_knowledge_version_id (default_knowledge_version_id)
 - INDEX idx_next_push_at (next_push_at)
 - INDEX idx_created_at (created_at)
 
 **设计说明**：
 
 - 以 project_id 为核心标识符，所有相关数据表都通过 project_id 关联
-- `mode` 字段记录当前所处模式，是模式互斥性的唯一权威来源
-- 当前执行阶段**不在本表存储**，应通过查询 `stage_records` 表获取（取该 project_id + mode 下 status 最新的记录），避免模式切换时阶段值被覆盖
-- `valid_papers` 为 0 时不允许切换到深度研究模式或综述模式（前端据此判断是否拦截）
+- Project 不再使用 `mode` 字段作为三模式互斥权威来源。
+- 当前执行阶段**不在本表存储**，应通过查询 Construction Run、Research Session、Review Run 及其步骤记录获取。
+- `valid_papers` 为 0 或不存在可用 Knowledge Version 时，不允许新建 Research Session 或 Review Run。
+- 自动更新是否执行由 Project `status`、系统级 scheduler 配置、Construction Workspace 检索词级 `auto_update_enabled` 共同决定。
 
 **`status` 字段状态说明与触发条件**：
 
 | 状态 | 含义 | 触发条件 |
 | --- | --- | --- |
-| `idle` | 无活动任务，项目可正常操作 | 项目创建时初始值；任务完成/失败处理后回归此状态；用户手动取消任务后 |
-| `running` | 构建模式或综述模式的某个阶段任务正在执行 | 用户启动构建任务或综述阶段任务时写入；定时任务调度器触发时写入 |
-| `paused` | 任务已到达阶段交互暂停点，等待用户操作 | 构建模式/综述模式完成某阶段后进入用户交互等待状态时写入 |
-| `error` | 任务发生不可自动恢复的错误，需用户介入 | LLM 调用重试后仍失败时写入；用户确认错误并决定如何处理后恢复为 `idle` |
-| `archived` | 项目已归档，不再活跃 | 用户主动归档项目时写入；归档后不允许启动新任务 |
+| `active` | Project 处于活跃研究状态 | Project 创建时初始值；用户恢复自动追踪时写入 |
+| `paused` | Project 暂停自动追踪 | 用户暂停 Project 自动追踪时写入 |
+| `archived` | Project 已归档保留 | 用户主动归档 Project 时写入 |
+| `deleted` | Project 删除态 | 用户删除 Project 或执行软删除时写入 |
 
-> **注意**：深度研究模式的对话不改变 `status`，对话本身无"运行中任务"概念，`status` 在对话期间保持 `idle`。
+> **注意**：Construction Run、Research Session、Review Run 的运行中、等待、失败、取消等状态不写入 Project `status`，应由独立实例记录维护。
 
 ---
 
@@ -1025,4 +1061,3 @@ Knowledge Graph Edges (知识图谱边)
 ```
 
 ---
-
