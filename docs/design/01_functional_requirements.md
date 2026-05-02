@@ -8,7 +8,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | Research Paper Base |
-| 文档版本 | v1.20 |
+| 文档版本 | v1.21 |
 | 编写日期 | 2026-04-22 |
 | 编写人 | codearts |
 | 审核人 | 郝彦臻 |
@@ -351,16 +351,15 @@
 
 **功能范围：**
 - 用户可创建、查看、更新、删除或归档自己的 Project。
-- Project 应支持 `active`、`paused`、`archived`、`deleted` 等状态。
+- Project 应支持 `active`、`paused`、`archived`、`deleted` 状态，并可由用户进行切换。
+  - `active` Project 可进入 Workspace 进行交互，并可参与系统级自动构建调度。
+  - `paused` Project 可进入 Workspace 进行交互，但不参与系统级自动构建调度。
+  - `archived` Project 默认只读保留历史，只可查看历史，不可使用互动功能，不参与系统级自动构建调度。
+  - `deleted` Project 不得进入 Workspace。
 - 系统级入口应至少包含 Project 列表/创建入口、用户配置入口、观点广场入口；管理员用户还应看到管理员配置入口。
 - 用户可从 Project 列表选择自己有权限访问的 Project，并进入该 Project Workspace。且在 Project Workspace 中，用户应当能够看到或通过简单操作看到全部系统级入口。
-- `active` Project 可进入 Workspace，并可参与系统级自动构建调度。
-- `paused` Project 可进入 Workspace 和查看历史，也可手动构建，但不参与系统级自动构建调度。
-- `archived` Project 默认只读保留历史，不参与系统级自动构建调度。
-- `deleted` Project 不得进入 Workspace。
-- 用户应能一键暂停或恢复 Project 自动追踪。
 - 进入 Project Workspace 前，系统应完成 Project 可用性检查。
-- Project 列表应展示进入 Workspace 所需的基础可用性信息，例如 Project 状态、是否存在可用 Knowledge Version、最近构建时间、最近活动时间、自动追踪状态。
+- Project 列表应展示进入 Workspace 所需的基础可用性信息，例如 Project 状态、是否存在可用 Knowledge Version、最近构建时间、最近活动时间。
 
 **验收标准：**
 - 用户可创建、查看、更新、删除或归档自己的 Project。
@@ -383,7 +382,6 @@
 
 **功能范围：**
 - 系统级 scheduler 应周期性扫描所有用户的 Project。
-- scheduler 的全局启用状态、执行周期、执行时间窗口和并发上限应来自管理员系统级配置；单个 Project 不维护独立调度器。
 - scheduler 只调度 `active` Project，跳过 `paused`、`archived`、`deleted` Project。
 - scheduler 对每个 active Project 读取其唯一 Construction Workspace。
 - 仅当 Construction Workspace 中存在至少一个 `auto_update_enabled=true` 的检索词时，系统才创建自动 Construction Run。
@@ -393,7 +391,7 @@
 - 同一 Project 已有 active Construction Run 时，应跳过本次调度或延后执行，不得并发写入同一 Project 知识库。
 - 自动 Construction Run 成功后按 `FR-WORKSPACE-008` 提示知识库版本刷新。
 - 自动 Construction Run 完成后触发 `FR-022` 邮件推送。
-- 自动 Construction Run 失败时应记录失败原因，并可在 Project Workspace 查看。
+- 自动 Construction Run 失败时应记录失败原因，并可在 Construction Workspace 查看。
 
 **验收标准：**
 - 系统级 scheduler 能周期性扫描所有用户的 Project。
@@ -407,13 +405,13 @@
 - 自动调度不会在同一 Project 上并发创建多个 active Construction Run。
 - 任务完成后能更新上次执行和下次执行信息。
 - 自动 Construction Run 成功后能生成新的 Knowledge Version，并触发邮件推送。
-- 自动 Construction Run 可在 Project Workspace 中查看状态、配置快照和结果。
+- 自动 Construction Run 可在 Construction Workspace 中查看状态、配置快照和结果。
 - 自动执行失败时能记录错误并通知用户查看。
 
 #### FR-014 观点广场
 
 **需求描述：**
-系统应提供独立于 Project Workspace 的观点广场页面，允许用户单向发布研究观点、结论或实验思路，供其他用户参考，但不提供站内讨论能力。观点广场可从系统级入口或 Project Workspace 跳转进入，但其内容不属于某个 Project Workspace 的 Run/Session。
+系统应提供独立于 Project Workspace 的观点广场页面，允许用户单向发布研究观点、结论或实验思路，供其他用户参考，但不提供站内讨论能力。
 
 **功能范围：**
 - 用户可发布、查看、搜索和筛选观点。
@@ -438,26 +436,26 @@
 #### FR-WORKSPACE-001 Project Workspace 内部入口、框架与对象切换
 
 **需求描述：**
-系统应在用户进入某个 Project 后提供 Project Workspace（项目工作台），用于承载 Project 内的研究入口、主体工作区、信息面板、Run/Session 列表和 Workspace 对象切换。Workspace Shell 负责用户打开或切换 Construction Workspace、Construction Run、Research Session、Review Run，但不负责持久化恢复位置；上下文恢复由 `FR-WORKSPACE-003` 定义。
+系统应在用户进入某个 Project 后提供 Project Workspace（项目工作台），用于承载 Project 内的研究入口、主体工作区、信息面板、Research Session 列表、Review Run 列表和顶层对象切换。Workspace Shell 负责用户打开或切换当前 Project 的唯一 Construction Workspace、Research Session、Review Run；Construction Run 历史入口由 Construction Workspace 内部承载，上下文恢复由 `FR-WORKSPACE-003` 定义。
 
 **功能范围：**
 - Project Workspace 必须绑定用户当前选择的 Project。
 - Workspace 应展示当前 Project 状态，包括 active、paused、archived、deleted 中的可见状态。
-- Workspace 应提供一键暂停或恢复 Project 自动追踪的入口；具体 Project 状态规则由 `FR-008` 定义。
+- Workspace 应提供切换 Project 状态的入口；具体 Project 状态规则由 `FR-008` 定义。
 - Workspace 应展示 Construction Workspace、Research Session、Review Run 的入口。
 - 构建入口打开当前 Project 唯一 Construction Workspace。
 - 深度研究和主题综述入口在 Project 存在可用 Knowledge Version 时可用；不可用时应显示原因和返回构建入口的建议。
-- Workspace 应展示当前 Project 下已有 Construction Run、Research Session 和 Review Run 的列表入口。
-- 用户可从 Workspace 的入口或列表打开 Construction Workspace、历史 Construction Run、Research Session 或 Review Run。
+- Workspace 应展示当前 Project 下已有 Research Session 和 Review Run 的列表入口。
+- Workspace 总列表不直接展示历史 Construction Run；历史 Construction Run 入口、配置快照、日志和重跑来源由 Construction Workspace 内部承载。
+- 用户可从 Workspace 的入口或列表打开 Construction Workspace、Research Session 或 Review Run。
 - 打开或切换 Workspace 对象时，主体流程栏和 Run/Session 信息面板应同步到目标对象。
 - 打开 Construction Workspace 时，应显示长期检索词、自动更新设置、最近 Construction Run 摘要和可启动操作。
-- 打开历史 Construction Run 时，应显示该 Run 的配置快照、执行结果、日志摘要和失败信息。
 - 打开 Research Session 时，应显示对话、历史轮次、知识库摘要和可提问入口。
 - 打开 Review Run 时，应显示大纲、章节、审查状态、导出状态和可继续操作。
 - 如果目标对象运行中，应显示运行状态、阶段和等待用户输入项。
 - 如果目标入口没有历史实例，应显示新建入口和启动说明。
 - 如果 Construction Run 正在运行，Research Session 和 Review Run 可继续读取已绑定的 Knowledge Version，并提示 Project 默认知识库正在更新。
-- Workspace 应提供主体流程栏，用于展示当前选中的 Construction Workspace、Construction Run、Research Session 或 Review Run 内容。
+- Workspace 应提供主体流程栏，用于展示当前选中的 Construction Workspace、Research Session 或 Review Run 内容。
 - Workspace 应提供 Project 信息面板和 Run/Session 信息面板。
 - Workspace 应展示当前 Project 的 Construction Workspace 自动更新设置摘要，例如哪些检索词参与自动更新、每个检索词适用哪些论文检索数据库等。
 - 各信息面板应支持展开/折叠，且展开/折叠状态不应破坏当前 Run/Session 上下文。
@@ -470,10 +468,11 @@
 - 用户可看到 Construction Workspace、Research Session 和 Review Run 的入口。
 - 无可用 Knowledge Version 时，深度研究和主题综述入口禁用并显示需要至少一次 Construction Run 完成作为前置条件的提示。
 - 构建入口打开当前 Project 唯一 Construction Workspace。
-- 用户可查看当前 Project 下已有 Construction Run、Research Session 和 Review Run 的列表入口。
+- 用户可查看当前 Project 下已有 Research Session 和 Review Run 的列表入口。
 - 用户选择一个入口后，主体流程栏和 Run/Session 信息面板展示对应对象内容。
-- 用户能在 Construction Workspace、历史 Construction Run、Research Session 和 Review Run 之间切换。
-- 打开历史 Construction Run 时，用户只能查看其快照、结果和日志，不会把历史 Run 当作长期配置容器。
+- 用户能在 Construction Workspace、Research Session 和 Review Run 之间切换。
+- Project Workspace 总列表不会把历史 Construction Run 与 Research Session / Review Run 平级展示。
+- 用户进入 Construction Workspace 后，才能查看历史 Construction Run 的快照、结果、日志、复制配置和重跑入口。
 - 有运行中任务时，系统明确提示任务状态，不静默中断。
 - 未选择入口时，主体流程栏不会展示错误上下文，可展示空状态或新建入口。
 - 用户可展开或折叠 Project 信息面板、Run/Session 信息面板和自动检索设置摘要。
@@ -526,7 +525,7 @@
 **验收标准：**
 - 用户再次打开 Project Workspace 时，系统能恢复上次打开的 Workspace 对象或安全默认对象。
 - 用户再次打开 Construction Workspace 时，系统能恢复上次查看的构建配置区域和面板状态。
-- 用户再次打开 Construction Run 时，系统能恢复上次查看的步骤、结果或日志位置。
+- 如果用户上次停留在 Construction Workspace 内的某个历史 Construction Run 详情页，系统可在重新打开 Construction Workspace 后恢复到该 Run 的步骤、结果或日志位置。
 - 用户再次打开 Research Session 时，系统能恢复上次查看的对话轮次、滚动位置和输入草稿。
 - 用户再次打开 Review Run 时，系统能恢复上次查看的章节、步骤、引用面板或编辑草稿。
 - 恢复上下文不会自动启动任何写操作、重跑、重新生成、重新检索、导出或覆盖。
@@ -1179,9 +1178,9 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 | FR-006 | 充分 | 必要 | 覆盖系统 LLM、数据源、SMTP、安全配置、连接测试、密钥脱敏、审计 | 通过 |
 | FR-007 | 充分 | 必要 | 覆盖配置解析、个人优先、系统回落、硬限制、邮件组合、密钥隔离、快照、失败拦截 | 通过 |
 | FR-008 | 充分 | 必要 | 覆盖系统级页面入口、Project CRUD/归档、active/paused/archived/deleted 状态、用户隔离、Project 列表可用性信息、进入 Workspace 的权限和状态前置检查，并排除 Workspace 内部操作 | 通过 |
-| FR-WORKSPACE-001 | 充分 | 必要 | 覆盖 Project Workspace 内部 Project 状态展示、Construction Workspace 入口、深研/综述入口、Run/Session 列表、对象打开/切换、主体流程栏、Project 与 Run/Session 信息面板、展开折叠和非写操作边界 | 通过 |
+| FR-WORKSPACE-001 | 充分 | 必要 | 覆盖 Project Workspace 内部 Project 状态展示、Construction Workspace 入口、Research Session / Review Run 列表、顶层对象打开/切换、主体流程栏、Project 与 Run/Session 信息面板、展开折叠和非写操作边界；历史 Construction Run 下放到 Construction Workspace 内部 | 通过 |
 | FR-WORKSPACE-002 | 充分 | 必要 | 覆盖 Project 论文库、PDF、Graph、Knowledge Version、筛选、详情互跳、引用跳转和只读边界 | 通过 |
-| FR-WORKSPACE-003 | 充分 | 必要 | 覆盖 Workspace Context Manager、按对象恢复 Construction Workspace / Construction Run / Research Session / Review Run 的上次查看位置、选中内容、面板状态和输入草稿，并禁止恢复动作触发写操作 | 通过 |
+| FR-WORKSPACE-003 | 充分 | 必要 | 覆盖 Workspace Context Manager、按对象恢复 Construction Workspace / Research Session / Review Run 的上次查看位置、选中内容、面板状态和输入草稿，并支持恢复 Construction Workspace 内部历史 Construction Run 详情页落点；禁止恢复动作触发写操作 | 通过 |
 | FR-WORKSPACE-004 | 充分 | 必要 | 覆盖用户可见的新建、继续、复制、重跑、归档、删除、历史查看和影响范围提示，并将完整生命周期细节下沉到状态机设计 | 通过 |
 | FR-WORKSPACE-005 | 充分 | 必要 | 覆盖已有 Run/Session 状态、阶段、等待项、暂停/恢复/取消/重试、日志摘要、流式回复状态和运行控制反馈 | 通过 |
 | FR-WORKSPACE-006 | 充分 | 必要 | 覆盖流程式 Agent 的步骤容器、步骤状态、步骤动作承载、步骤结果摘要、确认门槛、失败恢复和步骤历史查看，并排除上下文恢复和具体业务步骤内容 | 通过 |
@@ -1267,3 +1266,4 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 | v1.18 | 2026-05-02 | 重构自动构建与推送 FR：新增 Project 状态边界，明确每 Project 唯一 Construction Workspace、多次 Construction Run 执行记录、检索词级数据源策略、手动 selected 检索词与自动更新检索词分离、成功 Run 生成 Knowledge Version | Codex |
 | v1.19 | 2026-05-02 | 重排并瘦身 `FR-WORKSPACE-001~009`：FR 只保留用户可见工作台能力，将生命周期状态机、并发互斥、知识库版本生成与清理等设计下沉到状态机、架构和数据设计文档 | Codex |
 | v1.20 | 2026-05-02 | 重新划定 `FR-WORKSPACE-001/003/006`：对象打开与切换归入 Workspace Shell，Context Manager 统一负责任意 Workspace 对象的上下文恢复，流程式步骤容器只负责步骤页面、步骤动作和步骤结果查看 | Codex |
+| v1.21 | 2026-05-02 | 调整 `FR-WORKSPACE-001` 顶层入口边界：Project Workspace 总面板只直接展示 Construction Workspace、Research Session 列表和 Review Run 列表；历史 Construction Run 入口下放到 Construction Workspace 内部 | Codex |

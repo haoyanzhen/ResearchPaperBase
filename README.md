@@ -1,5 +1,7 @@
 # Research Paper Base
 
+**！It's not finished!**
+
 Research Paper Base 是一个面向研究场景的 Web 应用，围绕一个研究项目提供三类能力：
 
 - 构建模式：检索论文、筛选评分、下载解析、总结分析、定时推送
