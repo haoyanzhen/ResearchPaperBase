@@ -1,7 +1,7 @@
 # Research Paper Base 分层设计总览
 
 文档版本：v0.2
-更新日期：2026-05-02
+更新日期：2026-05-12
 用途：按照 `01_design_layer_template.md` 对现有设计文档进行结构重整，作为后续修订入口。
 
 ## 0. 文档控制
@@ -18,7 +18,7 @@
 | UI 与交互层 | `04_information_architecture_ui.md` | 页面草稿完整度较高，但视觉系统、响应式、可访问性缺失 |
 | 权限与安全层 | `08_security_permissions.md`, `01_functional_requirements.md`, `07_api_contract.md`, `06_data_model.sql`, `09_quality_observability.md` | `08_security_permissions.md` 为占位入口；有用户隔离和管理员规则，但缺少完整权限矩阵 |
 | 质量与可观测层 | `09_quality_observability.md` | 错误信封、健康检查、测试策略较完整，但含实现状态描述 |
-| 运维部署与演进层 | `10_operations_deployment.md`, `01_functional_requirements.md`, `../file_map.md` | `10_operations_deployment.md` 为占位入口；运行环境有描述，部署/迁移/备份设计不足 |
+| 运维部署与演进层 | `10_operations_deployment.md`, `01_functional_requirements.md`, `../file_map.md` | `10_operations_deployment.md` 承载部署、资源、容量、网络、端口、迁移、备份和演进策略；`01_functional_requirements.md` 只保留运行环境摘要 |
 
 文档修订原则：
 
@@ -419,6 +419,8 @@ SSE 待确认：
 
 - 客户端浏览器版本要求。
 - 服务端 OS、Python、内存、存储、网络要求。
+- 20 用户、每用户 10 Project、每 Project 100 篇论文、PDF 平均 10MB 的资源消耗和容量估算。
+- 内存、存储、网络、端口、清理策略和监控阈值建议。
 - 技术栈：React、TypeScript、FastAPI、LangGraph、PostgreSQL、ChromaDB、NetworkX。
 - `file_map.md` 描述了后端、前端、测试、迁移、脚本等实际文件职责。
 
@@ -429,8 +431,8 @@ SSE 待确认：
 - PostgreSQL/ChromaDB/文件存储/GraphML 启动和备份。
 - Alembic 迁移流程和回滚。
 - 定时任务部署形态。
-- 日志采集和告警。
-- 容量估算。
+- 完整日志采集和告警落地方案。
+- 成本控制。
 
 ## 10. 追踪矩阵
 

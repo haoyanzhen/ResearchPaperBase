@@ -1451,3 +1451,156 @@ FR-WORKSPACE中的004和005分别定义了会话切换和会话内的管理操�
 > 是，更合适。FR-WORKSPACE-001 作为 Project Workspace Shell，最好只展示顶层可进入对象
 
 按照这个设计更新 01文件中的 FR-WORKSPACE 部分
+
+---
+
+**FR逐条审计**
+
+仅对 [01_functional_requirements.md](docs/design/01_functional_requirements.md) 进行逐条审计，检查每条FR的设计合理性、必要性、闭环、测试完备性
+
+将审计结果更新到文件中
+
+根据审计结果，目前是否有需要对FR进行结构性变动的地方？
+
+1. FR-WORKSPACE-003 同意拆分；FR-024整体调整为P1，并将对应说明调整为“输出倾向设置按钮，用户可通过选择不同的倾向来控制整体对话风格”
+2. 同意分清边界
+3. 同意
+4. 综述版本管理应当重新设计，如何做版本管理？以何种形式与用户交互？保存粒度如何？FR-030作为P2，原则上同意
+5. 暂时不通过，当前阶段只考虑FR设计内部闭环，之后再进行对外设计
+根据以上调整对 [01_functional_requirements.md](docs/design/01_functional_requirements.md) 进行修改
+
+根据审查表，逐条对FR进行内容调整
+
+---
+
+**刷新知识库版本冲突**
+
+检查 [01_functional_requirements.md](docs/design/01_functional_requirements.md) 中的 FR-WORKSPACE-008，若用户拒绝刷新知识库，再次进行 Counstruction Run时将会引起版本冲突
+
+> 已检查并补强 FR-WORKSPACE-008。目标是避免“用户拒绝/稍后刷新旧知识库依赖后，再次启动 Construction Run”时出现构建基线冲突。
+
+这里是否需要明确应该怎样提示用户？
+
+> 需要，而且我已经补进去了。
+
+用户是否有自主选择刷新知识库版本的交互设计？
+
+```markdown
+原本只有 `P35 知识库版本刷新` 这个弹窗/页面雏形，但没有明确“用户可以自主从哪里打开”。所以答案是：有一半，不够完整。
+
+我已补齐：
+
+- 在 [01_functional_requirements.md](/Users/qingyue/projects/ResearchPaperBase_codex/docs/design/01_functional_requirements.md:673) 增加：用户可从 Project Knowledge Version 信息、Run/Session 绑定版本提示、旧版本依赖提示中主动打开刷新交互。
+- 在验收标准中增加：用户可主动从 Knowledge Version 信息面板或当前 Run/Session 的绑定版本提示打开刷新交互。
+- 在 [04_information_architecture_ui.md](/Users/qingyue/projects/ResearchPaperBase_codex/docs/design/04_information_architecture_ui.md:257) 增加 UI 入口：
+  - Project Info Panel 的 `Versions` 下增加 `[刷新依赖]`
+  - Construction Workspace 的 `KV default` 旁增加 `[版本]`
+  - Research Session 的 `Bound KV` 旁增加 `[刷新]`
+  - P35 增加“打开来源”，并补上“保持旧版本”操作
+```
+
+**综述修改版本管理**
+
+审阅 [01_functional_requirements.md](docs/design/01_functional_requirements.md)  中的 `FR-WORKSPACE-007` 设计，检查其设计理念是否完整闭环以及其可行性
+
+> 结论：设计理念方向是对的，但当前只能算“产品意图闭环”，还不是“实现闭环”。它已经抓住了核心原则：区分 Agent 草稿 / 人工确认 / 人工修改，禁止静默覆盖，失败或取消不得破坏原内容。但若直接进入开发，数据模型、API、并发校验和版本粒度还不够，会产生返工风险。
+
+对文本的版本管理，提炼用户更改的部分是否容易实现？
+
+> 如果目标只是“记录用户改了什么”，容易实现：保存修改前后的文本快照，再做 Markdown/text diff，就能展示新增、删除、修改的片段。
+
+P1/P2放弃掉，只保留P0的功能，并在设计里保留P2“提炼用户更改摘要”的相关说明内容。
+
+综述修改的版本管理是不是放在综述Agent部分更好一些？
+
+> 是的，综述修改的版本管理放在综述 Agent 部分更好。
+> 我建议保留 FR-WORKSPACE-007 当前收窄版，然后把 FR-030 明确描述为“主题综述模式内的追溯与 P2 摘要预留”，而不是看起来像 Workspace 通用版本管理。
+
+除了综述Agent，还有其他地方需要通用保护规则吗？
+
+```markdown
+需要，但范围可以很小。
+
+除了综述 Agent，通用保护规则主要还会影响两类地方：
+
+1. **构建 Agent**
+   - 检索词：用户改过的检索词不应被重新生成静默覆盖。
+   - 筛选结果 / 论文有效性：用户手动调整过的有效/无效判断不应被重新评分覆盖。
+   - AI 分析字段：用户手动补写或修改过的总结、亮点、方法、创新点，不应被重新分析覆盖。
+
+2. **深度研究 Agent**
+   - 对话标题、标签：如果允许用户改名或打标签，后续自动命名/自动分类不应静默覆盖。
+   - 总结文件：用户修改过的总结，不应被重新生成总结静默覆盖。
+
+所以 `FR-WORKSPACE-007` 作为通用规则仍然有必要，但它应该只做“保护底座”，不做复杂版本管理。
+
+建议边界：
+
+- `FR-WORKSPACE-007` 保留：
+  - 内容状态：`Agent 草稿 / 人工确认 / 人工修改`
+  - 覆盖确认：覆盖人工确认或人工修改前必须确认
+  - 最小追溯：最后修改人、时间、来源、内容状态
+  - 失败/取消不破坏原内容
+
+- 各 Agent 自己定义：
+  - 哪些对象可编辑
+  - 哪些动作会触发覆盖风险
+  - 是否需要更细的历史、审查记录、版本摘要
+
+因此：**通用保护规则需要存在，但不应该升级成通用版本管理系统。**
+```
+
+同意，那么对该FR进行拆分，由原本的 WORKSPACE-007 作为基座，在综述Agent部分新增FR，用于综述的版本管理。
+
+**检查硬件资源占用**
+
+根据 [01_functional_requirements.md](docs/design/01_functional_requirements.md) 审查当前设计的硬件资源消耗量，包括网速、端口、内存、储存空间等硬件资源，消耗或占用是否合理？
+
+> 当前资源设计“方向合理，但粒度不足”。对 MVP / 单机小团队试用来说，最低 4GB 内存、推荐 8GB+、最低 20GB 存储、推荐 50GB+ 基本能跑起来；但如果按需求里的多用户、自动构建、PDF 缓存、Graph-RAG、综述导出长期使用，50GB 和 8GB 都偏乐观，且缺少容量上限、清理策略和网络/端口边界。
+
+说明具体什么部分的内容会占用内存&储存，以及目前的设计对网络等的要求
+
+> 当前设计对网络的描述偏粗，对存储和内存的真实增长点没有在需求层讲清楚。最需要补的是：PDF/文本/向量库/图谱/导出文件分别保留多久、单次构建最多处理多少论文、每天自动构建最多跑多少个 Project，以及生产部署的出站网络和端口策略。
+
+这些硬件资源消耗估计与说明是否应该写到设计文件中？如果是，应当写到什么文件中？（目前的设计文件在 [design](docs/design) 下）
+
+> 是，应该写进设计文件，但不建议写进 01_functional_requirements.md。01 只适合保留用户可见的运行环境摘要，例如“最低 4GB、推荐 8GB+”。具体硬件资源消耗估算、容量边界、端口、网络、清理策略，应该放到 10_operations_deployment.md。
+
+实现计划，用户数假定为20，每个课题的假定论文数设置为100，每用户的假定课题数设置为10，PDF平均大小设定为10GMB
+
+**手动上传论文的元数据解析**
+
+[01_functional_requirements.md](docs/design/01_functional_requirements.md)  中的FR-018 论文补充与手动上传 中系统自动解析论文元数据，应该也是一个单独的LLM调用函数？
+
+```markdown
+是的，我建议把 FR-018 里的“系统自动解析论文元数据”明确成一个独立的 LLM 调用函数，但它不应该是唯一手段。
+
+更合理的边界是：
+
+1. 先走确定性解析  
+   DOI、arXiv ID、URL、PDF 内嵌 metadata、标题页文本、Crossref/OpenAlex/Semantic Scholar 等外部 API 查询。
+
+2. 再走独立 LLM 结构化抽取函数  
+   当上传的是 PDF-only，或者规则/API 解析不完整时，调用类似：
+
+   `extract_paper_metadata_with_llm(input_text, file_context) -> PaperMetadataDraft`
+
+   输出应是结构化草稿，例如标题、作者、年份、venue、DOI、arXiv ID、摘要、关键词、置信度、缺失字段、证据片段。
+
+3. 最后进入人工确认  
+   LLM 抽取结果只能作为“待确认元数据”，用户确认或补充后才能进入去重、解析、分析、入库流程。
+
+我建议在 [docs/design/01_functional_requirements.md](/Users/qingyue/projects/ResearchPaperBase_codex/docs/design/01_functional_requirements.md:836) 的 FR-018 中补一句类似：
+
+> 对 PDF-only 或外部标识缺失的上传内容，系统应先尝试规则解析和外部数据源查询；若关键元数据仍不完整，可调用独立的 LLM 元数据抽取函数生成结构化元数据草稿，并标记置信度与证据来源，供用户确认或修改后继续流程。
+
+这样职责会更清楚：FR-018 负责“补充/上传入口和确认流程”，LLM 元数据抽取是其中一个可复用能力，不和 FR-019 的 PDF 全文解析、FR-020 的论文 AI 分析混在一起。
+```
+
+正常情况下，在用户无外部输入，仅上传一篇pdf时，应该是无法获取外部 API 的，对吗？这里的第一步是什么意思呢？
+
+> 对，你这个理解是对的：如果用户只上传一篇 PDF，且没有提供 DOI、arXiv ID、URL、标题等外部输入，系统一开始通常不能直接调用外部论文 API 做可靠查询。因为外部 API 查询至少需要一个检索锚点，比如 DOI、arXiv ID、标题、作者组合等。
+> 所以 FR-018 里应避免写成“上传 PDF 后先查外部 API”。更严谨的流程应该是：
+> PDF-only 上传时，系统先从 PDF 文件本身提取候选元数据；若提取出 DOI、arXiv ID、标题或作者等可查询锚点，再调用外部数据源补全与校验；若本地解析和外部补全后关键元数据仍缺失，可调用独立 LLM 元数据抽取函数生成待确认草稿，并要求用户确认或补充后继续。
+
+可以，按照这个流程进行FR修改
