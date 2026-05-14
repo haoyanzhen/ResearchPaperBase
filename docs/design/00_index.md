@@ -237,8 +237,9 @@ Workspace 入口条件：
 
 - 删除用户：级联删除该用户所有项目、配置、推荐等用户数据。
 - 从课题移除论文：删除 `project_paper_relations`，不删除全局 `papers`。
-- 删除 Project：级联删除项目下关联、阶段、对话、综述等。
-- `papers` 不因某个 Project 移除关联而被删除。
+- 删除 Project：默认先进入软删除状态；用户可选择清理该 Project 私人资产，包括项目下关联、历史 Run/Session、PDF、解析文本、向量索引、GraphML 和任务临时产物。
+- `papers` 作为可复用论文身份与基础元数据，不因某个 Project 移除关联或清理私人资产而被删除。
+- 导出产物属于用户主动生成的保留资产，默认不随 Project 私人资产清理删除，由导出生命周期单独管理。
 
 一致性设计：
 
@@ -248,7 +249,7 @@ Workspace 入口条件：
 待确认：
 
 - ChromaDB 不能自然参与 PostgreSQL 事务，需选择 outbox/补偿/两阶段提交等实现策略。
-- 文件系统中的 PDF、文本、导出产物、GraphML 是否随 DB 删除清理。
+- Project 私人资产清理的执行形态需确认：同步删除、异步任务，或先标记待清理后由后台 worker 回收。
 - `user_configs.is_system_default` 与 `system_configs` 是否保留两套系统默认配置语义。
 - 推荐点赞是否需要新增用户点赞关系表。
 - 综述完整文章版本是否需要新增版本表。

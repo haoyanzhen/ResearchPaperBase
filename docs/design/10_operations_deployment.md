@@ -131,12 +131,13 @@
 
 当前设计必须补齐以下运行策略，否则 20 用户容量基准下存储会持续增长：
 
-- PDF 原文：按版权和团队需求决定是否永久保留；建议支持按 Project、时间、下载状态和引用状态清理。
-- 解析文本：可随 PDF 保留，也可在向量化完成后按策略压缩或清理。
-- 旧 Knowledge Version：active Research Session / Review Run 仍依赖时不得清理；无依赖后可按保留数量或保留天数清理。
-- 向量库：应随 Knowledge Version 清理同步删除旧 collection / namespace / index。
-- 图谱文件：保留最新版本和必要历史版本；全量重建产物应有替换和回滚策略。
-- 导出文件：建议设置默认过期时间，例如 7-30 天，用户可重新生成。
+- PDF 原文：除全局论文基础元数据外，按 Project 私有资产处理；用户应能按 Project、时间、下载状态和引用状态选择清理。
+- 解析文本：按 Project 私有资产处理，可随 PDF 清理，也可在向量化完成后按策略压缩或清理。
+- 历史 Run/Session、Project-Paper 关联和任务临时产物：属于 Project 私人资产，用户应能按 Project 选择清理；清理前必须展示影响范围并二次确认。
+- 旧 Knowledge Version：active Research Session / Review Run 仍依赖时不得清理；无依赖后可由用户按保留数量、保留天数或指定版本清理。
+- 向量库：应随 Knowledge Version 或 Project 私人资产清理同步删除旧 collection / namespace / index。
+- 图谱文件：属于 Project 私人资产；保留最新版本和必要历史版本，全量重建产物应有替换、回滚和用户清理策略。
+- 导出文件：属于用户主动生成的保留产物，默认不随 Project 私人资产清理删除；可设置默认过期时间，例如 7-30 天，用户也可在导出中心单独删除或重新生成。
 - 日志与诊断产物：生产日志需要轮转；E2E trace、截图、视频不应长期保留在生产数据盘。
 - 自动构建：应设置全局并发上限、每 Project 同时一个 Construction Run、每日最大自动构建 Project 数和每日最大 PDF 下载量。
 
