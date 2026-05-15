@@ -1622,3 +1622,13 @@ FR-030 综述版本管理与变更摘要预留 现在的功能范围描述比较
 第4章先不要管，把新的审计结果覆写到第5章
 
 按照审计结果，逐条更新FR，文档版本合并为v1.35
+
+**重整FR顺序**
+
+将 [01_functional_requirements.md](docs/design/01_functional_requirements.md) 中的 FR-WORKSPACE 改为普通FR编号是否可行？
+
+仅读取 [01_functional_requirements.md](docs/design/01_functional_requirements.md) 并重整所有FR编号与顺序，并保留映射关系，以便于后续修改其他文件时的规范查询。
+
+**独立逐条审查**
+
+仅读取 [01_functional_requirements.md](docs/design/01_functional_requirements.md) 并进行FR逐条审查，按照一般项目设计来确定审查内容，并将审查结果以表的形式更新在第5章。
