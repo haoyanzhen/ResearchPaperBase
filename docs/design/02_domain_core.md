@@ -1,7 +1,7 @@
 # Domain Core 设计
 
-文档版本：v1.4  
-更新日期：2026-05-21  
+文档版本：v1.5  
+更新日期：2026-05-22  
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`01-01-FR-reference.md`  
 用途：从 FR 中提炼 Research Paper Base 的核心业务对象、对象关系、状态、生命周期和不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -54,7 +54,8 @@ Domain Core 回答“这个业务世界如何成立”。它必须覆盖所有 P
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
-| `Project` | 长期研究容器 | Project 是 Construction、Research、Review 的共同上下文；用户只能访问有权限的 Project | FR-008 |
+| `Project` | 长期研究容器 | Project 是 Construction、Research、Review 的共同上下文；用户默认拥有自己 Project 的全部权限 | FR-008 |
+| `ProjectPermission` | Project 授权事实 | 权限分为访问、使用和删除；Owner 在账号有效时必须始终拥有自己 Project 的全部权限；跨用户访问/使用授权为 P2 预留能力 | FR-008 |
 | `ConstructionWorkspace` | Project 唯一构建配置容器 | 每个 Project 有且仅有一个；不等同于一次构建运行 | FR-011, FR-020 |
 | `WorkspaceContext` | 用户打开 Project Workspace 时的恢复上下文 | 按用户、Project、对象类型和对象 ID 保存；失效时必须降级到安全空态 | FR-013 |
 | `WorkspaceObjectRef` | Workspace 当前打开对象引用 | 只能指向当前 Project 的 ConstructionWorkspace、ResearchSession 或 ReviewRun | FR-011, FR-014 |
@@ -71,6 +72,10 @@ Project 状态：
 
 Project 不变量：
 
+- Project 权限只分为 `access`、`use`、`delete` 三类：`access` 允许进入 Workspace 和查看 Project 资产；`use` 允许创建、启动、继续或操作 Run/Session、上传补充资料和触发生成等互动能力；`delete` 允许软删除 Project、清理 Project 私人资产或执行等效高风险删除操作。
+- Project Owner 默认拥有自己 Project 的 `access`、`use`、`delete` 全部权限；只要 Owner 账号处于有效状态，这些默认权限不得被撤销、降级或被共享授权配置覆盖。
+- 将 Project 的 `access` 或 `use` 权限授权给其他用户属于 P2 共享协作能力；未实现时不得阻塞 Owner 对自己 Project 的 P0 创建、进入、使用和管理主流程。
+- P0 阶段未实现共享协作授权时，非 Owner 用户不得访问或使用他人 Project。
 - Project 状态切换、归档、软删除和私人资产清理必须经过权限校验。
 - `deleted` 是软删除，不得物理破坏其他 Project、全局论文记录或其他用户数据。
 - Project 私人资产清理只可清理该 Project 独占的运行记录、Run/Session、Project-Paper 关联、PDF、解析文本、向量索引、图谱文件和临时产物。
@@ -298,7 +303,9 @@ manual_edit > manual_confirm > agent_draft
 
 领域权限不变量：
 
-- 用户只能访问自己有权限的 Project、Run/Session、论文关联、导出和诊断。
+- 用户只能访问自己有权限的 Project、Run/Session、论文关联、导出和诊断；Project 权限必须先满足 `access` 才能查看，满足 `use` 才能执行互动写操作，满足 `delete` 才能执行软删除或私人资产清理。
+- 用户账号有效时，系统必须保证其对自己 Project 的 `access`、`use`、`delete` 全部权限始终存在。
+- P2 共享协作授权未实现前，Project 权限不得把他人 Project 暴露给非 Owner 用户，也不得成为 Owner 自用 P0 主流程的前置阻塞。
 - 管理员可治理账号和系统配置，但不得查看用户私人密钥明文。
 - 非管理员不得访问管理员用户治理和系统配置能力。
 - PDF、远程文件、Graph、导出文件等资源不得暴露真实文件路径或无权限远程地址。
@@ -382,3 +389,4 @@ manual_edit > manual_confirm > agent_draft
 | v1.2 | 2026-05-21 | 依据 `01_functional_requirements.md` 重写结构，补齐配置、Workspace、Construction、Knowledge/Evidence、Research、Review、导出、邮件、观点、安全边界和 FR 覆盖检查 | Codex |
 | v1.3 | 2026-05-21 | 补齐账号审计、密码重置、通知收件人、检索词解释字段、Research 会话元数据、观点内容结构和对应领域事件 | Codex |
 | v1.4 | 2026-05-22 | 轻量补强步骤状态、自动确认策略、文档处理状态和 Review 追踪命名一致性 | Codex |
+| v1.5 | 2026-05-22 | 按 `FR-008` 新 Project 权限定义补充访问、使用、删除三类权限和 Owner 默认全权限不变量 | Codex |

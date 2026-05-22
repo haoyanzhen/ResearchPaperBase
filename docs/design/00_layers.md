@@ -1,20 +1,19 @@
 # Research Paper Base 分层设计总览
 
-文档版本：v1.1  
-更新日期：2026-05-21  
-依据文档：`01_functional_requirements.md`、`00-05-layers-design-summary.md`  
+文档版本：v1.2  
+更新日期：2026-05-22  
+依据文档：`01_functional_requirements.md`、`00-00_layer_design_file_mapping.md`  
 用途：作为当前阶段分层设计的总览入口，明确最小必要架构、层间职责、横切约束和后续修订方向。
 
 ## 0. 文档控制
 
-本文将原 `00_index.md` 从“旧设计文件索引与现状盘点”更新为“当前分层设计总览”。本次更新聚焦分层设计本身，对 API 只确认边界层定位，具体端点和字段由 `04_api_contracts.md` 维护。本文暂不维护以下内容：
+本文将原 `00_index.md` 从“旧设计文件索引与现状盘点”更新为“当前分层设计总览”。本次更新聚焦分层设计本身，对 API 只确认边界层定位，具体端点和字段由 `04_api_contracts.md` 维护。本文仅维护层级与当前设计文件的对应关系，不维护以下内容：
 
-- 各类设计文件的完整索引和权威性声明。
 - API 端点、请求响应字段、错误码和 SSE 协议的完整清单。
 - 数据库表字段、迁移脚本和具体存储约束。
 - 已实现/未实现状态流水账。
 
-当前基线采用 `00-05-layers-design-summary.md` 的共层方案，并显式补入必要的 `API Boundary / Contracts`：六个核心层加四个横切约束。也就是保留清晰边界，同时承认 UI 与应用编排之间必须有稳定接口边界。
+当前基线采用本文的共层方案，并显式补入必要的 `API Boundary / Contracts`：六个核心层加四个横切约束。也就是保留清晰边界，同时承认 UI 与应用编排之间必须有稳定接口边界。
 
 ### 0.1 更新前后设计内容映射表
 
@@ -32,6 +31,25 @@
 | 运维、部署与演进层 | `Infrastructure Adapters` 与后续运维设计 | 当前只保留适配边界、部署风险和演进方向 |
 | 追踪矩阵 | FR 设计闭环 | 不维护旧式大表，改为按能力族确认闭环链路 |
 | 下一步修订建议 | MVP 落地顺序 | 从“修补旧文件”改为“围绕新分层逐步重写下游设计” |
+
+### 0.2 当前层级与设计文件对应表
+
+本表只映射当前 `docs/design/` 目录中实际存在的顶层设计文件。独立副本见 `00-00_layer_design_file_mapping.md`。
+
+| 分层/设计域 | 主要设计文件 | 协作设计文件 | 说明 |
+| --- | --- | --- | --- |
+| 分层总览与文件映射 | `00_layers.md`、`00-00_layer_design_file_mapping.md` | `README.md` | `00_layers.md` 定义分层原则；`00-00` 保存层到文件的对应表；`README.md` 作为目录入口。 |
+| Functional Requirements / 需求与验收 | `01_functional_requirements.md` | `01-01-FR-reference.md`、`12_gap_decisions_review.md` | FR 是需求含义和验收标准的最高依据；参考与缺口决策文档用于追溯和审查。 |
+| Domain Core / 领域核心 | `02_domain_core.md` | `01_functional_requirements.md`、`07_data_persistence.md`、`07_data_schema.sql` | 定义核心对象、关系、生命周期、不变量和领域事件，不定义 UI/API/数据库字段细节。 |
+| UI / Workspace | `03_ui_workspace.md` | `01_functional_requirements.md`、`04_api_contracts.md`、`08_security_permissions.md` | 定义系统入口、Project Workspace、对象切换、面板、只读知识资产和用户可见状态。 |
+| API Boundary / Contracts | `04_api_contracts.md` | `05_application_use_cases.md`、`08_security_permissions.md`、`09_quality_observability.md` | 定义 UI 与应用用例之间的 HTTP/SSE/文件访问契约、错误信封和鉴权边界。 |
+| Application Use Cases / 应用编排 | `05_application_use_cases.md` | `02_domain_core.md`、`04_api_contracts.md`、`06_agent_knowledge_services.md`、`08_security_permissions.md` | 定义命令/查询、状态推进、任务提交、锁、幂等和失败诊断的编排边界。 |
+| Agent & Knowledge Services | `06_agent_knowledge_services.md` | `02_domain_core.md`、`05_application_use_cases.md`、`07_data_persistence.md` | 定义 Construction、Research、Review、Graph-RAG、Knowledge Version、引用证据等服务能力。 |
+| Infrastructure / Data Persistence | `07_data_persistence.md`、`07_data_schema.sql` | `06_agent_knowledge_services.md`、`10_operations_deployment.md` | 定义关系库、文件、向量、图谱、同步状态和 SQL schema。 |
+| Security / Permissions | `08_security_permissions.md` | `02_domain_core.md`、`04_api_contracts.md`、`05_application_use_cases.md` | 定义用户隔离、管理员边界、Project 权限、文件访问、归档只读和高风险操作保护。 |
+| Quality / Observability | `09_quality_observability.md` | `04_api_contracts.md`、`05_application_use_cases.md`、`10_operations_deployment.md` | 定义测试、日志、诊断、审计、指标和可观测闭环。 |
+| Operations / Deployment | `10_operations_deployment.md` | `07_data_persistence.md`、`09_quality_observability.md` | 定义部署、容量、调度、备份、清理、运行维护和演进约束。 |
+| Gap / Decisions Review | `12_gap_decisions_review.md` | 全部设计文件 | 保存跨文件缺口、决策、后续修订项和一致性审查结果。 |
 
 ## 1. 设计基线
 
@@ -296,3 +314,11 @@ MVP 实施顺序：
 5. Review Run 的大纲、章节、人工确认、终稿和可导出版本。
 6. 自动构建调度、邮件推送、导出中心、审计和可观测增强。
 7. 观点广场增强、综述版本差异、批量上传、重跑策略、成本仪表盘等 P2 能力。
+
+## 变更记录
+
+| 版本 | 日期 | 变更内容 | 变更人 |
+|------|------|---------|--------|
+| v1.0 | 2026-05-20 | 初始分层设计总览，定义核心层级、横切约束和后续修订方向 | Codex |
+| v1.1 | 2026-05-21 | 按新版设计文档集调整分层定位，与功能需求和下游设计文件对齐 | Codex |
+| v1.2 | 2026-05-22 | 新增当前层级与实际设计文件对应表，并将依据文档更新为 `00-00_layer_design_file_mapping.md` | Codex |
