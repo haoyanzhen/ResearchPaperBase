@@ -1,20 +1,20 @@
 # Research Paper Base 分层设计总览
 
-文档版本：v1.0  
-更新日期：2026-05-16  
+文档版本：v1.1  
+更新日期：2026-05-21  
 依据文档：`01_functional_requirements.md`、`00-05-layers-design-summary.md`  
 用途：作为当前阶段分层设计的总览入口，明确最小必要架构、层间职责、横切约束和后续修订方向。
 
 ## 0. 文档控制
 
-本文将原 `00_index.md` 从“旧设计文件索引与现状盘点”更新为“当前分层设计总览”。本次更新只处理分层设计本身，暂不维护以下内容：
+本文将原 `00_index.md` 从“旧设计文件索引与现状盘点”更新为“当前分层设计总览”。本次更新聚焦分层设计本身，对 API 只确认边界层定位，具体端点和字段由 `04_api_contracts.md` 维护。本文暂不维护以下内容：
 
 - 各类设计文件的完整索引和权威性声明。
-- API 端点、请求响应字段、错误码和 SSE 协议。
+- API 端点、请求响应字段、错误码和 SSE 协议的完整清单。
 - 数据库表字段、迁移脚本和具体存储约束。
 - 已实现/未实现状态流水账。
 
-当前基线采用 `00-05-layers-design-summary.md` 的共层方案：五个核心层加四个横切约束。也就是保留清晰边界，但不把早期架构拆成过多顶层。
+当前基线采用 `00-05-layers-design-summary.md` 的共层方案，并显式补入必要的 `API Boundary / Contracts`：六个核心层加四个横切约束。也就是保留清晰边界，同时承认 UI 与应用编排之间必须有稳定接口边界。
 
 ### 0.1 更新前后设计内容映射表
 
@@ -25,7 +25,7 @@
 | 信息架构与用户流程层 | `UI / Workspace` | 保留 System Shell、Project Workspace、对象切换、只读知识面板等体验边界 |
 | 状态机与业务流程层 | `Application Use Cases`、`State & Locks` | 状态推进、任务启动、锁、幂等等统一归入应用编排和横切约束 |
 | 数据模型层 | `Domain Core`、`Agent & Knowledge Services`、`Infrastructure Adapters` | 不在总览中展开表结构，只保留知识资产、版本、同步状态和适配边界 |
-| API 契约层 | `Application Use Cases` | 本文只定义应用入口职责，不展开接口清单 |
+| API 契约层 | `API Boundary / Contracts` | 显式作为 UI 与 Application Use Cases 之间的接口边界；具体契约由 `04_api_contracts.md` 维护 |
 | UI 与交互层 | `UI / Workspace` | 与信息架构合并为前端体验层 |
 | 权限与安全层 | `AuthZ` 横切约束 | 权限、安全、文件访问和 archived 只读作为统一横切规则 |
 | 质量、测试与可观测层 | 设计闭环与后续增强 | 暂不作为独立核心层，但每条 P0/P1 FR 必须保留测试和诊断入口 |
@@ -39,6 +39,8 @@
 
 ```text
 UI / Workspace
+  ↓
+API Boundary / Contracts
   ↓
 Application Use Cases
   ↓
@@ -55,6 +57,7 @@ Infrastructure Adapters
 
 - `01_functional_requirements.md` 仍是需求含义和验收标准的最高依据。
 - 上层通过下层提供的能力完成用例，下层不反向依赖上层页面、接口或具体 Agent UI。
+- `API Boundary / Contracts` 只负责接口协议、鉴权入口、错误信封、SSE 事件和文件访问边界，不承载业务规则。
 - 同层可以包含多个有明确边界的能力目录，例如 `agents/` 与 `knowledge/` 同属服务层，但依赖方向必须保持清楚。
 - P0/P1 能力优先形成产品闭环；P2 能力先保留扩展点，不提前扩大架构体量。
 
@@ -107,7 +110,27 @@ Infrastructure Adapters
 - 只读知识资产面板只允许查看、筛选、跳转和下载授权资源。
 - 前端禁用态只改善体验，最终判定必须由应用编排和权限约束兜底。
 
-## 4. 应用编排与业务流程层
+## 4. API 边界与接口契约层
+
+`API Boundary / Contracts` 位于 `UI / Workspace` 与 `Application Use Cases` 之间，负责把用户界面、外部调用和流式通道稳定映射到应用用例。
+
+主要职责：
+
+- 定义 HTTP/SSE 入口、资源命名、请求响应信封、分页、幂等键和文件访问方式。
+- 统一认证入口、权限失败响应、Project 状态失败响应、配置失败响应、锁冲突响应和 Provider 失败响应。
+- 将 UI 操作映射为 Application Command/Query，不把数据库表裸露为无约束 CRUD。
+- 为长任务和流式回复提供状态事件、错误事件、结束事件和断线恢复约定。
+- 对 PDF、Graph、导出文件等资源只暴露鉴权下载流或短期签名 URL，不暴露真实文件路径。
+
+边界：
+
+- 不承载 Project 状态机、内容保护、配置解析、锁获取、Agent 调用或数据写入规则。
+- 不把 Provider SDK 原始错误、数据库异常、密钥明文或内部文件路径泄漏给 UI。
+- 不允许绕过 Application Use Cases 直接调用 Agent、Knowledge 或 Infrastructure Adapters。
+
+具体 API 契约、端点骨架、错误分类和 SSE 事件由 `04_api_contracts.md` 维护。
+
+## 5. 应用编排与业务流程层
 
 `Application Use Cases` 是所有写操作和重要读操作的统一入口。它把用户意图转成可校验、可审计、可恢复的业务操作。
 
@@ -124,7 +147,7 @@ Infrastructure Adapters
 - 不把数据库表结构、Provider SDK 类型或外部错误结构泄漏给 UI。
 - 不让基础设施适配器绕过用例直接写业务状态。
 
-## 5. Agent 与 Knowledge 共层设计
+## 6. Agent 与 Knowledge 共层设计
 
 `Agent` 和 `Knowledge` 采用共层方案：它们同属 `Agent & Knowledge Services`，但内部边界必须明确。
 
@@ -163,7 +186,7 @@ Infrastructure Adapters
 - Knowledge 是可复用基础能力，Agent 可以使用 Knowledge，但 Knowledge 不应依赖具体 Construction、Research 或 Review。
 - 如果后续 Knowledge 被更多 Agent、导出、搜索、UI 面板稳定复用，可自然拆成独立层。
 
-## 6. 数据、检索与外部适配层
+## 7. 数据、检索与外部适配层
 
 `Infrastructure Adapters` 负责外部系统和底层技术实现，不能承载业务规则。
 
@@ -189,7 +212,7 @@ Infrastructure Adapters
 - PDF、Graph、导出文件等资源必须通过鉴权或签名访问，不暴露真实文件路径。
 - 外部错误必须转换为可诊断分类，例如缺失配置、密钥失效、限流、连接失败、权限过期、文件缺失、解析失败或同步失败。
 
-## 7. 权限、安全与横切治理层
+## 8. 权限、安全与横切治理层
 
 以下能力不建议早期拆成独立顶层，但必须作为所有层共同遵守的横切约束。
 
@@ -202,13 +225,13 @@ Infrastructure Adapters
 
 这些约束应体现在用例、领域规则、存储状态、测试和 UI 禁用原因中，而不是只写在前端按钮或文档备注里。
 
-## 8. 质量、测试与可观测层
+## 9. 质量、测试与可观测层
 
 质量、测试与可观测不作为当前架构的独立核心层，但必须进入 P0/P1 设计闭环。
 
 最低要求：
 
-- 每个 P0/P1 用例至少能追踪到 UI 入口、应用用例、领域或 Agent 规则、知识或数据写入、权限检查和测试入口。
+- 每个 P0/P1 用例至少能追踪到 UI 入口、API 契约、应用用例、领域或 Agent 规则、知识或数据写入、权限检查和测试入口。
 - 长流程必须记录可诊断状态，包括运行中、等待用户、失败、取消、部分成功、降级和可重试信息。
 - 外部 Provider 失败不得静默混入成功结果。
 - LLM 输出、引用、章节、综述终稿等内容必须有结构化校验入口。
@@ -216,7 +239,7 @@ Infrastructure Adapters
 
 后续可以再把审计、健康检查、日志、指标、告警和 Inspector 设计展开为独立质量与可观测文档。
 
-## 9. 运维、部署与演进层
+## 10. 运维、部署与演进层
 
 运维部署当前不作为分层设计的主轴，但架构必须预留以下演进空间：
 
@@ -228,12 +251,13 @@ Infrastructure Adapters
 
 早期实现应优先保证适配器边界清晰，而不是提前建设完整运维平台。
 
-## 10. FR 追踪与设计闭环
+## 11. FR 追踪与设计闭环
 
 P0/P1 FR 必须至少形成以下闭环：
 
 ```text
 UI 入口
+  -> API Contract / Boundary
   -> Application Command/Query
   -> Domain / Agent Rule
   -> Knowledge / Data Persistence
@@ -246,20 +270,20 @@ UI 入口
 
 | FR 范围 | 主落位 | 协作落位 |
 | --- | --- | --- |
-| FR-001~007 账号、配置、管理员 | `Domain Core`、`Application Use Cases`、横切约束 | `UI / Workspace`、`Infrastructure Adapters` |
-| FR-008~019 Project Workspace 通用能力 | `UI / Workspace`、`Application Use Cases`、`Domain Core` | `Agent & Knowledge Services`、横切约束 |
-| FR-020~027 构建模式 | `agents/construction`、`knowledge/` | `Application Use Cases`、`Infrastructure Adapters`、横切约束 |
-| FR-028~031 深度研究模式 | `agents/research`、`knowledge/` | `UI / Workspace`、`Application Use Cases`、横切约束 |
-| FR-032~036 主题综述模式 | `agents/review`、`knowledge/` | `UI / Workspace`、`Application Use Cases`、横切约束 |
+| FR-001~007 账号、配置、管理员 | `Domain Core`、`Application Use Cases`、横切约束 | `UI / Workspace`、`API Boundary / Contracts`、`Infrastructure Adapters` |
+| FR-008~019 Project Workspace 通用能力 | `UI / Workspace`、`API Boundary / Contracts`、`Application Use Cases`、`Domain Core` | `Agent & Knowledge Services`、横切约束 |
+| FR-020~027 构建模式 | `agents/construction`、`knowledge/` | `API Boundary / Contracts`、`Application Use Cases`、`Infrastructure Adapters`、横切约束 |
+| FR-028~031 深度研究模式 | `agents/research`、`knowledge/` | `UI / Workspace`、`API Boundary / Contracts`、`Application Use Cases`、横切约束 |
+| FR-032~036 主题综述模式 | `agents/review`、`knowledge/` | `UI / Workspace`、`API Boundary / Contracts`、`Application Use Cases`、横切约束 |
 
-## 11. 下一步修订建议
+## 12. 下一步修订建议
 
 建议按以下顺序推进后续设计，而不是继续在旧总览中修补接口或文件索引：
 
 1. 以本文为分层基线，重写领域模型设计，稳定 Project、Run/Session、Knowledge Version、Paper 和内容保护规则。
 2. 重写状态流程设计，统一 Project、Run/Session、Stage、Task、锁、等待用户、失败、取消和刷新语义。
 3. 重写数据与知识资产设计，明确关系库、文件、向量、图谱、Knowledge Version 和同步失败处理。
-4. 重写 API 契约，按 Application Command/Query 组织接口，而不是按数据库表裸露 CRUD。
+4. 维护 API 契约，按 Application Command/Query 组织接口，而不是按数据库表裸露 CRUD。
 5. 重写 UI / Workspace 设计，聚焦 System Shell、Project Workspace、Agent Workbench 和只读 Knowledge Asset Panel。
 6. 补齐权限、安全、质量、可观测和运维设计，优先覆盖 P0/P1 闭环。
 
