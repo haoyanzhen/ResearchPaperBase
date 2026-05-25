@@ -1,13 +1,13 @@
 # Domain Core 设计
 
-文档版本：v1.5  
-更新日期：2026-05-22  
+文档版本：v1.7
+更新日期：2026-05-25
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`01-01-FR-reference.md`  
 用途：从 FR 中提炼 Research Paper Base 的核心业务对象、对象关系、状态、生命周期和不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
 ## 1. 设计边界
 
-Domain Core 回答“这个业务世界如何成立”。它必须覆盖所有 P0/P1 FR 背后的稳定业务概念和不可绕过规则，但不逐字复写 FR 的用户交互和验收细节。
+Domain Core 回答“这个业务世界如何成立”。它必须覆盖所有 P0/P1 FR 背后的稳定业务概念和不可绕过规则，用于开发的标准规则。
 
 冲突裁决：
 
@@ -94,8 +94,7 @@ Project 不变量：
 | `ReviewRun` | 流程式写作运行 | Knowledge Version 消费者 | 创建时绑定 Knowledge Version；大纲、章节、终稿和可导出版本受内容保护和写锁约束 | FR-032~036 |
 | `ExportJob` | 异步产物任务 | 授权读取者 | 导出范围必须绑定用户有权限访问的 Project/Run/Session；不得绕过 Review 终稿生成规则 | FR-019, FR-030, FR-034 |
 | `EmailPushJob` | 邮件推送任务 | 授权通知者 | 只推送当前 Project 中未推送且用户有权限接收的有效论文；空邮件不得发送 | FR-004, FR-009, FR-027 |
-| `Viewpoint` | 观点广场内容 | 独立于 Project Workspace；包含类型、标题、正文、标签和允许范围内的联系信息；禁止评论；作者可删除，管理员可隐藏 | FR-010 |
-| `AutoConfirmationPolicy` | 自动 ConstructionRun 的人工等待点处理策略 | 只能处理可安全自动确认的低风险等待点；遇到必须人工判断的风险项时必须转入 waiting_user 或 failed | FR-009 |
+| `AutoConfirmationPolicy` | 自动 ConstructionRun 的人工等待点处理策略 | 决策确定者 | 只能处理可安全自动确认的低风险等待点；遇到必须人工判断的风险项时必须转入 waiting_user 或 failed | FR-009 |
 
 ### 3.2 通用状态
 
@@ -132,7 +131,7 @@ Project 不变量：
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
-| `SearchTermSet` | Project 检索词集合 | 属于 ConstructionWorkspace；用于手动 selected 构建和自动更新 | FR-020 |
+| `SearchTermSet` | Project 检索词集合 | 属于 ConstructionWorkspace；用于手动 selected 构建和自动更新；每条检索词应能够单独管理，包括编辑、删除、是否参与自动更新等 | FR-020 |
 | `SearchTermVersion` | 检索词内容快照 | 保存自然语言关键词、布尔表达式、同义词/缩写、排除词、生成理由、预期覆盖方向、确认时间、修改来源、自动更新开关和数据源策略 | FR-020 |
 | `SelectedSearchTerms` | 手动 Run 本次选择的检索词集合 | 不改变检索词自身的自动更新开关 | FR-014, FR-021 |
 | `AutoUpdateSearchTerms` | 自动 Run 使用的检索词集合 | 只包含 `auto_update_enabled=true` 的检索词 | FR-009, FR-021 |
@@ -147,12 +146,11 @@ Project 不变量：
 
 Construction 不变量：
 
-- 手动 ConstructionRun 使用用户本次 selected 检索词集合；自动 ConstructionRun 使用自动更新检索词集合。
+- 手动 ConstructionRun 使用用户本次 selected 检索词集合；自动 ConstructionRun 使用由用户维护配置的检索词集合。
 - 历史 ConstructionRun 必须能基于启动时配置快照复现当时的检索词内容和数据源策略，即使当前检索词已被修改或删除。
 - 检索词未确认时，手动构建不得进入多源检索阶段。
 - 检索词生成失败时，用户手动输入并确认的检索词应形成同等可追溯的 SearchTermVersion。
 - 不存在独立的检索词 `enabled` 领域状态；手动构建是否使用某个检索词只由本次 SelectedSearchTerms 决定，自动构建是否使用只由 `auto_update_enabled` 决定。
-- 自动 ConstructionRun 不得借自动确认策略越过人工确认门槛；自动确认策略无法安全处理的等待项必须进入 `waiting_user` 或 `failed`。
 - 所有实际数据源均失败或不可解析时，不得进入去重、评分与筛选阶段。
 - 单个数据源失败不得破坏其他成功数据源结果；失败数据源、失败原因和受影响检索词必须可诊断。
 - 命中当前 Project 已有关联论文的候选项不得进入下载、解析、AI 分析、入库、图谱更新或推送流程。
@@ -163,8 +161,36 @@ Construction 不变量：
 - 摘要降级文本可进入后续分析、向量化或 RAG，但必须标记为摘要降级来源，不能冒充全文解析。
 - 用户确认后的 PaperAnalysis 才能作为入库、深研和综述上下文使用。
 - 图谱创建、增量更新、重建和修复只能由 ConstructionRun 触发；ResearchSession、ReviewRun 和只读知识资产入口不得触发图谱写入。
+- 首次成功 ConstructionRun 触发图谱创建；之后的手动 ConstructionRun 默认只触发本次新增或变更论文所需的图谱增量更新，只有用户在 Construction 面板维护入口明确选择重建时才触发图谱重建；自动 ConstructionRun 作为无人值守维护窗口，在自动检索、入库和向量同步达到可发布条件后，应对当前 Project 图谱执行重建或修复性重建；若本次及上次成功重建后无知识库变更，可跳过重建。
 
-## 5. Knowledge 与 Evidence 领域模型
+## 5. Project 知识资产面板领域模型
+
+Project 知识资产面板是 Workspace 中提供 Project 原生知识信息的主要只读侧边栏。它不拥有知识资产，也不执行写入；它以当前用户权限、当前 Project、默认 KnowledgeVersion 和当前打开 Run/Session 绑定 KnowledgeVersion 为边界，组织论文库、论文详情、PDF/远程文件入口、Graph 图谱和版本信息。
+
+| 对象 | 定位 | 核心规则 | 关联 FR |
+| --- | --- | --- | --- |
+| `ProjectKnowledgeAssetPanel` | Workspace 知识资产只读侧边栏 | 聚合当前 Project 的论文库投影、Graph 投影、PDF/远程文件访问入口、默认 KnowledgeVersion 和当前 Run/Session 绑定 KnowledgeVersion | FR-012, FR-011, FR-018 |
+| `ProjectPaperLibraryView` | Project 论文库只读投影 | 只能展示当前 Project 可访问论文的统计、列表、详情、评分、有效性、推送状态、引用状态和已确认 AI 分析 | FR-012 |
+| `ProjectPaperFilter` | 论文库筛选条件 | 筛选只作用于当前 Project 可访问论文；支持标题、摘要、作者、来源、评分、有效性、推送状态和引用状态 | FR-012 |
+| `PaperAssetDetail` | 论文详情只读上下文 | 汇总 ProjectPaper、PaperIdentity、DocumentAsset、DocumentProcessingState、PaperAnalysis 和关联 Graph 节点引用 | FR-012, FR-024, FR-025 |
+| `DocumentAccessRef` | PDF 或远程文件访问引用 | 只暴露鉴权后可打开的内部引用、签名 URL 或安全空态；不得暴露真实文件路径或无权限远程地址 | FR-012, FR-024 |
+| `ProjectGraphView` | Project Graph 只读投影 | 只能展示当前 Project、指定 KnowledgeVersion 范围内可访问的论文、作者、关键词、概念、方法等节点和关系边 | FR-012, FR-026, FR-031, FR-033 |
+| `KnowledgeAssetEmptyState` | 知识资产安全空态 | 记录 Graph、PDF、远程文件、KnowledgeVersion、论文或引用目标缺失、过期、越权、版本不匹配等原因和可用下一步建议 | FR-012, FR-013, FR-031 |
+
+知识资产面板不变量：
+
+- ProjectKnowledgeAssetPanel 只能读取当前用户满足 `access` 权限的 Project 资产；P2 共享未实现前不得展示其他 Owner 的 Project 资产。
+- ProjectPaperLibraryView 的统计、列表、详情和筛选结果必须全部限定在当前 Project 的 ProjectPaper 范围内，不得直接展示全局 PaperIdentity 中未关联到当前 Project 的论文。
+- ProjectPaperFilter 不改变论文库内容、评分、有效性、推送状态、AI 分析或引用状态；筛选为空时只能返回空结果或安全空态。
+- PaperAssetDetail 只能展示用户有权访问的 ProjectPaper、DocumentAsset、已确认 PaperAnalysis 和可映射 GraphEntityRef；缺失任一部分时不得拼接其他 Project 或其他 KnowledgeVersion 的上下文补齐。
+- DocumentAccessRef 必须由授权检查、签名 URL 或等效受控访问机制生成；PDF 或远程文件缺失、过期、未授权或解析失败时必须进入 KnowledgeAssetEmptyState。
+- ProjectGraphView 必须绑定 Project 和 KnowledgeVersion；默认展示 Project 当前默认 KnowledgeVersion，来自 ResearchSession 或 ReviewRun 的引用跳转必须尊重其绑定 KnowledgeVersion。
+- 论文详情与 Graph 节点之间的互跳只能改变只读查看焦点，不得触发上传、删除、重新下载、重新解析、重新评分、重新分析、入库、推送、图谱增量更新、图谱重建或修复。
+- ResearchSession 或 ReviewRun 的引用跳转到知识资产面板时，必须校验引用的 Project、KnowledgeVersion、论文、文段和 GraphEntityRef；越权、缺失、过期或版本不匹配时只能进入 KnowledgeAssetEmptyState。
+- KnowledgeAssetEmptyState 可以给出返回 ConstructionWorkspace、刷新依赖、等待构建完成或联系管理员等下一步建议，但建议本身不得绕过对应权限和写入入口。
+- ConstructionRun 正在写入新的 KnowledgeVersion 时，知识资产面板可继续展示已发布的默认版本或当前 Run/Session 绑定版本，并提示默认知识库正在更新；不得读取未发布半成品作为可用资产。
+
+## 6. Knowledge 与 Evidence 领域模型
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
@@ -186,7 +212,7 @@ Knowledge 不变量：
 - 旧版本依赖不得被隐式作为新 ConstructionRun 的写入基线。
 - 引用跳转必须尊重引用产生时绑定的 KnowledgeVersion；缺失、越权、过期或版本不匹配时只能进入安全空态。
 
-## 6. Research Session 领域规则
+## 7. Research Session 领域规则
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
@@ -209,7 +235,7 @@ Research 不变量：
 - 输出倾向切换不得清空对话上下文，不得改变 KnowledgeVersion 绑定，不得改写历史消息、引用或总结。
 - ResearchSession 不得修改论文库、上传论文、移除论文关联或触发图谱重建。
 
-## 7. Review Run 领域规则
+## 8. Review Run 领域规则
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
@@ -238,7 +264,7 @@ Review 不变量：
 - P2 历史版本回退必须二次确认，并生成新的当前版本；不得删除原历史版本。
 - 用户更改摘要只能作为辅助说明，不得替代原始内容、修改元数据、人工确认、权限判断或验收依据。
 
-## 8. 内容保护与人工修改
+## 9. 内容保护与人工修改
 
 关联 FR：FR-017、FR-035、FR-036。
 
@@ -263,19 +289,19 @@ manual_edit > manual_confirm > agent_draft
 - 失败或取消的重新生成不得破坏原内容。
 - 未实现版本列表、版本差异或回退时，不得影响 P0 人工修改保护和重新生成确认。
 
-## 9. 导出、邮件与观点
+## 10. 导出、邮件与观点
 
-### 9.1 导出
+### 10.1 导出
 
 导出不变量：
 
 - 导出内容只能包含用户有权限访问的 Project、Run/Session 和文件。
 - 导出 Project 私人资产时，缺失文件、无权限文件或生成失败项应记录为跳过项或失败项，不得导致可导出部分整体失败。
-- 导出中心不得绕过 ReviewRun 的终稿生成、终审和可导出版本确认规则。
+- 导出综述时不得绕过 ReviewRun 的终稿生成、终审和可导出版本确认规则。
 - 大文件或多文件导出必须作为可诊断任务处理，并记录导出范围快照、文件生成结果、过期或清理状态、失败分类。
 - Project 私人资产清理默认不删除已完成导出结果。
 
-### 9.2 邮件推送
+### 10.2 邮件推送
 
 邮件推送不变量：
 
@@ -287,7 +313,7 @@ manual_edit > manual_confirm > agent_draft
 - 推送状态必须与发送结果一致；发送失败论文不得标记为已推送，部分成功时必须区分成功项和失败项。
 - 邮件内容应能追溯论文来源检索词和来源数据源。
 
-### 9.3 观点广场
+### 10.3 观点广场
 
 观点不变量：
 
@@ -299,7 +325,7 @@ manual_edit > manual_confirm > agent_draft
 - 联系信息只允许用户名或邮箱，不得展示其他私密联系方式。
 - 观点搜索和筛选只能返回当前用户有权查看且未被删除或隐藏的观点。
 
-## 10. 权限、安全与只读边界
+## 11. 权限、安全与只读边界
 
 领域权限不变量：
 
@@ -312,7 +338,7 @@ manual_edit > manual_confirm > agent_draft
 - Project 知识资产面板、Research 引用跳转、Review 引用跳转均为只读探索入口，不得上传、删除、重新下载、重新解析、重新评分、重新分析、入库、推送或图谱重建。
 - 高风险操作必须具备影响范围预览、二次确认或明确覆盖确认，包括 Project 私人资产清理、删除/归档、管理员权限变更、内容覆盖、清空 Project 论文关联和历史版本回退。
 
-## 11. 领域事件
+## 12. 领域事件
 
 领域层应至少发出以下事件，供应用层提交任务、通知、审计、诊断或 UI 刷新：
 
@@ -356,12 +382,12 @@ manual_edit > manual_confirm > agent_draft
 
 事件不携带密钥明文、真实文件路径、Provider 原始错误对象或其他用户数据。
 
-## 12. FR 覆盖检查
+## 13. FR 覆盖检查
 
 | FR 范围 | Domain 覆盖点 |
 | --- | --- |
 | FR-001~007 | User、UserProfile、AdminRole、PasswordResetRequest、AccountAuditRecord、User/System Config、NotificationRecipient、SystemConfigAuditRecord、RuntimeConfigSnapshot、配置解析与密钥隔离不变量 |
-| FR-008~019 | Project、Workspace、Run/Session、状态、锁、KnowledgeVersion、内容保护、导出不变量 |
+| FR-008~019 | Project、Workspace、ProjectKnowledgeAssetPanel、ProjectPaperLibraryView、ProjectGraphView、DocumentAccessRef、KnowledgeAssetEmptyState、Run/Session、状态、锁、KnowledgeVersion、内容保护、导出不变量 |
 | FR-020~027 | ConstructionWorkspace、SearchTermVersion、CandidatePaper、PaperIdentity、ProjectPaper、DocumentAsset、PaperAnalysis、KnowledgeSyncState、EmailPushJob |
 | FR-028~031 | ResearchSession、ResearchSessionMetadata、ResearchMessage、ResearchStreamAttempt、ResearchOutputPreference、ResearchSummary、CitationEvidence |
 | FR-032~036 | ReviewRun、ReviewOutline、ReviewChapter、ReviewFinalDraft、ReviewExportableVersion、ReviewChapterTrace、ReviewVersionSnapshot |
@@ -390,3 +416,5 @@ manual_edit > manual_confirm > agent_draft
 | v1.3 | 2026-05-21 | 补齐账号审计、密码重置、通知收件人、检索词解释字段、Research 会话元数据、观点内容结构和对应领域事件 | Codex |
 | v1.4 | 2026-05-22 | 轻量补强步骤状态、自动确认策略、文档处理状态和 Review 追踪命名一致性 | Codex |
 | v1.5 | 2026-05-22 | 按 `FR-008` 新 Project 权限定义补充访问、使用、删除三类权限和 Owner 默认全权限不变量 | Codex |
+| v1.6 | 2026-05-25 | 逐条审查并明确边界 | haoyanzhen |
+| v1.7 | 2026-05-25 | 将 `FR-012` Project 知识资产面板提升为独立领域模型，补充只读资产投影、筛选、Graph 版本边界、文件访问引用和安全空态规则 | Codex |
