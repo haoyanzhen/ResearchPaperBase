@@ -1,7 +1,7 @@
 # Domain Core 设计
 
-文档版本：v1.7
-更新日期：2026-05-25
+文档版本：v1.9
+更新日期：2026-05-26
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`01-01-FR-reference.md`  
 用途：从 FR 中提炼 Research Paper Base 的核心业务对象、对象关系、状态、生命周期和不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -58,6 +58,8 @@ Domain Core 回答“这个业务世界如何成立”。它必须覆盖所有 P
 | `ProjectPermission` | Project 授权事实 | 权限分为访问、使用和删除；Owner 在账号有效时必须始终拥有自己 Project 的全部权限；跨用户访问/使用授权为 P2 预留能力 | FR-008 |
 | `ConstructionWorkspace` | Project 唯一构建配置容器 | 每个 Project 有且仅有一个；不等同于一次构建运行 | FR-011, FR-020 |
 | `WorkspaceContext` | 用户打开 Project Workspace 时的恢复上下文 | 按用户、Project、对象类型和对象 ID 保存；失效时必须降级到安全空态 | FR-013 |
+| `WorkspacePanelState` | Workspace 基础面板状态 | 只保存当前用户在当前 Project 下的面板打开、折叠、焦点和基础筛选状态；不得影响 Project 资产、Run/Session 状态或知识库版本 | FR-013 |
+| `WorkspaceInputDraft` | Workspace 输入草稿 | 按用户、Project、对象类型和对象 ID 保存未提交输入；只能恢复为草稿，不得自动提交、启动任务或覆盖已确认内容 | FR-013, FR-017 |
 | `WorkspaceObjectRef` | Workspace 当前打开对象引用 | 只能指向当前 Project 的 ConstructionWorkspace、ResearchSession 或 ReviewRun | FR-011, FR-014 |
 | `ProcessStep` | 流程式 Agent 的业务步骤状态与结果摘要 | 只记录业务阶段、等待项、错误分类和结果摘要；步骤动作必须能追溯到对应 Agent FR，不得提供无法追溯的写操作或承载 UI 展示细节 | FR-016 |
 
@@ -82,6 +84,10 @@ Project 不变量：
 - Project 私人资产清理不得删除全局论文身份、其他 Project 仍引用的共享论文、其他用户数据或默认保留的已完成导出文件。
 - Workspace 上下文恢复不得自动触发重跑、重新生成、重新检索、导出或覆盖。
 - 已删除、无权限、归档只读或状态不允许继续的上下文不得恢复为可写状态。
+- WorkspaceContext 只能恢复当前用户有权访问的当前 Project 对象；目标对象不存在、已删除、越权、类型不匹配或 Project 状态不允许时，必须降级到安全空态并保留可诊断原因。
+- WorkspacePanelState 只能影响显示偏好和只读筛选焦点；不得改变论文有效性、评分、推送状态、KnowledgeVersion、Run/Session 状态或任何 Agent 步骤结果。
+- WorkspaceInputDraft 只能保存用户尚未提交的输入文本、选项草稿或局部编辑草稿；恢复后仍必须由用户显式提交或确认，且不得覆盖人工确认或人工修改内容。
+- 更细粒度的滚动位置、日志定位和步骤落点恢复属于 P1 增强；未实现时不得影响 P0 的对象恢复、基础面板状态和输入草稿恢复。
 
 ## 3. Run / Session 生命周期
 
@@ -132,30 +138,37 @@ Project 不变量：
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
 | `SearchTermSet` | Project 检索词集合 | 属于 ConstructionWorkspace；用于手动 selected 构建和自动更新；每条检索词应能够单独管理，包括编辑、删除、是否参与自动更新等 | FR-020 |
-| `SearchTermVersion` | 检索词内容快照 | 保存自然语言关键词、布尔表达式、同义词/缩写、排除词、生成理由、预期覆盖方向、确认时间、修改来源、自动更新开关和数据源策略 | FR-020 |
+| `SearchTermVersion` | 检索词内容快照 | 保存自然语言关键词、布尔表达式、同义词/缩写、排除词、生成理由、预期覆盖方向、确认时间、修改来源、自动更新开关和数据源策略；新生成或新增检索词默认 `auto_update_enabled=true` | FR-020 |
 | `SelectedSearchTerms` | 手动 Run 本次选择的检索词集合 | 不改变检索词自身的自动更新开关 | FR-014, FR-021 |
 | `AutoUpdateSearchTerms` | 自动 Run 使用的检索词集合 | 只包含 `auto_update_enabled=true` 的检索词 | FR-009, FR-021 |
 | `DataSourcePolicy` | 检索词级数据源策略 | 未显式选择时默认使用用户和系统当前可解析的全部数据源 | FR-020, FR-021 |
 | `CandidatePaper` | 检索得到的候选论文 | 必须记录来源检索词、来源数据源和基础元数据 | FR-021, FR-022 |
+| `ManualPaperSupplementRequest` | 用户手动补充论文请求 | 记录补充方式、提交人、来源值、解析结果、确认状态和失败原因；不得在用户确认前写入 ProjectPaper | FR-023 |
 | `PaperIdentity` | 全局论文身份 | 使用 DOI、arXiv ID、外部 ID、标准化标题等归一化；跨 Project 共享 | FR-022, FR-023 |
+| `ExternalPaperIdentifier` | DOI、arXiv ID、URL 等外部标识 | 必须归一化类型和值，并记录解析来源；解析到多个候选或关键元数据冲突时必须要求用户确认 | FR-023 |
 | `ProjectPaper` | Project 私有论文关联 | 同一 Project 不得重复关联同一论文；保存有效性、评分、推送状态和分析结果 | FR-012, FR-022, FR-026 |
-| `DocumentAsset` | PDF、远程文件或解析文本资产 | 记录访问引用、解析状态、失败原因和摘要降级标记 | FR-012, FR-024 |
+| `DocumentAsset` | PDF、远程文件或解析文本资产 | 记录访问引用、资产来源、解析状态、失败原因和摘要降级标记；用户上传资产必须绑定提交人和 Project 授权边界 | FR-012, FR-023, FR-024 |
 | `DocumentProcessingState` | 论文全文获取和可用文本来源状态 | 记录下载、解析、用户上传替代、重试后的最终可用文本来源；全文解析与摘要降级必须可区分 | FR-024 |
 | `PaperAnalysis` | 论文结构化 AI 分析 | 至少包含一句话总结、亮点、相关性要点、方法与创新；可被人工编辑和确认 | FR-025 |
 | `KnowledgeSyncState` | 关系库、向量库、图谱同步状态 | 未同步或失败数据不得标记为可检索或图谱可用 | FR-026 |
 
 Construction 不变量：
 
-- 手动 ConstructionRun 使用用户本次 selected 检索词集合；自动 ConstructionRun 使用由用户维护配置的检索词集合。
+- 手动 ConstructionRun 使用用户本次 selected 检索词集合；自动 ConstructionRun 使用 AutoUpdateSearchTerms，即当前由用户维护配置后仍满足 `auto_update_enabled=true` 的检索词集合。
 - 历史 ConstructionRun 必须能基于启动时配置快照复现当时的检索词内容和数据源策略，即使当前检索词已被修改或删除。
 - 检索词未确认时，手动构建不得进入多源检索阶段。
 - 检索词生成失败时，用户手动输入并确认的检索词应形成同等可追溯的 SearchTermVersion。
+- 新生成或新增的 SearchTermVersion 默认参与系统自动更新；用户编辑检索词、调整数据源策略或关闭自动更新，均是在 `auto_update_enabled=true` 默认态基础上修改。
 - 不存在独立的检索词 `enabled` 领域状态；手动构建是否使用某个检索词只由本次 SelectedSearchTerms 决定，自动构建是否使用只由 `auto_update_enabled` 决定。
 - 所有实际数据源均失败或不可解析时，不得进入去重、评分与筛选阶段。
 - 单个数据源失败不得破坏其他成功数据源结果；失败数据源、失败原因和受影响检索词必须可诊断。
 - 命中当前 Project 已有关联论文的候选项不得进入下载、解析、AI 分析、入库、图谱更新或推送流程。
 - 用户确认筛选结果后，候选论文才能进入下载解析和后续入库流程。
+- 手动补充论文必须形成 ManualPaperSupplementRequest；补充方式至少区分 PDF 上传、DOI、arXiv ID 和 URL，且必须绑定提交用户、目标 Project 和提交时间。
+- DOI、arXiv ID 或 URL 补充必须先归一化为 ExternalPaperIdentifier，再解析为 CandidatePaper 或 PaperIdentity；解析失败、解析到多个候选或关键元数据冲突时，不得自动入库，必须等待用户确认或修正。
 - PDF-only 上传必须先从 PDF 本身提取候选元数据；关键元数据不足时必须要求用户补充或确认 LLM 元数据草稿，LLM 草稿不得直接成为用户已确认元数据。
+- 用户上传 PDF 或远程文件形成的 DocumentAsset 只能服务于其有 `use` 权限的 Project；不得因为同一 PaperIdentity 跨 Project 共享而自动暴露上传文件给其他 Project 或用户。
+- 手动补充命中当前 Project 已有关联论文时，只能作为补充资产、元数据修正候选或安全空态提示处理；不得创建重复 ProjectPaper。
 - 从当前 Project 移除论文关联不得删除全局论文身份，也不得影响其他 Project。
 - PDF 下载、文本解析、用户上传替代和重试结果必须收敛为一个可追溯的 DocumentProcessingState；后续 AI 分析、向量化、RAG 和综述引用只能读取其标记的最终可用文本来源。
 - 摘要降级文本可进入后续分析、向量化或 RAG，但必须标记为摘要降级来源，不能冒充全文解析。
@@ -418,3 +431,5 @@ manual_edit > manual_confirm > agent_draft
 | v1.5 | 2026-05-22 | 按 `FR-008` 新 Project 权限定义补充访问、使用、删除三类权限和 Owner 默认全权限不变量 | Codex |
 | v1.6 | 2026-05-25 | 逐条审查并明确边界 | haoyanzhen |
 | v1.7 | 2026-05-25 | 将 `FR-012` Project 知识资产面板提升为独立领域模型，补充只读资产投影、筛选、Graph 版本边界、文件访问引用和安全空态规则 | Codex |
+| v1.8 | 2026-05-26 | 补强 `FR-013` Workspace 上下文恢复和 `FR-023` 手动补充论文的显式领域对象与不变量 | Codex |
+| v1.9 | 2026-05-26 | 收束自动 ConstructionRun 检索词领域规则：新检索词默认参与自动更新，自动 Run 仍仅使用 `auto_update_enabled=true` 集合 | Codex |

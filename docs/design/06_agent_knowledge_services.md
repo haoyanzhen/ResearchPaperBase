@@ -1,7 +1,7 @@
 # Agent & Knowledge Services 设计
 
-文档版本：v1.1  
-更新日期：2026-05-20  
+文档版本：v1.2
+更新日期：2026-05-26
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -42,7 +42,7 @@ Knowledge 不依赖具体 Agent。
 
 ## 4. Construction Pipeline
 
-检索词管理支持 Project 主题生成建议词、用户编辑、启用/禁用、检索词级数据源策略和自动更新开关。手动 Run 使用本次 selected 检索词；自动 Run 使用 `auto_update_enabled=true` 的检索词。
+检索词管理支持 Project 主题生成建议词、用户编辑、检索词级数据源策略和自动更新开关。新生成或新增检索词默认 `auto_update_enabled=true`；用户后续修改自动更新开关是在该默认态上调整。手动 Run 使用本次 selected 检索词；自动 Run 使用 `auto_update_enabled=true` 的检索词。
 
 多源检索支持 arXiv、OpenAlex、Semantic Scholar、ADS 和后续扩展 Provider。Provider 返回统一候选结构，不把 SDK 原始对象泄漏到应用层。数据源失败应分类为缺失配置、密钥失效、限流、连接失败、权限过期或 Provider 不可用。
 
