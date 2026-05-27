@@ -1,6 +1,6 @@
 # Domain Core 设计
 
-文档版本：v1.9
+文档版本：v1.11
 更新日期：2026-05-26
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`01-01-FR-reference.md`  
 用途：从 FR 中提炼 Research Paper Base 的核心业务对象、对象关系、状态、生命周期和不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
@@ -56,7 +56,8 @@ Domain Core 回答“这个业务世界如何成立”。它必须覆盖所有 P
 | --- | --- | --- | --- |
 | `Project` | 长期研究容器 | Project 是 Construction、Research、Review 的共同上下文；用户默认拥有自己 Project 的全部权限 | FR-008 |
 | `ProjectPermission` | Project 授权事实 | 权限分为访问、使用和删除；Owner 在账号有效时必须始终拥有自己 Project 的全部权限；跨用户访问/使用授权为 P2 预留能力 | FR-008 |
-| `ConstructionWorkspace` | Project 唯一构建配置容器 | 每个 Project 有且仅有一个；不等同于一次构建运行 | FR-011, FR-020 |
+| `ProjectWorkspace` | Project 顶层工作区 | 置顶承载当前 Project 的唯一 ConstructionWorkspace、ResearchSession 列表和 ReviewRun 列表；不直接平铺历史 ConstructionRun | FR-011, FR-014 |
+| `ConstructionWorkspace` | Project 唯一构建配置容器 | 每个 Project 有且仅有一个；与 ResearchSession、ReviewRun 作为 ProjectWorkspace 顶层并列对象；内部承载 SearchTermSet、自动更新设置和历史 ConstructionRun | FR-011, FR-014, FR-020 |
 | `WorkspaceContext` | 用户打开 Project Workspace 时的恢复上下文 | 按用户、Project、对象类型和对象 ID 保存；失效时必须降级到安全空态 | FR-013 |
 | `WorkspacePanelState` | Workspace 基础面板状态 | 只保存当前用户在当前 Project 下的面板打开、折叠、焦点和基础筛选状态；不得影响 Project 资产、Run/Session 状态或知识库版本 | FR-013 |
 | `WorkspaceInputDraft` | Workspace 输入草稿 | 按用户、Project、对象类型和对象 ID 保存未提交输入；只能恢复为草稿，不得自动提交、启动任务或覆盖已确认内容 | FR-013, FR-017 |
@@ -82,6 +83,8 @@ Project 不变量：
 - `deleted` 是软删除，不得物理破坏其他 Project、全局论文记录或其他用户数据。
 - Project 私人资产清理只可清理该 Project 独占的运行记录、Run/Session、Project-Paper 关联、PDF、解析文本、向量索引、图谱文件和临时产物。
 - Project 私人资产清理不得删除全局论文身份、其他 Project 仍引用的共享论文、其他用户数据或默认保留的已完成导出文件。
+- ProjectWorkspace 的顶层对象结构固定为：当前 Project 唯一 ConstructionWorkspace、ResearchSession 列表和 ReviewRun 列表；历史 ConstructionRun 只能作为 ConstructionWorkspace 内部对象查看，不得与 ResearchSession 或 ReviewRun 平级展示为 ProjectWorkspace 顶层对象。
+- ConstructionWorkspace 只承载构建配置、自动更新设置、历史 ConstructionRun、构建诊断和构建结果入口；它本身不得被当作一次运行、KnowledgeVersion 或可复制实例。
 - Workspace 上下文恢复不得自动触发重跑、重新生成、重新检索、导出或覆盖。
 - 已删除、无权限、归档只读或状态不允许继续的上下文不得恢复为可写状态。
 - WorkspaceContext 只能恢复当前用户有权访问的当前 Project 对象；目标对象不存在、已删除、越权、类型不匹配或 Project 状态不允许时，必须降级到安全空态并保留可诊断原因。
@@ -142,7 +145,10 @@ Project 不变量：
 | `SelectedSearchTerms` | 手动 Run 本次选择的检索词集合 | 不改变检索词自身的自动更新开关 | FR-014, FR-021 |
 | `AutoUpdateSearchTerms` | 自动 Run 使用的检索词集合 | 只包含 `auto_update_enabled=true` 的检索词 | FR-009, FR-021 |
 | `DataSourcePolicy` | 检索词级数据源策略 | 未显式选择时默认使用用户和系统当前可解析的全部数据源 | FR-020, FR-021 |
+| `ConstructionRunConfigSnapshot` | ConstructionRun 启动配置快照 | 固化本次检索词内容、检索词来源、数据源策略、解析后数据源、配置来源、检索时间范围、返回数量上限和触发方式 | FR-009, FR-014, FR-021 |
 | `CandidatePaper` | 检索得到的候选论文 | 必须记录来源检索词、来源数据源和基础元数据 | FR-021, FR-022 |
+| `DeduplicationDecision` | 候选论文身份归一化决策 | 记录候选论文与 PaperIdentity 或既有 ProjectPaper 的匹配依据、冲突、操作者/Agent 来源、误合并撤销状态 | FR-022 |
+| `PaperScreeningDecision` | 论文评分与筛选决策 | 记录评分、有效性、评分阈值来源、人工调整、确认状态和可追溯理由；确认前不得进入下载解析 | FR-022 |
 | `ManualPaperSupplementRequest` | 用户手动补充论文请求 | 记录补充方式、提交人、来源值、解析结果、确认状态和失败原因；不得在用户确认前写入 ProjectPaper | FR-023 |
 | `PaperIdentity` | 全局论文身份 | 使用 DOI、arXiv ID、外部 ID、标准化标题等归一化；跨 Project 共享 | FR-022, FR-023 |
 | `ExternalPaperIdentifier` | DOI、arXiv ID、URL 等外部标识 | 必须归一化类型和值，并记录解析来源；解析到多个候选或关键元数据冲突时必须要求用户确认 | FR-023 |
@@ -151,11 +157,12 @@ Project 不变量：
 | `DocumentProcessingState` | 论文全文获取和可用文本来源状态 | 记录下载、解析、用户上传替代、重试后的最终可用文本来源；全文解析与摘要降级必须可区分 | FR-024 |
 | `PaperAnalysis` | 论文结构化 AI 分析 | 至少包含一句话总结、亮点、相关性要点、方法与创新；可被人工编辑和确认 | FR-025 |
 | `KnowledgeSyncState` | 关系库、向量库、图谱同步状态 | 未同步或失败数据不得标记为可检索或图谱可用 | FR-026 |
+| `ConstructionCheckpoint` | 构建断点续连状态 | 记录 ConstructionRun 子内容写入进度、重试次数、失败原因、可续连位置和用户继续/停止决策；不得替代错误日志 | FR-015, FR-026 |
 
 Construction 不变量：
 
 - 手动 ConstructionRun 使用用户本次 selected 检索词集合；自动 ConstructionRun 使用 AutoUpdateSearchTerms，即当前由用户维护配置后仍满足 `auto_update_enabled=true` 的检索词集合。
-- 历史 ConstructionRun 必须能基于启动时配置快照复现当时的检索词内容和数据源策略，即使当前检索词已被修改或删除。
+- 历史 ConstructionRun 必须能基于 ConstructionRunConfigSnapshot 复现当时的检索词内容、数据源策略和启动参数，即使当前检索词已被修改或删除。
 - 检索词未确认时，手动构建不得进入多源检索阶段。
 - 检索词生成失败时，用户手动输入并确认的检索词应形成同等可追溯的 SearchTermVersion。
 - 新生成或新增的 SearchTermVersion 默认参与系统自动更新；用户编辑检索词、调整数据源策略或关闭自动更新，均是在 `auto_update_enabled=true` 默认态基础上修改。
@@ -163,7 +170,8 @@ Construction 不变量：
 - 所有实际数据源均失败或不可解析时，不得进入去重、评分与筛选阶段。
 - 单个数据源失败不得破坏其他成功数据源结果；失败数据源、失败原因和受影响检索词必须可诊断。
 - 命中当前 Project 已有关联论文的候选项不得进入下载、解析、AI 分析、入库、图谱更新或推送流程。
-- 用户确认筛选结果后，候选论文才能进入下载解析和后续入库流程。
+- 去重、评分、筛选和人工修正必须形成 DeduplicationDecision 或 PaperScreeningDecision；评分阈值来源、去重依据、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选论文和操作者。
+- 用户确认筛选结果后，候选论文才能进入下载解析流程。
 - 手动补充论文必须形成 ManualPaperSupplementRequest；补充方式至少区分 PDF 上传、DOI、arXiv ID 和 URL，且必须绑定提交用户、目标 Project 和提交时间。
 - DOI、arXiv ID 或 URL 补充必须先归一化为 ExternalPaperIdentifier，再解析为 CandidatePaper 或 PaperIdentity；解析失败、解析到多个候选或关键元数据冲突时，不得自动入库，必须等待用户确认或修正。
 - PDF-only 上传必须先从 PDF 本身提取候选元数据；关键元数据不足时必须要求用户补充或确认 LLM 元数据草稿，LLM 草稿不得直接成为用户已确认元数据。
@@ -172,7 +180,12 @@ Construction 不变量：
 - 从当前 Project 移除论文关联不得删除全局论文身份，也不得影响其他 Project。
 - PDF 下载、文本解析、用户上传替代和重试结果必须收敛为一个可追溯的 DocumentProcessingState；后续 AI 分析、向量化、RAG 和综述引用只能读取其标记的最终可用文本来源。
 - 摘要降级文本可进入后续分析、向量化或 RAG，但必须标记为摘要降级来源，不能冒充全文解析。
+- 下载解析阶段完成后，必须由用户或自动确认策略确认 DocumentProcessingState 摘要、失败项和摘要降级项，才能进入 AI 分析阶段。
 - 用户确认后的 PaperAnalysis 才能作为入库、深研和综述上下文使用。
+- 入库前必须展示即将写入的有效论文、跳过项、失败项、摘要降级项和风险提示；未确认入库预览时不得写入 Project 知识库、向量库或图谱。
+- ConstructionRun 写入 ProjectPaper、DocumentAsset、向量项、图谱项和 KnowledgeVersion 相关状态时，默认每个子内容最多自动重试三次；三次均失败时必须保留 ConstructionCheckpoint、记录错误日志、停止发布 KnowledgeVersion，并向用户返回失败原因和继续/停止选择。
+- 用户选择继续构建时，新的 ConstructionRun 或新 attempt 必须基于 ConstructionCheckpoint 从已成功写入且状态一致的位置断点续连；不得重复写入已成功子内容或跳过未完成子内容。
+- 用户选择不继续构建时，系统应删除可续连 ConstructionCheckpoint，保留错误日志和历史 Run 诊断；已发布 KnowledgeVersion 不得被失败构建回滚或污染。
 - 图谱创建、增量更新、重建和修复只能由 ConstructionRun 触发；ResearchSession、ReviewRun 和只读知识资产入口不得触发图谱写入。
 - 首次成功 ConstructionRun 触发图谱创建；之后的手动 ConstructionRun 默认只触发本次新增或变更论文所需的图谱增量更新，只有用户在 Construction 面板维护入口明确选择重建时才触发图谱重建；自动 ConstructionRun 作为无人值守维护窗口，在自动检索、入库和向量同步达到可发布条件后，应对当前 Project 图谱执行重建或修复性重建；若本次及上次成功重建后无知识库变更，可跳过重建。
 
@@ -215,7 +228,7 @@ Project 知识资产面板是 Workspace 中提供 Project 原生知识信息的�
 
 Knowledge 不变量：
 
-- KnowledgeVersion 只能在关系库入库、向量同步和必要图谱更新达到可发布条件后发布。
+- KnowledgeVersion 只能在关系库入库、向量同步和 Graph 创建/更新/重建完成后发布；Graph 未完成、失败或仍有待续连 ConstructionCheckpoint 时，不得发布新的 KnowledgeVersion。
 - Project 默认 KnowledgeVersion 只更新到最新成功发布版本。
 - ResearchSession 和 ReviewRun 创建时默认绑定 Project 当前默认 KnowledgeVersion；绑定后不得被系统静默改写。
 - 新 KnowledgeVersion 发布后，active ResearchSession / ReviewRun 不被中断，不被强制切换，已完成内容不自动改写。
@@ -229,9 +242,11 @@ Knowledge 不变量：
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
-| `ResearchMessage` | 对话轮次消息 | 成功轮次保存用户输入、Agent 回复和引用；失败或取消不得写入成功态半成品 | FR-028 |
+| `ResearchTurn` | 一轮用户提问与 AI 回复容器 | 保存用户输入、当前采纳的 AI 回复、失败/取消状态、引用和重跑关系；失败轮次也必须保留供用户决定是否采纳或重跑 | FR-028, FR-030 |
+| `ResearchMessage` | 单条对话文本 | 区分用户文本和 AI 回复文本；可被用户编辑或删除单条文本，删除不得级联影响其他轮次或其他文本 | FR-028, FR-030 |
 | `ResearchSessionMetadata` | 深研会话列表与检索元数据 | 保存标题、标签、摘要、最后活跃时间和归档状态；搜索筛选结果只能包含当前用户有权限访问的 Session | FR-030 |
-| `ResearchStreamAttempt` | 一次流式回复尝试 | 记录 running/succeeded/failed/cancelled 等结果和诊断原因 | FR-028 |
+| `ResearchResponseAttempt` | 一次 AI 回复尝试 | 记录 running/succeeded/failed/cancelled 等结果、诊断原因、部分回复、是否被用户采纳和所属 ResearchTurn；每个 AI 回复可重跑并生成新 attempt | FR-028 |
+| `ResearchRetrievalContext` | Graph-RAG 检索上下文 | 绑定 ResearchTurn、KnowledgeVersion、检索 query、命中文段、Graph 节点、空检索或失败状态 | FR-028, FR-031 |
 | `ResearchOutputPreference` | 输出倾向 | 创新、实验、总结；只影响后续回复，不改写历史 | FR-029 |
 | `ResearchSummary` | 对话总结 | 生成失败不得覆盖已有成功总结 | FR-030 |
 | `ResearchCitationContext` | 深研引用上下文 | 展示引用论文、文段来源、图谱节点和绑定版本 | FR-031 |
@@ -239,9 +254,13 @@ Knowledge 不变量：
 Research 不变量：
 
 - 无可用 KnowledgeVersion 时不得创建新的 ResearchSession。
-- 每轮对话基于该 Session 绑定的 KnowledgeVersion 执行 Graph-RAG 检索。
-- 流式回复中断、用户取消、检索失败或 LLM 失败时，用户输入和失败状态可追溯，但 Agent 半成品不得作为成功回复写入。
+- 每个 ResearchTurn 基于该 Session 绑定的 KnowledgeVersion 执行 Graph-RAG 检索，并保存 ResearchRetrievalContext。
+- 流式回复中断、用户取消、检索失败或 LLM 失败时，ResearchTurn、用户输入、失败状态和可诊断原因必须保留；部分 AI 回复只能作为未采纳的 ResearchResponseAttempt 保存，由用户决定编辑、采纳、删除或重跑。
 - Graph-RAG 检索为空时，可继续普通回复，但必须明确标记无引用上下文。
+- 同一 ResearchSession 一次只能有一个 active ResearchResponseAttempt；同一 AI 回复重跑必须生成新的 ResearchResponseAttempt，不得覆盖原 attempt 的诊断状态。
+- 用户可编辑或删除单条 ResearchMessage；删除只影响该文本的可见性或采纳状态，不得删除同一 Session 中其他轮次、其他文本、引用证据或诊断日志。
+- ResearchSession 存在 active ResearchResponseAttempt 时不得刷新绑定 KnowledgeVersion；版本刷新只能在无运行回复时由用户按 FR-018 确认。
+- 引用展示缺失、过期、越权或版本不匹配时，只能降级 ResearchCitationContext 或进入安全空态；不得改写原 ResearchMessage 或 ResearchTurn。
 - ResearchSession 归档后不得继续追加用户消息、Agent 回复或总结生成结果。
 - ResearchSession 的标题、标签、摘要和最后活跃时间不得与其绑定 KnowledgeVersion、消息历史或归档状态相互矛盾。
 - ResearchSession 搜索、筛选和历史列表不得暴露无权限 Session，也不得返回其他 Project 的私有对话。
@@ -252,27 +271,35 @@ Research 不变量：
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
+| `ReviewRunBrief` | 综述任务输入简报 | 保存原始主题、扩写后的研究范围、背景、用户要求和绑定 KnowledgeVersion；作为大纲生成输入 | FR-032 |
 | `ReviewOutline` | 综述架构 | 绑定 ReviewRun 和 KnowledgeVersion；确认前不得自动撰写章节 | FR-032 |
+| `ReviewOutlineAssessment` | 大纲支撑与自审结果 | 记录覆盖度、章节顺序、主题边界、每章论文支撑度、低支撑原因和建议补充方向；低支撑信息进入 Review 内部审查迭代 | FR-032 |
 | `ReviewOutlineVersion` | 大纲版本记录 | 确认记录绑定当前大纲版本和 ReviewRun 的 KnowledgeVersion | FR-032, FR-035, FR-036 |
 | `ReviewChapter` | 章节内容 | 基于已确认大纲和绑定 KnowledgeVersion 生成；章节内容包含可追溯引用 | FR-033 |
+| `ReviewChapterEvidenceContext` | 章节撰写证据上下文 | 绑定章节、KnowledgeVersion、检索 query、引用论文、引用文段和相关 Graph 节点；用于章节生成和引用跳转 | FR-033 |
 | `ReviewChapterTrace` | 章节最小追溯 | 记录最后修改人、时间、来源动作、内容状态、审查历史和修订次数 | FR-033, FR-035 |
-| `ReviewFinalDraft` | 综述终稿 | 由已确认必需章节汇总；终审问题处理后才能确认最终稿 | FR-034 |
-| `ReviewExportableVersion` | 可导出版本 | 由确认后的最终稿生成；导出内容必须与该版本一致 | FR-019, FR-034 |
+| `ReviewFinalIssue` | 终稿审查问题 | 记录全文一致性、重复内容、引用完整性和格式问题及处理状态；状态保留用于用户审核 | FR-034 |
+| `ReviewFinalDraft` | 综述终稿 | 由已确认必需章节汇总；生成完成后默认接受并入库，用户显式拒绝时改为拒绝状态 | FR-034 |
+| `ReviewExportableVersion` | 可导出版本 | 由已接受终稿生成；导出内容必须与该版本一致；用户显式拒绝该版本时删除本地文件并保留状态记录 | FR-019, FR-034 |
 | `ReviewVersionSnapshot` | P2 历史快照 | 可用于版本列表、只读快照、差异、回退和用户更改摘要 | FR-036 |
 
 Review 不变量：
 
 - 无可用 KnowledgeVersion 时不得创建新的 ReviewRun。
 - 新建 ReviewRun 默认绑定 Project 当前默认 KnowledgeVersion。
+- ReviewRunBrief 必须绑定 ReviewRun 和 KnowledgeVersion；大纲生成、自审和章节撰写不得使用未绑定或其他 Project 的输入简报。
 - 大纲确认前不得自动撰写章节。
-- 用户可确认低支撑章节的大纲，但系统必须记录低支撑风险和用户确认。
+- ReviewOutlineAssessment 必须记录低支撑章节、低支撑原因和建议补充方向；低支撑信息作为输入进入 Review 内部审查和多 Agent 迭代，不单独作为写入阻断。
+- 用户可确认低支撑章节的大纲，但系统必须记录低支撑风险、内部迭代结果和用户确认。
 - ReviewRun 内同一章节不得同时存在多个生成、审查或保存任务写入当前内容。
+- 每章撰写前必须形成 ReviewChapterEvidenceContext；章节正文中的引用必须来自该章节绑定 KnowledgeVersion 下可访问的论文、文段或 Graph 节点。
 - 章节引用必须能映射到当前 Project 论文库和 ReviewRun 绑定 KnowledgeVersion。
 - 引用不足默认提示风险但不强制阻断章节确认；启用严格引用覆盖要求时，引用不足必须阻断确认，直到用户处理或显式降低要求。
 - 审查结果必须与当时的章节版本、章节内容状态或修订次数关联，不得覆盖其他章节。
 - 所有必需章节完成并确认后才能汇总最终文章；可选章节缺失不得阻断汇总。
-- 终稿确认前必须展示未解决终审问题；用户处理或确认忽略后必须记录处理状态。
-- 可导出版本至少区分未生成、生成中、已生成待确认、已确认可导出、生成失败和已过期需重新生成。
+- 终稿生成完成后默认进入 accepted 并入库状态，同时保留 ReviewFinalIssue 供用户审核；用户显式拒绝该版本时，终稿和可导出版本改为 rejected，删除对应本地文件，但保留状态、问题和诊断记录。
+- 用户重跑 Review 生成新终稿或新可导出版本时，不得删除既有 accepted 并已入库版本；新版本形成独立状态记录。
+- 可导出版本至少区分未生成、生成中、已接受可导出、已拒绝、生成失败和已过期需重新生成。
 - Review 最小追溯以 ReviewRun 为边界，不跨 ReviewRun 合并历史。
 - P2 历史版本回退必须二次确认，并生成新的当前版本；不得删除原历史版本。
 - 用户更改摘要只能作为辅助说明，不得替代原始内容、修改元数据、人工确认、权限判断或验收依据。
@@ -290,8 +317,8 @@ manual_edit > manual_confirm > agent_draft
 适用内容：
 
 - 检索词、筛选结果、论文有效性和 AI 分析。
-- ResearchSession 标题、标签、总结文件。
-- ReviewRun 大纲、章节正文、审查建议处理状态和最终稿。
+- ResearchSession 标题、标签、单条对话文本、采纳的 AI 回复和总结文件。
+- ReviewRun 输入简报、大纲、章节正文、审查建议处理状态、终稿和可导出版本状态。
 
 内容保护不变量：
 
@@ -310,7 +337,7 @@ manual_edit > manual_confirm > agent_draft
 
 - 导出内容只能包含用户有权限访问的 Project、Run/Session 和文件。
 - 导出 Project 私人资产时，缺失文件、无权限文件或生成失败项应记录为跳过项或失败项，不得导致可导出部分整体失败。
-- 导出综述时不得绕过 ReviewRun 的终稿生成、终审和可导出版本确认规则。
+- 导出综述时不得绕过 ReviewRun 的终稿生成、默认接受入库、显式拒绝状态和可导出版本规则。
 - 大文件或多文件导出必须作为可诊断任务处理，并记录导出范围快照、文件生成结果、过期或清理状态、失败分类。
 - Project 私人资产清理默认不删除已完成导出结果。
 
@@ -380,12 +407,14 @@ manual_edit > manual_confirm > agent_draft
 | `KnowledgeVersionRefreshRequested` | 用户打开或确认版本刷新 |
 | `ResearchSessionCreated` | ResearchSession 创建并绑定 KnowledgeVersion |
 | `ResearchSessionMetadataChanged` | 深研会话标题、标签、摘要、最后活跃时间或归档状态变更 |
-| `ResearchMessageAppended` | 成功对话轮次保存 |
-| `ResearchStreamFailed` | 流式回复失败、中断或取消 |
+| `ResearchTurnRecorded` | 对话轮次保存，包括成功、失败、中断或取消 |
+| `ResearchMessageChanged` | 单条对话文本被用户编辑、删除或采纳状态变化 |
+| `ResearchResponseAttemptCompleted` | AI 回复尝试成功、失败、中断或取消 |
 | `ReviewRunCreated` | ReviewRun 创建并绑定 KnowledgeVersion |
 | `ReviewOutlineConfirmed` | 综述大纲确认 |
 | `ReviewChapterUpdated` | 章节生成、编辑、审查或确认 |
-| `ReviewFinalConfirmed` | 终稿确认 |
+| `ReviewFinalAccepted` | 终稿默认接受并入库 |
+| `ReviewFinalRejected` | 用户显式拒绝终稿或可导出版本 |
 | `ContentOverwriteRequested` | 重新生成涉及人工确认或人工修改内容 |
 | `ExportJobRequested` | 导出任务创建 |
 | `EmailPushRequested` | 邮件推送任务创建 |
@@ -400,10 +429,10 @@ manual_edit > manual_confirm > agent_draft
 | FR 范围 | Domain 覆盖点 |
 | --- | --- |
 | FR-001~007 | User、UserProfile、AdminRole、PasswordResetRequest、AccountAuditRecord、User/System Config、NotificationRecipient、SystemConfigAuditRecord、RuntimeConfigSnapshot、配置解析与密钥隔离不变量 |
-| FR-008~019 | Project、Workspace、ProjectKnowledgeAssetPanel、ProjectPaperLibraryView、ProjectGraphView、DocumentAccessRef、KnowledgeAssetEmptyState、Run/Session、状态、锁、KnowledgeVersion、内容保护、导出不变量 |
-| FR-020~027 | ConstructionWorkspace、SearchTermVersion、CandidatePaper、PaperIdentity、ProjectPaper、DocumentAsset、PaperAnalysis、KnowledgeSyncState、EmailPushJob |
-| FR-028~031 | ResearchSession、ResearchSessionMetadata、ResearchMessage、ResearchStreamAttempt、ResearchOutputPreference、ResearchSummary、CitationEvidence |
-| FR-032~036 | ReviewRun、ReviewOutline、ReviewChapter、ReviewFinalDraft、ReviewExportableVersion、ReviewChapterTrace、ReviewVersionSnapshot |
+| FR-008~019 | Project、ProjectWorkspace、ConstructionWorkspace、WorkspaceContext、ProjectKnowledgeAssetPanel、ProjectPaperLibraryView、ProjectGraphView、DocumentAccessRef、KnowledgeAssetEmptyState、Run/Session、状态、锁、KnowledgeVersion、内容保护、导出不变量 |
+| FR-020~027 | ConstructionWorkspace、ConstructionRunConfigSnapshot、SearchTermVersion、CandidatePaper、DeduplicationDecision、PaperScreeningDecision、ManualPaperSupplementRequest、PaperIdentity、ProjectPaper、DocumentAsset、PaperAnalysis、KnowledgeSyncState、ConstructionCheckpoint、EmailPushJob |
+| FR-028~031 | ResearchSession、ResearchTurn、ResearchSessionMetadata、ResearchMessage、ResearchResponseAttempt、ResearchRetrievalContext、ResearchOutputPreference、ResearchSummary、ResearchCitationContext、CitationEvidence |
+| FR-032~036 | ReviewRun、ReviewRunBrief、ReviewOutline、ReviewOutlineAssessment、ReviewChapter、ReviewChapterEvidenceContext、ReviewFinalIssue、ReviewFinalDraft、ReviewExportableVersion、ReviewChapterTrace、ReviewVersionSnapshot |
 
 待后续实现校验：
 
@@ -415,7 +444,7 @@ manual_edit > manual_confirm > agent_draft
 - KnowledgeVersion 发布条件、旧版本依赖和再次构建基线预检查。
 - 人工修改覆盖保护和失败生成回滚。
 - 摘要降级文本在论文详情、Research 引用和 Review 引用中的来源标记。
-- Review 同章写入互斥、严格引用覆盖、终稿确认和最小追溯。
+- Review 同章写入互斥、严格引用覆盖、终稿默认接受/显式拒绝和最小追溯。
 - Project 私人资产清理不破坏全局论文身份、导出结果和其他 Project 引用。
 - 观点搜索筛选、删除和管理员隐藏不暴露无权限或已隐藏内容。
 
@@ -433,3 +462,5 @@ manual_edit > manual_confirm > agent_draft
 | v1.7 | 2026-05-25 | 将 `FR-012` Project 知识资产面板提升为独立领域模型，补充只读资产投影、筛选、Graph 版本边界、文件访问引用和安全空态规则 | Codex |
 | v1.8 | 2026-05-26 | 补强 `FR-013` Workspace 上下文恢复和 `FR-023` 手动补充论文的显式领域对象与不变量 | Codex |
 | v1.9 | 2026-05-26 | 收束自动 ConstructionRun 检索词领域规则：新检索词默认参与自动更新，自动 Run 仍仅使用 `auto_update_enabled=true` 集合 | Codex |
+| v1.10 | 2026-05-27 | 明确 ProjectWorkspace 顶层架构，补充 ConstructionRun 配置快照、去重筛选决策、确认门槛、Graph 发布条件和构建断点续连规则 | Codex |
+| v1.11 | 2026-05-27 | 补强 Research 失败轮次保留、单条文本编辑删除和 AI 回复重跑；补充 Review 输入简报、大纲评估、章节证据上下文和默认接受/显式拒绝终稿规则 | Codex |
