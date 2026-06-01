@@ -1,6 +1,6 @@
 # Domain Core 设计
 
-文档版本：v1.13
+文档版本：v1.14
 更新日期：2026-06-01
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`01-01-FR-reference.md`  
 用途：从 FR 中提炼 Research Paper Base 的核心业务对象、对象关系、状态、生命周期和不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
@@ -133,7 +133,7 @@ Project 不变量：
 | `ReviewRun` | 流程式写作运行 | Knowledge Version 消费者 | 创建时绑定 Knowledge Version；大纲、章节、终稿和可导出版本受内容保护和写锁约束 | FR-032~036 |
 | `ExportJob` | 异步产物任务 | 授权读取者 | 导出范围必须绑定用户有权限访问的 Project/Run/Session；不得绕过 Review 终稿生成规则 | FR-019, FR-030, FR-034 |
 | `EmailPushJob` | 邮件推送任务 | 授权通知者 | 只推送当前 Project 中未推送且用户有权限接收的有效论文；空邮件不得发送 | FR-004, FR-009, FR-027 |
-| `AutoConfirmationPolicy` | 自动 ConstructionRun 的人工等待点处理策略 | 决策确定者 | 只能处理可安全自动确认的低风险等待点；遇到必须人工判断的风险项时必须失败并进入自动重试/清理路径，不等待用户响应 | FR-009 |
+| `AutoConfirmationPolicy` | 自动 ConstructionRun 的人工等待点处理策略 | 决策确定者 | 只能处理可安全自动确认、跳过、降级或局部失败的无人值守等待点；不得让自动 Run 等待用户响应 | FR-009 |
 
 ### 3.2 通用状态
 
@@ -142,6 +142,7 @@ Project 不变量：
 | `draft` | 已创建但未启动 | 可编辑配置，可启动或删除 |
 | `queued` | 已提交等待执行 | 可取消，应可诊断排队原因 |
 | `running` | 后台任务或流式回复执行中 | 可查看阶段，可按规则取消 |
+| `paused` | Run 的所有异步运行任务均已暂停 | 只适用于流程式 Run；Session 不触发暂停态 |
 | `waiting_user` | 等待人工确认、补充或修复 | 不得静默跳过高风险确认 |
 | `succeeded` | 成功完成 | 结果只读保留，可导出或复制配置创建新实例 |
 | `failed` | 失败并带诊断原因 | 原有成功内容不得被失败任务破坏 |
@@ -150,12 +151,31 @@ Project 不变量：
 
 状态不变量（FR-015）：
 
-- 已成功、已取消、已归档的历史对象不得被原地改回 running；需要重试时应记录新 attempt 或创建新实例。
-- 取消、暂停、恢复、重试、复制、删除、归档等操作必须受权限、状态和内容保护规则约束。
-- P1 的复制、重跑、归档、删除不得破坏原实例。
+- 已成功、已取消、已归档的历史对象不得被原地改回 running；需要重试时应记录新 attempt，需要重跑时应创建新实例或新运行结果。
+- 暂停是 Run 状态，不是 Session 状态；只有当 ConstructionRun 或 ReviewRun 中所有异步运行任务均暂停时，该 Run 才能进入 `paused`。
+- ResearchSession 不触发暂停态；其后端流式回复可取消、失败、重试或重连，但 Session 本身不因单次回复控制变为 `paused`。
+- 重试、重连和重跑均为 P1 受控能力：重试是重新尝试后端运行一次，重连是从断点继续，重跑是按原实例原始输入、配置和数据从头开始运行。
+- 取消、暂停、恢复、重试、重连、重跑、复制、删除、归档等操作必须受权限、状态和内容保护规则约束。
+- P1 的复制、重试、重连、重跑、归档、删除不得破坏原实例。
 - 同一个 Project 的历史 Construction Run 只能从 ConstructionWorkspace 内部承载，不与 ResearchSession / ReviewRun 平级作为 Workspace 总入口。
 
-### 3.3 锁与互斥
+### 3.3 重试、重连与重跑
+
+| 操作 | 优先级 | 领域含义 | 领域约束 |
+| --- | --- | --- | --- |
+| `retry` / 重试 | P1 | 对同一后端运行单元重新尝试执行一次 | 必须记录新的 attempt、失败原因、重试次数和结果；不得覆盖原失败诊断 |
+| `reconnect` / 重连 | P1 | 基于断点从未完成位置继续执行 | 必须依赖完整状态记录、可续连位置、中间临时文件引用和一致性校验；断点不可信时不得继续 |
+| `rerun` / 重跑 | P1 | 按原实例的原始输入、配置和数据从头开始运行 | 必须保留原实例；新运行不得复用原未完成中间写入作为成功结果 |
+
+重连不变量：
+
+- 可重连对象必须记录运行阶段、子任务状态、已提交正式数据、未提交临时数据、临时文件引用、断点位置、失败原因、重试次数、操作者决策和清理状态。
+- 重连前必须校验断点、正式数据和中间临时文件仍然一致；临时文件缺失、损坏、越权、过期或与状态记录不匹配时，不得继续重连，只能失败、重试或重跑。
+- 重连只能从已成功写入且状态一致的位置之后继续；不得重复写入已成功子内容，也不得跳过未完成子内容。
+- 重连完成并生成正式数据后，系统必须清理已完成链路不再需要的临时文件，并保留清理结果；清理失败不得把临时文件冒充为正式资产。
+- 取消、失败超时或用户选择不继续时，未发布中间写入和可续连临时文件必须按运行类型进入清理流程；清理不得破坏已发布 KnowledgeVersion、已确认内容或其他 Run/Session 资产。
+
+### 3.4 锁与互斥
 
 | 互斥点 | 保护对象 | 不变量 |
 | --- | --- | --- |
@@ -201,7 +221,7 @@ CandidatePaper
 | `DocumentProcessingState` | 论文全文获取和可用文本来源状态 | 记录下载、解析、用户上传替代、重试后的最终可用文本来源；全文解析与摘要降级必须可区分 | FR-024 |
 | `PaperAnalysis` | Project 私有论文结构化 AI 分析 | 绑定 ProjectPaper、TextSourceKind 和 DocumentProcessingState；至少包含一句话总结、亮点、相关性要点、方法与创新；可被人工编辑和确认 | FR-025 |
 | `KnowledgeSyncState` | 关系库、向量库、图谱同步状态 | 未同步或失败数据不得标记为可检索或图谱可用 | FR-026 |
-| `ConstructionCheckpoint` | 构建断点续连状态 | 记录 ConstructionRun 子内容写入进度、重试次数、失败原因、可续连位置和用户继续/停止决策；不得替代错误日志 | FR-015, FR-026 |
+| `ConstructionCheckpoint` | 构建断点续连状态 | 记录 ConstructionRun 子内容写入进度、重试次数、失败原因、可续连位置、中间临时文件引用、清理状态和用户继续/停止决策；不得替代错误日志 | FR-015, FR-026 |
 
 Construction 不变量：
 
@@ -225,12 +245,14 @@ Construction 不变量：
 - 从当前 Project 移除论文关联不得删除全局论文身份，也不得影响其他 Project。
 - PDF 下载、文本解析、用户上传替代和重试结果必须收敛为一个可追溯的 DocumentProcessingState；后续 AI 分析、向量化、RAG 和综述引用只能读取其标记的最终可用文本来源。
 - 摘要降级文本可进入后续分析、向量化或 RAG，但必须标记为摘要降级来源，不能冒充全文解析。
-- 下载解析阶段完成后，手动 ConstructionRun 必须由用户确认 DocumentProcessingState 摘要、失败项和摘要降级项，才能进入 AI 分析阶段；自动 ConstructionRun 可由 AutoConfirmationPolicy 处理低风险确认，无法安全自动确认时必须失败并进入自动重试/清理路径。
+- 下载解析阶段完成后，手动 ConstructionRun 必须由用户确认 DocumentProcessingState 摘要、失败项和摘要降级项，才能进入 AI 分析阶段；自动 ConstructionRun 可由 AutoConfirmationPolicy 处理低风险确认，或对单项执行跳过、摘要降级和局部失败。
 - 手动 ConstructionRun 中，用户确认后的 PaperAnalysis 才能作为入库、深研和综述上下文使用；自动 ConstructionRun 中，AutoConfirmationPolicy 确认后的 PaperAnalysis 可进入后续流程。
-- 手动 ConstructionRun 入库前必须展示即将写入的有效论文、跳过项、失败项、摘要降级项和风险提示；未确认入库预览时不得写入 Project 知识库、向量库或图谱。自动 ConstructionRun 可由 AutoConfirmationPolicy 确认低风险入库预览，遇到高风险项不得静默入库，也不得等待用户响应，必须失败并进入自动重试/清理路径。
+- 手动 ConstructionRun 入库前必须展示即将写入的有效论文、跳过项、失败项、摘要降级项和风险提示；未确认入库预览时不得写入 Project 知识库、向量库或图谱。自动 ConstructionRun 可由 AutoConfirmationPolicy 确认低风险入库预览，遇到高风险项不得静默入库，也不得等待用户响应；能跳过则跳过，能降级则降级，能局部失败则局部失败，只有无法保证不污染已发布知识库、向量库或图谱时才整体失败。
 - ConstructionRun 写入 ProjectPaper、DocumentAsset、向量项、图谱项和 KnowledgeVersion 相关状态失败时，必须保留可诊断失败原因和一致性边界；失败写入不得发布新的 KnowledgeVersion，也不得污染已发布知识版本。具体自动重试次数和后台清理编排由应用层定义。
-- 用户选择继续构建时，新的 ConstructionRun 或新 attempt 必须基于 ConstructionCheckpoint 从已成功写入且状态一致的位置断点续连；不得重复写入已成功子内容或跳过未完成子内容。
-- 手动 ConstructionRun 中，用户选择不继续构建、取消失败 Run，或超过应用层定义的等待窗口仍无操作时，系统应删除所有可续连 ConstructionCheckpoint 和失败 Run 的未发布中间写入，将 Project 回归到本次 Run 启动前的已发布知识状态；系统只保留失败记录、错误日志和历史 Run 诊断。自动 ConstructionRun 达到应用层失败清理条件时必须执行同等清理，不等待用户操作。
+- 用户选择重连继续构建时，新的 ConstructionRun attempt 必须基于 ConstructionCheckpoint 从已成功写入且状态一致的位置断点续连；不得重复写入已成功子内容或跳过未完成子内容。
+- ConstructionCheckpoint 必须记录正式写入进度、未发布中间写入、中间临时文件引用、可续连位置、失败原因、重试次数和清理状态；断点或临时文件不一致时不得重连。
+- 手动 ConstructionRun 中，用户选择不继续构建、取消失败 Run，或超过应用层定义的等待窗口仍无操作时，系统应删除所有可续连 ConstructionCheckpoint、失败 Run 的未发布中间写入和不再需要的中间临时文件，将 Project 回归到本次 Run 启动前的已发布知识状态；系统只保留失败记录、错误日志和历史 Run 诊断。自动 ConstructionRun 达到应用层失败清理条件时必须执行同等清理，不等待用户操作。
+- ConstructionRun 重连成功并发布新的 KnowledgeVersion 后，必须将临时文件收敛为正式 DocumentAsset、向量、Graph 或日志诊断引用，随后清理不再需要的临时文件；清理结果必须可诊断。
 - 图谱创建、增量更新、重建和修复只能由 ConstructionRun 触发；ResearchSession、ReviewRun 和只读知识资产入口不得触发图谱写入。
 - 首次成功 ConstructionRun 触发图谱创建；之后的手动 ConstructionRun 默认只触发本次新增或变更论文所需的图谱增量更新，只有用户在 Construction 面板维护入口明确选择重建时才触发图谱重建；自动 ConstructionRun 作为无人值守维护窗口，在自动检索、入库和向量同步达到可发布条件后，应对当前 Project 图谱执行重建或修复性重建；若本次及上次成功重建后无知识库变更，可跳过重建。
 
@@ -275,7 +297,7 @@ Knowledge 不变量：
 
 - KnowledgeVersion 固化 ConstructionRun 会修改并发布的全部可读知识内容，包括 ProjectPaper 关联与状态、DocumentAsset 与 DocumentProcessingState 的可用文本来源、PaperAnalysis、向量索引、Graph 节点与边、引用定位和同步状态。
 - KnowledgeVersion 只能在关系库入库、向量同步和 Graph 创建/更新/重建完成后发布；Graph 未完成、失败或仍有待续连 ConstructionCheckpoint 时，不得发布新的 KnowledgeVersion。
-- ConstructionRun 失败时不得产生新的 KnowledgeVersion；手动失败 Run 的未发布中间写入只能用于断点续连，用户取消或超时未处理后必须清理，并恢复到 Run 启动前的已发布 KnowledgeVersion 边界；自动失败 Run 达到应用层失败清理条件后必须直接清理未发布中间写入，不形成等待用户处理的断点续连状态。
+- ConstructionRun 失败时不得产生新的 KnowledgeVersion；手动失败 Run 的未发布中间写入只能用于断点续连，用户取消或超时未处理后必须清理，并恢复到 Run 启动前的已发布 KnowledgeVersion 边界；自动 ConstructionRun 不得进入等待用户处理状态，达到应用层失败清理条件后必须直接清理未发布中间写入和临时文件。
 - Project 默认 KnowledgeVersion 只更新到最新成功发布版本。
 - ResearchSession 和 ReviewRun 创建时默认绑定 Project 当前默认 KnowledgeVersion；绑定后不得被系统静默改写。
 - 新 KnowledgeVersion 发布后，active ResearchSession / ReviewRun 不被中断，不被强制切换，已完成内容不自动改写。
@@ -305,6 +327,8 @@ Research 不变量：
 - 流式回复中断、用户取消、检索失败或 LLM 失败时，ResearchTurn、用户输入、失败状态和可诊断原因必须保留；部分 AI 回复只能作为未采纳的 ResearchResponseAttempt 保存，由用户决定编辑、采纳、删除或重跑。
 - Graph-RAG 检索为空时，可继续普通回复，但必须明确标记无引用上下文。
 - 同一 ResearchSession 一次只能有一个 active ResearchResponseAttempt；同一 AI 回复重跑必须生成新的 ResearchResponseAttempt，不得覆盖原 attempt 的诊断状态。
+- ResearchResponseAttempt 的重连必须基于流式回复游标、已保存部分回复、检索上下文、模型配置快照和临时输出状态；断点不可信时不得把部分回复保存为成功回复。
+- ResearchResponseAttempt 完成后，未被采纳且不再需要的临时流式片段应进入清理流程；已采纳回复和诊断记录不得被清理流程破坏。
 - 用户可编辑或删除单条 ResearchMessage；删除只影响该文本的可见性或采纳状态，不得删除同一 Session 中其他轮次、其他文本、引用证据或诊断日志。
 - ResearchSession 存在 active ResearchResponseAttempt 时不得刷新绑定 KnowledgeVersion；版本刷新只能在无运行回复时由用户按 FR-018 确认。
 - 引用展示缺失、过期、越权或版本不匹配时，只能降级 ResearchCitationContext 或进入安全空态；不得改写原 ResearchMessage 或 ResearchTurn。
@@ -334,6 +358,8 @@ Review 不变量：
 
 - 无可用 KnowledgeVersion 时不得创建新的 ReviewRun。
 - 新建 ReviewRun 默认绑定 Project 当前默认 KnowledgeVersion。
+- ReviewRun 采用单 KnowledgeVersion 设计；同一 ReviewRun 的输入简报、大纲、章节、终稿和可导出版本必须使用同一个绑定 KnowledgeVersion，不支持同 Run 内混合版本生成。
+- 用户对 ReviewRun 执行 KnowledgeVersion 刷新时，系统不得在原 Run 内切换版本继续写作；应基于当前 Run 已有的用户输入主题创建重跑路径，并从头生成新的 ReviewRun 或新运行结果。
 - ReviewRunBrief 必须绑定 ReviewRun 和 KnowledgeVersion；大纲生成、自审和章节撰写不得使用未绑定或其他 Project 的输入简报。
 - 大纲确认前不得自动撰写章节。
 - ReviewOutlineAssessment 必须记录低支撑章节、低支撑原因和建议补充方向；低支撑信息作为输入进入 Review 内部审查和多 Agent 迭代，不单独作为写入阻断。
@@ -345,7 +371,7 @@ Review 不变量：
 - 审查结果必须与当时的章节版本、章节内容状态或修订次数关联，不得覆盖其他章节。
 - 所有必需章节完成并确认后才能汇总最终文章；可选章节缺失不得阻断汇总。
 - 终稿生成完成后默认进入 accepted 并入库状态，同时保留 ReviewFinalIssue 供用户审核；用户显式拒绝该版本时，终稿和可导出版本改为 rejected，删除对应本地文件，但保留状态、问题和诊断记录。
-- 用户重跑 Review 生成新终稿或新可导出版本时，不得删除既有 accepted 并已入库版本；新版本形成独立状态记录。
+- 用户重跑 Review 生成新大纲、章节、终稿或可导出版本时，不得删除既有 accepted 并已入库版本；新版本形成独立状态记录，并且只能使用单一绑定 KnowledgeVersion。
 - 可导出版本至少区分未生成、生成中、已接受可导出、已拒绝、生成失败和已过期需重新生成。
 - Review 最小追溯以 ReviewRun 为边界，不跨 ReviewRun 合并历史。
 - P2 历史版本回退必须二次确认，并生成新的当前版本；不得删除原历史版本。
@@ -517,6 +543,7 @@ manual_edit > manual_confirm > agent_draft
 - 同一 Project active ConstructionRun 唯一性。
 - 自动调度重复触发和 Project 调度锁。
 - KnowledgeVersion 发布条件、旧版本依赖和再次构建基线预检查。
+- Run 暂停态、P1 重试/重连/重跑语义、断点临时文件清理和 Review Run 单版本重跑规则。
 - 人工修改覆盖保护和失败生成回滚。
 - 摘要降级文本在论文详情、Research 引用和 Review 引用中的来源标记。
 - Review 同章写入互斥、严格引用覆盖、终稿默认接受/显式拒绝和最小追溯。
@@ -541,3 +568,4 @@ manual_edit > manual_confirm > agent_draft
 | v1.11 | 2026-05-27 | 补强 Research 失败轮次保留、单条文本编辑删除和 AI 回复重跑；补充 Review 输入简报、大纲评估、章节证据上下文和默认接受/显式拒绝终稿规则 | Codex |
 | v1.12 | 2026-05-29 | 收敛 Domain Core 聚合边界，区分领域实体、值对象、只读投影、配置快照和任务对象；弱化实现细节，强化 Paper-Knowledge-Evidence 主链路 | Codex |
 | v1.13 | 2026-06-01 | 同步管理员能力分层：收束账号治理、系统配置 MVP/P1/P2 边界、管理员系统级诊断限制、用户删除级联私人数据和观点隐藏通知/恢复规则 | Codex |
+| v1.14 | 2026-06-01 | 补强 Run 暂停态、P1 重试/重连/重跑语义、断点临时文件清理、自动 Construction Run 无等待策略和 Review Run 单版本规则 | Codex |
