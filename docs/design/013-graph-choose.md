@@ -1,6 +1,6 @@
 # Graph-RAG 与 Agent Memory 知识库选型报告
 
-文档版本：v1.0  
+文档版本：v1.1  
 更新日期：2026-06-01  
 适用项目大版本：v1  
 依据文档：`00_layers.md`、`06_agent_knowledge_services.md`、`07_data_persistence.md`
@@ -210,7 +210,173 @@ Research Paper Base 的知识能力不应由单一系统承担。建议拆成三
 2. 为多用户观点、批注和兴趣演化引入 temporal graph memory。
 3. 将 Agent memory 与 Knowledge Graph 明确隔离，避免用户偏好污染论文事实图谱。
 
-## 6. 风险与未知
+## 6. 项目内契约
+
+为避免后续替换向量库、图数据库、GraphRAG 实现或长期记忆实现时影响 Research / Review / Construction 主流程，本项目应从第一版开始固定 GraphRAG-compatible 契约。Agent 只依赖项目内服务契约，不直接依赖 LightRAG、Graphiti、Mem0、Letta、Neo4j、Qdrant 等具体实现。
+
+推荐边界：
+
+```text
+Construction / Research / Review Agent
+  -> KnowledgeContextService
+      -> VectorRetriever
+      -> GraphRetriever
+      -> MemoryRetriever
+      -> EvidenceStore
+```
+
+第一版实现可以保持轻量：
+
+```text
+VectorRetriever = PostgreSQL + pgvector
+GraphRetriever  = PostgreSQL kg_nodes / kg_edges
+MemoryRetriever = PostgreSQL user_memory
+EvidenceStore   = PostgreSQL + 文件系统
+```
+
+后续替换时只替换 adapter：
+
+```text
+VectorRetriever = Qdrant / Milvus / Weaviate
+GraphRetriever  = LightRAG / Neo4j / Graphiti / Kuzu
+MemoryRetriever = Mem0 / Letta / Graphiti
+EvidenceStore   = 仍由项目保存权威证据、引用和版本边界
+```
+
+### 6.1 固定领域对象
+
+无论底层实现如何变化，Agent 和应用用例层只认识以下项目内对象：
+
+| 对象 | 职责 | 不应包含 |
+| --- | --- | --- |
+| KnowledgeVersion | 一次可读取知识库状态，绑定论文集合、向量索引、图谱引用和发布诊断 | 具体向量库或图数据库 SDK 对象 |
+| EvidencePack | 一次检索返回给 Agent 的证据包 | 未经权限过滤的原文路径或跨 Project 数据 |
+| EvidenceItem | 单条证据，通常对应 paper、chunk、score、来源和定位 | LLM 无来源推断出的裸结论 |
+| Citation | 生成内容中可追溯的引用定位 | 只含标题、不含稳定 ID 的弱引用 |
+| GraphNode | Paper、Author、Concept、Method、Dataset、Chunk 等节点 | 用户偏好和临时会话状态 |
+| GraphEdge | cites、mentions、uses_method、uses_dataset、supports、related_to 等关系 | 无来源、无置信度、无版本边界的关系 |
+| MemoryRecord | 用户级长期记忆，例如偏好、阅读反馈、研究兴趣 | 论文事实和项目权威结论 |
+| RetrievalTrace | 检索过程记录，用于调试、评估和解释 | 密钥、真实文件路径或 provider 原始响应 |
+
+### 6.2 统一检索结果契约
+
+KnowledgeContextService 对 Agent 返回统一的 EvidencePack。示例结构如下：
+
+```json
+{
+  "query": "GraphRAG 的评测方法有哪些？",
+  "project_id": "project-001",
+  "knowledge_version_id": "kv-012",
+  "evidence": [
+    {
+      "paper_id": "paper-001",
+      "chunk_id": "chunk-009",
+      "text": "用于回答的证据片段",
+      "score": 0.87,
+      "source": "hybrid",
+      "relations": [
+        {
+          "type": "uses_method",
+          "target_type": "Method",
+          "target_id": "method-graphrag",
+          "confidence": 0.76,
+          "source_chunk_id": "chunk-009"
+        }
+      ]
+    }
+  ],
+  "trace": {
+    "vector_hits": 12,
+    "keyword_hits": 6,
+    "graph_expansions": 8,
+    "rerank_model": "configured-reranker"
+  }
+}
+```
+
+契约要求：
+
+- `knowledge_version_id` 必须存在，Research Session 和 Review Run 创建后不得静默切换。
+- `EvidenceItem` 必须可追溯到 `paper_id` 和 `chunk_id`，缺少来源时不得作为事实证据。
+- `GraphEdge` 必须带来源、置信度和版本边界。
+- `RetrievalTrace` 必须能说明向量召回、关键词召回、图扩展和 rerank 的数量或状态。
+- 返回给 Agent 的证据必须已完成 Project 权限过滤。
+
+### 6.3 引入 LightRAG 思想
+
+本项目第一版不直接绑定某个 LightRAG 实现，但采纳其轻量混合检索思想：
+
+```text
+用户问题
+  -> 查询改写 / 意图识别
+  -> 低层检索：chunk 向量召回 + 关键词召回
+  -> 高层检索：实体、概念、方法、数据集、引用关系扩展
+  -> 证据合并、去重、rerank
+  -> EvidencePack
+  -> Agent 生成回答 / 综述章节
+```
+
+在数据形态上，第一版只维护必要轻图谱：
+
+| 节点 | 说明 |
+| --- | --- |
+| Paper | 论文全局身份 |
+| Author | 作者 |
+| Concept | 研究概念、主题或问题 |
+| Method | 方法、算法、框架 |
+| Dataset | 数据集、benchmark、实验对象 |
+| Venue | 期刊、会议或来源 |
+| Chunk | 可引用文本片段 |
+
+| 边 | 说明 |
+| --- | --- |
+| Paper cites Paper | 论文引用关系 |
+| Paper authored_by Author | 作者关系 |
+| Paper mentions Concept | 论文提及概念 |
+| Paper uses_method Method | 论文使用或提出方法 |
+| Paper uses_dataset Dataset | 论文使用数据集 |
+| Chunk belongs_to Paper | 片段归属 |
+| Chunk supports Concept | 片段支持某概念或论断 |
+| Concept related_to Concept | 概念近邻或弱相关 |
+
+边属性至少包含：
+
+```text
+knowledge_version_id
+source_chunk_id
+confidence
+extractor
+created_at
+```
+
+### 6.4 论文事实与用户记忆隔离
+
+论文事实图谱和用户长期记忆必须分开治理：
+
+```text
+论文事实记忆 -> Knowledge Service
+用户长期记忆 -> Memory Service
+Agent 上下文 -> KnowledgeContextService 聚合二者
+```
+
+隔离规则：
+
+- 论文事实图谱只保存可追溯论文、片段、概念和引用证据。
+- 用户偏好、阅读历史、批注、推送反馈和研究兴趣写入 Memory Service。
+- MemoryRecord 可以影响召回排序和推荐策略，但不得改写 KnowledgeVersion 中的论文事实。
+- 多用户共享论文数据集时，用户记忆默认仍属于私人资产，除非后续明确设计共享观点或协作批注。
+
+### 6.5 替换策略
+
+底层实现替换时必须满足：
+
+- 不改变 Research / Review / Construction Agent 的调用契约。
+- 不改变 KnowledgeVersion、EvidencePack、Citation 的语义。
+- 新实现必须能回填或兼容 RetrievalTrace。
+- 迁移期间允许同一 KnowledgeVersion 绑定旧索引；新 KnowledgeVersion 使用新索引，避免静默改写旧会话证据。
+- 替换前应准备一组固定问题集，对召回数量、引用覆盖、回答一致性和延迟进行对比。
+
+## 7. 风险与未知
 
 - 图谱质量高度依赖实体和关系抽取质量。论文领域需要自定义 ontology，否则图谱容易变成关键词网络。
 - Graph-RAG 构建成本可能明显高于普通向量检索，需要在 Knowledge Version 发布前做成本和耗时控制。
@@ -218,7 +384,7 @@ Research Paper Base 的知识能力不应由单一系统承担。建议拆成三
 - 多用户共享数据需要明确权限边界。共享论文数据集可以复用，但用户批注、偏好和研究计划默认应属于私人资产。
 - 开源 memory 系统仍在快速变化。生产使用前需要补安全审计、数据删除、备份恢复和多租户隔离验证。
 
-## 7. 当前结论
+## 8. 当前结论
 
 对本项目而言，最稳妥的路线是：
 
@@ -228,8 +394,9 @@ Research Paper Base 的知识能力不应由单一系统承担。建议拆成三
 4. 当论文库规模和综述质量要求上升后，再为稳定版本引入完整 GraphRAG 离线构建。
 5. 若后续需要追踪观点和研究兴趣演化，优先评估 Graphiti / Zep 的 temporal knowledge graph。
 
-## 8. 变更记录
+## 9. 变更记录
 
 | 版本 | 日期 | 变更内容 | 变更人 |
 | --- | --- | --- | --- |
 | v1.0 | 2026-06-01 | 初始新增 Graph-RAG 与 Agent Memory 知识库选型报告 | Codex |
+| v1.1 | 2026-06-01 | 新增项目内 GraphRAG-compatible 契约，明确 LightRAG 式轻量混合检索思想和替换策略 | Codex |
