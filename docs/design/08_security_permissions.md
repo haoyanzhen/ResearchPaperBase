@@ -1,7 +1,7 @@
 # Security & Permissions 设计
 
-文档版本：v1.1  
-更新日期：2026-05-20  
+文档版本：v1.2
+更新日期：2026-06-06
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -31,8 +31,7 @@
 
 ## 4. Project 状态权限
 
-- `active`：允许正常读写。
-- `paused`：允许手动交互，不参与自动调度。
+- `active`：允许正常读写；是否参与自动调度由 Construction Workspace 自动更新设置决定。
 - `archived`：默认只读；新建、启动、继续生成、上传、删除、重跑、刷新依赖等写操作拒绝。
 - `deleted`：不可进入 Workspace，不参与调度。
 

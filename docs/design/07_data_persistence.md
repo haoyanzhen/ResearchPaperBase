@@ -1,7 +1,7 @@
 # Data Persistence 设计
 
-文档版本：v1.1  
-更新日期：2026-05-20  
+文档版本：v1.2
+更新日期：2026-06-06
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标

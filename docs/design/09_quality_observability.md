@@ -1,7 +1,7 @@
 # Quality & Observability 设计
 
-文档版本：v1.1  
-更新日期：2026-05-20  
+文档版本：v1.2
+更新日期：2026-06-06
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -38,7 +38,7 @@ UI / 后台入口
 - 用户注册登录、禁用账号拒绝、首位管理员并发。
 - 用户 LLM/数据源配置保存、连接测试、密钥脱敏。
 - 系统配置和硬限制。
-- Project 创建、暂停、恢复、归档、软删除、私人资产清理预览。
+- Project 创建、编辑信息、归档、软删除、私人资产清理预览。
 - Workspace 进入检查和 Knowledge Version 缺失禁用态。
 - Construction Run 单 Project 写锁。
 - 多源检索失败分类、去重评分、PDF 解析降级、入库建图、版本发布。

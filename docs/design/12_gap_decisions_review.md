@@ -1,7 +1,7 @@
 # 12 Gap Decisions 设计审查
 
-文档版本：v1.2  
-更新日期：2026-05-29  
+文档版本：v1.3
+更新日期：2026-06-06
 依据文档：`00_layers.md`、`01-01-FR-reference.md`、`02_domain_core.md`  
 适用项目大版本：v1
 
@@ -30,7 +30,7 @@
 
 | 决策项 | 旧建议 | 当前状态 | 当前落点 | 后续处理 |
 | --- | --- | --- | --- | --- |
-| D-001 状态模型 | 短期按旧数据模型统一，后续可新增 tasks | 已吸收 | `02_domain_core.md` 已定义 Project 状态 `active/paused/archived/deleted`、Run/Session 通用状态 `draft/queued/running/waiting_user/succeeded/failed/cancelled/archived`，并定义构建写锁、调度锁、Research 流式锁和 Review 锁 | 数据库约束、API 枚举和是否新增通用任务表转交下游设计 |
+| D-001 状态模型 | 短期按旧数据模型统一，后续可新增 tasks | 已吸收 | `02_domain_core.md` 已定义 Project 状态 `active/archived/deleted`、Run/Session 通用状态 `draft/queued/running/paused/waiting_user/succeeded/failed/cancelled/archived`，并定义构建写锁、调度锁、Research 流式锁和 Review 锁；Project 不提供 paused 状态，deleted 不进入 Workspace | 数据库约束、API 枚举和是否新增通用任务表转交下游设计 |
 | D-002 REST 响应结构 | 统一 `{code,data,message}` | 转交下游设计 | `00_layers.md` 明确 API 端点、请求响应字段、错误码和 SSE 协议由 `04_api_contracts.md` 维护 | 本文不再追踪响应信封格式 |
 | D-003 错误码体系 | 统一 `ERR-*` 字符串码 | 转交下游设计 | `00_layers.md` 要求 API Boundary 统一权限、Project 状态、配置、锁冲突和 Provider 失败响应；`02_domain_core.md` 要求错误进入可诊断分类 | 具体错误码格式转交 API/QA 设计 |
 | D-004 SSE 认证方案 | 对话用 fetch stream；进度流用 Cookie 或短期 stream token | 转交下游设计 | `00_layers.md` 将 HTTP/SSE 入口、认证入口、断线恢复约定交给 API Boundary | 本文不再按领域缺口追踪 SSE 认证细节 |

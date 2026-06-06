@@ -1,7 +1,7 @@
 # Domain Core 设计
 
-文档版本：v1.14
-更新日期：2026-06-01
+文档版本：v1.15
+更新日期：2026-06-06
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`01-01-FR-reference.md`  
 用途：从 FR 中提炼 Research Paper Base 的核心业务对象、对象关系、状态、生命周期和不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -97,8 +97,7 @@ Project 状态：
 
 | 状态 | 可进入 Workspace | 可写交互 | 自动调度 | 领域含义 |
 | --- | --- | --- | --- | --- |
-| `active` | 是 | 是 | 是 | 正常研究状态 |
-| `paused` | 是 | 是 | 否 | 用户暂停自动追踪，保留手动交互 |
+| `active` | 是 | 是 | 取决于 ConstructionWorkspace 自动更新设置 | 正常研究状态 |
 | `archived` | 是 | 只读；导出可作为受控读型产物生成 | 否 | 历史保留状态，不允许新建、启动、继续生成、上传、删除、重跑或刷新依赖等写操作 |
 | `deleted` | 否 | 否 | 否 | 软删除状态，默认不在普通 Project 列表展示 |
 
@@ -109,8 +108,10 @@ Project 不变量：
 - Project Owner 默认拥有自己 Project 的 `access`、`use`、`delete` 全部权限；只要 Owner 账号处于有效状态，这些默认权限不得被撤销、降级或被共享授权配置覆盖。
 - 将 Project 的 `access` 或 `use` 权限授权给其他用户属于 P2 共享协作能力；未实现时不得阻塞 Owner 对自己 Project 的 P0 创建、进入、使用和管理主流程。
 - P0 阶段未实现共享协作授权时，非 Owner 用户不得访问或使用他人 Project。
-- Project 状态切换、归档、软删除和私人资产清理必须经过权限校验。
-- `deleted` 是软删除，不得物理破坏其他 Project、全局论文记录或其他用户数据。
+- Project 只定义 `active`、`archived`、`deleted` 生命周期状态；不得用 Project `paused` 表达自动更新停用。
+- 自动更新启停属于 ConstructionWorkspace 配置，不改变 Project 状态，也不得影响 ResearchSession、ReviewRun 或手动 ConstructionRun 的可用性。
+- Project 归档、软删除和私人资产清理必须经过权限校验。
+- `deleted` 是软删除，不得物理破坏其他 Project、全局论文记录或其他用户数据；deleted Project 不得进入 Workspace，也不得在 Workspace 内作为可见 Project 状态展示。
 - Project 私人资产清理只可清理该 Project 独占的运行记录、Run/Session、Project-Paper 关联、PDF、解析文本、向量索引、图谱文件和临时产物。
 - Project 私人资产清理不得删除全局论文身份、其他 Project 仍引用的共享论文、其他用户数据或默认保留的已完成导出文件。
 - ProjectWorkspace 的顶层对象结构固定为：当前 Project 唯一 ConstructionWorkspace、ResearchSession 列表和 ReviewRun 列表；历史 ConstructionRun 只能作为 ConstructionWorkspace 内部对象查看，不得与 ResearchSession 或 ReviewRun 平级展示为 ProjectWorkspace 顶层对象。
@@ -495,7 +496,7 @@ manual_edit > manual_confirm > agent_draft
 | `NotificationRecipientChanged` | 用户修改收件邮箱、推送开关或通知偏好 |
 | `NotificationTestFailed` | 测试邮件失败且偏好保持不变 |
 | `ProjectCreated` | Project 创建 |
-| `ProjectStatusChanged` | Project 暂停、恢复、归档或软删除 |
+| `ProjectStatusChanged` | Project 归档或软删除 |
 | `ProjectPrivateAssetsCleanupRequested` | 用户确认 Project 私人资产清理 |
 | `ConstructionRunStarted` | ConstructionRun 启动 |
 | `ConstructionRunWaitingUser` | 构建流程等待人工确认或修复 |
@@ -569,3 +570,4 @@ manual_edit > manual_confirm > agent_draft
 | v1.12 | 2026-05-29 | 收敛 Domain Core 聚合边界，区分领域实体、值对象、只读投影、配置快照和任务对象；弱化实现细节，强化 Paper-Knowledge-Evidence 主链路 | Codex |
 | v1.13 | 2026-06-01 | 同步管理员能力分层：收束账号治理、系统配置 MVP/P1/P2 边界、管理员系统级诊断限制、用户删除级联私人数据和观点隐藏通知/恢复规则 | Codex |
 | v1.14 | 2026-06-01 | 补强 Run 暂停态、P1 重试/重连/重跑语义、断点临时文件清理、自动 Construction Run 无等待策略和 Review Run 单版本规则 | Codex |
+| v1.15 | 2026-06-06 | 移除 Project 级 paused 状态，明确自动更新启停归 ConstructionWorkspace 配置承载，不改变 Project 生命周期状态；deleted Project 不进入 Workspace。 | Codex |

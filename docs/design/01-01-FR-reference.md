@@ -1,7 +1,7 @@
 # FR Reference
 
-文档版本：v1.1  
-更新日期：2026-05-21  
+文档版本：v1.2
+更新日期：2026-06-06
 来源文档：`01_functional_requirements.md`  
 用途：作为功能需求编号、优先级和编号重整关系的参考中间文件。若本文与 `01_functional_requirements.md` 冲突，以 `01_functional_requirements.md` 为准。
 
@@ -16,7 +16,7 @@
 | FR-005 | 基础层/管理员模块 | 管理员账号管理 | P0 | 首位用户为管理员，维护用户账号状态和管理员权限 |
 | FR-006 | 基础层/管理员模块 | 管理员系统级配置管理 | P0 | 维护系统默认 LLM、论文数据库 API、SMTP 和安全配置 |
 | FR-007 | 基础层 | 用户配置与系统配置解析规则 | P0 | 定义用户配置、系统默认配置、硬限制、密钥隔离和运行时取值优先级 |
-| FR-008 | 基础层 | 系统级页面入口与 Project 可用性约束 | P0 | 管理系统级页面入口、Project 状态、Project 列表/维护入口和进入 Project Workspace 的可用性约束 |
+| FR-008 | 基础层 | 系统级页面入口与 Project 可用性约束 | P0 | 管理系统级页面入口、Project 状态（active/archived/deleted）、Project 列表/维护入口和进入 Project Workspace 的可用性约束；deleted 不进入 Workspace |
 | FR-009 | 基础层 | 系统级自动构建调度与推送触发 | P1 | 系统级调度器扫描 active Project 的 Construction Workspace，创建自动 Construction Run，并向邮件推送流程提供新增有效论文范围 |
 | FR-010 | 基础层 | 观点广场 | P2 | 独立系统级观点发布与查看页面，禁止评论和讨论，仅展示联系信息 |
 | FR-011 | 基础层-项目工作台 | Project Workspace 内部入口、框架与对象切换 | P0 | 管理 Project 状态展示、Construction Workspace 入口、Run/Session 列表、对象打开/切换、主体流程栏和信息面板 |

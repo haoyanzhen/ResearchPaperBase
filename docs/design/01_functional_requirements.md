@@ -8,7 +8,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | Research Paper Base |
-| 文档版本 | v1.42 |
+| 文档版本 | v1.43 |
 | 编写日期 | 2026-04-22 |
 | 编写人 | codearts |
 | 审核人 | 郝彦臻 |
@@ -447,17 +447,16 @@
 - 将 Project 的访问权限和使用权限授权给其他用户属于 P2 级共享协作能力，暂不实现；未实现时不得成为 P0 Project 创建、进入、使用和管理主流程的卡口。
 - 用户可对自己的 Project 触发私人资产清理；清理范围包括除可复用论文元数据外的 Project 私有记录、历史 Run/Session、Project-Paper 关联、PDF、解析文本、向量索引、图谱文件和临时任务产物。
 - 导出结果属于用户主动生成的保留产物，Project 私人资产清理默认不删除已完成导出文件；导出文件生命周期由 `FR-019` 和运维清理策略定义。
-- Project 应支持 `active`、`paused`、`archived`、`deleted` 状态，并可由用户进行切换。
-  - `active` Project 可进入 Workspace 进行交互，并可参与系统级自动构建调度。
-  - `paused` Project 可进入 Workspace 进行交互，但不参与系统级自动构建调度。
+- Project 应支持 `active`、`archived`、`deleted` 状态；Project 级对象不提供暂停/恢复状态。
+  - `active` Project 可进入 Workspace 进行交互。是否参与系统级自动构建调度由该 Project 的 Construction Workspace 自动更新设置决定。
   - `archived` Project 默认只读保留历史，只可查看历史，不可使用互动功能，不参与系统级自动构建调度。
-  - `deleted` Project 为软删除状态，不得进入 Workspace，不参与自动构建调度，默认不在普通 Project 列表展示。
+  - `deleted` Project 为软删除状态，不得进入 Workspace，不参与自动构建调度，默认不在普通 Project 列表和 Workspace 中展示。
 - 系统级入口应至少包含 Project 列表/创建入口、用户配置入口、观点广场入口；管理员用户还应看到管理员配置入口。
 - 用户可从 Project 列表选择自己有权限访问的 Project，并进入该 Project Workspace。且在 Project Workspace 中，用户应当能够看到或通过简单操作看到全部系统级入口。
 - 进入 Project Workspace 前，系统应完成 Project 可用性检查。
-- Project 状态切换、软删除和归档操作必须经过权限校验。
+- Project 归档、软删除和私人资产清理操作必须经过权限校验。
 - Project 私人资产清理必须经过权限校验、影响范围预览和二次确认；清理不得删除全局论文元数据、其他 Project 仍引用的共享论文身份或其他用户数据。
-- Project 列表应展示进入 Workspace 所需的基础可用性信息，例如 Project 状态、是否存在可用 Knowledge Version、最近构建时间、最近活动时间。
+- Project 列表应展示进入 Workspace 所需的基础可用性信息，例如 Project 状态、是否存在可用 Knowledge Version、最近构建时间、最近活动时间；普通 Project 列表默认不展示 `deleted` Project。
 
 **验收标准：**
 - 用户可创建、查看、更新、软删除或归档自己的 Project。
@@ -471,14 +470,13 @@
 - `deleted` Project 应作为软删除状态处理；软删除不得物理破坏其他 Project、全局论文记录或其他用户数据。
 - Project 私人资产清理应删除或排队删除该 Project 独占的运行记录、历史 Run/Session、关联表记录、PDF、解析文本、向量库 namespace/collection、图谱文件和临时任务产物；不得删除全局 `papers` 论文身份与元数据，除非后续独立规则确认其不再被任何 Project 引用且允许清理。
 - Project 私人资产清理默认保留已完成导出结果；用户如需删除导出结果，应通过导出中心或导出生命周期策略处理。
-- Project 列表能展示 Project 状态、Knowledge Version 是否可用、最近构建、最近活动和自动追踪状态。
-- 用户可将 Project 从 `active` 暂停为 `paused`，暂停后系统级自动构建调度不再扫描该 Project。
-- 用户可将 `paused` Project 恢复为 `active`，恢复后可重新参与系统级自动构建调度。
+- Project 列表能展示 Project 状态、Knowledge Version 是否可用、最近构建、最近活动和自动更新状态摘要。
+- Project Hub 不提供 Project 级暂停/恢复操作；停止或恢复自动更新应在 Construction Workspace 的自动更新设置中完成。
 - `archived` Project 默认只读展示历史，不参与自动构建调度。
-- 无权限用户不得切换 Project 状态；被拒绝时应给出明确原因。
+- 无权限用户不得归档、软删除或清理 Project 私人资产；被拒绝时应给出明确原因。
 - `FR-008` 不定义 Run/Session 列表、工作台切换、暂停/恢复/取消/重试、知识库版本刷新或导出流程。
 - 软删除或归档 Project 不得破坏其他 Project 的数据；私人资产清理也不得破坏全局论文元数据、其他 Project 引用或其他用户数据。
-- Project 状态切换测试应覆盖 `active -> paused`、`paused -> active`、`active/paused -> archived`、软删除后不可进入 Workspace 以及无权限切换被拒绝。
+- Project 状态测试应覆盖 `active -> archived`、软删除后不可进入 Workspace、无权限归档/软删除被拒绝，以及 Construction Workspace 自动更新关闭后 Project 仍可正常进入和手动交互。
 - Project 私人资产清理测试应覆盖影响范围预览、二次确认、导出结果保留、共享论文元数据保留、私有 PDF/解析文本/图谱/向量索引删除，以及其他 Project 引用不受影响。
 
 #### FR-009 系统级自动构建调度与推送
@@ -488,7 +486,7 @@
 
 **功能范围：**
 - 系统级 scheduler 应周期性扫描所有用户的 Project。
-- scheduler 只调度 `active` Project，跳过 `paused`、`archived`、`deleted` Project。
+- scheduler 只扫描 `active` Project，并仅在其 Construction Workspace 自动更新设置启用且存在自动更新检索词时创建自动 Construction Run；跳过 `archived`、`deleted` Project。
 - scheduler 对每个 active Project 读取其唯一 Construction Workspace。
 - 仅当 Construction Workspace 中存在至少一个 `auto_update_enabled=true` 的检索词时，系统才创建自动 Construction Run。
 - 自动 Construction Run 使用自动更新检索词集合，并按每个检索词的数据源策略解析可用数据源。
@@ -506,7 +504,7 @@
 **验收标准：**
 - 系统级 scheduler 能周期性扫描所有用户的 Project。
 - scheduler 的全局启用状态、周期、时间窗口和并发上限由 P2 管理员调度管理能力控制；未实现前不得阻塞 P1 自动构建调度主流程。
-- `paused`、`archived`、`deleted` Project 不会被系统级自动构建调度。
+- `archived`、`deleted` Project 不会被系统级自动构建调度。
 - 没有自动更新检索词的 active Project 不会创建自动 Construction Run，并能记录跳过原因。
 - 自动 Construction Run 使用 `auto_update_enabled=true` 的检索词和对应数据源策略。
 - 自动 Construction Run 启动时保存配置快照。
@@ -564,8 +562,8 @@
 
 **功能范围：**
 - Project Workspace 必须绑定用户当前选择的 Project。
-- Workspace 应展示当前 Project 状态，包括 active、paused、archived、deleted 中的可见状态。
-- Workspace 应提供切换 Project 状态的入口；具体 Project 状态规则由 `FR-008` 定义。
+- Workspace 只展示可进入的当前 Project 状态，即 active 或 archived；`deleted` Project 不得进入 Workspace，也不得在 Workspace 内展示为一种可见状态。
+- Workspace 不提供 Project 级暂停/恢复入口；自动更新启停由 Construction Workspace 承载，具体 Project 状态规则由 `FR-008` 定义。
 - Workspace 应展示 Construction Workspace、Research Session、Review Run 的入口。
 - 当 Project 为 `archived` 状态时，Workspace 入口应进入只读查看模式：历史 Construction Run、Research Session 和 Review Run 可查看；新建、启动、继续生成、上传、删除、重跑、刷新依赖和导出外的写操作默认禁用。
 - 构建入口打开当前 Project 唯一 Construction Workspace。
@@ -588,8 +586,8 @@
 
 **验收标准：**
 - 用户从系统级 Project 入口进入某 Project 后，Workspace 只展示该 Project 的研究入口和数据。
-- Workspace 能展示当前 Project 的 active、paused 或 archived 状态。
-- 用户可在 Workspace 中暂停或恢复 Project 自动追踪，且不会删除历史 Run、Research Session、Review Run 或 Knowledge Version。
+- Workspace 能展示当前 Project 的 active 或 archived 状态。
+- 用户可在 Construction Workspace 中启用或停用自动更新；该设置不改变 Project 状态，也不会删除历史 Run、Research Session、Review Run 或 Knowledge Version。
 - 用户可看到 Construction Workspace、Research Session 和 Review Run 的入口。
 - 无可用 Knowledge Version 时，深度研究和主题综述入口禁用并显示需要至少一次 Construction Run 完成作为前置条件的提示。
 - 构建入口打开当前 Project 唯一 Construction Workspace。
@@ -1523,3 +1521,4 @@ Project Workspace 应为构建模式和主题综述模式这类流程式 Agent �
 | v1.40 | 2026-05-26 | 收束自动 Construction Run 检索词规则：新生成或新增检索词默认 `auto_update_enabled=true`，自动 Run 仍按该参数选择检索词 | Codex |
 | v1.41 | 2026-06-01 | 收束管理员 MVP/P1/P2 能力边界：明确账号治理范围、系统配置分层、系统级诊断边界、自动调度管理后置和观点隐藏通知/恢复规则 | Codex |
 | v1.42 | 2026-06-01 | 收束 Run 暂停、重试、重连、重跑语义；同步自动 Construction Run 无人值守失败策略；明确 Review Run 单 Knowledge Version 与刷新重跑规则 | Codex |
+| v1.43 | 2026-06-06 | 移除 Project 级 paused 状态和暂停/恢复操作，将自动更新启停收束到 Construction Workspace 配置；Project 状态保留 active、archived、deleted，并明确 deleted 不进入 Workspace。 | Codex |

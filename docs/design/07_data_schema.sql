@@ -1,6 +1,6 @@
 -- Research Paper Base MVP schema draft
--- Version: v1.1
--- Updated: 2026-05-20
+-- Version: v1.2
+-- Updated: 2026-06-06
 -- Authority: docs/design/01_functional_requirements.md and docs/design/00_layers.md
 
 create table users (
@@ -19,7 +19,7 @@ create table projects (
   owner_user_id uuid not null references users(id),
   name text not null,
   description text,
-  status text not null check (status in ('active', 'paused', 'archived', 'deleted')),
+  status text not null check (status in ('active', 'archived', 'deleted')),
   default_knowledge_version_id uuid,
   last_opened_object_type text,
   last_opened_object_id uuid,
