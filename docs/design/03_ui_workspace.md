@@ -1,6 +1,6 @@
 # UI / Workspace 设计
 
-文档版本：v1.10
+文档版本：v1.16
 更新日期：2026-06-08
 依据文档：`00_layers.md`、`01_functional_requirements.md`、当前工作树 `04_information_architecture_ui.md`
 
@@ -102,7 +102,7 @@ P0 恢复最近打开 Project、最近打开对象、基础面板展开状态和
 
 | 处理方式 | UI 范围 | 原因 |
 | --- | --- | --- |
-| 保留并小修 | P01、P02、P03、P06、P07、P08、P09、P10、P11、P13、P14、P16、P17-P21、P23、P26-P28、P35-P42、P43-P46 | 能支撑 P0 主流程或明确的 P1 支撑页，但需隐藏其他 P1/P2 控件或收紧领域边界 |
+| 保留并小修 | P01、P02、P03、P06、P07、P08、P09、P10a-P10f、P13、P14、P16、P17-P21、P23、P26-P28、P35-P42、P43-P46 | 能支撑 P0 主流程或明确的 P1 支撑页，但需隐藏其他 P1/P2 控件或收紧领域边界 |
 | 删除并重设计 | P15、旧 P22、旧 P30-P32 | Construction Workspace、补充论文请求和知识资产面板都是新版领域设计，旧线框不足以承载 |
 | 移入后续清单 | 旧 P04、旧 P05、旧 P12、旧 P24、旧 P25、旧 P29、旧 P33、旧 P34、旧 P37 的 Run/Session 部分 | 属于 P1/P2 或旧版统一实例操作，不进入 P0 主线框 |
 
@@ -174,7 +174,9 @@ P01 为同一公开认证入口的两个界面状态：登录状态只收集登�
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### P02 Project Hub
+### P02 Project Workspace / Main Interface
+
+#### P02a Project Hub
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -206,7 +208,7 @@ Admin 入口仅对管理员显示；非管理员隐藏该入口，且后端仍�
 
 编辑信息仅修改 Project 名称、详细说明、研究主题/范围等基础元信息，不修改 Project 状态、Knowledge Version、论文资产、Run/Session 或自动更新设置。Project Hub 不提供 Project 级暂停/恢复；自动更新启停在 Construction Workspace 内管理。
 
-### P03 Project 新建 / 编辑
+#### P02b Project 新建 / 编辑
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -227,7 +229,9 @@ Admin 入口仅对管理员显示；非管理员隐藏该入口，且后端仍�
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### P06 个人设置 / 账户
+### P06 个人设置
+
+#### P06a 个人设置 / 账户
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -246,7 +250,7 @@ Admin 入口仅对管理员显示；非管理员隐藏该入口，且后端仍�
 
 P06 只维护 FR-001 的用户基础信息；模型选择归 P07，收件邮箱和通知偏好归 P09。
 
-### P07 个人设置 / LLM
+#### P06b 个人设置 / LLM
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -280,7 +284,7 @@ P06 只维护 FR-001 的用户基础信息；模型选择归 P07，收件邮箱�
 
 P07 使用列表-详情交互：右侧 Config Editor 始终编辑中间栏当前选中的 LLM 配置实例，并在标题中显示选中实例名称。中间栏展示 LLM 配置实例，而不是 provider 类型；同一 provider 类型可存在多个配置实例。P07 只管理配置实例、连接测试、可用模型查询和默认参数，不保存当前 Agent 调用模型。当前模型由主界面顶栏 `[Current Model ▼]` 从所有可用配置实例的模型列表中选择；用户未选择当前模型时，任务启动前必须提示选择，不得静默回落到系统默认模型。
 
-### P08 个人设置 / 数据源
+#### P06c 个人设置 / 数据源
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -304,7 +308,7 @@ P07 使用列表-详情交互：右侧 Config Editor 始终编辑中间栏当前
 
 P08 使用列表-详情交互：右侧 Source Editor 始终编辑中间栏当前选中的数据源配置，并在标题中显示选中数据源名称。
 
-### P09 个人设置 / 通知（P1）
+#### P06d 个人设置 / 通知（P1）
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -327,70 +331,213 @@ P08 使用列表-详情交互：右侧 Source Editor 始终编辑中间栏当前
 
 P09 使用列表-详情交互：右侧 Notification Editor 始终编辑中间栏当前选中的收件邮箱，并在标题中显示选中邮箱。P09 承载 FR-004 的用户收件邮箱、通知偏好和测试邮件。系统 SMTP / 发件邮箱仍由管理员系统配置维护。
 
-### P10 管理员 / 用户
+### P10 管理员设置面板
+
+#### P10a 管理员 / Users
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
 │ Admin / Users                                                Avatar       │
-├────────────────────────────────────────────────────────────────────────────┤
-│ 搜索用户                  状态 ▼        角色 ▼                            │
-├────────────────────────────────────────────────────────────────────────────┤
-│ ┌──────────┬───────────────┬──────────┬──────────┬──────────┬──────────┐ │
-│ │ 用户名    │ 邮箱           │ 角色      │ 状态      │ 最近登录  │ 操作      │ │
-│ ├──────────┼───────────────┼──────────┼──────────┼──────────┼──────────┤ │
-│ │ alice    │ a@lab.edu     │ admin    │ enabled  │ 05-12    │ 禁用 查看 │ │
-│ │ bob      │ b@lab.edu     │ user     │ disabled │ 05-10    │ 启用 提权 │ │
-│ └──────────┴───────────────┴──────────┴──────────┴──────────┴──────────┘ │
-└────────────────────────────────────────────────────────────────────────────┘
+├──────────────┬─────────────────────────────────────────────────────────────┤
+│ Users        │                                                            │
+│ LLM          │ ┌──────────┬───────────────┬──────────┬──────────┬──────┐ │
+│ Sources      │ │ 用户名    │ 邮箱           │ 角色      │ 状态      │ 操作  │ │
+│ SMTP         │ ├──────────┼───────────────┼──────────┼──────────┼──────┤ │
+│ Security     │ │ alice    │ a@lab.edu     │ admin    │ enabled  │ 操作▼ │ │
+│ Backend      │ │ bob      │ b@lab.edu     │ user     │ disabled │ 操作▼ │ │
+│              │ └──────────┴───────────────┴──────────┴──────────┴──────┘ │
+└──────────────┴─────────────────────────────────────────────────────────────┘
 ```
 
-### P11 管理员 / 系统配置
+P10a 的操作下拉包含查看、编辑邮箱、重置密码、设为管理员/撤销管理员、启用/禁用、删除。查看不需要二次确认；编辑邮箱、重置密码、设为管理员/撤销管理员、启用/禁用和删除都需要二次确认。最后一个启用管理员保护由后端强制执行，UI 只展示禁用原因。
+
+#### P10b 管理员 / LLM
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ Admin / System                                               Avatar       │
+│ Admin / LLM                                                  Avatar       │
 ├──────────────────┬──────────────────────┬─────────────────────────────────┤
-│ LLM Defaults     │ 配置列表             │ Editor                          │
-│ Source Defaults  │ + 添加               │ Provider / Source / SMTP / Rule │
-│ SMTP             │ ┌──────────────────┐ │ Base URL / Host                 │
-│ Security         │ │ OpenAI     ok    │ │ API Key / Password     [👁]     │
-│                  │ │ arXiv      ok    │ │ 基础安全限制                     │
-│                  │ │ SMTP       err   │ │ 测试结果 / 失败原因              │
-│                  │ └──────────────────┘ │ [测试连接] [保存] [删除]        │
+│ Users            │ System LLM Configs   │ Config Editor / Default OpenAI  │
+│ LLM              │ + 添加配置            │ 配置名称                         │
+│ Sources          │ ┌──────────────────┐ │                                 │
+│ SMTP             │ │ > Default   ok   │ │ 基础连接设置                     │
+│ Security         │ │                  │ │ Type        [OpenAI ▼]          │
+│ Backend          │ │ Backup     err   │ │ Base URL                        │
+│                  │ │                  │ │ API Key               [👁]      │
+│                  │ │ Local vLLM  off │ │ Enabled     [on/off]            │
+│                  │ │                  │ │ [测试连接] [保存] [删除]        │
+│                  │ └──────────────────┘ │                                 │
+│                  │                      │ 可用模型查询                     │
+│                  │                      │ [刷新模型列表]                   │
+│                  │                      │ ┌───────────────┬─────────────┐ │
+│                  │                      │ │ model         │ status      │ │
+│                  │                      │ └───────────────┴─────────────┘ │
+│                  │                      │                                 │
+│                  │                      │ 详细参数配置 ▼                    │
+│                  │                      │ Temperature                     │
+│                  │                      │ Max_tokens                      │
+│                  │                      │ Top P                           │
+│                  │                      │ Timeout                         │
+│                  │                      │ 其他参数 JSON                   │
+│                  │                      │ 测试结果 / 失败原因              │
 └──────────────────┴──────────────────────┴─────────────────────────────────┘
 ```
+
+P10b 与 P07 使用一致的 LLM 配置实例编辑结构，但配置作用域为系统级默认 LLM 和平台硬限制；管理员不得查看或修改用户私人 LLM 配置和密钥。
+
+#### P10c 管理员 / Sources
+
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Admin / Sources                                              Avatar       │
+├──────────────────┬──────────────────────┬─────────────────────────────────┤
+│ Users            │ System Sources       │ Source Editor / arXiv           │
+│ LLM              │ + 添加               │ Type        [arXiv ▼]           │
+│ Sources          │ ┌──────────────────┐ │ Enabled     [on/off]            │
+│ SMTP             │ │ > arXiv     ok  │ │ Base URL                        │
+│ Security         │ │ OpenAlex    ok  │ │ API Key               [👁]      │
+│ Backend          │ │ ADS        err  │ │ Rate limit                      │
+│                  │ └──────────────────┘ │ [测试连接] [保存] [删除]        │
+│                  │                      │ 最近状态 / 失败原因              │
+│                  │                      │                                │
+│                  │                      │                                │
+│                  │                      │                                │
+│                  │                      │                                │
+└──────────────────┴──────────────────────┴─────────────────────────────────┘
+```
+
+#### P10d 管理员 / SMTP
+
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Admin / SMTP                                                 Avatar       │
+├──────────────────┬──────────────────────┬─────────────────────────────────┤
+│ Users            │ SMTP Profiles        │ SMTP Editor / Primary SMTP      │
+│ LLM              │ + 添加               │ 发件邮箱                         │
+│ Sources          │ ┌──────────────────┐ │ Server / Host                   │
+│ SMTP             │ │ > Primary   ok  │ │ Port                            │
+│ Security         │ │ Backup    off   │ │ Encryption [选择 ▼]             │
+│ Backend          │ └──────────────────┘ │ Auth Type  [选择 ▼]             │
+│                  │                      │ 认证凭据                         │
+│                  │                      │ Username（按认证方式显示）        │
+│                  │                      │ Secret / API Key / Token [👁]    │
+│                  │                      │ [测试发送] [保存] [删除]        │
+│                  │                      │ 测试结果 / 失败原因              │
+└──────────────────┴──────────────────────┴─────────────────────────────────┘
+```
+
+P10d 的 `Encryption` 明确连接加密方式，可选 None、SSL-TLS、STARTTLS。`Auth Type` 可选 None、Password、Token、API Key，并决定认证凭据区域的字段：None 不显示凭据；Password 显示 Username + Password；Token 显示 Username（按服务要求）+ Token；API Key 显示 API Key，Username 隐藏或可选。`API Key` 类型支持发件邮箱、server 和 API key 即可认证的邮件服务。
+
+#### P10e 管理员 / Security
+
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Admin / Security                                             Avatar       │
+├──────────────────┬─────────────────────────────────────────────────────────┤
+│ Users            │ 可配置安全参数                                          │
+│ LLM              │ ┌─────────────────────────────────────────────────────┐ │
+│ Sources          │ │ 连接测试超时                                          │ │
+│ SMTP             │ │ 连接测试重试次数                                      │ │
+│ Security         │ │ 配置快照保留期                                        │ │
+│ Backend          │ │ 诊断信息范围                                          │ │
+│                  │ │ 模型白名单（P1）                                      │ │
+│                  │ │ 允许数据源范围（P1）                                  │ │
+│                  │ │ 系统级速率上限 / 并发上限（P1）                       │ │
+│                  │ │ [保存]                                             │ │
+│                  │ └─────────────────────────────────────────────────────┘ │
+└──────────────────┴─────────────────────────────────────────────────────────┘
+```
+
+P10e 只展示管理员可以查看或更改的安全相关参数，不展示平台固定化安全规则。MVP 可配置项包括连接测试超时、连接测试重试次数、配置快照保留期和诊断信息范围；模型白名单、允许数据源范围、系统级速率上限和并发上限属于 P1。限制变更后，后续任务启动必须重新校验用户配置是否仍满足限制。
+
+#### P10f 管理员 / Backend（P2）
+
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Admin / Backend                                              Avatar       │
+├──────────────────┬──────────────────────┬─────────────────────────────────┤
+│ Users            │ Backend Views        │ System Status                   │
+│ LLM              │ ┌──────────────────┐ │ API             ok              │
+│ Sources          │ │ > System Status  │ │ Queue           ok              │
+│ SMTP             │ │ Scheduler        │ │ Scheduler       on              │
+│ Security         │ │ Usage            │ │ Storage         ok              │
+│ Backend          │ │ Diagnostics      │ │ Vector / Graph  ok              │
+│                  │ └──────────────────┘ │                                 │
+│                  │                      │ Scheduler                       │
+│                  │                      │ Enabled     [on/off]            │
+│                  │                      │ Period      [daily ▼]           │
+│                  │                      │ Window      [02:00-06:00]       │
+│                  │                      │ Last / Next run                 │
+│                  │                      │                                 │
+│                  │                      │ Usage Dashboard                 │
+│                  │                      │ LLM requests / tokens           │
+│                  │                      │ Source requests / failures      │
+│                  │                      │                                 │
+│                  │                      │ Diagnostics                     │
+│                  │                      │ 脱敏系统诊断列表                 │
+│                  │                      │ [刷新] [导出诊断摘要]           │
+└──────────────────┴──────────────────────┴─────────────────────────────────┘
+```
+
+P10a-P10f 使用同一级管理员侧栏切换账号治理和系统配置项，避免把 Users 与 System 作为不对称的两级概念。系统级 LLM、Sources、SMTP 和 Security 只影响平台默认配置和硬限制，不允许管理员查看用户私人密钥明文。P10f 是 P2 后台信息展示入口，用于管理员查看系统状态、调度配置、系统级 LLM/数据源用量和脱敏系统诊断；不得展示用户私人配置、Project 权限、Project 内容、用户 prompt、上传文件或用户侧原始错误明细。
 
 ### P13 Project Workspace Shell
 
 ```text
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│ Logo [Project ▼] Projects Settings Admin            [Current Model ▼] Avatar        │
-├──────────────┬──────────────────────┬────────────────────────────────┬──────────────┤
-│ Project Rail │ Objects              │ Main Workbench                 │ Info Panels  │
-│              │                      │                                │              │
-│ Project A    │ ┌──────────────────┐ │ ┌────────────────────────────┐ │ [Project ▾] │
-│ active       │ │ Construction     │ │ │ Context Header             │ │ Papers      │
-│ KV-12        │ │ Workspace        │ │ │ object / state / KV / lock │ │ Graph       │
-│              │ └──────────────────┘ │ └────────────────────────────┘ │ Versions     │
-│              │                      │                                │ [刷新依赖]   │
-│ Recent       │                      │                                │ Build state │
-│ Project B    │ Research Sessions    │ mode-specific content          │              │
-│ Project C    │ + New                │                                │ [Object ▾]  │
-│              │ ┌──────────────────┐ │                                │ Status      │
-│ + Project    │ │ RS-023 active    │ │                                │ Logs        │
-│              │ │ RS-020 archived  │ │                                │ Citations   │
-│              │ └──────────────────┘ │                                │ Results     │
-│              │                      │                                │              │
-│              │ Review Runs          │                                │              │
-│              │ + New                │                                │              │
-│              │ ┌──────────────────┐ │                                │              │
-│              │ │ RV-008 running   │ │                                │              │
-│              │ │ RV-004 done      │ │                                │              │
-│              │ └──────────────────┘ │                                │              │
-└──────────────┴──────────────────────┴────────────────────────────────┴──────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Logo  Projects  Settings  Plaza  Admin*                 [Current Model ▼]  Avatar          │
+├──────────────────────┬──────────────────────────────────────────┬──────────────────────────┤
+│ Workspace Objects    │ Main Workbench                           │ Info Panels              │
+│                      │                                          │                          │
+│ Project A            │ ┌──────────────────────────────────────┐ │ [Project Assets ▾]      │
+│ active               │ │ Construction Workspace               │ │ Papers / Materials      │
+│                      │ │ current object / state / KV baseline │ │ Graph                   │
+│ > Construction       │ │                                      │ │ Default KV: KV-12       │
+│   Workspace          │ │ object-specific workflow content     │ │ Object KV: KV-12        │
+│   Auto update: on    │ │                                      │ │ Build / auto summary    │
+│   Terms: 6 active    │ │                                      │ │ [Open KV refresh]       │
+│                      │ └──────────────────────────────────────┘ │                          │
+│ Research Sessions    │                                          │ [Object Info ▾]          │
+│ + New                │                                          │ Status / phase           │
+│ ┌──────────────────┐ │                                          │ Waiting items            │
+│ │ RS-023 active   │ │                                          │ Config snapshot          │
+│ │ RS-020 done     │ │                                          │ Diagnostics              │
+│ └──────────────────┘ │                                          │ Citations / results      │
+│                      │                                          │                          │
+│ Review Runs          │                                          │                          │
+│ + New                │                                          │                          │
+│ ┌──────────────────┐ │                                          │                          │
+│ │ RV-008 running  │ │                                          │                          │
+│ │ RV-004 done     │ │                                          │                          │
+│ └──────────────────┘ │                                          │                          │
+└──────────────────────┴──────────────────────────────────────────┴──────────────────────────┘
 ```
 
-Admin 入口仅对管理员显示；Project Workspace 内的系统级入口条件与 Project Hub 保持一致。
+P13 Project Home 状态：
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Logo  Projects  Settings  Plaza  Admin*                 [Current Model ▼]  Avatar          │
+├──────────────────────┬──────────────────────────────────────────┬──────────────────────────┤
+│ Workspace Objects    │ Project Home                             │ Info Panels              │
+│                      │                                          │                          │
+│ > Project A          │ Project No.   PRJ-2026-001               │ [Project Assets ▾]      │
+│ active               │ Description   long research topic...     │ Papers / Materials      │
+│                      │ Papers 128 | Materials 24                │ Graph                   │
+│ Construction         │ Last build      2026-06-08 02:10         │ Default KV: KV-12       │
+│ Workspace            │ Last activity   2026-06-08 09:35         │ Build / auto summary    │
+│ Research Sessions    │ Default KV      KV-12                    │                          │
+│ Review Runs          │ Auto update     on, 6 terms              │ [Object Info ▾]          │
+│                      │ [Open Construction] [New Research]       │ No object selected       │
+│                      │ [New Review]                             │                          │
+└──────────────────────┴──────────────────────────────────────────┴──────────────────────────┘
+```
+
+P13 是进入某个 Project 后的唯一 Workspace Shell，不再展示其他 Project 列表；切换 Project 应通过顶栏 `Projects` 返回 Project Hub 或打开 Project 选择器完成。左侧栏首行显示当前 Project 名称和最小状态，点击 Project 名称或首次打开 Workspace 时，Main Workbench 显示 Project Home 概览；用户选择 Construction Workspace、Research Session 或 Review Run 后，Project Home 概览退出，不持续占用工作界面。
+
+Project Home 只用于快速查看 Project 编号、详细说明、论文数、资料数、最近构建时间、最近活动时间、默认 Knowledge Version 和自动更新摘要，并提供进入构建、深研或综述入口。左侧除 Project 名称外，只展示当前 Project 的唯一 Construction Workspace、Research Session 列表和 Review Run 列表；历史 Construction Run 不与 Session/Run 平级展示，只能在 Construction Workspace 内部查看。选择对象时，Main Workbench 和 Object Info 面板必须同步切换；Project Assets 面板保持只读，承载论文、Project 资料、Graph、默认 Knowledge Version、当前对象绑定 Knowledge Version、构建摘要和版本刷新入口。
+
+当 Project 为 archived 时，P13 保持可进入但进入只读模式，禁用新建、启动、继续生成、上传、删除、重跑和刷新依赖等写操作，并展示只读原因。无可用 Knowledge Version 时，Research Session 和 Review Run 的新建入口禁用，并提示先完成一次 Construction Run。Admin 入口仅对管理员显示；Project Workspace 内的系统级入口条件与 Project Hub 保持一致。
 
 ### P14 Workspace 空态 / 禁用态
 
@@ -959,6 +1106,12 @@ flowchart LR
 
 | 版本 | 日期 | 变更摘要 |
 | --- | --- | --- |
+| v1.16 | 2026-06-08 | 调整 P13 Project Workspace：移除常驻 Project 详情条，将左侧栏首行改为当前 Project 名称；Project 详细信息仅在首次打开 Workspace 或点击 Project 名称时以 Project Home 展示。 |
+| v1.15 | 2026-06-08 | 根据 FR-011/FR-012/FR-013/FR-018 重新设计 P13：移除 Workspace 内 Project Rail，改为当前 Project 绑定的对象切换、主体工作区、只读 Project Assets 和同步 Object Info 面板。 |
+| v1.14 | 2026-06-08 | 收紧 P10e Security：删除密钥脱敏、密钥隔离、快照禁止明文密钥等固定化安全规则的 UI 展示，只保留管理员可查看或更改的安全参数和 P1 硬限制。 |
+| v1.13 | 2026-06-08 | 根据 FR-006/FR-007 调整 P10e Security 为基础安全限制与 P1 硬限制配置，并新增 P10f Backend（P2）展示系统状态、调度、用量和脱敏诊断后台。 |
+| v1.12 | 2026-06-08 | 调整 P10d SMTP 配置：将 TLS/SSL 改为 Encryption 选择，并新增 Auth Type 以支持 None、Password、Token 和 API Key 认证方式；将动态凭据字段改为认证凭据分组。 |
+| v1.11 | 2026-06-08 | 重构管理员设置线框：去掉 Users/System 二分，改为 P10a-P10e 同级侧栏入口 Users、LLM、Sources、SMTP、Security；P10a 用户操作改为动作下拉并标注二次确认规则；P10b 与 P07 的 LLM 配置实例编辑结构对齐。 |
 | v1.10 | 2026-06-08 | 增强 P07-P09 列表-详情交互表达：中间栏增加当前选中态，右侧编辑器标题显示正在编辑的配置实例、数据源或收件邮箱。 |
 | v1.9 | 2026-06-08 | 调整 P07 LLM 设置：中间栏从 provider 类型改为 LLM 配置实例列表，支持多个同类型配置；右侧编辑器拆为基础连接设置、可用模型查询和详细参数配置，当前模型选择回归主界面顶栏。 |
 | v1.8 | 2026-06-07 | 收敛 P06 账户页，移除最近模型；在 P07 增加当前模型选择；新增 P09 通知设置参考线框，承载收件邮箱、通知偏好和测试邮件。 |
