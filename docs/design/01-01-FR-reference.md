@@ -1,6 +1,6 @@
 # FR Reference
 
-文档版本：v1.4
+文档版本：v1.5
 更新日期：2026-10-16
 来源文档：`01_functional_requirements.md`  
 用途：作为功能需求编号、优先级和编号重整关系的参考中间文件。若本文与 `01_functional_requirements.md` 冲突，以 `01_functional_requirements.md` 为准。
@@ -42,7 +42,7 @@
 | FR-031 | 深度研究模式 | 研究引用与图谱跳转 | P1 | 从对话引用跳转到论文详情、Project 资料详情、文件访问入口和基础层 Graph 图谱 |
 | FR-032 | 主题综述模式 | 综述架构设计 | P0 | Agent 生成综述主题、范围和章节架构，用户审查确认 |
 | FR-033 | 主题综述模式 | 章节撰写、引用与修订 | P0 | Agent 逐章撰写并引用 Project 论文库和 Project 资料库，用户审查、编辑或重试 |
-| FR-034 | 主题综述模式 | 综述汇总、终审与可导出版本生成 | P0 | 汇总章节，执行终审，生成摘要、关键词、参考文献和最终可导出版本 |
+| FR-034 | 主题综述模式 | 综述汇总、终审与稿件下载 | P0 | 汇总章节，执行终审，生成摘要、关键词、参考文献和当前已保存稿及单篇 Markdown 下载 |
 | FR-035 | 主题综述模式 | 综述最小追溯管理 | P0 | Review Run 主流程所需的最小追溯：大纲、章节、审查和终稿状态 |
 | FR-036 | 主题综述模式 | 综述版本管理与变更摘要增强 | P2 | Review Run 版本历史、只读快照、差异、回退和用户更改摘要 |
 
@@ -85,7 +85,7 @@
 | FR-026 | FR-031 | 研究引用与图谱跳转 | 深度研究模式 |
 | FR-027 | FR-032 | 综述架构设计 | 主题综述模式 |
 | FR-028 | FR-033 | 章节撰写、引用与修订 | 主题综述模式 |
-| FR-029 | FR-034 | 综述汇总、终审与可导出版本生成 | 主题综述模式 |
+| FR-029 | FR-034 | 综述汇总、终审与稿件下载 | 主题综述模式 |
 | FR-030 | FR-035 | 综述最小追溯管理 | 主题综述模式 |
 | FR-031 | FR-036 | 综述版本管理与变更摘要增强 | 主题综述模式 |
 
@@ -213,3 +213,5 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
 | FR-020~027 构建模式 | `06_agent_knowledge_services.md`, `05_application_use_cases.md`, `07_data_persistence.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `02_domain_core.md`, `08_security_permissions.md`, `09_quality_observability.md`, `10_operations_deployment.md` |
 | FR-028~031 深度研究模式 | `06_agent_knowledge_services.md`, `03_ui_workspace.md`, `05_application_use_cases.md` | `04_api_contracts.md`, `02_domain_core.md`, `07_data_persistence.md`, `08_security_permissions.md`, `09_quality_observability.md` |
 | FR-032~036 主题综述模式 | `06_agent_knowledge_services.md`, `03_ui_workspace.md`, `05_application_use_cases.md` | `04_api_contracts.md`, `02_domain_core.md`, `07_data_persistence.md`, `08_security_permissions.md`, `09_quality_observability.md`, `10_operations_deployment.md` |
+
+本次修订 v1.5（2026-10-16）：同步R2-A当前稿下载，取消独立导出版本入口；通用导出仍P1。
