@@ -1,7 +1,7 @@
 # FR Reference
 
-文档版本：v1.2
-更新日期：2026-06-06
+文档版本：v1.4
+更新日期：2026-10-16
 来源文档：`01_functional_requirements.md`  
 用途：作为功能需求编号、优先级和编号重整关系的参考中间文件。若本文与 `01_functional_requirements.md` 冲突，以 `01_functional_requirements.md` 为准。
 
@@ -26,7 +26,7 @@
 | FR-015 | 基础层-项目工作台 | Run/Session 状态展示与运行控制 | P0 | P0 查看状态、阶段、错误、等待项、日志摘要并支持取消；暂停、恢复、重试为 P1 受控增强 |
 | FR-016 | 基础层-项目工作台 | 流程式 Agent 步骤容器 | P0 | 承载构建、综述等流程式 Agent 的当前步骤页面、步骤状态、步骤动作和步骤结果查看 |
 | FR-017 | 基础层-项目工作台 | 内容修改保护基座 | P0 | 提供跨 Agent 的通用内容保护规则，区分 Agent 草稿、人工确认和人工修改状态，防止静默覆盖 |
-| FR-018 | 基础层-项目工作台 | 知识库版本刷新提示与不打断规则 | P0 | 新 Knowledge Version 发布后提示刷新；active Research Session / Review Run 不被打断，已完成内容不自动改写 |
+| FR-018 | 基础层-项目工作台 | 知识库并行更新与研究证据范围 | P0 | 新版本发布后展示变化；旧研究稳定绑定且不阻止构建；采用新知识创建关联 Research Session 或新版 Review，原成果保留 |
 | FR-019 | 基础层-项目工作台 | Project/Run/Session 导出 | P1 | 按 Project 或具体 Run/Session 导出论文库数据、PDF 集合、对话、总结或综述产物 |
 | FR-020 | 构建模式 | 检索词生成与构建检索词管理 | P0 | 管理 Project 检索词、检索词级数据源策略和自动更新开关 |
 | FR-021 | 构建模式 | 多源论文与资料检索 | P0 | 手动 Run 使用本次 selected 检索词，自动 Run 使用自动更新检索词，并按检索词级数据源策略检索论文和 Project 资料 |
@@ -69,7 +69,7 @@
 | FR-WORKSPACE-005 | FR-015 | Run/Session 状态展示与运行控制 | 基础层-项目工作台 |
 | FR-WORKSPACE-006 | FR-016 | 流程式 Agent 步骤容器 | 基础层-项目工作台 |
 | FR-WORKSPACE-007 | FR-017 | 内容修改保护基座 | 基础层-项目工作台 |
-| FR-WORKSPACE-008 | FR-018 | 知识库版本刷新提示与不打断规则 | 基础层-项目工作台 |
+| FR-WORKSPACE-008 | FR-018 | 知识库并行更新与研究证据范围 | 基础层-项目工作台 |
 | FR-WORKSPACE-009 | FR-019 | Project/Run/Session 导出 | 基础层-项目工作台 |
 | FR-015 | FR-020 | 检索词生成与构建检索词管理 | 构建模式 |
 | FR-016 | FR-021 | 多源论文与资料检索 | 构建模式 |
@@ -96,6 +96,14 @@
 - `3.1 闭环映射`：回答一个 FR 完整落地时需要经过哪些层。
 - `3.2 主责-协作映射`：回答一个 FR 的核心设计主要由哪些文件负责，哪些文件只提供配合或横切约束。
 
+Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责）：
+
+| 相关 FR | 领域详细规则来源 |
+| --- | --- |
+| FR-009、012、014、018、023~026、028、031~034 中的知识库版本、证据、发布和版本采用 | [02-02 知识库版本附录](02-02_construction_versioning_appendix.md) |
+| FR-009、014、020~026 中的构建输入与资产入库 | [02-03 构建资产附录](02-03_construction_assets_appendix.md) |
+| FR-015、026、028、030 中的运行恢复、断点与清理 | [02-04 运行恢复附录](02-04_run_recovery_appendix.md) |
+
 ### 3.1 闭环映射
 
 本表按当前分层文件建立 FR 到设计文件的闭环追踪关系。P0/P1 FR 应形成 UI、API、应用用例、领域/Agent、数据、安全和 QA 闭环；P2 FR 可先保留扩展点，但不得阻塞 P0/P1。
@@ -104,7 +112,7 @@
 
 | 简称 | 文件 |
 | --- | --- |
-| Domain | `02_domain_core.md` |
+| Domain | [02_domain_core.md](02_domain_core.md) 及同规格领域附录；专题规则见上文定位表 |
 | UI | `03_ui_workspace.md` |
 | API | `04_api_contracts.md` |
 | App | `05_application_use_cases.md` |

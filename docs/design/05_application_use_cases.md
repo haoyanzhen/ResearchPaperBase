@@ -1,8 +1,10 @@
 # Application Use Cases 设计
 
-文档版本：v1.2
-更新日期：2026-06-06
+文档版本：v1.3
+更新日期：2026-10-16
 依据文档：`00_layers.md`、`01_functional_requirements.md`
+
+> 草案边界：本文尚未形成完整执行规范。本轮仅消除与 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md) 的直接冲突；命令协议和实现机制仍待细化。
 
 ## 1. 设计目标
 
@@ -55,7 +57,7 @@ Authenticate
 
 | 锁 | 范围 | 保护内容 | 失败行为 |
 | --- | --- | --- | --- |
-| `project_construction_write_lock` | Project | 同一 Project 只能有一个 active Construction Run 写知识库 | 拒绝启动或调度延后 |
+| `project_construction_write_lock` | Project | 同一 Project 只能有一个占槽 Construction Run，paused 仍占槽 | 拒绝启动或调度延后 |
 | `scheduler_project_lock` | Project + 调度周期 | 防止重复自动创建 Run | 记录跳过原因 |
 | `research_stream_lock` | Research Session | 同一对话一次只追加一个流式回复 | 拒绝第二次发送并提示当前回复 |
 | `review_chapter_lock` | Review Run + Chapter | 防止同一章节并发生成/重写 | 拒绝或排队 |
@@ -63,7 +65,7 @@ Authenticate
 | `content_overwrite_lock` | 内容对象 | 防止覆盖确认期间内容变化 | 要求刷新后重试 |
 | `export_job_lock` | Export 目标 | 避免同一产物重复生成 | 返回已有任务或创建新版本 |
 
-锁必须有超时、持有者、创建时间和诊断信息。
+执行锁应有超时、持有者、创建时间和诊断信息；技术租约超时不得隐式释放 paused Run 的业务构建槽。取消或显式重跑必须先撤销旧执行者写资格，再安全交接，拒绝迟到写入。
 
 ## 6. 状态推进
 
@@ -80,21 +82,23 @@ failed|cancelled|succeeded -> copied_as_new
 
 ## 7. Construction 主流程
 
-1. 读取 Construction Workspace 和本次检索词来源。
+1. 读取 Construction Workspace 和本次检索词来源，区分常规新构建与恢复、重试、重连或通用重跑。旧研究依赖不阻止构建；启用自动更新授权在配置范围内使用最新基线，不授权迁移旧研究或覆盖人工内容。
 2. 解析运行时配置和数据源策略。
-3. 获取 Project 构建写锁。
+3. 取得 Project 独占构建资格后，常规新构建固定此时最新已发布版本并冻结输入；首次构建允许无基线。恢复、重试、重连及通用重跑保持原输入、配置与基线，不隐式改用最新版本。
 4. 检索论文候选。
 5. 归一化身份、去重、评分和筛选。
 6. 处理人工确认或自动确认策略。
 7. 下载 PDF 并解析文本，失败时标记摘要降级。
 8. 生成 AI 分析。
-9. 写入 ProjectPaper、文本资产、向量索引和图谱。
-10. 达到发布条件后发布 Knowledge Version。
-11. 触发 Knowledge Version 刷新提示和邮件推送范围。
+9. 校验与候选修订绑定的入库预览确认，写入本轮隔离候选范围内的 ProjectPaper/ProjectMaterial 修订、文本资产、向量索引和图谱；不得修改已发布读取内容。
+10. 关系数据、向量、图谱和引用定位完整可读后发布 Knowledge Version，并一次切换默认版本；重新校验权限、写资格、确认有效性及候选基线仍等于当前最新已发布版本（首次均为空）。任何尝试基线落后均拒绝发布并保留诊断，手动场景用户须显式新建最新基线构建，自动场景后续调度可按有效授权独立新建 Run，不自动改绑或合并。
+11. 发布成功后生成版本变化通知，固定本轮新增有效资产推送范围并防止重复发送，不改写旧研究绑定。
+
+基线失配的自动尝试失败退出、不等待用户；后续调度可在仍有效的自动更新授权下独立创建最新基线的新 Run，不得将旧尝试改绑或沿用过时确认。
 
 ## 8. Research 主流程
 
-1. 创建 Session 时绑定 Knowledge Version。
+1. 创建 Session 时绑定已发布 Knowledge Version；采用最新知识创建关联新 Session，原 Session 的绑定与历史回复保持不变。
 2. 发送消息前检查 Project 可用性、Session 状态、配置和 stream lock。
 3. 调用 Knowledge Graph-RAG 检索证据。
 4. 调用 Agent 生成流式回复。
@@ -103,7 +107,7 @@ failed|cancelled|succeeded -> copied_as_new
 
 ## 9. Review 主流程
 
-1. 创建 Review Run 时绑定 Knowledge Version。
+1. 创建 Review Run 时绑定已发布 Knowledge Version；采用最新知识创建新版 Review，原稿保留，不在原 Run 内切换证据范围。
 2. 生成大纲并进入用户确认。
 3. 用户确认或编辑大纲后逐章生成。
 4. 每章生成、审查、用户编辑和重试都受章节锁与内容保护约束。

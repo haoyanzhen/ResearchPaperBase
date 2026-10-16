@@ -1,13 +1,13 @@
 # Research Paper Base 分层设计总览
 
-文档版本：v1.2  
-更新日期：2026-05-22  
+文档版本：v1.4
+更新日期：2026-10-16
 依据文档：`01_functional_requirements.md`、`00-00_layer_design_file_mapping.md`  
 用途：作为当前阶段分层设计的总览入口，明确最小必要架构、层间职责、横切约束和后续修订方向。
 
 ## 0. 文档控制
 
-本文将原 `00_index.md` 从“旧设计文件索引与现状盘点”更新为“当前分层设计总览”。本次更新聚焦分层设计本身，对 API 只确认边界层定位，具体端点和字段由 `04_api_contracts.md` 维护。本文仅维护层级与当前设计文件的对应关系，不维护以下内容：
+本文将原 `00_index.md` 从“旧设计文件索引与现状盘点”更新为“当前分层设计总览”。本次更新聚焦分层设计本身，对 API 只确认边界层定位，具体端点和字段由 `04_api_contracts.md` 维护。本文维护分层职责与依赖规则，文件映射参见 `00-00_layer_design_file_mapping.md`，不维护以下内容：
 
 - API 端点、请求响应字段、错误码和 SSE 协议的完整清单。
 - 数据库表字段、迁移脚本和具体存储约束。
@@ -22,7 +22,7 @@
 | 文档索引、文件权威性说明 | 暂不在本文维护 | 后续可由 README 或独立文档索引承载 |
 | 产品与领域层 | `Domain Core`、`Application Use Cases` | 保留 Project、Run/Session、Knowledge Version 等核心概念，移除旧实体清单式描述 |
 | 信息架构与用户流程层 | `UI / Workspace` | 保留 System Shell、Project Workspace、对象切换、只读知识面板等体验边界 |
-| 状态机与业务流程层 | `Application Use Cases`、`State & Locks` | 状态推进、任务启动、锁、幂等等统一归入应用编排和横切约束 |
+| 状态机与业务流程层 | `Domain Core`、`Application Use Cases`、`State & Locks` | 领域定义状态含义与不变量；应用编排定义命令触发、执行、冲突处理和锁、幂等流程 |
 | 数据模型层 | `Domain Core`、`Agent & Knowledge Services`、`Infrastructure Adapters` | 不在总览中展开表结构，只保留知识资产、版本、同步状态和适配边界 |
 | API 契约层 | `API Boundary / Contracts` | 显式作为 UI 与 Application Use Cases 之间的接口边界；具体契约由 `04_api_contracts.md` 维护 |
 | UI 与交互层 | `UI / Workspace` | 与信息架构合并为前端体验层 |
@@ -32,24 +32,15 @@
 | 追踪矩阵 | FR 设计闭环 | 不维护旧式大表，改为按能力族确认闭环链路 |
 | 下一步修订建议 | MVP 落地顺序 | 从“修补旧文件”改为“围绕新分层逐步重写下游设计” |
 
-### 0.2 当前层级与设计文件对应表
+### 0.2 文件职责与权威边界
 
-本表只映射当前 `docs/design/` 目录中实际存在的顶层设计文件。独立副本见 `00-00_layer_design_file_mapping.md`。
+层到文件的导航映射见 [00-00 文件映射](00-00_layer_design_file_mapping.md)，本文不再复制其对应表。该索引用于定位，不独立定义业务规则。
 
-| 分层/设计域 | 主要设计文件 | 协作设计文件 | 说明 |
-| --- | --- | --- | --- |
-| 分层总览与文件映射 | `00_layers.md`、`00-00_layer_design_file_mapping.md` | `README.md` | `00_layers.md` 定义分层原则；`00-00` 保存层到文件的对应表；`README.md` 作为目录入口。 |
-| Functional Requirements / 需求与验收 | `01_functional_requirements.md` | `01-01-FR-reference.md`、`12_gap_decisions_review.md` | FR 是需求含义和验收标准的最高依据；参考与缺口决策文档用于追溯和审查。 |
-| Domain Core / 领域核心 | `02_domain_core.md` | `01_functional_requirements.md`、`07_data_persistence.md`、`07_data_schema.sql` | 定义核心对象、关系、生命周期、不变量和领域事件，不定义 UI/API/数据库字段细节。 |
-| UI / Workspace | `03_ui_workspace.md` | `01_functional_requirements.md`、`04_api_contracts.md`、`08_security_permissions.md` | 定义系统入口、Project Workspace、对象切换、面板、只读知识资产和用户可见状态。 |
-| API Boundary / Contracts | `04_api_contracts.md` | `05_application_use_cases.md`、`08_security_permissions.md`、`09_quality_observability.md` | 定义 UI 与应用用例之间的 HTTP/SSE/文件访问契约、错误信封和鉴权边界。 |
-| Application Use Cases / 应用编排 | `05_application_use_cases.md` | `02_domain_core.md`、`04_api_contracts.md`、`06_agent_knowledge_services.md`、`08_security_permissions.md` | 定义命令/查询、状态推进、任务提交、锁、幂等和失败诊断的编排边界。 |
-| Agent & Knowledge Services | `06_agent_knowledge_services.md` | `02_domain_core.md`、`05_application_use_cases.md`、`07_data_persistence.md` | 定义 Construction、Research、Review、Graph-RAG、Knowledge Version、引用证据等服务能力。 |
-| Infrastructure / Data Persistence | `07_data_persistence.md`、`07_data_schema.sql` | `06_agent_knowledge_services.md`、`10_operations_deployment.md` | 定义关系库、文件、向量、图谱、同步状态和 SQL schema。 |
-| Security / Permissions | `08_security_permissions.md` | `02_domain_core.md`、`04_api_contracts.md`、`05_application_use_cases.md` | 定义用户隔离、管理员边界、Project 权限、文件访问、归档只读和高风险操作保护。 |
-| Quality / Observability | `09_quality_observability.md` | `04_api_contracts.md`、`05_application_use_cases.md`、`10_operations_deployment.md` | 定义测试、日志、诊断、审计、指标和可观测闭环。 |
-| Operations / Deployment | `10_operations_deployment.md` | `07_data_persistence.md`、`09_quality_observability.md` | 定义部署、容量、调度、备份、清理、运行维护和演进约束。 |
-| Gap / Decisions Review | `12_gap_decisions_review.md` | 全部设计文件 | 保存跨文件缺口、决策、后续修订项和一致性审查结果。 |
+- `00` 定义六层职责、依赖方向及横切约束；`01` 定义需求含义、优先级和验收标准。
+- `02` 定义对象、状态含义、合法性及业务不变量；`03` 定义受这些规则约束的页面和交互。
+- `04` 及后续文档尚未形成规范；本文引用其文件名只表示后续职责承接位置，不表示其中现有骨架、草案或候选内容已经定稿。
+- 后续 `05` 按 FR-017 细化命令触发的内容状态转换、校验顺序、冲突响应和执行流程，不得改变 `02` 的状态含义或不变量；`04` 承接接口协议，`06` 承接服务契约，`07` 承接存储映射，`08–10` 承接安全、质量和运维。
+- 速查、SQL 草案、调研及历史审查不覆盖现行需求和领域规则；跨职责冲突应提交人工裁决，不能按编号或更新时间自动覆盖。
 
 ## 1. 设计基线
 
@@ -94,6 +85,8 @@ Infrastructure Adapters
 - `ReviewRun`
 - `PaperIdentity`
 - `ProjectPaper`
+- `ProjectMaterial`
+- `DocumentAsset`
 - `KnowledgeVersion`
 - `ContentProtectionRecord`
 - `ExportJob`
@@ -104,8 +97,8 @@ Infrastructure Adapters
 
 - Project 是长期容器，不等于某个 Agent 模式。
 - 每个 Project 有且仅有一个 Construction Workspace。
-- 同一 Project 同一时间只允许一个 active Construction Run 写知识库。
-- Research Session 和 Review Run 创建时绑定某个 Knowledge Version，后续不被新版本静默切换。
+- 同一 Project 同一时间只允许一个 Construction Run 占用构建槽并取得写资格；paused Run 仍占槽，释放与交接遵循 `02` 第 3.4 节。
+- Research Session 和 Review Run 创建时绑定某个 Knowledge Version，绑定后保持稳定；采用新知识创建关联新 Session 或新版 Review，旧研究不阻止基于最新已发布版本继续构建。详细不变量见 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)。
 - 人工修改优先于人工确认，人工确认优先于 Agent 草稿。
 - 全局论文身份与 Project 私有关联分离，避免共享论文被误删。
 
@@ -191,7 +184,7 @@ Infrastructure Adapters
 `knowledge/` 负责知识资产和证据基础：
 
 - 论文身份解析和全局去重。
-- Project 论文库与私有关联。
+- Project 论文库、资料库与私有关联；资料沿候选、去重筛选、文件解析、摘要分析和知识同步链路进入版本，遵循 FR-021–026 的格式分期。
 - PDF 文本资产、摘要降级标记和可检索状态。
 - 向量索引、知识图谱、Graph-RAG 检索。
 - Knowledge Version 发布、绑定、刷新提示。
@@ -239,7 +232,7 @@ Infrastructure Adapters
 | AuthZ | 用户隔离、管理员边界、Project 权限、文件签名访问、archived 只读 | 先在 Application Use Cases 统一校验，UI 只负责展示原因 |
 | State & Locks | Project 状态、Run/Session 状态、任务状态、Project 写锁、流式回复锁、章节锁、调度锁 | 先覆盖 Construction 写锁、Research 流式锁、Review 章节锁和 Project archived/deleted 约束 |
 | Runtime Config Snapshot | 用户配置、系统默认、硬限制、LLM/数据源/SMTP/检索词策略快照 | 所有 Run/Session/Job 启动前生成快照，禁止 Agent 内部分散回落 |
-| Content & Version Protection | 人工修改保护、覆盖确认、Knowledge Version 绑定、旧版本刷新提示 | 先实现 Research/Review 绑定版本和 Review 内容覆盖确认，再扩展差异对比 |
+| Content & Version Protection | 人工修改保护、覆盖确认、Knowledge Version 绑定、知识变化与证据风险提示 | 先实现 Research/Review 绑定版本和 Review 内容覆盖确认，再扩展差异对比 |
 
 这些约束应体现在用例、领域规则、存储状态、测试和 UI 禁用原因中，而不是只写在前端按钮或文档备注里。
 
@@ -253,7 +246,7 @@ Infrastructure Adapters
 - 长流程必须记录可诊断状态，包括运行中、等待用户、失败、取消、部分成功、降级和可重试信息。
 - 外部 Provider 失败不得静默混入成功结果。
 - LLM 输出、引用、章节、综述终稿等内容必须有结构化校验入口。
-- 手动修改、覆盖确认、版本刷新等高风险动作必须具备测试用例。
+- 手动修改、覆盖确认、采用新版本创建研究等受控动作必须具备测试用例。
 
 后续可以再把审计、健康检查、日志、指标、告警和 Inspector 设计展开为独立质量与可观测文档。
 
@@ -313,7 +306,7 @@ MVP 实施顺序：
 4. Research Session 的 Graph-RAG 对话、流式回复互斥和引用跳转。
 5. Review Run 的大纲、章节、人工确认、终稿和可导出版本。
 6. 自动构建调度、邮件推送、导出中心、审计和可观测增强。
-7. 观点广场增强、综述版本差异、批量上传、重跑策略、成本仪表盘等 P2 能力。
+7. P1 批量上传和通用重跑等受控增强；P2 观点广场、综述版本差异、成本仪表盘等扩展。单条论文/资料补充为 P0；FR-018 的关联新 Research Session 和新版 Review 专用路径属于 P0，不等待通用重跑增强。
 
 ## 变更记录
 
@@ -322,3 +315,5 @@ MVP 实施顺序：
 | v1.0 | 2026-05-20 | 初始分层设计总览，定义核心层级、横切约束和后续修订方向 | Codex |
 | v1.1 | 2026-05-21 | 按新版设计文档集调整分层定位，与功能需求和下游设计文件对齐 | Codex |
 | v1.2 | 2026-05-22 | 新增当前层级与实际设计文件对应表，并将依据文档更新为 `00-00_layer_design_file_mapping.md` | Codex |
+| v1.3 | 2026-10-16 | 明确文件权威与下游未定稿边界，去除映射副本，补资料链路、暂停占槽及 P0/P1 分期摘要 | Codex |
+| v1.4 | 2026-10-16 | 接入知识库并行构建领域附录，明确旧研究稳定绑定与最新基线构建并行 | Codex |

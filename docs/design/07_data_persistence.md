@@ -1,7 +1,7 @@
 # Data Persistence 设计
 
-文档版本：v1.2
-更新日期：2026-06-06
+文档版本：v1.3
+更新日期：2026-10-16
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | PostgreSQL 或等价关系库 | 账号、配置元数据、Project、Run/Session、论文身份、版本、状态、审计 | 业务事实的权威来源 |
 | 文件存储 | PDF、解析文本、导出文件、临时产物 | 通过对象 key 引用，不暴露真实路径 |
-| 向量库 | Knowledge Version 或 Project namespace 下的文档向量 | 与关系库通过同步状态关联 |
+| 向量库 | Project 内按候选运行或已发布 Knowledge Version 隔离的文档向量 | 与关系库通过同步状态关联，不以可变 Project 单一集合覆盖旧版本 |
 | 图谱存储 | 论文、作者、关键词、概念、方法节点边 | 可由关系库/图数据库/文件图谱实现 |
 | Secret Store | API key、SMTP 密码、系统密钥 | 关系库只保存密钥引用或密文标识 |
 | 队列/调度状态 | 异步任务与重试 | MVP 可由关系表承载，后续可替换队列 |
@@ -43,7 +43,9 @@
 
 `knowledge_versions` 应保存 Project、版本号、来源 Construction Run、发布时间、状态、关系库论文快照范围、向量索引引用、图谱引用和发布诊断摘要。
 
-Research Session 和 Review Run 保存 `knowledge_version_id`，创建后不得静默改写。
+Research Session 和 Review Run 保存稳定的 `knowledge_version_id`；采用新知识创建关联新 Session 或新版 Review，不改写原对象绑定。完整边界见 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)；本草案不代表数据模型或迁移已完成。
+
+版本固化论文与资料集合、正文来源、分析、引用定位、向量和图谱引用。候选写入与已发布读取隔离；允许复用未变化资产，但不得改变旧版本内容。旧版本仍被研究或导出依赖时，不得因常规清理破坏必要证据；权限撤销或必须删除时保留原因并安全拒绝访问。
 
 ## 6. 外部存储一致性
 
@@ -57,7 +59,7 @@ Research Session 和 Review Run 保存 `knowledge_version_id`，创建后不得�
 | `stale` | 外部内容不再匹配当前关系数据 |
 | `deleted` | 外部资源已清理或不可再访问 |
 
-发布 Knowledge Version 前，关键同步项必须达到 `synced` 或被明确标记为允许降级。
+发布 Knowledge Version 前，关键同步项必须达到 `synced` 且完整可读；Graph 未完成、失败或仍有待续连断点时不得发布。允许单项资料使用合法摘要降级或排除失败候选，但不得以降级豁免版本的向量、Graph 或引用一致性门槛。默认版本仅在发布成功时一次切换；发布检查与切换必须保证候选基线仍匹配当前默认版本，防止旧运行恢复后覆盖期间新增知识。具体事务和跨存储协议仍待细化。
 
 ## 7. 文件与导出生命周期
 
@@ -79,4 +81,4 @@ Project 私人资产清理范围包括 Project 私有运行记录、Research Ses
 - Run/Session 状态、Project 状态、Knowledge Version 状态需要索引。
 - `papers` 应对 DOI、arXiv ID、来源 ID 建唯一或部分唯一索引。
 - `project_papers` 对 `(project_id, paper_id)` 唯一。
-- active Construction Run 唯一性可用部分唯一索引或应用锁双重保证。
+- Construction Run 占槽唯一性必须涵盖 paused，执行租约过期不等于业务槽释放；具体约束与安全交接机制待细化。

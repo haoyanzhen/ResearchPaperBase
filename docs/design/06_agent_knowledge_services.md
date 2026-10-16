@@ -1,7 +1,7 @@
 # Agent & Knowledge Services 设计
 
-文档版本：v1.2
-更新日期：2026-05-26
+文档版本：v1.3
+更新日期：2026-10-16
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -37,7 +37,7 @@ Knowledge 不依赖具体 Agent。
 | Vector Index | 写入和查询向量索引，记录同步状态 | FR-026, FR-028 |
 | Knowledge Graph | 构建论文、作者、关键词、概念、方法等节点边 | FR-026, FR-031 |
 | Graph-RAG Retriever | 基于版本检索证据，返回引用定位 | FR-028, FR-032 |
-| Knowledge Version | 发布、读取、绑定、过期提示和刷新检查 | FR-018 |
+| Knowledge Version | 发布、稳定绑定、版本变化与证据风险提示、新研究采用检查 | FR-018 |
 | Citation & Evidence | 保存引用、证据片段、论文跳转和版本一致性 | FR-031, FR-033 |
 
 ## 4. Construction Pipeline
@@ -50,11 +50,11 @@ Knowledge 不依赖具体 Agent。
 
 下载解析优先下载 PDF 并解析全文。PDF 缺失或解析失败时使用摘要降级，并记录原因。AI 分析输出一句话总结、亮点、相关性要点、方法与创新；结构化校验失败时不得写入为成功分析。
 
-入库先写 ProjectPaper 与文本资产，再写向量库和图谱同步项。发布 Knowledge Version 前校验关系数据、向量索引、图谱和引用定位是否满足可读取条件。
+入库先在本轮隔离候选范围内写 ProjectPaper/ProjectMaterial 修订与文本资产，再写向量库和图谱同步项；不得覆盖已发布证据。发布 Knowledge Version 前校验关系数据、向量索引、图谱和引用定位完整可读。执行边界遵守 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)；本文仍为待细化草案。
 
 ## 5. Research Pipeline
 
-- Session 创建时绑定 Knowledge Version。
+- Session 创建时绑定已发布 Knowledge Version，采用新知识创建关联新 Session，不原地切换。
 - 每轮用户消息根据输出倾向选择提示策略：创新、实验、总结。
 - Graph-RAG 返回证据包，包括论文 ID、片段、定位、置信度和版本。
 - 回复必须保存引用列表，引用可跳转到论文详情、PDF 或 Graph 节点。
@@ -62,7 +62,7 @@ Knowledge 不依赖具体 Agent。
 
 ## 6. Review Pipeline
 
-- Review Run 创建时绑定 Knowledge Version。
+- Review Run 创建时绑定已发布 Knowledge Version，采用新知识创建新版 Review，不在原 Run 混合版本。
 - 大纲生成后必须经过用户确认或编辑。
 - 章节生成必须携带引用证据。
 - 审查阶段检查章节结构、引用覆盖、重复内容、事实一致性和版本一致性。

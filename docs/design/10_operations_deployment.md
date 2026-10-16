@@ -1,7 +1,7 @@
 # Operations & Deployment 设计
 
-文档版本：v1.1  
-更新日期：2026-05-20  
+文档版本：v1.2
+更新日期：2026-10-16
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -46,7 +46,8 @@ MVP 可将 API、Worker、Scheduler 部署在同一服务内，但代码边界�
 
 - 只扫描 active Project。
 - Project 级调度锁防止重复创建。
-- 同一 Project active Construction Run 冲突时跳过或延后。
+- 同一 Project 已有占槽 Construction Run（含 paused）时跳过或延后，不因租约过期自动释放暂停槽。
+- 旧研究绑定不阻碍调度；启用自动更新授权在配置范围内基于最新已发布版本构建，不授权改变旧研究。详细边界见 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)，其余运维草案仍待细化。
 - 每次调度记录创建、跳过、延后和失败原因。
 
 ## 5. 容量基线
@@ -62,7 +63,7 @@ MVP 可将 API、Worker、Scheduler 部署在同一服务内，但代码边界�
 - 关系库定期备份。
 - 文件存储可按 Project 和对象 key 恢复。
 - Secret Store 备份与主库分开管理。
-- 向量库和图谱可由 Knowledge Version 关联数据重建，或定期快照。
+- 向量库和图谱可由 Knowledge Version 关联数据重建，或定期快照；重建须维持原证据内容及定位，不得将重新解释的结果冒充旧版本，已发布修订须经 ConstructionRun 发布新版本。
 
 恢复后必须校验 Project 权限、Knowledge Version 可用性、文件签名访问、向量/图谱同步状态。
 

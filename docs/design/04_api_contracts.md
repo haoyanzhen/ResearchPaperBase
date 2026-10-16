@@ -1,7 +1,7 @@
 # API Contracts 设计
 
-文档版本：v1.2
-更新日期：2026-06-06
+文档版本：v1.3
+更新日期：2026-10-16
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -58,10 +58,10 @@ API 层暴露 Application Use Cases，不承载业务规则。所有接口必须
 | `permission` | 非 owner 访问 Project、非管理员访问系统配置 |
 | `state` | archived 只读、deleted 不可进入、Run 已结束 |
 | `configuration` | LLM 缺失、数据源失效、SMTP 不可用、超出白名单 |
-| `lock_conflict` | active Construction Run 已存在、Research 流式回复中、章节锁冲突 |
+| `lock_conflict` | 占槽 Construction Run（含 paused）已存在、Research 流式回复中、章节锁冲突 |
 | `provider` | 数据源限流、LLM 失败、PDF 下载失败、解析失败 |
 | `validation` | 输入字段缺失、结构化输出校验失败 |
-| `version` | Knowledge Version 缺失、过期、不可访问 |
+| `version` | Knowledge Version 缺失、不可访问或引用不匹配；仅非最新版不构成错误 |
 | `storage` | 文件缺失、签名过期、外部同步失败 |
 
 ## 5. 端点骨架
@@ -170,6 +170,8 @@ Review：
 ## 6. SSE 约定
 
 Research 流式回复和长任务事件使用 SSE。客户端必须已认证，服务端按 Project/Session 权限过滤。事件类型包括 `status`、`delta`、`citation`、`warning`、`error`、`done`。断线重连可使用 `Last-Event-ID`。结束事件必须写入最终状态，避免 UI 永久 loading。
+
+并行构建事件须可辨识所属运行、执行尝试与知识版本；迟到或重复事件不得改变当前对象绑定、覆盖草稿或把其他运行标为完成。业务边界见 [领域附录](02-02_construction_versioning_appendix.md)；具体字段、回放和命令协议仍待细化，不由本次附录修订定稿。
 
 ## 7. API 验收要求
 

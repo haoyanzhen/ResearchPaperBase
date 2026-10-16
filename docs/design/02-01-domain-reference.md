@@ -1,9 +1,18 @@
 # Domain Reference
 
-文档版本：v1.1
-更新日期：2026-06-06
-来源文档：`02_domain_core.md`  
-用途：作为 Domain Core 的聚合边界、领域对象、关键链路和 FR 映射速查文件。若本文与 `02_domain_core.md` 冲突，以 `02_domain_core.md` 为准。
+文档版本：v1.3
+更新日期：2026-10-16
+来源文档：[Domain Core](02_domain_core.md)、[知识库版本附录](02-02_construction_versioning_appendix.md)、[构建资产附录](02-03_construction_assets_appendix.md)、[运行恢复附录](02-04_run_recovery_appendix.md)
+用途：作为 Domain Core 的聚合边界、领域对象、关键链路和 FR 映射速查文件。本文是主文及其同规格领域附录的派生速查，不独立定义规则；如有冲突，以对应领域规范及 FR 为准。
+
+详细规则阅读索引：
+
+| 专题 | 领域规范来源 |
+| --- | --- |
+| 聚合边界、跨模块接口及其他领域规则 | [Domain Core](02_domain_core.md) |
+| 知识库版本、证据、发布、构建槽、并行构建和版本采用 | [02-02 知识库版本附录](02-02_construction_versioning_appendix.md) |
+| 检索输入、论文/资料身份、去重筛选、补充、解析与分析确认 | [02-03 构建资产附录](02-03_construction_assets_appendix.md) |
+| 重试、重连、重跑、断点、清理和回复恢复 | [02-04 运行恢复附录](02-04_run_recovery_appendix.md) |
 
 ## 1. 聚合边界速查
 
@@ -184,13 +193,13 @@ EmailPushJob
 - `Workspace` 只恢复用户操作现场，不拥有 Project 知识资产，也不改变 Run、Session 或 KnowledgeVersion 的业务状态。
 - `PaperIdentity` 只负责全局身份归一化；Project 内评分、有效性、推送、文件和 AI 分析属于 `ProjectPaper`。
 - `ProjectMaterial` 是 Project-scoped 轻量资料条目；不建立全局资料身份，不维护业务类型字段，只由 `content_format` 表达文件类型。
-- `ProjectMaterial` 在同一 Project 内按 `normalized_title + content_format_group` 去重；重复来源只写入 `candidate_sources`，不参与 KnowledgeVersion、引用、向量化或 Graph 构建。
+- `ProjectMaterial` 的 Project 内去重与重复来源处理见 [02-03 构建资产附录](02-03_construction_assets_appendix.md)；版本参与范围承接 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
 - `DocumentAsset` 受 Project 授权边界约束；同一 `PaperIdentity` 跨 Project 共享时，不得自动暴露上传文件。
 - `DocumentAsset` 承载 Project 资料文件时同样受 Project 授权边界约束；不得因标题或格式相似自动暴露给其他 Project。
-- `ConstructionRun` 是 Project 知识库写入者；同一 Project 同时只能有一个 active 构建写入者。
-- `KnowledgeVersion` 只能由成功 `ConstructionRun` 发布；失败、取消或未发布中间写入不得污染已发布版本。P0 Project 资料可参与版本构建，P1 数据表和 P2 多媒体默认不参与 Graph-RAG KnowledgeVersion。
-- `ResearchSession` 和 `ReviewRun` 创建时绑定 `KnowledgeVersion`；绑定后不得被系统静默改写。
-- 引用跳转必须尊重产生时的 Project、KnowledgeVersion 和 Evidence；缺失、越权、过期或版本不匹配时只能进入安全空态。
+- `ConstructionRun` 的写入资格与构建槽接口见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
+- `ConstructionRun` 向知识库版本模块提交构建结果；版本发布条件、候选隔离和资料参与范围统一见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
+- `ResearchSession` 和 `ReviewRun` 承接知识库版本绑定与版本采用接口；稳定绑定、旧依赖、确认边界和冲突裁决统一见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
+- 引用跳转承接 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md) 的 Project、KnowledgeVersion、Evidence 校验及安全空态接口。
 - Graph 和向量索引是 `KnowledgeVersion` 的可读资产投影与同步状态，不是独立聚合根。
 - Project 知识资产面板、Research 引用跳转和 Review 引用跳转都是只读探索入口，不得触发上传、删除、解析、入库、推送或图谱写入。
 - 人工修改内容不得被 Agent 静默覆盖；重新生成涉及人工确认或人工修改内容时必须要求用户确认。
@@ -241,6 +250,6 @@ EmailPushJob
 
 ## 6. 参考优先级
 
-1. 完整领域规则以 `02_domain_core.md` 为准。
-2. 功能需求编号、优先级和分层追踪以 `01-01-FR-reference.md` 为准。
+1. 完整领域规则以 `02_domain_core.md` 及 `02-02`、`02-03`、`02-04` 同规格专题附录为准；需求含义与验收仍以 `01_functional_requirements.md` 为最高依据。
+2. 功能需求编号、优先级和分层追踪通过 `01-01-FR-reference.md` 速查，冲突时以 `01_functional_requirements.md` 为准。
 3. 本文只提供领域对象和聚合边界速查，不定义 API、数据库字段、Provider SDK、队列实现或文件存储实现。
