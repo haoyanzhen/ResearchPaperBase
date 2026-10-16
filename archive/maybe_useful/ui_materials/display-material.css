@@ -1,0 +1,72 @@
+/* v1.0: optional scoped material extracted from frontend/src/styles.css. */
+
+.ui-material {
+  --bg: #0f172a;
+  --bg-elevated: #111827;
+  --bg-panel: #162036;
+  --bg-soft: #1f2937;
+  --line: rgba(148, 163, 184, 0.2);
+  --line-strong: rgba(148, 163, 184, 0.35);
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --primary: #22c55e;
+  --primary-soft: rgba(34, 197, 94, 0.14);
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --info: #38bdf8;
+  color: var(--text); background: var(--bg); padding: 24px;
+  font-family: sans-serif; line-height: 1.5;
+}
+
+.ui-material .alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.ui-material .alert--error {
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+.ui-material .alert--warning {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fde68a;
+}
+
+.ui-material .alert--success {
+  background: rgba(34, 197, 94, 0.12);
+  color: #bbf7d0;
+}
+
+.ui-material .alert--info {
+  background: rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
+}
+
+.ui-material .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.ui-material .stack {
+  display: grid;
+  gap: 12px;
+}
+
+.ui-material .empty-state {
+  padding: 30px 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.ui-material .alert > span:last-child { min-width: 0; overflow-wrap: anywhere; }

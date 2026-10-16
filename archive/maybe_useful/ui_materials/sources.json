@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "date": "2026-10-16",
+  "base_commit": "82493ad78aa9a04a6d8d9be16e1d14725df8c045",
+  "note": "Hashes describe worktree input bytes at extraction; base commit alone may not contain local changes. Full source deliberately not retained.",
+  "sha256": {
+    "frontend/src/utils/format.ts": "6341835c2da7ac383ffdff0f41a65cd51c8245283e1bcb9548d302fec42dc4d5",
+    "frontend/src/components/Alert.tsx": "790f4631e280ded4189bda690d199268ae2878382449d533fc3652901b48673c",
+    "frontend/src/pages/SettingsPage.tsx": "39c154e99a64aac63fafa6adfa5918012f2e8f46d57c1645567c1b5391a2cf7e",
+    "frontend/components/InspectorPanel/InspectorPanel.tsx": "4297485951e33d5b7667edbefaf62273124cc2e5905857afa56e82cb7a07a0ba",
+    "frontend/src/styles.css": "60d9eacbf56ba312abbd037135f5c20ed7d7d515ed40f75e5ed0c78021beb735"
+  }
+}

@@ -1,0 +1,18 @@
+<!-- v1.0. Inert sample fragments, not an application or live diagnosis. -->
+<link rel="stylesheet" href="./display-material.css">
+<section class="ui-material stack" aria-label="历史展示素材示例">
+  <!-- F-X02: caller supplies controlled tone and already-safe display text.
+       Informational updates use status; urgent errors may use role=alert.
+       Never insert untrusted messages with innerHTML. -->
+  <div class="alert alert--info" role="status">
+    <span aria-hidden="true">ⓘ</span><span>示例提示：这里仅展示已脱敏的信息。</span>
+  </div>
+  <!-- F-X03: title, description and empty-state layout only. -->
+  <section class="stack" aria-labelledby="sample-list-title">
+    <div class="section-header">
+      <div><h3 id="sample-list-title">配置列表外观示例</h3><p>展示素材，无加载与保存行为。</p></div>
+      <span>操作槽</span>
+    </div>
+    <div class="empty-state">还没有配置项。</div>
+  </section>
+</section>

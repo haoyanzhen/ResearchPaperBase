@@ -1,0 +1,1270 @@
+{
+  "version": "1.0",
+  "status": "completed",
+  "source_head": "82493ad78aa9a04a6d8d9be16e1d14725df8c045",
+  "scope": "旧运行代码、测试、依赖清单、迁移与构建配置；不含设计SQL、历史报告、凭据",
+  "files": [
+    {
+      "path": "backend/.env.example",
+      "sha256_before": "4405348e95fe0934127afc8544cfe31d3d341ad6d0575dbe258fc7c9e99fb46b",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/alembic.ini",
+      "sha256_before": "14d81050b871d2237fc0599ce01e89a949c07bb4afe9f663526b41d2dfba1ab1",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/alembic/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/alembic/env.py",
+      "sha256_before": "d5a7b1275778f654bc31c67a7a624e6d7307c8d577be0a68b0ef06bf629961b7",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/alembic/script.py.mako",
+      "sha256_before": "0dd9fc884e17a48a2c3422b197f733c174858ea53cfcb8a667bba0f1d755bc7d",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/alembic/versions/0001_initial_schema.py",
+      "sha256_before": "2183b2eec1d888c79ba773256f13c419ca702328152285b4eab0225f08caa868",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/alembic/versions/0002_admin_columns.py",
+      "sha256_before": "f4e5328b9b453825ba68108991cab4d38d232e19d98d8993e10cb938ff3a30a7",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/__init__.py",
+      "sha256_before": "1ff60dbe716a4ccea5c352161788d38b52a9e9e8881c27c8e9f0a7f1c7778560",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/base.py",
+      "sha256_before": "c58fa542abc31bf09f53bd847dbe890689313c6a9e551733847abba556d503d1",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/config/construction_prompts.yaml",
+      "sha256_before": "0c1972148f899a186eb4615213d5eb47533aadb5920c1c711f9a7407c90fd4e1",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/config/deep_research_prompts.yaml",
+      "sha256_before": "d12c1ab6908eba3d98439b6ebfb62d590f32ff6deeec855074bb9f71afd8c12c",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/config/llm_defaults.yaml",
+      "sha256_before": "c9855d508e148d22113b68a8dbd3fc631234e43df562fdfcb863b7b575f0e063",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/config/review_prompts.yaml",
+      "sha256_before": "41b1f6ec23cb99af5a7dd29bfca2542f39cad98c95e6f3c5a83a0e684f44a23e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/__init__.py",
+      "sha256_before": "a01f5a54d9c4c5ddf6f1c65a7b026252279c14276a39b86f3adc493d2529b132",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/pipeline.py",
+      "sha256_before": "37a8bbcdeb0c9f92a4c2b99c89317da18943833e9a9fdd91261797b6b97c3cf5",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/stage1_keyword_gen.py",
+      "sha256_before": "66a2f2fe097483c3aa27c9f6725faca5c2df4026a10111d70abccf8de00435e9",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/stage2_retrieval.py",
+      "sha256_before": "2d0876c3990e69dcd2fa9e8788da4296d9a4474c2caaa3489405edca37aacc93",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/stage3_scoring.py",
+      "sha256_before": "3a706214cdd3283af072c1ae486e916c55775bb7f88ca08cf3ce0844581d6100",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/stage4_download.py",
+      "sha256_before": "92ae9868c84b33760fb174865af0e9523b11bc684a4c86e7fecd3c274643f085",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/stage5_analysis.py",
+      "sha256_before": "c0c38368ce83ef2ebd98b049b0e80f26a22087fe7eb7126dedfa55e19318ae74",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/construction/stage6_storage.py",
+      "sha256_before": "857e31de01d7c636ca356b87eae2f4ac063a5625e062846eff095622bd251f40",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/deep_research/__init__.py",
+      "sha256_before": "082844055d12c38beddb58b2ba7758a1fca80cdaa5ff2839953e7e8697585be7",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/deep_research/dialogue_agent.py",
+      "sha256_before": "c5cf85312f91578cd32a3a6e3b5c3b51f849f55611d665c97020f920bb9c2a93",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/deep_research/graph_builder.py",
+      "sha256_before": "b4d43168bd6029f9666f878ed88931fe47ce25bdb435a3a8a39b6d6c7bca6336",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/deep_research/pipeline.py",
+      "sha256_before": "b4de941a948f166d3bb81689218c62713db703cca2e5f6ba697f8043d26410af",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/review/__init__.py",
+      "sha256_before": "2fcf6ab7bf9906d93a9a21f4359f2bb46a5f13b05137909ea56dbebfc9bceb5f",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/review/pipeline.py",
+      "sha256_before": "1e23a15f8a81e889acff633a628e380457c7578660e2b4723ed363b8c10f200b",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/review/stage1_topic_expansion.py",
+      "sha256_before": "2d6ab995e5c824fffb8fbd2362fbafa507ee5257df7df70db2314e1ced3b05d3",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/review/stage2_outline_gen.py",
+      "sha256_before": "fd0a0bc75d798be14279c435176bc5916851412ff68a02c996cc46c4bd7887ad",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/review/stage3_chapter_writing.py",
+      "sha256_before": "ecd2209c87ead3f33a0877dbec288120c9212a244d70ba26421183e98e466db2",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/review/stage4_auto_review.py",
+      "sha256_before": "1141af775d076161022a0a4e297d1cc6182666527d05957a7cd397f6616a8d9a",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/agents/review/stage5_compile.py",
+      "sha256_before": "efaaa44a65402bbac173714c9f9378410d0902105d0fb3a2310ffa4472a89715",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/admin.py",
+      "sha256_before": "f64065904e7bd606e7ff9ea60bf800d4a73af0935a1b9efe98bacf050030c386",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/auth.py",
+      "sha256_before": "7711068e6eda3d3a358cc8eeee78fc88c4352f9a783d21af9b18e6bbc816654d",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/config.py",
+      "sha256_before": "20246dd6e27d4ed983a564923d5eae71474e772320f2bb6d702406c0a7616f76",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/construction.py",
+      "sha256_before": "162d2aa922f365f529069fcbed79ee7870805abbf5073e96efe384cbadf1c5eb",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/dialogues.py",
+      "sha256_before": "aa25deb11606c4fb05853ee63526c502f7e6c2ea987b8c6c234e4ad3a0b2123f",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/health.py",
+      "sha256_before": "4e5c998e582bc4c1f923e0467031a9a814eee2d88a75c64d19bf5694e09dca70",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/inspect.py",
+      "sha256_before": "b1445c5d0a06756e9774ffea93527cb9b9311e17cd3d1a514a0f376ea50ad0f0",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/projects.py",
+      "sha256_before": "540fd44802fd09ae0fe8cdb9760f95af6d9fadccb1ac19b20a38d6fa33a54d11",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/review.py",
+      "sha256_before": "81564e9f921dec9d2f45e1f6b7acbb36a39abf6a3bcb0418ccb1f82a73c17832",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/router.py",
+      "sha256_before": "28a9b498fe8fc8ed223cc5b123274a26137e491e36a5920d379757349f1a9e3b",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/api/v1/tasks.py",
+      "sha256_before": "f450f16c38a4ef860fb55498d3d6852391b912e48bfc0cd3553044e873bbe2f9",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/core/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/core/config.py",
+      "sha256_before": "13bac39239212647b1bd84dd7eb89c6e0e0b3e92d0c4b04b01a96318edaf2326",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/core/database.py",
+      "sha256_before": "ae1bf3d519e264a4d1fd67ad4c3ecb97faf5bc2327228a03a9709b36a42e615e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/core/deps.py",
+      "sha256_before": "1478535e75c678a75de50974bbc0daa94d4509c06eefbcb3edc4bc860a66b649",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/core/errors.py",
+      "sha256_before": "5ae15d877009c28716cae90486dafad800ada92a11a4d259e5a727f359608294",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/core/logging.py",
+      "sha256_before": "eb79e911d5a2ff3b0ce6448a43ad04b45d5c11b53866949fadde0a0c4381caa8",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/core/security.py",
+      "sha256_before": "17586c51621292d8f122546da8b3159b1bc3c26f45eb3efb76bedc8afbe7239e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/main.py",
+      "sha256_before": "be2e6f603a68c6ec1cf6d6ab14ce93da62568ba08daee800e041e5e94e41bfb4",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/__init__.py",
+      "sha256_before": "b5d15ba64ea6e7804d4ee803f2f5bc0b6e31b84f451dfff7648b0016eb8fcf86",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/base.py",
+      "sha256_before": "32e821a7e8acd31565ae1827f0cb1e90cc6d5a8347b003bc5a33c9d6d5fbd18b",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/dialogue.py",
+      "sha256_before": "1937953424272678ba32e8c6b26782da48e28da37bfa1237795422ff113276a4",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/paper.py",
+      "sha256_before": "6b9aa751d31766b262b20f55ef6fae57a3b947e65fae500e64c5c6ac1a27fbab",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/project.py",
+      "sha256_before": "bf39662c4212025e9ac57c969fd8880db26e084157a5775909aae9d9e65a1d89",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/recommendation.py",
+      "sha256_before": "c641aaba423c8c6fd9dfed182f433852a30bd04f3d2448d4e7d02c579a9ff5c1",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/review.py",
+      "sha256_before": "3db3d1d6b16580a66dc9d9343e02c4961c9036e9648d0239179bf2152ab29458",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/stage.py",
+      "sha256_before": "c1f45554a282557c885995f3e52036f6cb821615b735c0f76656272511d1cad6",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/models/user.py",
+      "sha256_before": "55af944b1b3d0cb133f8201514808149ebdf57c79b65cef0bef42ba112d11f8e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/admin.py",
+      "sha256_before": "66e8530747194b3e35914a1015a7d7611cba9535f70eb0c6acd7e49a9167ef00",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/auth.py",
+      "sha256_before": "4ad763baabc0491405bfddf60bca9c97abc4f483f4695d44c1d2ef34e8ff61b8",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/common.py",
+      "sha256_before": "a3e9db5bb853d8c2259d77a826dc6661d6ec096fe8ca4f199ceb614041f88b8a",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/config.py",
+      "sha256_before": "fc5741e2f0ffc4447153a48c59337d1b4ad809e4954817fbbb1bdbda2ed000b4",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/construction.py",
+      "sha256_before": "6c1244e6f6410a29961240a776710941228f823300a375d12d7c8f4ca8489873",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/dialogue.py",
+      "sha256_before": "74f68fc49eb8e83bbf8488e523599bf017994a8da663cd54e3402948042d3ca9",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/health.py",
+      "sha256_before": "f3bd13bf6e306c5c8845d84b8a6e43ff2fec311e7c1a1491563b0ec756ac5c2e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/project.py",
+      "sha256_before": "5bbbfc6b730c1d45ed6042aa94da411852173bed75f98d63a12786b3e86e8ebc",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/schemas/review.py",
+      "sha256_before": "f5c104eac217ce2146f2bc8b0d8ca5e3040d68b950595ea1d81b0a9288ad305b",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/admin_service.py",
+      "sha256_before": "094d148995de3f2ad3c8508c5b423b4af19230dd35d5bb32f195a70cd8771142",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/auth_service.py",
+      "sha256_before": "deb3bddd6a218fd3816b70e5001a27d8a24dacf18b8a8188c3ae50dbd4828da5",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/config_service.py",
+      "sha256_before": "77612784d84c358c7ce16a25a6ecde7b360a7dbfeda3568664bf2dcdd87562c8",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/construction_service.py",
+      "sha256_before": "a1173801ca5d31e79ca018c6efd54e2648686e970425c35e21c622f891337d7f",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/dialogue_service.py",
+      "sha256_before": "ebbb12662a85b4dab7bc6e6dd9fc54093f49aba18301f45395479ea5db63d816",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/project_service.py",
+      "sha256_before": "c75cb2ad478690495701dec125f113b1d4fd2a7bbea2c7b221d14424fbbac519",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/services/review_service.py",
+      "sha256_before": "88a0238ef045e5478155f67da5fe16de6af48bd9e877d2bb4d48cf9685bae340",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/utils/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/app/utils/ids.py",
+      "sha256_before": "c6ed3fa2d162374261f5150dca13cde98ac1117ffb7bc4f2e54b5a283bb70527",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/pytest.ini",
+      "sha256_before": "6759fdcd1df5ad2f1aba24f23bea16e3f192cdc2f1412a37687406f384d128b7",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/requirements.txt",
+      "sha256_before": "13c1975a464888ceb74532037150bc336ddb823b0f2a8da3a624a15a390695be",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/scripts/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/scripts/init_db.py",
+      "sha256_before": "731ba60113bbfa7edaac39a4c064cbdea9dfda499e54ea93c2f3856a33c6a238",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/conftest.py",
+      "sha256_before": "df4e568d8da638d030f1e3a064052228a9867ac8e06cc9aab19020bec50b4299",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/contract/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/contract/run_contract_tests.sh",
+      "sha256_before": "14ad7de85c3a40ee4ad3d8199eae2a9c729f56576962f943cb6f002171ab7df7",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/contract/schemathesis.toml",
+      "sha256_before": "ab539c39a2afbcc1bc4c4b7428eccfbc2f732e7f48f99ab0269c9c259838ff2d",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/integration/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/integration/conftest.py",
+      "sha256_before": "d95fdb4f7d28cdcdc44def501bbaf071d14aaceb70d5785737265d9e2a641419",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/integration/test_construction_pipeline.py",
+      "sha256_before": "bc1501d0cce2a13d8b4061311210fdb7421a98dbf812e7c17e175e3a815c5dd4",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/integration/test_dialogue.py",
+      "sha256_before": "1e2b8a9f05963285e61c7e832b78071586a110ec5188e042d2285ff725223453",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/integration/test_email_permissions.py",
+      "sha256_before": "96fe10c7d27f8dc37d855317c42f708c87d62769eb45b75b0789548f050e0eb0",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/integration/test_mode_switch.py",
+      "sha256_before": "383c1e5a563c103f427cf07c1fcae720d30f2cfe177d2331785be0e220d6a428",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/unit/__init__.py",
+      "sha256_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/unit/test_base.py",
+      "sha256_before": "7ee506046ab208d9bd541d8ffda91a54aca54fe1e293e71009b977a76859e057",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/unit/test_errors.py",
+      "sha256_before": "4dce5385d1ab1690525de0a23312257df15ae72d7b2383f3590017d7e9b00d98",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/unit/test_ids.py",
+      "sha256_before": "d585d74acf31a5974006c18b08267c62762790ecd5b686cf0c90d9b99b9681dc",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "backend/tests/unit/test_schemas.py",
+      "sha256_before": "e57b5865c031808af80653ecee3f415d79ae05b5b2108fc1be709a648bacae26",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/global-setup.ts",
+      "sha256_before": "32ca9f2081f7fa6bc78717b893907c662ae6e8495582655afd5b59cc21840135",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/global-teardown.ts",
+      "sha256_before": "c8b410f91af828586f39431e81da63296750cfc51525950afd2112fb0dce5e20",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/playwright.config.ts",
+      "sha256_before": "d64016aed3d396ab1732e61dfd6e112c64bb36d682f1e894cb9f62c1d7d36831",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/e2e-001-auth.spec.ts",
+      "sha256_before": "d82a1665604226de1f9a12349545cc7085c15bb64f01863d242b646d363feb71",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/e2e-002-construction.spec.ts",
+      "sha256_before": "f109d1843ef72a920273efc0c612e2d97e37c2dc8c125266c22da51032556fa1",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/e2e-003-review.spec.ts",
+      "sha256_before": "15659b5b75e3b3f7ac0b71ca2583f2dc232f7d68201b319867e462876cae5c13",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/e2e-004-dialogue.spec.ts",
+      "sha256_before": "459647ade28ea9c23b6c02c43f6549d6ba2d49b1a3f31faf9b907f79eb9480e5",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/e2e-005-inspector-panel.spec.ts",
+      "sha256_before": "47f8f2a65d5214a02abc827e7a95f5c1dfd490276281a2773e4d9332daf5d8e2",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/e2e-006-health-degraded.spec.ts",
+      "sha256_before": "e718b9395b1d90d64c09fede4b8e0e77efb69dd2b74ea3b67f4562c131e88ab6",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/e2e-007-sse-error.spec.ts",
+      "sha256_before": "f96da70019a575b3f5ef8584790eb6a91a4e7f0b094336731b4e20807b924cf2",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "e2e/specs/helpers.ts",
+      "sha256_before": "77a0549dc0227d6b026741497d18306b22ec21dea19faaafb288889896861e29",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/admin.ts",
+      "sha256_before": "af054139dea94d704a14311e99e1e2b1caa7562fb04aa32e7cd31574f28a77fd",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/auth.ts",
+      "sha256_before": "5129f679469c61e0116efb60a5294e8c63aa783880cb527ea04015c2d63ab15f",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/client.ts",
+      "sha256_before": "52dfb2b436c859e14e3b63ec442a54b59cd2971200f06c342100096be376584d",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/config.ts",
+      "sha256_before": "de5d618bdabf335d48eba5982bb41062e164ea554b0e335c9c3ff1775478bcec",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/construction.ts",
+      "sha256_before": "178d940bd1feeca924d507f1d33eff06ea729f057887820fe6b13d2106149820",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/dialogues.ts",
+      "sha256_before": "9e1396730bb4712d1ab31bb071e5d192a6584b52c2fde9215fb0e19c105d3d61",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/index.ts",
+      "sha256_before": "8c9c408d79d0ecc4bd40853c1dc198d7f6c3ef93396dfe489b0cef273762c3a4",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/inspect.ts",
+      "sha256_before": "88573cdd411a28e6e8b8f341940993a5ee47c67264fc0565faba11e04c5e5b5b",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/projects.ts",
+      "sha256_before": "046bee675998540a87fe1cc39281a5daa9999116b8a0493a0e47ee843c736236",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/review.ts",
+      "sha256_before": "5a03162134880f37644f5f113f3086706b22b781256fd0248f2f4c10785b044f",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/api/tasks.ts",
+      "sha256_before": "c2bc5ce02e880945ce3b8f930d32b59caeeaea40773b0045ed0b6d1f2c6e206c",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/components/InspectorPanel/InspectorPanel.test.tsx",
+      "sha256_before": "37301b8b27f6d32bb87eef4d2e8d3b4dacaf3fc974a2659e559547eb146d9812",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/components/InspectorPanel/InspectorPanel.tsx",
+      "sha256_before": "4297485951e33d5b7667edbefaf62273124cc2e5905857afa56e82cb7a07a0ba",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/components/InspectorPanel/index.ts",
+      "sha256_before": "fffcbcea81f2cdf86edc27368b48856cbb0c7dee8673f87fd82d583f9b2d37e5",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/components/InspectorPanel/types.ts",
+      "sha256_before": "ae513ad4fde216b23708d2dd1f75d9aa680cdb92361fd7e7ce0a1b6c48ba4c7a",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/index.html",
+      "sha256_before": "aa252b8eb6c612cfa5929dc2a050920c899caf6dcde57c249e91bc4d8b545f20",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "sha256_before": "1a8c7b47f923324f439d9ca2f24507dc4a8394dc1a1752dbd8ae6d5ae87aa431",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/package.json",
+      "sha256_before": "8d28da48a383577d3d4bd49bf3d3f9f5b178338b89951049058960e1d69642a8",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "sha256_before": "4d94e3766ea2e3edac3f06145a963f45bb6d51c7ca5bdb9df0e55847ff70c6a9",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/components/Alert.tsx",
+      "sha256_before": "790f4631e280ded4189bda690d199268ae2878382449d533fc3652901b48673c",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/components/AppShell.test.tsx",
+      "sha256_before": "5b3f1db8ee0418496ca31e435b46f7c290954bf290faa59930862cc72bf4bd17",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/components/AppShell.tsx",
+      "sha256_before": "a662af08575b7d2b5d1c2acaf510359c8521d44f8cc1854b2a663ce6ea0ef9e5",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/components/Modal.tsx",
+      "sha256_before": "52014b5dfc2708a67558d0584934ad91f632c96b33c110ce1f6d6798d3a0c993",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/components/ProjectModal.test.tsx",
+      "sha256_before": "9e04f718f4dc43a06cdee36bc774818b4e35ae095f2c09dee10c8b08dc1e7782",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/components/ProjectModal.tsx",
+      "sha256_before": "e4b65bbd8ac4eab79ffde5366b67488e1ce965755ee5df84ed9feafd4aa49f00",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/contexts/AuthContext.tsx",
+      "sha256_before": "7ce1298fb40565d461c6b5cc2945c3c06c8ff2d505529c2a533272b0c566616a",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/hooks/useProjectEventStream.test.tsx",
+      "sha256_before": "3fa83d5190c793663448f7370fbb703da505cd05beb1331616d57569c96d186f",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/hooks/useProjectEventStream.ts",
+      "sha256_before": "71af6c5eab99ae1cb380e8dd4f4d9a7064646bc6220ff2b4cd268dc7360cd77b",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "sha256_before": "e55451eb173a09fbf40a1329a6558a17133128775824c0e2a03efd3c7c9f61c4",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/DialoguePage.test.tsx",
+      "sha256_before": "e8ac522ec678f0953fc0f59ff6617be6f663f4aa54d13264c9e65053f9b3b9a9",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/DialoguePage.tsx",
+      "sha256_before": "8bdee868c0e873411b467773ad45f4c2302aacaf28b82ffac8c015689bfe720e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/HealthPage.test.tsx",
+      "sha256_before": "60f31f1e69382614f48303b4ec22b84108832eddc6ac32b73ff511c512e7bfcf",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/HealthPage.tsx",
+      "sha256_before": "1ea0ea98f3e6ecd874be7286e25cd5077a11a5c77d12079a0dbced441ea08528",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/LoginPage.test.tsx",
+      "sha256_before": "8963b4b89df539a16ba4375e0b3f3eb7563aec74291da93f1737a72952c5e32d",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/LoginPage.tsx",
+      "sha256_before": "2326faaa634037cbb095f55ea18bc182d28206e2622d67618a66fc57a0bc9977",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/ProjectWorkspacePage.test.tsx",
+      "sha256_before": "9b9bfd89abde70c6adc96921f1c02b319cf221d8fb491597589bb6eef3404900",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/ProjectWorkspacePage.tsx",
+      "sha256_before": "190105170a35db6b3cd4d65ec776a403f43ba6a9553c52dea891ab2f9fef737a",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/ProjectsPage.test.tsx",
+      "sha256_before": "43d926afb7e7e0b0686e40cc562cb622a59ec94c75616a56e01b2ca17f86bdf8",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/ProjectsPage.tsx",
+      "sha256_before": "52465754e2c9f8396ae662b1f6cac624ece7f783ac1957c6dadb35f90db6512d",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/ReviewPage.test.tsx",
+      "sha256_before": "d6e2a7204f673d3806420e9d1fef0e8c08115fe72c0dcfa0f7faf247a52c8816",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/ReviewPage.tsx",
+      "sha256_before": "3ece67ba1f5a353819066f25634cae82303141345db7eab75c111d771f03506c",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/SettingsPage.test.tsx",
+      "sha256_before": "f09e39b3964516ead669f98e2f4c5140df2ef051da2aa7cde3b63016a511a37a",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/pages/SettingsPage.tsx",
+      "sha256_before": "39c154e99a64aac63fafa6adfa5918012f2e8f46d57c1645567c1b5391a2cf7e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/styles.css",
+      "sha256_before": "60d9eacbf56ba312abbd037135f5c20ed7d7d515ed40f75e5ed0c78021beb735",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/test/render.tsx",
+      "sha256_before": "72367eeac2b673487a79633712ed587ede53207ed3a9a465a0a25fcf4e796467",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/test/setup.ts",
+      "sha256_before": "36f98f0624b0fae43575c4be660b7f96b5a4792812e5e42938c59f51f576f7d4",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/utils/format.ts",
+      "sha256_before": "6341835c2da7ac383ffdff0f41a65cd51c8245283e1bcb9548d302fec42dc4d5",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "sha256_before": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "sha256_before": "3c23062dcfd1a50903607a16e089516a950f3df281ccd6fe65cc162e99e12c7e",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/types/index.ts",
+      "sha256_before": "0c3ac2f53ebd26c3f8c3a4538bf345e74d13f3f194a70813beb8be4981d16a8c",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "sha256_before": "d5bf49f39aa5c857032b195d2db29fc77997390cfbba3d33fc4d42867d8d2b4c",
+      "classification": "危险无用",
+      "action": "deleted",
+      "reason": "旧应用耦合、旧契约或工程装配；不保留整模块"
+    }
+  ],
+  "local_non_code_preserved": [
+    {
+      "source": "backend/.env",
+      "destination": "/Users/qingyue/.local/share/research-paper-base-local-backups/legacy-2026-10-16-3juofotl/backend.env",
+      "action": "moved_without_reading_content",
+      "mode": "0600"
+    }
+  ],
+  "generated_environment_removed": [
+    ".venv/",
+    "frontend/node_modules/",
+    "frontend/dist/",
+    "frontend/tsconfig.tsbuildinfo",
+    "backend/.pytest_cache/",
+    "legacy __pycache__/",
+    ".DS_Store"
+  ],
+  "retained_files": [
+    {
+      "path": "archive/maybe_useful/README.md",
+      "classification": "或许有用",
+      "sha256": "d3685fa6008dcf5cfbb50176518dc95cb2b3cabd3e4bee7ef532b34033ba0e34"
+    },
+    {
+      "path": "archive/maybe_useful/agent_logic/README.md",
+      "classification": "或许有用",
+      "sha256": "e26ac93359d719eec2176cf25018d29c92cad09c0a97a285660e0a5edcdce770"
+    },
+    {
+      "path": "archive/maybe_useful/agent_logic/fragments.py",
+      "classification": "或许有用",
+      "sha256": "de4f3055edbe7a4e852f628302a3241c9cf7615a8cebf95afe93d8a97d1c9994"
+    },
+    {
+      "path": "archive/maybe_useful/agent_logic/test_fragments.py",
+      "classification": "或许有用",
+      "sha256": "7886fad8d1a8ebd1be51dee5f281aaa8516a26f20203a1e80a2c9a40023860a5"
+    },
+    {
+      "path": "archive/maybe_useful/support_logic/README.md",
+      "classification": "或许有用",
+      "sha256": "bc720f346957e5ed9d850f087850b5d80ba6bdc62975e332488ab9359be2413d"
+    },
+    {
+      "path": "archive/maybe_useful/support_logic/helpers.py",
+      "classification": "或许有用",
+      "sha256": "fec4427069fdfcdb077f9a6b121910f314e140f5a0063374c97824392ee1b85f"
+    },
+    {
+      "path": "archive/maybe_useful/support_logic/password_candidate.py",
+      "classification": "或许有用",
+      "sha256": "bc75a081a101e25cc3e110231ae5d2e84c572735a55c298f5c7c6d974965e350"
+    },
+    {
+      "path": "archive/maybe_useful/support_logic/tests/test_password_candidate.py",
+      "classification": "或许有用",
+      "sha256": "8840db7602261c00a5aa0fea06cd4244837761f77fb3ad26c73faba578e8d4c7"
+    },
+    {
+      "path": "archive/maybe_useful/support_logic/tests/test_support.py",
+      "classification": "或许有用",
+      "sha256": "6690fa299799c8973b88aca94d39e7d678334efcbc17c60db13cd62bcd51a0a4"
+    },
+    {
+      "path": "archive/maybe_useful/ui_materials/README.md",
+      "classification": "或许有用",
+      "sha256": "534f24a2dca8a31f1ee2a403b2f77d3aba0789679b20d29aea121b78d22b9b2c"
+    },
+    {
+      "path": "archive/maybe_useful/ui_materials/acceptance-scenarios.md",
+      "classification": "或许有用",
+      "sha256": "4e06335ebdc04fd9d80fead3e1e85831db5112837fdf6fc252b462e655f7644c"
+    },
+    {
+      "path": "archive/maybe_useful/ui_materials/display-fragments.html",
+      "classification": "或许有用",
+      "sha256": "bff7026aacd2cafad1fbe2ec8cf26c3f951a2796ee1558ba456c06dd1824bf5f"
+    },
+    {
+      "path": "archive/maybe_useful/ui_materials/display-material.css",
+      "classification": "或许有用",
+      "sha256": "ae8faee74f27f0e51ec3d42a973d59fc7d19b6ee6a56eae8dee679b5293b6e2c"
+    },
+    {
+      "path": "archive/maybe_useful/ui_materials/format.mjs",
+      "classification": "或许有用",
+      "sha256": "220d673c2b8fa450ea895fe7baa21caa00299167454dde98a07fc46f7560a2b0"
+    },
+    {
+      "path": "archive/maybe_useful/ui_materials/format.test.mjs",
+      "classification": "或许有用",
+      "sha256": "be4a5268f418ec39ade31f3a08d08ea8373f8afd465c257a79da95bd7477a85e"
+    },
+    {
+      "path": "archive/maybe_useful/ui_materials/sources.json",
+      "classification": "或许有用",
+      "sha256": "d65a00bcb7f1aa4f525f9b0a65faa573ab20657f0966ae0d4ed1a2172e4c4831"
+    }
+  ],
+  "verification": {
+    "agent_tests": 12,
+    "support_tests": 8,
+    "ui_tests": 3,
+    "failures": 0,
+    "skipped": 0,
+    "note": "主代理在删除旧环境前复跑全部23项离线测试；没有网络/数据库测试"
+  }
+}
