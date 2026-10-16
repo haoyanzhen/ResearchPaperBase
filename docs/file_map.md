@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.9 · 2026-10-16（旧实现清理，登记独立逻辑存档）
+**文档版本**：v1.12 · 2026-10-16（登记项目状态历史附件）
 **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
 
 ## 当前目录
@@ -16,32 +16,63 @@
 
 ## docs/ — 契约文档
 
+### 项目与设计入口
+
 | 文件 | 职责 |
 |------|------|
+| [PROJECT_STATUS.md](PROJECT_STATUS.md) | 项目进度与待完成项统一入口；汇总当前状态、开放决策、延期事项、关闭条件和证据 |
+| [PROJECT_STATUS_APPENDIX.md](PROJECT_STATUS_APPENDIX.md) | 项目状态附件；保存已收口事项细节、历轮验证和主文件修改记录 |
+| [design/README.md](design/README.md) | 分层设计文档集入口；说明权威性、文件结构和阅读顺序 |
+| [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
+
+### 设计文件（编号顺序）
+
+同组主文件在前，派生索引、速查及附录按子编号升序排列；同号持久化设计主文在 SQL 草案之前。参考候选与历史资料另列，不改变文档权威性。
+
+| 文件 | 职责 |
+|------|------|
+| [design/00_layers.md](design/00_layers.md) | 分层总览；定义架构边界、依赖方向与横切约束 |
+| [design/00-00_layer_design_file_mapping.md](design/00-00_layer_design_file_mapping.md) | 分层文件映射；定位现行设计文件 |
+| [design/01_functional_requirements.md](design/01_functional_requirements.md) | 现行功能需求基线；需求含义、优先级和验收以本需求正文为准 |
+| [design/01-01-FR-reference.md](design/01-01-FR-reference.md) | FR 派生速查；不定义独立需求规则 |
 | [design/02_domain_core.md](design/02_domain_core.md) | Domain 主文；聚合边界、模块接口、通用规则与专题附录索引 |
 | [design/02-01-domain-reference.md](design/02-01-domain-reference.md) | Domain 派生速查；聚合、对象、链路与 FR 映射，不定义独立规则 |
 | [design/02-02_construction_versioning_appendix.md](design/02-02_construction_versioning_appendix.md) | Domain 规范附录；知识库版本详细规则的统一来源，覆盖对象、生命周期、发布、构建槽、并行构建、版本采用、确认和冲突裁决 |
 | [design/02-03_construction_assets_appendix.md](design/02-03_construction_assets_appendix.md) | Domain 规范附录；Construction 检索输入、身份与去重、筛选、手动补充、解析和分析确认 |
 | [design/02-04_run_recovery_appendix.md](design/02-04_run_recovery_appendix.md) | Domain 规范附录；运行重试、重连、重跑、断点、清理与回复恢复 |
-| [PROJECT_STATUS.md](PROJECT_STATUS.md) | 项目进度与待完成项统一入口；汇总当前状态、开放决策、延期事项、关闭条件和证据 |
-| [design/README.md](design/README.md) | 分层设计文档集入口；说明权威性、文件结构和阅读顺序 |
-| [design/00_layers.md](design/00_layers.md) / [design/00-00_layer_design_file_mapping.md](design/00-00_layer_design_file_mapping.md) | 分层总览与文件映射；定义架构边界、依赖方向并定位现行设计文件 |
-| [design/01_functional_requirements.md](design/01_functional_requirements.md) / [design/01-01-FR-reference.md](design/01-01-FR-reference.md) | 现行功能需求基线及 FR 派生速查；需求含义、优先级和验收以需求正文为准 |
 | [design/03_ui_workspace.md](design/03_ui_workspace.md) | UI 主文；全局导航、Shell 布局组合、跨模块约束、分期和验收要求；与四份 UI 附录具有相同规范效力，业务规则以 01/02 为准 |
 | [design/03-01_ui_system_pages_appendix.md](design/03-01_ui_system_pages_appendix.md) | UI 系统页面规范；认证、Project Hub、个人及管理员设置 |
 | [design/03-02_ui_construction_appendix.md](design/03-02_ui_construction_appendix.md) | UI 构建规范；配置、运行步骤、补充请求和构建流程 |
 | [design/03-03_ui_research_review_appendix.md](design/03-03_ui_research_review_appendix.md) | UI 研究与综述规范；研究会话、综述架构、章节编辑和生成流程 |
 | [design/03-04_ui_shared_interactions_appendix.md](design/03-04_ui_shared_interactions_appendix.md) | UI 共用交互规范；知识资产、知识更新、冲突确认、恢复和对象切换 |
-| [proposals/ui_design_historical_review_2026-06-01.md](proposals/ui_design_historical_review_2026-06-01.md) | 原 UI 第 10 章历史评审；仅供追溯，不定义现行规范 |
-| [design/05_application_use_cases.md](design/05_application_use_cases.md) | 应用用例草案；命令校验、执行编排、状态推进、锁、幂等与恢复；领域规则由 Domain 规范定义 |
-| [design/07_data_persistence.md](design/07_data_persistence.md) / [design/07_data_schema.sql](design/07_data_schema.sql) | 现行持久化设计与 SQL 草案；关系库、文件、向量、图谱、版本及同步状态，不能反向定义领域规则 |
-| [design/backup/06_data_requirements.backup.md](design/backup/06_data_requirements.backup.md) / [design/backup/06_data_model.backup.sql](design/backup/06_data_model.backup.sql) | 历史数据需求与 SQL 备份；仅供追溯，不作为现行权威契约 |
-| [design/04_api_contracts.md](design/04_api_contracts.md) / [design/backup/07_api_contract.backup.md](design/backup/07_api_contract.backup.md) | 现行 API 边界草案与旧详细契约备份；前者定义当前职责，后者仅供历史参考 |
-| [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
-| [design/08_security_permissions.md](design/08_security_permissions.md) | 权限与安全层；占位文档，待补权限矩阵、管理员边界、敏感信息保护、审计日志和 SSE 认证策略 |
+| [design/04_api_contracts.md](design/04_api_contracts.md) | P0 API 公共协议；认证、信封、修订/确认、幂等、错误与分期，未决分支不视为定稿 |
+| [design/04-01_p0_operation_contracts.md](design/04-01_p0_operation_contracts.md) | P0 操作附录；请求响应、具名用例及验收入口 |
+| [design/04-02_transport_task_file_contracts.md](design/04-02_transport_task_file_contracts.md) | 任务/SSE/文件附录；技术投影、回放、上传下载与限制 |
+| [design/05_application_use_cases.md](design/05_application_use_cases.md) | 应用用例设计；衔接 P0 受理/提交、锁、幂等、内容保护与状态；未决分支及后续恢复保持待细化，领域规则由 Domain 规范定义 |
+| [design/06_agent_knowledge_services.md](design/06_agent_knowledge_services.md) | Agent 与 Knowledge 服务草案；Construction、Research、Review Agent 与 Knowledge 能力边界 |
+| [design/07_data_persistence.md](design/07_data_persistence.md) | 现行持久化设计草案；关系库、文件、向量、图谱、版本及同步状态，不能反向定义领域规则 |
+| [design/07_data_schema.sql](design/07_data_schema.sql) | MVP 关系数据结构 SQL 草案；供迁移实现参考，不作为已实施证明 |
+| [design/08_security_permissions.md](design/08_security_permissions.md) | 权限与安全草案；本轮同步 P0 API 认证/文件/管理员边界，完整安全设计和实现仍待后续 |
 | [design/09_quality_observability.md](design/09_quality_observability.md) | QA 与可观测层；错误码体系、结构化错误信封、SSE 错误事件协议、健康检查、诊断快照、测试策略、Inspector Panel |
 | [design/10_operations_deployment.md](design/10_operations_deployment.md) | 运维部署与演进层；占位文档，待补环境变量、部署拓扑、迁移、备份恢复、监控告警和版本演进 |
-| [design/12_gap_decisions_review.md](design/12_gap_decisions_review.md) / [design/12-00_gap_downstream_reference.md](design/12-00_gap_downstream_reference.md) | 旧决策迁移审核与下游待细化事项；不等同于旧决策全文或实现完成证明 |
+| [design/12_gap_decisions_review.md](design/12_gap_decisions_review.md) | 旧决策迁移审核；不等同于旧决策全文或实现完成证明 |
+| [design/12-00_gap_downstream_reference.md](design/12-00_gap_downstream_reference.md) | 12 号审核的下游待细化参考项；不表示已完成实现 |
+
+### 选型参考（编号顺序）
+
+| 文件 | 职责 |
+|------|------|
+| [design/013-graph-choose.md](design/013-graph-choose.md) | 13 号 Graph-RAG / Agent Memory 技术选型参考；仅候选、尚未采纳，不定义现行要求 |
+
+### 历史资料、备份与附图
+
+| 文件 | 职责 |
+|------|------|
+| [workorders/api_p0_design_review_2026-10-16.md](workorders/api_p0_design_review_2026-10-16.md) | 本轮 API 独立预案、主代理评审、未决业务项及文档检查证据 |
+| [proposals/ui_design_historical_review_2026-06-01.md](proposals/ui_design_historical_review_2026-06-01.md) | 原 UI 第 10 章历史评审；仅供追溯，不定义现行规范 |
+| [design/backup/06_data_requirements.backup.md](design/backup/06_data_requirements.backup.md) / [design/backup/06_data_model.backup.sql](design/backup/06_data_model.backup.sql) | 历史数据需求与 SQL 备份；仅供追溯，不作为现行权威契约 |
+| [design/backup/07_api_contract.backup.md](design/backup/07_api_contract.backup.md) | 旧详细 API 契约备份；仅供追溯，不作为现行权威契约 |
+| [design/backup/09_quality_observability.backup.md](design/backup/09_quality_observability.backup.md) | 旧质量控制备份；仅供追溯，不作为现行权威契约 |
 | [VibeCodingRecord/VibeCoding_record.md](VibeCodingRecord/VibeCoding_record.md) | 开发过程记录；设计演进历史 |
 | [media/](media/) | 文档附图（logo、RAG 结构图等） |
 
@@ -83,3 +114,11 @@
 | `docs/workorders/legacy_cleanup_execution_2026-10-16.md` | 实际删除范围、验证和剩余限制 |
 
 旧文件职责与路径可通过 Git 历史、重构计划和独立审查追溯。历史设计中的源码路径不代表当前存在对应实现。
+
+## 导航维护变更记录
+
+| 版本 | 日期 | 内容 |
+| --- | --- | --- |
+| v1.12 | 2026-10-16 | 增加项目状态历史附件入口 |
+| v1.11 | 2026-10-16 | 登记 P0 API 操作/传输附录及审查工作单，同步应用、安全文档定位 |
+| v1.10 | 2026-10-16 | 按设计编号与主文/附属顺序整理导航，补齐 06 号服务草案及 13 号候选参考入口，分列项目入口和历史资料；不改变权威性或业务规则 |
