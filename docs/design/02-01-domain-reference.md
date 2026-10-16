@@ -1,11 +1,13 @@
 # Domain Reference
 
-文档版本：v1.3
+文档版本：v1.6
 更新日期：2026-10-16
 来源文档：[Domain Core](02_domain_core.md)、[知识库版本附录](02-02_construction_versioning_appendix.md)、[构建资产附录](02-03_construction_assets_appendix.md)、[运行恢复附录](02-04_run_recovery_appendix.md)
 用途：作为 Domain Core 的聚合边界、领域对象、关键链路和 FR 映射速查文件。本文是主文及其同规格领域附录的派生速查，不独立定义规则；如有冲突，以对应领域规范及 FR 为准。
 
 详细规则阅读索引：
+
+- paused ConstructionRun 持续持有 Project 独占构建资格；取消清除、继续沿用原实例、重跑创建新实例接管的规则见 [02-02 §3.1](02-02_construction_versioning_appendix.md#31-构建槽不变量) 和 [02-04 §3](02-04_run_recovery_appendix.md#3-重试重连与重跑)。
 
 | 专题 | 领域规范来源 |
 | --- | --- |
@@ -26,8 +28,8 @@
 | `ProjectMaterial` | 非论文资料在某个 Project 内的私有资产和使用状态 | ProjectMaterial、MaterialProcessingState、MaterialAnalysis、ContentFormat | 不维护全局资料身份，不自动暴露资产给其他 Project，不让 candidate_sources 参与知识构建 |
 | `KnowledgeVersion / Evidence` | 可读取知识版本、引用证据和只读跳转 | KnowledgeVersion、KnowledgeVersionDependency、CitationEvidence、GraphEntityRef、TextSourceKind、KnowledgeSyncState | Graph 和向量索引是可读资产投影与同步状态，不是独立聚合根 |
 | `ResearchSession` | 深研对话、检索上下文、回复尝试和引用上下文 | ResearchSession、ResearchTurn、ResearchMessage、ResearchResponseAttempt、ResearchRetrievalContext、ResearchOutputPreference、ResearchSummary、ResearchCitationContext、ResearchSessionMetadata | 不修改论文库或 Project 资料库，不上传论文/资料，不触发图谱写入 |
-| `ReviewRun` | 综述输入、大纲、章节、终稿、导出版本和最小追溯 | ReviewRun、ReviewRunBrief、ReviewOutline、ReviewOutlineAssessment、ReviewOutlineVersion、ReviewChapter、ReviewChapterEvidenceContext、ReviewChapterTrace、ReviewFinalIssue、ReviewFinalDraft、ReviewExportableVersion、ReviewVersionSnapshot | 不跨 ReviewRun 合并历史，不绕过 KnowledgeVersion 和引用证据约束 |
-| `ExportJob` | 授权读取和导出产物生成 | ExportJob、ExportScopeSnapshot、ExportFileResult、ExportFailureReason | 不绕过 Review 终稿和可导出版本规则 |
+| `ReviewRun` | 综述输入、大纲、章节、当前终稿、下载和最小追溯 | ReviewRun、ReviewRunBrief、ReviewOutline、ReviewOutlineAssessment、ReviewOutlineVersion、ReviewChapter、ReviewChapterEvidenceContext、ReviewChapterTrace、ReviewFinalIssue、ReviewFinalDraft、ReviewVersionSnapshot | 不跨 ReviewRun 合并历史，不绕过 KnowledgeVersion 和引用证据约束 |
+| `ExportJob` | 授权读取和导出产物生成 | ExportJob、ExportScopeSnapshot、ExportFileResult、ExportFailureReason | 不绕过 Review 当前稿 accepted、权限与修订规则 |
 | `EmailPushJob` | 邮件推送范围、论文/资料项和收件人发送结果 | EmailPushJob、EmailPushScope、EmailPushPaperItem、EmailPushMaterialItem、EmailPushRecipientResult | 邮件失败不回滚论文或资料入库，不发送空邮件 |
 | `Viewpoint` | 观点发布、可见性、治理状态和研究对象引用 | Viewpoint、ViewpointVisibility、ViewpointModerationState、ViewpointReference | 不属于 Project Workspace，不改变被引用 Project/Paper/Topic/Review 状态 |
 
@@ -107,7 +109,6 @@
 | `ReviewChapterTrace` | 追溯记录 | ReviewRun | 章节最小追溯 | FR-033, FR-035 |
 | `ReviewFinalIssue` | 审查记录 | ReviewRun | 终稿审查问题 | FR-034 |
 | `ReviewFinalDraft` | 内容 | ReviewRun | 综述终稿 | FR-034 |
-| `ReviewExportableVersion` | 产物版本 | ReviewRun | 可导出版本 | FR-019, FR-034 |
 | `ReviewVersionSnapshot` | 快照 | ReviewRun | P2 历史快照 | FR-036 |
 | `ExportScopeSnapshot` | 快照 | ExportJob | 导出范围快照 | FR-019, FR-030, FR-034 |
 | `ExportFileResult` | 结果 | ExportJob | 导出文件结果 | FR-019 |
@@ -170,7 +171,7 @@ ReviewRunBrief
  -> ReviewChapterEvidenceContext
  -> ReviewChapter
  -> ReviewFinalDraft
- -> ReviewExportableVersion
+ -> 当前已保存稿 Markdown 下载
 ```
 
 ### 3.5 导出与邮件
@@ -197,13 +198,13 @@ EmailPushJob
 - `DocumentAsset` 受 Project 授权边界约束；同一 `PaperIdentity` 跨 Project 共享时，不得自动暴露上传文件。
 - `DocumentAsset` 承载 Project 资料文件时同样受 Project 授权边界约束；不得因标题或格式相似自动暴露给其他 Project。
 - `ConstructionRun` 的写入资格与构建槽接口见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
-- `ConstructionRun` 向知识库版本模块提交构建结果；版本发布条件、候选隔离和资料参与范围统一见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
+- `ConstructionRun` 成功结果区分 `published` 与 `no_change`，后者关联核验既有版本且不发布、不切换默认版本。failed 放弃恢复仍保留 failed；排队不占槽、暂停继续保槽、重跑新 Run 定向接管。状态机与候选转换统一见 [02-02 第 10 章](02-02_construction_versioning_appendix.md#10-构建与知识版本状态机)，恢复条件由 02-04 承载。
 - `ResearchSession` 和 `ReviewRun` 承接知识库版本绑定与版本采用接口；稳定绑定、旧依赖、确认边界和冲突裁决统一见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
 - 引用跳转承接 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md) 的 Project、KnowledgeVersion、Evidence 校验及安全空态接口。
 - Graph 和向量索引是 `KnowledgeVersion` 的可读资产投影与同步状态，不是独立聚合根。
 - Project 知识资产面板、Research 引用跳转和 Review 引用跳转都是只读探索入口，不得触发上传、删除、解析、入库、推送或图谱写入。
 - 人工修改内容不得被 Agent 静默覆盖；重新生成涉及人工确认或人工修改内容时必须要求用户确认。
-- 导出只能包含用户有权限访问的 Project、Run/Session 和文件；导出不得绕过 Review 终稿和可导出版本规则。
+- 导出只能包含用户有权限访问的 Project、Run/Session 和文件；导出不得绕过 Review 当前稿 accepted、权限与修订规则。
 - 邮件推送只包含当前 Project 中未推送且用户有权限接收的有效论文和有效 Project 资料；空邮件不得发送，发送失败不得回滚论文或资料入库。
 - `Viewpoint` 独立于 Project Workspace；`ViewpointReference` 可以引用研究对象，但不得改变被引用对象状态。
 
@@ -229,7 +230,7 @@ EmailPushJob
 | FR-016 | Project / Workspace | ProcessStep |
 | FR-017 | Cross-boundary | 内容来源优先级、ContentOverwriteRequested |
 | FR-018 | KnowledgeVersion / Evidence, ResearchSession, ReviewRun | KnowledgeVersion、KnowledgeVersionDependency |
-| FR-019 | ExportJob, ReviewRun | ExportJob、ExportScopeSnapshot、ReviewExportableVersion |
+| FR-019 | ExportJob, ReviewRun | ExportJob、ExportScopeSnapshot |
 | FR-020 | ConstructionWorkspace / ConstructionRun | SearchTermSet、SearchTermVersion、DataSourcePolicy |
 | FR-021 | ConstructionWorkspace / ConstructionRun | SelectedSearchTerms、AutoUpdateSearchTerms、CandidatePaper、CandidateMaterial、ContentFormat |
 | FR-022 | ConstructionWorkspace / ConstructionRun, PaperIdentity, ProjectPaper, ProjectMaterial | CandidatePaper、CandidateMaterial、DeduplicationDecision、MaterialDeduplicationDecision、PaperScreeningDecision、MaterialScreeningDecision |
@@ -244,7 +245,7 @@ EmailPushJob
 | FR-031 | ResearchSession, KnowledgeVersion / Evidence, ProjectPaper, ProjectMaterial | ResearchCitationContext、CitationEvidence、GraphEntityRef |
 | FR-032 | ReviewRun, KnowledgeVersion / Evidence | ReviewRunBrief、ReviewOutline、ReviewOutlineAssessment |
 | FR-033 | ReviewRun, KnowledgeVersion / Evidence, ProjectPaper, ProjectMaterial | ReviewChapterEvidenceContext、ReviewChapter、CitationEvidence |
-| FR-034 | ReviewRun, ExportJob | ReviewFinalDraft、ReviewFinalIssue、ReviewExportableVersion |
+| FR-034 | ReviewRun, ExportJob | ReviewFinalDraft、ReviewFinalIssue |
 | FR-035 | ReviewRun | ReviewChapterTrace、ReviewOutlineVersion |
 | FR-036 | ReviewRun | ReviewVersionSnapshot |
 
@@ -253,3 +254,5 @@ EmailPushJob
 1. 完整领域规则以 `02_domain_core.md` 及 `02-02`、`02-03`、`02-04` 同规格专题附录为准；需求含义与验收仍以 `01_functional_requirements.md` 为最高依据。
 2. 功能需求编号、优先级和分层追踪通过 `01-01-FR-reference.md` 速查，冲突时以 `01_functional_requirements.md` 为准。
 3. 本文只提供领域对象和聚合边界速查，不定义 API、数据库字段、Provider SDK、队列实现或文件存储实现。
+
+本次修订 v1.6（2026-10-16）：按R2-A移除独立ReviewExportableVersion速查对象，保留当前稿与知识版本规则。

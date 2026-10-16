@@ -1,6 +1,6 @@
 # Domain 附录：Construction 资产入库
 
-文档版本：v1.0  
+文档版本：v1.2
 更新日期：2026-10-16  
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义 Construction 的检索词、候选论文与资料、去重筛选、手动补充、文本处理和分析确认的业务对象与不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
@@ -63,16 +63,18 @@ KnowledgeSyncState、KnowledgeVersion 和 CitationEvidence 为 [02-02](02-02_con
 | `ManualMaterialSupplementRequest` | 用户手动补充 Project 资料请求 | 记录补充方式、提交人、来源值、`content_format`、解析结果、标题草稿/确认状态和失败原因；不得在用户确认前写入 ProjectMaterial | FR-023 |
 | `PaperIdentity` | 全局论文身份 | 使用 DOI、arXiv ID、外部 ID、标准化标题等归一化；跨 Project 共享 | FR-022, FR-023 |
 | `ExternalPaperIdentifier` | DOI、arXiv ID、URL 等外部标识 | 必须归一化类型和值，并记录解析来源；解析到多个候选或关键元数据冲突时必须要求用户确认 | FR-023 |
-| `ProjectPaper` | Project 私有论文关联 | 同一 Project 不得重复关联同一论文；保存有效性、评分、推送状态和分析结果 | FR-012, FR-022, FR-026 |
+| `ProjectPaper` | Project 私有论文关联 | 同一 Project 当前版本不得有同一论文的重复活动关联；移除后新导入保留历史成员；保存有效性、评分、推送状态和分析结果 | FR-012, FR-022, FR-026 |
 | `ProjectMaterial` | Project 私有非论文资料条目 | 同一 Project 内按 `normalized_title + content_format_group` 去重；保存项目资料库编号、标题、`content_format`、主来源、`candidate_sources`、有效性、推送状态和重要摘要 | FR-012, FR-022, FR-026 |
 | `ContentFormat` | Project 资料文件或内容格式 | 表达资料文件类型和相似格式组；P0 支持文档、演示、HTML、Markdown/纯文本、类字典、Notebook 和代码文件；P1 数据表和 P2 多媒体的版本纳入资格承接 [02-02](02-02_construction_versioning_appendix.md) | FR-021, FR-023, FR-024 |
 | `DocumentAsset` | PDF、远程文件、Project 资料文件或解析文本资产 | 记录访问引用、资产来源、解析状态、失败原因、摘要降级或不参与知识构建标记；用户上传资产必须绑定提交人和 Project 授权边界 | FR-012, FR-023, FR-024 |
 | `DocumentProcessingState` | 论文全文获取和可用文本来源状态 | 记录下载、解析、用户上传替代、重试后的最终可用文本来源；全文解析与摘要降级必须可区分 | FR-024 |
 | `MaterialProcessingState` | Project 资料文件获取和文本可用状态 | 记录下载/上传、解析、格式支持、可用文本来源、不参与 KnowledgeVersion、失败原因和重试结果 | FR-024 |
-| `PaperAnalysis` | Project 私有论文结构化 AI 分析 | 绑定 ProjectPaper、TextSourceKind 和 DocumentProcessingState；至少包含一句话总结、亮点、相关性要点、方法与创新；可被人工编辑和确认 | FR-025 |
-| `MaterialAnalysis` | Project 私有资料轻量 AI 分析 | 绑定 ProjectMaterial、TextSourceKind 和 MaterialProcessingState；至少包含重要信息摘要和 Project 相关性要点；Agent 生成标题、来源或摘要必须可区分草稿/确认状态 | FR-025 |
+| `PaperAnalysis` | Project 私有论文结构化 AI 分析 | 绑定 ProjectPaper、TextSourceKind 和 DocumentProcessingState；至少包含一句话总结、亮点、相关性要点、方法与创新；仅未入库锁定的候选可被人工编辑和确认，发布后只读 | FR-025 |
+| `MaterialAnalysis` | Project 私有资料轻量 AI 分析 | 绑定 ProjectMaterial、TextSourceKind 和 MaterialProcessingState；至少包含重要信息摘要和 Project 相关性要点；Agent 生成标题、来源或摘要必须可区分草稿/确认状态；与论文分析同样在入库确认受理后锁定 | FR-025 |
 
 ## 4. 检索与候选处理
+
+常规检索与纯补充/纯修订模式、同 Run 返回检索的显式输入修订，统一遵循 [02-02 第 3.2 节](02-02_construction_versioning_appendix.md#32-同-run-返回检索与纯修订构建)。无检索模式不伪造检索/评分结果；各项按实际依赖处理，相关人工确认仍保留。关联移除、空版本消费、入库确认后锁定与删除后新导入统一按 02-02 第 3.3 节执行；论文与 ProjectMaterial 均适用。
 
 Construction 不变量：
 
@@ -85,8 +87,8 @@ Construction 不变量：
 - 删除检索词只影响之后按检索词检索时的可选集合和自动更新集合；不得删除历史 Run、候选论文、候选资料、ProjectPaper、ProjectMaterial、KnowledgeVersion、图谱、向量或其他已生成内容；历史回溯只能读取当时的 ConstructionRunConfigSnapshot。
 - 所有实际数据源均失败或不可解析时，不得进入去重、评分与筛选阶段。
 - 单个数据源失败不得破坏其他成功数据源结果；失败数据源、失败原因和受影响检索词必须可诊断。
-- 普通检索命中当前 Project 已有关联论文的重复候选项不得进入下载、解析、AI 分析、入库、图谱更新或推送流程；明确的补全文本、元数据修正、分析修订和人工排除承接 [02-02](02-02_construction_versioning_appendix.md) 的待纳入修订与人工决定接口。
-- 命中当前 Project 已有 ProjectMaterial 的候选资料不得创建新资料条目；重复来源只能写入既有资料的 `candidate_sources`；`candidate_sources` 的知识构建资格承接 [02-02](02-02_construction_versioning_appendix.md)。
+- 普通检索命中当前 Project 已有关联论文的重复候选项不得进入下载、解析、AI 分析、入库、图谱更新或推送流程；已发布论文不再接受补全文本、元数据或分析修订，更改须移除成功后重新导入；人工排除承接 [02-02](02-02_construction_versioning_appendix.md) 的待纳入修订与人工决定接口。
+- 命中当前 Project 已有 ProjectMaterial 的候选资料不得创建新资料条目；重复来源仅记录为独立候选来源线索，不改变已发布资料元数据或版本内 `candidate_sources`；`candidate_sources` 的知识构建资格承接 [02-02](02-02_construction_versioning_appendix.md)。
 - 论文去重、评分、筛选和人工修正必须形成 DeduplicationDecision 或 PaperScreeningDecision；评分阈值来源、去重依据、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选论文和操作者。
 - Project 资料去重、评分、筛选和人工修正必须形成 MaterialDeduplicationDecision 或 MaterialScreeningDecision；标题归一化、`content_format_group`、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选资料和操作者。
 - 用户确认筛选结果后，候选论文和候选资料才能进入下载解析流程。
@@ -106,10 +108,12 @@ Construction 不变量：
 - P0 Project 资料支持 `pdf`、`doc/docx`、`ppt/pptx`、`html/htm`、`md/txt/rst`、`yaml/yml/json/toml`、`ipynb` 和 `py` 等代码文件参与后续解析和分析；版本纳入资格承接 [02-02](02-02_construction_versioning_appendix.md)。
 - P1 数据表资料可入库和使用；P2 多媒体资料可作为文件资产管理，解析能力后续扩展；两者的知识构建资格承接 [02-02](02-02_construction_versioning_appendix.md)。
 - 用户上传 PDF、Project 资料文件或远程文件形成的 DocumentAsset 只能服务于其有 `use` 权限的 Project；不得因为同一 PaperIdentity 或相似资料跨 Project 出现而自动暴露上传文件给其他 Project 或用户。
-- 手动补充命中当前 Project 已有关联论文时，只能作为补充资产、元数据修正候选或安全空态提示处理；不得创建重复 ProjectPaper。
-- 手动补充命中当前 Project 已有 ProjectMaterial 时，只能作为备选来源、元数据修正候选或安全空态提示处理；不得创建重复 ProjectMaterial。
+- 手动补充命中当前 Project 已有关联论文时，提示先移除关联后重新导入，不得作为补充资产或内容修订绕过只读边界，不得创建重复活动 ProjectPaper。
+- 手动补充命中当前 Project 已有 ProjectMaterial 时，提示先移除关联后重新导入，不得作为元数据修订或文件替换绕过只读边界；独立备选来源线索不写入已发布内容，不得创建重复活动 ProjectMaterial。
 
 ## 6. 文本处理与分析确认
+
+候选在入库确认受理前允许修改元数据、文件/文本、分析和评分/有效性，须失效并重做受影响处理与确认；活动处理与编辑不得竞争。确认受理后至隔离写入、发布期间锁定内容；已发布资产修改须移除成功后新导入。独立运行投影不在内容锁定范围。手工重新导入可复用身份和不可变字节，但不得沿用旧人工确认或把旧分析冒充新内容分析。
 
 Construction 不变量：
 
@@ -135,3 +139,7 @@ Construction 不变量：
 | 版本 | 日期 | 变更内容 | 变更人 |
 | --- | --- | --- | --- |
 | v1.0 | 2026-10-16 | 从 Domain Core 迁移 Construction 资产入库对象与不变量；版本规则和恢复规则分别承接 02-02、02-04 | Codex |
+
+本次修订 v1.1（2026-10-16）：关联已批准的构建模式和输入修订边界，避免另设发布规则。
+
+本次修订 v1.2（2026-10-16）：落实人工采纳 R1–R4 及补充决定：学术引用与简化终稿、关联移除发布、空版本消费、确认后锁定及论文/资料重新导入边界；仅设计同步。

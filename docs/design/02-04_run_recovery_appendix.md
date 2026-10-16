@@ -1,6 +1,6 @@
 # Domain 附录：Run / Session 恢复与清理
 
-文档版本：v1.0  
+文档版本：v1.4
 更新日期：2026-10-16  
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义重试、重连、重跑、Construction 断点和 Research 回复恢复的业务对象、不变量及临时产物清理边界。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
@@ -9,18 +9,22 @@
 
 本附录是 Domain Core 的领域规则组成部分，与主文共同受 FR 约束，沿用主文的通用状态、权限、内容保护和非构建互斥规则。
 
-构建槽、写资格终止与安全交接、版本发布、基线校验和版本采用统一承接 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。本文的失败超时清理不得代替该附录要求的暂停运行显式取消或重跑决策。资产处理输入与确认承接 [02-03 Construction 资产入库附录](02-03_construction_assets_appendix.md)。具体自动重试次数、等待窗口和后台清理编排由后续 `05_application_use_cases.md` 定义，不得反向改变领域规则。
+构建槽、写资格终止与安全交接、版本发布、基线校验和版本采用统一承接 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。本文的失败超时清理不得代替该附录要求的暂停运行显式取消或重跑决策。资产处理输入与确认承接 [02-03 Construction 资产入库附录](02-03_construction_assets_appendix.md)。状态转换、attempt 与 Run 失败区分、failed 经 queued 受控恢复、waiting_user 暂停继续恢复等待项，以及成功结果 published/no_change 均承接 [02-02 第 10 章](02-02_construction_versioning_appendix.md#10-构建与知识版本状态机)，不在本文重复维护转换表。具体自动重试次数、等待窗口和后台清理编排由后续 `05_application_use_cases.md` 定义，不得反向改变领域规则。
 
 ## 2. 核心对象
 
 | 对象 | 定位 | 核心规则 | 关联 FR |
 | --- | --- | --- | --- |
-| `ConstructionCheckpoint` | 构建断点续连状态 | 记录 ConstructionRun 子内容写入进度、重试次数、失败原因、可续连位置、中间临时文件引用、清理状态和用户继续/停止决策；不得替代错误日志 | FR-015, FR-026 |
+| `ConstructionCheckpoint` | 构建断点续连状态 | 记录 ConstructionRun 子内容写入进度、重试次数、失败原因、可续连位置、中间临时文件引用、清理状态和用户继续/停止决策；不得替代错误日志；paused Run 的继续沿用原实例，重跑创建新实例并交接占槽，取消清除其独占资格 | FR-015, FR-026 |
 | `ResearchResponseAttempt` | ResearchSession 内的一次 AI 回复尝试 | 记录 running/succeeded/failed/cancelled 等结果、诊断原因、部分回复、是否被用户采纳和所属 ResearchTurn；每个 AI 回复可重跑并生成新 attempt | FR-028 |
+
+本文恢复/重试语境中的“原输入”指该次执行所绑定的最后有效输入修订；初始冻结快照仍保留，不能借恢复修改输入、配置或基线。显式返回检索是独立用户动作，仅筛选等待点追加已确认词并沿用原范围、总预算、配置与基线，见 02-02 第 3.2 节。
 
 ## 3. 重试、重连与重跑
 
 通用重试、重连和重跑为 P1 受控能力（FR-018 版本采用专用创建为 P0，见 [02-02](02-02_construction_versioning_appendix.md)）。
+
+对于 paused ConstructionRun，显式继续表示恢复同一实例；显式取消表示撤销该实例写资格并清除其构建槽；显式重跑表示旧实例以 cancelled 保留历史并记录“被显式重跑替代”及新 Run 关联，撤销旧写资格后由新的 Run 实例定向接管原槽。所有交接都必须先确保旧 Worker 不能再写入。 新接管者创建失败、准入失败或接管前取消时的定向预约关闭，以及结果不明先查证的规则，统一承接 [02-02 第 10.2 节](02-02_construction_versioning_appendix.md#102-构建运行状态机)。暂停、进程重启、超时或租约失效不能代替这些显式操作。
 
 | 操作 | 优先级 | 领域含义 | 领域约束 |
 | --- | --- | --- | --- |
@@ -33,28 +37,35 @@ FR-018 的 P0 版本采用操作、与 P1 通用重跑的区别及基线失配�
 重连不变量：
 
 - 可重连对象必须记录运行阶段、子任务状态、已提交正式数据、未提交临时数据、临时文件引用、断点位置、失败原因、重试次数、操作者决策和清理状态。
-- 重连前必须校验断点、正式数据和中间临时文件仍然一致；临时文件缺失、损坏、越权、过期或与状态记录不匹配时，不得继续重连，只能失败、重试或重跑。
+- 重连前必须校验断点、正式数据和中间临时文件仍然一致；临时文件缺失、损坏、越权、过期或与状态记录不匹配时，不得继续重连。对 ConstructionRun，仍 running 且保槽的局部 attempt 可按策略独立 retry；已 failed 且留有未发布中间写入时不得用 retry 绕过可信断点要求，从头重建必须新建 Run。
 - 重连只能从已成功写入且状态一致的位置之后继续；不得重复写入已成功子内容，也不得跳过未完成子内容。
 - 重连完成并生成正式数据后，系统必须清理已完成链路不再需要的临时文件，并保留清理结果；清理失败不得把临时文件冒充为正式资产。
 - 取消、失败超时或用户选择不继续时，未发布中间写入和可续连临时文件必须按运行类型进入清理流程；清理不得破坏已发布 KnowledgeVersion、已确认内容或其他 Run/Session 资产。
 
 ## 4. Construction 断点与清理
 
+入库确认受理即锁定候选内容。入库失败未发布时保留人工草稿及诊断，P0 可在新构建准备候选，不增加原 Run 恢复入口；P1 恢复仍使用冻结依据，不借恢复编辑已锁定内容。关联移除确认若已明确列出冲突构建，允许同次授权安全终止该构建；先撤销旧写资格再让槽，未展示的新冲突须刷新预览。
+
 关联 FR：FR-015、FR-026。
 
 Construction 恢复不变量：
 
-- ConstructionRun 失败后的发布限制承接 [02-02](02-02_construction_versioning_appendix.md)；手动失败 Run 的未发布中间写入只能用于断点续连，用户取消或超时未处理后必须清理，并保持当前已发布 KnowledgeVersion 边界，不回滚其他成果；自动 ConstructionRun 不得进入等待用户处理状态，达到应用层失败清理条件后必须直接清理未发布中间写入和临时文件。
+- ConstructionRun 失败后的发布限制承接 [02-02](02-02_construction_versioning_appendix.md)；手动失败 Run 的未发布中间写入只能用于断点续连，用户放弃恢复或超时未处理后必须清理，并保持当前已发布 KnowledgeVersion 边界，不回滚其他成果；自动 ConstructionRun 不得进入等待用户处理状态，达到应用层失败清理条件后必须直接清理未发布中间写入和临时文件。
 - 用户选择重连继续构建时，新的 ConstructionRun attempt 必须基于 ConstructionCheckpoint 从已成功写入且状态一致的位置断点续连；不得重复写入已成功子内容或跳过未完成子内容。
 - ConstructionCheckpoint 必须记录正式写入进度、未发布中间写入、中间临时文件引用、可续连位置、失败原因、重试次数和清理状态；断点或临时文件不一致时不得重连。
-- 手动 ConstructionRun 中，用户选择不继续构建、取消失败 Run，或超过应用层定义的等待窗口仍无操作时，系统应删除所有可续连 ConstructionCheckpoint、失败 Run 的未发布中间写入和不再需要的中间临时文件，保持当前已发布知识状态；不得回滚其他已完成成果或清除独立保存的待纳入修订；系统只保留失败记录、错误日志和历史 Run 诊断。自动 ConstructionRun 达到应用层失败清理条件时必须执行同等清理，不等待用户操作。
-- ConstructionRun 重连成功并发布新的 KnowledgeVersion 后，必须将临时文件收敛为正式 DocumentAsset、ProjectMaterial、向量、Graph 或日志诊断引用，随后清理不再需要的临时文件；清理结果必须可诊断。
+- 手动 ConstructionRun 中，用户明确放弃失败 Run 的恢复，或超过应用层定义的失败恢复等待窗口仍无操作时，系统应删除所有可续连 ConstructionCheckpoint、失败 Run 的未发布中间写入和不再需要的中间临时文件，保持当前已发布知识状态；不得回滚其他已完成成果或清除独立保存的待纳入修订；Run 保持 failed 并记录放弃/清理结果及关闭恢复资格，不转 cancelled；系统保留失败记录、错误日志和历史 Run 诊断。自动 ConstructionRun 达到应用层失败清理条件时必须执行同等清理，不等待用户操作。
+- ConstructionRun 重连成功且结果为 published 后，必须将临时文件收敛为正式 DocumentAsset、ProjectMaterial、向量、Graph 或日志诊断引用，随后清理不再需要的临时文件；清理结果必须可诊断。
+
+- ConstructionRun 以 no_change 成功收尾时，保留本次核验及既有版本关联记录，候选按 02-02 收尾为已废弃；未采用的临时文件按所属关系清理，不生成新的正式知识资产，不清理复用的既有版本资产。
+- failed 原 Run 恢复必须保持最后有效输入修订、原配置和基线（初始快照与显式修订链按 02-02 第 3.2 节保留），经 queued 重新竞争构建槽，再记录新 attempt；原基线过时、候选已废弃/清理、已放弃恢复或必须从头重建时不得原 Run 继续，应按 02-02 选择新的 Run。局部 attempt 失败不自动等于整轮失败；不得用失败清理窗口结束普通 waiting_user 或 paused。
 
 ## 5. Research 回复恢复
 
 关联 FR：FR-028、FR-030。
 
 Research 恢复不变量：
+
+API-D02 B：以下消息编辑/删除、失败片段编辑/采纳以及业务重跑均属 P1；P0 保留输入、未采纳片段、诊断、取消和继续新轮次，传输恢复只恢复显示。
 
 - 流式回复中断、用户取消、检索失败或 LLM 失败时，ResearchTurn、用户输入、失败状态和可诊断原因必须保留；部分 AI 回复只能作为未采纳的 ResearchResponseAttempt 保存，由用户决定编辑、采纳、删除或重跑。
 - 同一 ResearchSession 一次只能有一个 active ResearchResponseAttempt；同一 AI 回复重跑必须生成新的 ResearchResponseAttempt，不得覆盖原 attempt 的诊断状态。
@@ -75,3 +86,9 @@ Research 恢复不变量：
 | 版本 | 日期 | 变更内容 | 变更人 |
 | --- | --- | --- | --- |
 | v1.0 | 2026-10-16 | 从 Domain Core 迁移通用重试/重连/重跑、Construction 断点清理和 Research 回复恢复规则；版本与构建写资格承接 02-02 | Codex |
+| v1.1 | 2026-10-16 | 明确 paused ConstructionRun 的取消、同实例继续及新实例重跑语义，并与构建槽交接规则同步 | Codex |
+| v1.2 | 2026-10-16 | 承接已采纳状态机；明确失败 Run 受控恢复与放弃后保持 failed、暂停重跑 cancelled 关联、no_change 临时产物收尾；不复制状态转换或改变 P1 恢复分期 | Codex |
+
+本次修订 v1.3（2026-10-16）：明确 D02 消息级能力 P1 与 D01 修订后的恢复依据，不借恢复修改输入。
+
+本次修订 v1.4（2026-10-16）：落实人工采纳 R1–R4 及补充决定：学术引用与简化终稿、关联移除发布、空版本消费、确认后锁定及论文/资料重新导入边界；仅设计同步。
