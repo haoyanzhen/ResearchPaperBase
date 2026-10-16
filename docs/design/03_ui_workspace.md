@@ -1,6 +1,6 @@
 # UI / Workspace 设计
 
-文档版本：v1.19
+文档版本：v1.22
 更新日期：2026-10-16
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`02_domain_core.md`
 
@@ -63,7 +63,7 @@ Project Assets 的论文/PDF/Graph 详情可使用同一辅助区的展开覆盖
 
 断点由前端根据内容可用宽度实现，不以缩小字体或整页横向滚动承载三栏；表格可在自身容器内滚动。布局变化不清空输入草稿、改变对象/版本绑定或中止流式回复。展开详情时焦点进入面板，关闭后回到触发控件，键盘可完成对象切换、编辑、打开和关闭详情。
 
-默认显示当前任务、主要操作、等待原因和绑定版本；配置快照、诊断、历史列表和完整资产详情按需打开。常见操作不要求用户先理解内部状态机。
+默认显示当前任务、主要操作、等待原因和绑定版本；Construction 成功区分已发布与核验无变化，后者展示核验既有版本及范围，不触发知识升级提示，详细交互见 Construction 附录 P15/P20；配置快照、诊断、历史列表和完整资产详情按需打开。常见操作不要求用户先理解内部状态机。
 
 ### 3.3 Shell 基准线框
 
@@ -125,7 +125,7 @@ P13 是进入某个 Project 后的唯一 Workspace Shell，不再展示其他 Pr
 
 Project Home 只用于快速查看 Project 编号、详细说明、论文数、资料数、最近构建时间、最近活动时间、默认 Knowledge Version 和自动更新摘要，并提供进入构建、深研或综述入口。左侧除 Project 名称外，只展示当前 Project 的唯一 Construction Workspace、Research Session 列表和 Review Run 列表；历史 Construction Run 不与 Session/Run 平级展示，只能在 Construction Workspace 内部查看。选择对象时，Main Workbench 和 Object Info 面板必须同步切换；Project Assets 面板保持只读，承载论文、Project 资料、Graph、默认 Knowledge Version、当前对象绑定 Knowledge Version、构建摘要和知识更新与采用新版本入口。
 
-当 Project 为 archived 时，P13 保持可进入但进入只读模式，禁用新建、启动、继续生成、上传、删除、重跑和基于新知识创建关联会话或新版综述等写操作，并展示只读原因。无可用 Knowledge Version 时，Research Session 和 Review Run 的新建入口禁用，并提示先完成一次 Construction Run。Admin 入口仅对管理员显示；Project Workspace 内的系统级入口条件与 Project Hub 保持一致。
+当 Project 为 archived 时，P13 保持可进入但进入只读模式，禁用新建、启动、继续生成、上传、删除、重跑和基于新知识创建关联会话或新版综述等写操作，并展示只读原因。没有可访问的已发布 Knowledge Version 时，Research Session 和 Review Run 的新建入口禁用；已发布空版本可浏览和新建，明确无项目证据，不隐式回退历史版本。Admin 入口仅对管理员显示；Project Workspace 内的系统级入口条件与 Project Hub 保持一致。
 
 ## 4. Workspace 对象入口
 
@@ -141,7 +141,7 @@ Project Home 只用于快速查看 Project 编号、详细说明、论文数、�
 
 ### 4.3 Review Run
 
-展示综述主题、范围、大纲、章节列表、章节状态、引用、审查记录、终稿、摘要、关键词、参考文献和可导出版本状态。章节写入中时，该章节的生成、覆盖操作应锁定；其他章节是否可编辑由应用用例校验。
+展示综述主题、范围、大纲、章节列表、章节状态、引用、审查记录、终稿、摘要、关键词、参考文献和当前稿接受状态与 Markdown 下载。章节写入中时，该章节的生成、覆盖操作应锁定；其他章节是否可编辑由应用用例校验。
 
 ## 5. 知识资产面板
 
@@ -159,12 +159,12 @@ Project 信息面板提供只读知识资产：
 
 | 场景 | 展示行为 |
 | --- | --- |
-| 无可用 Knowledge Version | Research/Review 新建入口禁用，提示先完成一次 Construction Run |
+| 无可访问的已发布 Knowledge Version | Research/Review 新建入口禁用；空版本不是缺版本，可新建并显示无项目证据 |
 | Project archived | Workspace 进入只读模式，写操作禁用并展示归档原因 |
 | Project deleted | 禁止进入 Workspace，返回 Project Hub 并展示不可进入提示 |
 | 权限不足 | 隐藏不可访问入口或展示无权限空态，后端仍必须拒绝 |
 | 配置缺失/失效 | 任务启动按钮显示修复入口，指向用户设置或管理员设置 |
-| 构建槽已占用（含 paused Construction Run） | 禁用同 Project 手动新建和自动新建，展示占槽 Run；P1 恢复继续原槽，显式取消或重跑后按领域规则结束原写资格并交接 |
+| 构建槽已占用（含 paused Construction Run） | 允许登记下轮请求但不占槽、不启动第二个写入者，展示占槽 Run；显式继续沿用原实例及原槽，显式取消清除占槽，显式重跑撤销旧写资格并将旧 Run cancelled 后由新实例安全接管 |
 | 内容覆盖风险 | 弹出覆盖确认，说明将覆盖的内容来源和最后编辑者 |
 | 对象绑定历史 Knowledge Version | 展示“有更新可查看”或“已固定文献范围”，不把历史版本视为失效，不自动改写内容 |
 
@@ -215,7 +215,7 @@ P13 Shell 留在主文，作为模块组合基准。P 编号是稳定标识，�
 | 观点广场与发布页 | FR-010, P2 | 保留需求，不在 P0 顶层导航和主线框展示 |
 | 系统状态与诊断页 | FR-006, P2 | 管理员系统诊断不进入 MVP 主线框 |
 | Research 输出倾向、总结文件和导出 | FR-029, FR-030, P1 | 不在 P0 Research Session 顶栏展示 |
-| Project/Run/Session 导出中心 | FR-019, P1 | 后续补异步任务状态、下载和失败报告 |
+| Project/Run/Session 导出中心 | FR-019, P1 | 后续补异步任务状态、批量/格式转换和失败报告；P0 单篇终稿 Markdown 下载由 FR-034 提供 |
 | Review 版本历史、差异和回退 | FR-036, P2 | 不在 P0 Review Run 入口展示 |
 | Run/Session 复制、通用重跑、归档和删除 | FR-014, FR-015, P1 | 不使用旧版统一实例操作弹窗；FR-018 版本刷新专用 Review 重跑为 P0，由 P35 承载 |
 | 批量补充论文/资料及数据表上传 | FR-023, P1 | P0 保留 Construction Workspace 内单条论文补充和支持格式单文件资料请求队列；多媒体为 P2 |
@@ -226,6 +226,7 @@ P13 Shell 留在主文，作为模块组合基准。P 编号是稳定标识，�
 | --- | --- | --- |
 | v1.19 | 2026-10-16 | 拆出四份同效力 UI 附录与历史审查；补齐 Shell 组合、窄屏和上下文规则，清理分期残留及页面引用 |
 | v1.18 | 2026-10-16 | 对齐知识库并行构建附录：非阻塞更新、固定范围、关联新会话/新版综述、候选确认与待纳入；移除旧依赖构建门槛及 D01 待决提示 |
+| v1.20 | 2026-10-16 | 明确 paused ConstructionRun 的继续、取消与重跑实例交接语义 |
 | v1.17 | 2026-10-16 | 澄清 UI 规范边界并修失效依据，对齐 P13、资料补充/只读入口、暂停占槽、P35 单版本新结果与 P28 默认接受；不拆分附录 |
 | v1.16 | 2026-06-08 | 调整 P13 Project Workspace：移除常驻 Project 详情条，将左侧栏首行改为当前 Project 名称；Project 详细信息仅在首次打开 Workspace 或点击 Project 名称时以 Project Home 展示。 |
 | v1.15 | 2026-06-08 | 根据 FR-011/FR-012/FR-013/FR-018 重新设计 P13：移除 Workspace 内 Project Rail，改为当前 Project 绑定的对象切换、主体工作区、只读 Project Assets 和同步 Object Info 面板。 |
@@ -242,3 +243,6 @@ P13 Shell 留在主文，作为模块组合基准。P 编号是稳定标识，�
 | v1.4 | 2026-06-01 | 最小化补齐 P0 UI 缺口：新增 P43-P46；将内容保护收敛为后台裁决、UI 最小反馈；保留 P47 为后续 P1 增强。 |
 | v1.3 | 2026-06-01 | 写入 UI 设计审查结果；修正 Project Workspace 关联 FR 范围为 FR-011 至 FR-036；记录 Construction、Research、Review 和导出体验的后续补强项。 |
 | v1.2 | 2026-05-22 | 建立 UI / Workspace 分层设计，迁入并适配旧页面线框。 |
+| v1.21 | 2026-10-16 | 同步构建排队与占槽区分、重跑旧实例终态和无变化成功展示；详细状态交互由附录维护 |
+
+本次修订 v1.22（2026-10-16）：落实 R1-A 至 R4-A 与人工补充裁决：学术引用建议、轻量稿件编辑及下载、风险确认移除、空版本可新建研究、论文及资料入库后只读、筛选等待点追加词。仅设计同步，未实现或运行验收。
