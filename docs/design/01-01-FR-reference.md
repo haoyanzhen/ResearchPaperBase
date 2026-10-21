@@ -1,7 +1,7 @@
 # FR Reference
 
-文档版本：v1.5
-更新日期：2026-10-16
+文档版本：v1.6
+更新日期：2026-10-19
 来源文档：`01_functional_requirements.md`  
 用途：作为功能需求编号、优先级和编号重整关系的参考中间文件。若本文与 `01_functional_requirements.md` 冲突，以 `01_functional_requirements.md` 为准。
 
@@ -117,7 +117,7 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
 | API | `04_api_contracts.md` |
 | App | `05_application_use_cases.md` |
 | Agent/Knowledge | `06_agent_knowledge_services.md` |
-| Data | `07_data_persistence.md`, `07_data_schema.sql` |
+| Data | `07_data_persistence.md`；可执行结构由后续迁移维护 |
 | Security | `08_security_permissions.md` |
 | QA | `09_quality_observability.md` |
 | Ops | `10_operations_deployment.md` |
@@ -215,3 +215,5 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
 | FR-032~036 主题综述模式 | `06_agent_knowledge_services.md`, `03_ui_workspace.md`, `05_application_use_cases.md` | `04_api_contracts.md`, `02_domain_core.md`, `07_data_persistence.md`, `08_security_permissions.md`, `09_quality_observability.md`, `10_operations_deployment.md` |
 
 本次修订 v1.5（2026-10-16）：同步R2-A当前稿下载，取消独立导出版本入口；通用导出仍P1。
+
+本次修订（2026-10-19）：同步数据设计、测试用例入口及历史归档引用；不修改业务语义。

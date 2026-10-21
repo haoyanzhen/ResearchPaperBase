@@ -1,7 +1,7 @@
 # Research Paper Base 分层设计总览
 
-文档版本：v1.6
-更新日期：2026-10-16
+文档版本：v1.9
+更新日期：2026-10-19
 依据文档：`01_functional_requirements.md`、`00-00_layer_design_file_mapping.md`  
 用途：作为当前阶段分层设计的总览入口，明确最小必要架构、层间职责、横切约束和后续修订方向。
 
@@ -38,37 +38,41 @@
 
 - `00` 定义六层职责、依赖方向及横切约束；`01` 定义需求含义、优先级和验收标准。
 - `02` 定义对象、状态含义、合法性及业务不变量；`03` 定义受这些规则约束的页面和交互。
-- `04` 及其 04-01/04-02 附录现为 P0 API 设计基线，05 衔接已定执行约束；局部业务未决及检查证据见 [API 工作单](../workorders/api_p0_design_review_2026-10-16.md)。06–10 和 SQL 整体仍待细化，08/09 的本轮局部同步不代表整体定稿；所有设计完成均不等于代码实现。
+- `04` 及其 04-01/04-02 附录现为 P0 API 设计基线，05 衔接已定执行约束；历史审查及检查证据见 [API 工作单](../workorders/api_p0_design_review_2026-10-16.md)。06剩余工程细化继续跟踪；08已细化授权、数据流与检查时机，新增政策单列待决；07细化逻辑持久化与事务，09以架构/模块用例组织验收，10补配置、构建交付证据及失败处置；SQL草案删除，可执行结构后续由迁移维护。所有设计完成均不等于代码实现。
 - 后续 `05` 按 FR-017 细化命令触发的内容状态转换、校验顺序、冲突响应和执行流程，不得改变 `02` 的状态含义或不变量；`04` 承接接口协议，`06` 承接服务契约，`07` 承接存储映射，`08–10` 承接安全、质量和运维。
-- 速查、SQL 草案、调研及历史审查不覆盖现行需求和领域规则；跨职责冲突应提交人工裁决，不能按编号或更新时间自动覆盖。
+- 速查、历史SQL、调研及历史审查不覆盖现行需求和领域规则；跨职责冲突应提交人工裁决，不能按编号或更新时间自动覆盖。
 
 ## 1. 设计基线
 
 当前项目推荐采用轻量但边界明确的共层方案：
 
 ```text
-UI / Workspace
-  ↓
-API Boundary / Contracts
-  ↓
-Application Use Cases
-  ↓
-Domain Core
-  ↓
-Agent & Knowledge Services
-  ↓
-Infrastructure Adapters
+UI / Workspace -> API Boundary -> Application Use Cases
+                                  |-> Domain Core（规则与值对象）
+                                  |-> Agent & Knowledge Services（执行能力）
+                                  |-> 自身定义的持久化/事务/任务端口
+Agent -> Knowledge；两者通过自身端口使用外部能力
+Infrastructure Adapters 实现端口；组合入口负责注入实现
 
 横切约束：AuthZ / State & Locks / Runtime Config Snapshot / Content & Version Protection
 ```
 
+图中箭头表示允许的源码依赖；运行时通过注入的端口调用适配器，不表示领域层依赖 Agent 或基础设施。六层仍是职责划分，不要求每层独立部署；模块内部也遵守同一边界。
+
 基本原则：
 
 - `01_functional_requirements.md` 仍是需求含义和验收标准的最高依据。
-- 上层通过下层提供的能力完成用例，下层不反向依赖上层页面、接口或具体 Agent UI。
-- `API Boundary / Contracts` 只负责接口协议、鉴权入口、错误信封、SSE 事件和文件访问边界，不承载业务规则。
-- 同层可以包含多个有明确边界的能力目录，例如 `agents/` 与 `knowledge/` 同属服务层，但依赖方向必须保持清楚。
+- Domain Core 仅包含实体、值对象、纯规则及必要的领域抽象，不导入应用、Agent、Web/ORM/LLM SDK 或适配器。
+- Application 依赖 Domain、服务契约及自身端口；Agent 可依赖 Knowledge 契约和领域值对象，Knowledge 不反向依赖具体 Agent 或应用用例。
+- 端口归使用它的内层模块所有；基础设施实现端口，组合入口是唯一同时选择具体适配器与应用实现的位置。
+- API 只调用应用公开的 Command/Query；UI 只使用 API 契约。不跨模块导入私有 repository、ORM 模型或具体 Provider。
 - P0/P1 能力优先形成产品闭环；P2 能力先保留扩展点，不提前扩大架构体量。
+
+### 1.1 模块与内部契约落点
+
+[05-01 内部模块与执行契约](05-01_internal_module_contracts.md)明确模块写入归属、Command/Query/Result/Error、内部事件及事务/重试/取消责任。模块名是职责标识，源码路径可随工程初始化确定，但不得借目录变化改变所有权。该附录承接现行 01/02/04，不新增业务状态、权限或产品分期。
+
+工程建立时应将本节依赖规则转为导入图检查：禁止 Domain 向外依赖、API 绕过应用、Knowledge 依赖具体 Agent，以及跨模块访问私有持久化实现。检查还须覆盖组合入口之外直接构造适配器的情况；第三方解析器或 SDK 类型只允许出现在相应适配器边界内。当前未建立源码检查入口，不能将这些规则宣称为已自动验证。
 
 ## 2. 产品与领域层
 
@@ -162,18 +166,15 @@ Infrastructure Adapters
 
 `Agent` 和 `Knowledge` 采用共层方案：它们同属 `Agent & Knowledge Services`，但内部边界必须明确。
 
-推荐依赖方向：
+服务调用关系：
 
 ```text
-Application Use Cases
-  ↓
-services/
-  agents/       # 行为、流程、生成、分析
-    ↓
-  knowledge/    # 论文资产、检索、版本、引用证据
-  ↓
-Infrastructure Adapters
+Application -> agents -> knowledge
+Application -> knowledge（只读查询或受控候选准备）
+agents / knowledge -> 各自端口 <- Infrastructure Adapters
 ```
+
+应用统一提交业务结果；Agent/Knowledge 不取得任意业务仓储或自行提交发布事务。
 
 `agents/` 负责智能行为和流程：
 
@@ -187,7 +188,7 @@ Infrastructure Adapters
 - Project 论文库、资料库与私有关联；资料沿候选、去重筛选、文件解析、摘要分析和知识同步链路进入版本，遵循 FR-021–026 的格式分期。
 - PDF 文本资产、摘要降级标记和可检索状态。
 - 向量索引、知识图谱、Graph-RAG 检索。
-- Knowledge Version 发布、绑定、刷新提示。
+- Knowledge Version 发布准备、绑定读取解析、刷新提示投影；发布和对象绑定提交由应用用例负责。
 - Citation & Evidence 的引用定位和版本一致性。
 
 共层但分边界的原因：
@@ -323,3 +324,9 @@ MVP 实施顺序：
 - v1.5（2026-10-16）：仅同步 P0 API 主文/附录与应用设计的规范范围，不改变六层职责或业务边界。
 
 本次修订 v1.6（2026-10-16）：同步R2-A当前稿下载，取消独立导出版本入口；通用导出仍P1。
+
+本次修订 v1.7（2026-10-19）：区分源码依赖与运行调用，明确依赖倒置、模块契约及待实施架构检查；不改变业务语义或分期。
+
+本次修订（2026-10-19）：同步数据设计、测试用例入口及历史归档引用；不修改业务语义。
+
+本次修订 v1.9（2026-10-19）：同步08/09/10细化范围，不改变分层、权限和产品分期。

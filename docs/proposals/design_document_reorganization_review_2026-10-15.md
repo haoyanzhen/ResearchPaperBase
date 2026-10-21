@@ -1,6 +1,6 @@
 # 设计文档调整提案独立只读审查记录
 
-文档版本：v1.0  
+文档版本：v1.1
 日期：2026-10-15  
 审查者：独立 subagent `review_proposal_readonly`  
 记录人：主代理按 subagent 审查结果整理落盘  
@@ -57,7 +57,7 @@
 依据：
 
 - [02 领域](../design/02_domain_core.md)第 4 章明确“不存在独立的检索词 enabled 领域状态”；手动构建使用本次 SelectedSearchTerms，自动构建使用 auto_update_enabled。
-- [SQL 草案](../design/07_data_schema.sql)的 search_terms 同时包含 `enabled boolean not null default true` 和 auto_update_enabled。
+- [SQL 草案](../archive/design_retirement_2026-10-19/README.md#3-sql-草案删除记录)的 search_terms 同时包含 `enabled boolean not null default true` 和 auto_update_enabled。
 
 提案已准确识别 auto_update_enabled 默认值错误，却未明确列出旁边 enabled 字段的问题。仅改默认值后，后续实现者仍可能使用 enabled 作为额外过滤条件，形成领域未定义的第三套选择机制。
 
@@ -153,3 +153,7 @@
 | 版本 | 日期 | 内容 |
 | --- | --- | --- |
 | v1.0 | 2026-10-15 | 独立 subagent 只读审查，主代理另存意见；未回写提案或设计 |
+
+更新日期：2026-10-19
+
+本次修订（2026-10-19）：修复退役文件的链接，指向历史原文或删除记录；历史结论与当时证据保持原义。
