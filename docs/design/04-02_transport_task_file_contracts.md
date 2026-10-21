@@ -1,8 +1,8 @@
 # API 附录：异步任务、事件传输与文件
 
-文档版本：v1.4
-更新日期：2026-10-16  
-适用项目大版本：v1  
+文档版本：v1.5
+更新日期：2026-10-19
+适用项目大版本：v1
 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
 
 ## 1. 范围与分期
@@ -92,6 +92,8 @@ API-D04 A：Project 归档/删除/清理生效即撤销影响范围内的执行�
 
 ### 3.1 订阅和事件结构
 
+`status/delta/warning/done` 的payload字段唯一维护于[机器契约](../../contracts/p0.openapi.json)的 `StatusPayload/DeltaPayload/Warning/DonePayload`；下表仅导航。完整事件信封、citation/error及流行为尚未完成机器转写，覆盖与检查见[04-03](04-03_machine_contract_governance.md)。
+
 `GET /tasks/{task_id}/events` 返回 `text/event-stream`，采用主文同源会话认证。订阅是只读操作，不创建 Task 或触发模型生成。认证失败在流建立前按 HTTP 错误处理；连接存续期间持续核验当前授权，身份失效或权限撤销后停止推送和关闭连接。
 
 ```text
@@ -108,12 +110,12 @@ data: {"event_id":"<uuid>","sequence":12,"task_id":"<uuid>","project_id":"<uuid>
 
 | event | payload 最小结构 | 语义 |
 | --- | --- | --- |
-| `status` | `{execution_status,stage,business_state}` | 已提交的状态变化，不授权客户端推进业务状态 |
-| `delta` | `{text}` | 本 attempt 的增量文本；仅应用到对应生成缓冲区，不覆盖编辑器人工草稿 |
+| `status` | `StatusPayload` schema | 已提交的状态变化，不授权客户端推进业务状态 |
+| `delta` | `DeltaPayload` schema | 本 attempt 的增量文本；仅应用到对应生成缓冲区，不覆盖编辑器人工草稿 |
 | `citation` | `{citation_ref}` | 授权且带绑定版本的证据引用；按业务契约解释 |
-| `warning` | `{code,message}` | 风险、局部失败或降级，不能被误当作整体成功 |
+| `warning` | `Warning` schema | 风险、局部失败或降级，不能被误当作整体成功 |
 | `error` | `{error}` | 安全错误对象；业务执行失败须同时可由快照查询 |
-| `done` | `{execution_status,result_refs}` | 该 Task 进入 succeeded/failed/cancelled；不结束 Session 或其他 Task |
+| `done` | `DonePayload` schema | 该 Task 进入 succeeded/failed/cancelled；不结束 Session 或其他 Task |
 
 `done` 只在技术任务终态产生；waiting_user 发送 status，不发送 done。失败可先 error 后 done，客户端也必须仅凭失败快照停止 loading，不依赖始终收到两条事件。
 
@@ -207,7 +209,7 @@ P0 使用鉴权代理下载流。业务资源的 `file-access` 入口返回：
 
 下列是实现初始部署默认值，不改变业务分期，不代表已实现限额管理后台。部署可以覆盖，但前后端必须使用同一有效配置；降低限制不得将已有成功内容删除或改成失败。
 
-`GET /capabilities` 是认证只读入口，返回 `CapabilityView={contract_version:"v1",capabilities_revision:Revision,limits,supported_upload_formats,features}`。capabilities_revision 是不透明配置修订，用于识别客户端缓存是否失效；响应使用主文 no-store。
+`GET /capabilities` 是认证只读入口，返回 `CapabilityView`，字段以机器schema为准。capabilities_revision 是不透明配置修订，用于识别客户端缓存是否失效；响应使用主文 no-store。
 
 - `limits` 必须返回当前实际生效值：`json_body_bytes`、`upload_file_bytes`、`multipart_body_bytes`、`title_chars`、`text_field_chars`、`archive_expanded_bytes`、`archive_entries`、`sse_frame_bytes`、`sse_heartbeat_seconds`、`sse_replay_seconds`、`sse_replay_events_per_task`、`sse_connections_per_user`、`poll_interval_seconds`、`confirmation_ttl_seconds`，以及主文 `page_size_default/page_size_max`。数值单位由字段名固定，不将秘密或基础设施路径作为能力返回。
 - `supported_upload_formats` 为 `{paper:["pdf"],material:[...]}`，扩展名小写且不带点；material 基础项见 4.2，额外代码格式仅能列真实实现且经过验证的静态解析格式。此表只报告当前运行能力；缺失需求规定的 P0 格式须记录为实现缺口，不能靠隐藏条目声称验收通过。
@@ -264,3 +266,5 @@ P0 使用鉴权代理下载流。业务资源的 `file-access` 入口返回：
 本次修订 v1.3（2026-10-16）：承接 D04 管理生效后的任务取消及安全诊断边界。
 
 本次修订 v1.4（2026-10-16）：同步 R1-A–R4-A 及人工补充裁决；本轮细则已关闭，实现与运行验收另行跟踪。
+
+本次修订 v1.5（2026-10-19）：四类事件payload转为机器字段来源，明确完整SSE/任务/错误缺项，不宣称传输运行验收。

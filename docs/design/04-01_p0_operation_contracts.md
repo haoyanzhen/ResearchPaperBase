@@ -1,8 +1,8 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.5  
-更新日期：2026-10-16  
-依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)  
+文档版本：v1.6
+更新日期：2026-10-19
+依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
 ## 1. 阅读与字段约定
@@ -13,14 +13,14 @@
 
 字段记法：`!` 必填且非 null，`?` 可省略，`|null` 明确允许 null；未写 null 的字段不接受 null。PATCH 省略保持原值，null 仅用于明确允许清空的字段；POST 省略使用明列默认值，不从无关历史对象推断。UUID 标识、UTC RFC3339 时间、非空不透明修订字符串分别记为 `ID`、`Time`、`Revision`。文本去除首尾空白后校验长度，正文保留内部空白。默认约束：短名称 1–200 字符、资产/文章标题1–500字符、说明 0–10000 字符、正文 1–200000 字符、查询 1–2000 字符、URL 最大 2048 字符。文件和模型参数的能力限制由服务端返回，不允许无界请求。
 
-`RevCommand={expected_revision:Revision!}`。更新已有对象、取消具体尝试、确认及有冲突风险的命令要求该字段；DELETE 放在同名 query 参数。缺失返回 428，失配返回 412。首次创建无既有目标时不要求 revision；涉及父对象快照的创建须提供对应输入修订。有副作用的业务 POST 按主文使用 `Idempotency-Key`；纯预览和认证例外见主文。`Confirmation={confirmation_token:string!,acknowledged_risk_ids:string[]!}` 为提交结构，token由服务端生成，绑定操作者、对象、动作、目标修订、影响范围和有效期；它不能替代 expected_revision、权限、锁或状态检查。
+`RevCommand`（字段见机器schema）。更新已有对象、取消具体尝试、确认及有冲突风险的命令要求该字段；DELETE 放在同名 query 参数。缺失返回 428，失配返回 412。首次创建无既有目标时不要求 revision；涉及父对象快照的创建须提供对应输入修订。有副作用的业务 POST 按主文使用 `Idempotency-Key`；纯预览和认证例外见主文。`Confirmation={confirmation_token:string!,acknowledged_risk_ids:string[]!}` 为提交结构，token由服务端生成，绑定操作者、对象、动作、目标修订、影响范围和有效期；它不能替代 expected_revision、权限、锁或状态检查。
 
 公共返回字段：
 
 | 类型 | 字段与含义 |
 | --- | --- |
-| `Resource` | `id:ID,revision:Revision,created_at:Time,updated_at:Time`，全部只读 |
-| `ActionAvailability` | `action:string,enabled:boolean,reason_code:string\|null`；仅展示已实现分期，后端每次重新判定 |
+| `Resource` | 字段见机器schema，全部只读 |
+| `ActionAvailability` | 字段见机器schema；仅展示已实现分期，后端每次重新判定 |
 | `Content` | `content:string,revision:Revision,content_state:agent_draft\|manual_confirm\|manual_edit,last_modified_by:ID\|null,last_modified_at:Time,source_action:string`；Agent 作者可空，不冒充人工 |
 | `TaskRef` | 04-02 `TaskHandle` 的完整别名，字段及 `execution_status` 不在此重复定义；不得缩减必需字段 |
 | `CommandResult` | `resource_id:ID,revision:Revision,task:TaskRef\|null`；有异步执行返回 202，否则 200；创建已持久化对象可为 201 |
@@ -48,17 +48,19 @@ proposed_changes 仅允许该 action 对应操作表已有可写字段，不是�
 
 ### 2.1 数据结构
 
-- `UserView=Resource+{username:string,email:string,display_name:string|null,enabled:boolean,is_admin:boolean,last_login_at:Time|null}`；用户名 1–64，邮箱最大 254，校验邮箱格式。`UserPatch={expected_revision!,email?,display_name?:string|null}`；display_name 上限 200，账号状态和管理员身份不可在 `/me` 修改。
-- `Register={username!,email!,password:string!}`；密码 12–128 字符，只在请求接收；`Login={identifier:string!,password:string!}`，identifier 为用户名或邮箱。密码策略为协议初始工程约束，不增加找回密码 P0 功能。
-- `SecretWrite={operation:set|clear!,value?:string}`；set 必须有非空 value，clear 禁止 value；省略整个字段保持现有密钥。`SecretView={configured:boolean,hint:string|null}`，不得返回已保存值。
-- `LLMWrite={name:string!,provider:openai|anthropic|gemini|deepseek|custom!,base_url:string!,secret?:SecretWrite,parameters?:{temperature?:number,max_output_tokens?:integer}}`；temperature 默认由模型能力决定，显式值须在能力范围；token 数为正整数；自定义 provider 仍须满足受支持适配协议。PATCH 使用上述可选字段加 expected_revision。
-- `LLMView=Resource+LLMWrite的非敏感字段+{secret:SecretView,connection_status:untested|available|unavailable,last_test_at:Time|null}`。
-- `ModelSelection={source:user|system!,config_id:ID!,model_id:string!}`；模型名 1–200。`ModelOption=ModelSelection+{label:string,available:boolean,unavailable_reason:string|null}`。
-- `SourceWrite={name:string!,provider:arxiv|openalex|semantic_scholar|ads|web|document_site|public_file!,base_url:string!,enabled?:boolean,access_mode:anonymous|api_key!,secret?:SecretWrite,rate_limit_per_minute?:integer|null}`；enabled 默认 true；速率为正数或 null 表示按 Provider 适配默认，不能越过平台限制。新增其他 provider 须先有实现的能力注册，不以任意字符串宣称支持。
-- `SourceView=Resource+SourceWrite的非敏感字段+{secret:SecretView,connection_status:string,last_test_at:Time|null}`。匿名源允许无密钥，api_key 模式缺密钥不能测试成功或被解析为可用。
-- `ConnectionTest={status:succeeded|failed,checked_at:Time,reason_code:string|null,models:ModelOption[]}`；非 LLM 的 models 为空。任务型测试先返回 TaskRef，再由结果链接读取此结构。
-- `SMTPWrite={sender_email:string!,server:string!,port:integer!,encryption:none|ssl_tls|starttls!,auth_type:none|password|token|api_key!,username?:string|null,secret?:SecretWrite}`；端口 1–65535，认证字段按 auth_type 校验，GET 只返回 SecretView。
-- `SecurityWrite={connection_timeout_seconds:integer!,connection_retry_count:integer!,config_snapshot_retention_days:integer!,diagnostic_scope:minimal|standard!}`；正超时/保留天数，重试次数 0–5；不得携带 P1 白名单/平台并发等字段。
+下列标明机器schema的结构以[OpenAPI components.schemas](../../contracts/p0.openapi.json)为唯一字段维护位置；剩余结构继续由本文维护。范围及兼容门禁见[04-03](04-03_machine_contract_governance.md)。
+
+- `UserView`（字段见机器schema）；用户名 1–64，邮箱最大 254，校验邮箱格式。`UserPatch`（字段见机器schema）；display_name 上限 200，账号状态和管理员身份不可在 `/me` 修改。
+- `Register`（字段见机器schema）；密码 12–128 字符，只在请求接收；`Login`（字段见机器schema），identifier 为用户名或邮箱。密码策略为协议初始工程约束，不增加找回密码 P0 功能。
+- `SecretWrite`（字段见机器schema）；set 必须有非空 value，clear 禁止 value；省略整个字段保持现有密钥。`SecretView`（字段见机器schema），不得返回已保存值。
+- `LLMWrite`（字段见机器schema）；temperature 默认由模型能力决定，显式值须在能力范围；token 数为正整数；自定义 provider 仍须满足受支持适配协议。PATCH 使用上述可选字段加 expected_revision。
+- `LLMView`（字段见机器schema）。
+- `ModelSelection`（字段见机器schema）；模型名 1–200。`ModelOption`（字段见机器schema）。
+- `SourceWrite`（字段见机器schema）；enabled 默认 true；速率为正数或 null 表示按 Provider 适配默认，不能越过平台限制。新增其他 provider 须先有实现的能力注册，不以任意字符串宣称支持。
+- `SourceView`（字段见机器schema）。匿名源允许无密钥，api_key 模式缺密钥不能测试成功或被解析为可用。
+- `ConnectionTest`（字段见机器schema）；非 LLM 的 models 为空。任务型测试先返回 TaskRef，再由结果链接读取此结构。
+- `SMTPWrite`（字段见机器schema）；端口 1–65535，认证字段按 auth_type 校验，GET 只返回 SecretView。
+- `SecurityWrite`（字段见机器schema）；正超时/保留天数，重试次数 0–5；不得携带 P1 白名单/平台并发等字段。
 
 ### 2.2 操作表
 
@@ -99,9 +101,9 @@ proposed_changes 仅允许该 action 对应操作表已有可写字段，不是�
 
 ## 3. Project 与 Workspace
 
-`ProjectWrite={name:string!,description?:string, research_scope?:string}`，描述/范围默认空串。`ProjectView=Resource+ProjectWrite+{status:active|archived|deleted,default_knowledge_version_id:ID|null,last_construction_at:Time|null,last_activity_at:Time|null,permissions:{access:boolean,use:boolean,delete:boolean},available_actions:ActionAvailability[]}`。Owner 与 status 只读。
+`ProjectWrite`、`ProjectPatch`、`ProjectView` 字段以机器schema为准。创建描述/范围默认空串，PATCH不补默认值；Owner与status不可由通用写请求修改。
 
-`ObjectRef={type:construction_workspace|research_session|review_run!,id:ID!}`。`WorkspaceContextWrite={expected_revision!,last_object:ObjectRef|null!,panels:{assets_open:boolean,object_info_open:boolean}!,drafts:{object:ObjectRef,part_id:ID|null,base_revision:Revision|null,text:string}[]!}`；drafts 每个对象/part 唯一，上限 50，单草稿正文上限 200000；不包含运行状态、KV 或资产编辑字段。`WorkspaceView={project:ProjectView,context_revision:Revision,resolved_object:ObjectRef|null,panels:WorkspaceContextWrite.panels,drafts:WorkspaceContextWrite.drafts,read_only:boolean,fallback_reason:string|null}`。
+`ObjectRef`、`WorkspaceContextWrite`、`WorkspaceDraft` 的字段以机器schema为准；drafts 每个对象/part 唯一，上限 50，单草稿正文上限 200000；不包含运行状态、KV 或资产编辑字段。`WorkspaceView` 字段以机器schema为准。
 
 | 方法/路径 | 用例 ID / FR | 请求 → 响应 | 前置/失败及影响 |
 | --- | --- | --- | --- |
@@ -233,7 +235,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 
 `ResearchCreate={title?:string,knowledge_version_id?:ID}`；title 默认由服务端使用项目主题形成；省略版本在创建事务绑定当前默认版本。`ResearchSessionView=Resource+{title,knowledge_version_id:ID,latest_knowledge_version_id:ID,range_fixed:boolean,retrieval_cutoff_at:Time|null,current_attempt_id:ID|null,available_actions:ActionAvailability[]}`；不创建 paused Session 状态。
 
-`ResearchMessageSend={expected_revision!,text:string!,model_selection:ModelSelection!}`。`ResearchTurnView={id:ID,session_id:ID,knowledge_version_id:ID,user_message:{id,text,created_at},attempts:ResearchAttemptView[]}`。`ResearchAttemptView={id,revision,status:string,partial_result_ref:string|null,accepted_text:string|null,evidence:EvidenceRef[],retrieval_status:pending|found|empty|failed,no_evidence:boolean,error:object|null,task:TaskRef|null}`；partial_result_ref 指向04-02 `/tasks/{task_id}/output`，其未完成文本不作为成功回复，empty 不等于 failed。
+`ResearchMessageSend`（字段见机器schema）。`ResearchTurnView={id:ID,session_id:ID,knowledge_version_id:ID,user_message:{id,text,created_at},attempts:ResearchAttemptView[]}`。`ResearchAttemptView={id,revision,status:string,partial_result_ref:string|null,accepted_text:string|null,evidence:EvidenceRef[],retrieval_status:pending|found|empty|failed,no_evidence:boolean,error:object|null,task:TaskRef|null}`；partial_result_ref 指向04-02 `/tasks/{task_id}/output`，其未完成文本不作为成功回复，empty 不等于 failed。
 
 | 方法/路径 | 用例 ID / FR | 请求 → 响应 | 约束 |
 | --- | --- | --- | --- |
@@ -254,13 +256,13 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 
 ### 7.1 数据结构
 
-- `ReviewCreate={topic:string!,scope?:string,requirements?:string,knowledge_version_id?:ID,model_selection:ModelSelection!}`；scope/requirements 默认空串；省略知识版本绑定创建事务的当前默认版本。创建并启动大纲生成返回202。
+- `ReviewCreate`（字段见机器schema）；scope/requirements 默认空串；省略知识版本绑定创建事务的当前默认版本。创建并启动大纲生成返回202。
 - `ReviewRunView=Resource+{topic,scope,requirements,knowledge_version_id:ID,latest_knowledge_version_id:ID,range_fixed:boolean,lifecycle_status:string,phase:string,outline:OutlineView|null,chapter_summaries:object[],current_final_id:ID|null,tasks:TaskRef[],available_actions:ActionAvailability[]}`；lifecycle_status 只映射02既有合法状态，不添加 active 枚举，不由子任务完成擅自决定 Run succeeded。
 - `OutlineView={revision,content_state,title:string,abstract_prompt:string,chapters:{id:ID,title:string,type:string,order:integer,required:boolean,key_points:string[],support_summary:string,risk_codes:string[]}[],review_issues:ReviewIssue[],confirmed_revision:Revision|null,trace:Trace}`。章节 type 是用户描述标签，1–64；order 从0起唯一；required 必须显式提供，不能根据类型猜测。
 - `OutlinePatch={expected_revision!,confirmation_token?:string,acknowledged_risk_ids:string[]!,title?:string,abstract_prompt?:string,chapters?:{id?:ID,title:string,type:string,order:integer,required:boolean,key_points:string[]}[]}`；整组章节替换中已有条目必须包含本Run的已存在ID，保留其身份；新条目省略id，由服务端分配；禁止客户端伪造/借用其他Run章节ID。移除/改变既有章节时预览下游失效范围，不删除已接受成果。
 - `ChapterView={id,revision,content:Content,required:boolean,confirmed_revision:Revision|null,evidence:EvidenceRef[],review_history:{id:ID,content_revision:Revision,created_at:Time,issues:ReviewIssue[]}[],trace:Trace}`。引用链接问题和学术审查建议复用 ReviewIssue，绑定内容修订；不提供覆盖率、严格模式、阈值或豁免。
 - `ReviewIssue={id:ID,revision:Revision,source_revision:Revision,kind:string,description:string,suggestion:string|null,resolution:open|applied|handled|ignored,actor_id:ID|null,resolved_at:Time|null}`。
-- `GenerateRequest={expected_revision!,model_selection:ModelSelection!,confirmation_token?:string,acknowledged_risk_ids:string[]!}`；重新生成受到已确认/人工修改内容保护，确认令牌范围必须包括具体章节/大纲/终稿片段。
+- `GenerateRequest`（字段见机器schema）；重新生成受到已确认/人工修改内容保护，确认令牌范围必须包括具体章节/大纲/终稿片段。
 - `FinalView={id,revision,content:Content,abstract:string,keywords:string[],references:EvidenceRef[],source_outline_revision:Revision,source_chapter_revisions:{chapter_id,revision}[],knowledge_version_id:ID,acceptance:accepted|rejected,acceptance_source:default|explicit_rejection,issues:ReviewIssue[],trace:Trace}`。content 是唯一可写的完整 Markdown 文章，摘要/关键词/参考文献为同修订只读投影，不独立保存冲突正文。
 
 ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续时为 waiting_user。终稿保存后当前修订即可读取和下载，无独立导出快照、过期状态或重新生成快照命令。完成检查当前 accepted 终稿、无活动任务及来源大纲/必需章节仍有效；成功后整个 Run 只读，P0 不提供 reopen 或复制 Run 编辑。完成不是下载前置。新生成结果独立完成后按输入修订及人工覆盖授权提交，失败/迟到不覆盖旧稿。人工终稿编辑不反向使章节确认失效。
@@ -395,7 +397,7 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 | archived/deleted/context恢复 | 不能恢复写权限；context不改变业务对象 |
 | SSE 重放和断线 | 重放不重执行；状态查询确定最终结果，见04-02 |
 
-本轮只进行文档结构、引用、版本和协议一致性检查；上述是后续实现必须执行的自动化与端到端验收，不是已通过测试。未生成 OpenAPI 文件，不能声称机器契约校验已经完成。
+本轮只进行文档结构、引用、版本和协议一致性检查；上述是后续实现必须执行的自动化与端到端验收，不是已通过测试。局部机器契约及其实际检查范围见04-03，不能将结构校验当作上述业务场景已通过。
 
 ## 9. 已采纳边界与剩余分期
 
@@ -416,3 +418,5 @@ D02 B 的消息编辑/删除及失败片段编辑/采纳仍为P1；D04 A 管理�
 本次修订 v1.4（2026-10-16）：补充版本范围摘要、证据修订与动态解析投影及显式选择契约。
 
 本次修订 v1.5（2026-10-16）：同步 R1-A–R4-A 及人工补充裁决；本轮细则已关闭，实现与运行验收另行跟踪。
+
+本次修订 v1.6（2026-10-19）：迁移本批具名字段到局部OpenAPI，保留操作/业务规则，明确未迁移范围及机器校验非业务验收。
