@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.12 · 2026-10-16（登记项目状态历史附件）
+**文档版本**：v1.16 · 2026-10-21（资料读取策略专题）
 **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
 
 ## 当前目录
@@ -8,6 +8,8 @@
 - `docs/design/`：现行设计、草案及历史参考；不是运行代码。
 - `docs/proposals/`：重构计划与独立审查。
 - `docs/workorders/`：执行记录及逐文件清理清单。
+- `docs/archive/design_retirement_2026-10-19/`：12历史原文、当前去向及SQL删除记录。
+- `contracts/`、`scripts/check_api_contracts.py`：局部机器契约与独立静态验证，不是应用实现。
 - `archive/maybe_useful/`：唯一留存的代码候选与离线测试；没有应用入口。
 - `tasks/`、`docs/VibeCodingRecord/`、本地 `auto-check/`：历史任务/学习资料。
 - `AGENTS.md`、`LICENSE`：项目约束与许可。
@@ -27,7 +29,7 @@
 
 ### 设计文件（编号顺序）
 
-同组主文件在前，派生索引、速查及附录按子编号升序排列；同号持久化设计主文在 SQL 草案之前。参考候选与历史资料另列，不改变文档权威性。
+同组主文件在前，派生索引、速查及附录按子编号升序排列；参考候选与历史资料另列，不改变文档权威性。
 
 | 文件 | 职责 |
 |------|------|
@@ -48,15 +50,17 @@
 | [design/04_api_contracts.md](design/04_api_contracts.md) | P0 API 公共协议；认证、信封、修订/确认、幂等、错误与分期，未决分支不视为定稿 |
 | [design/04-01_p0_operation_contracts.md](design/04-01_p0_operation_contracts.md) | P0 操作附录；请求响应、具名用例及验收入口 |
 | [design/04-02_transport_task_file_contracts.md](design/04-02_transport_task_file_contracts.md) | 任务/SSE/文件附录；技术投影、回放、上传下载与限制 |
+| [design/04-03_machine_contract_governance.md](design/04-03_machine_contract_governance.md) | 机器契约覆盖、唯一维护来源与兼容门禁 |
 | [design/05_application_use_cases.md](design/05_application_use_cases.md) | 应用用例设计；衔接 P0 受理/提交、锁、幂等、内容保护与状态；未决分支及后续恢复保持待细化，领域规则由 Domain 规范定义 |
+| [design/05-01_internal_module_contracts.md](design/05-01_internal_module_contracts.md) | 模块所有权、内部调用与结果提交责任 |
 | [design/06_agent_knowledge_services.md](design/06_agent_knowledge_services.md) | Agent 与 Knowledge 服务草案；Construction、Research、Review Agent 与 Knowledge 能力边界 |
 | [design/07_data_persistence.md](design/07_data_persistence.md) | 现行持久化设计草案；关系库、文件、向量、图谱、版本及同步状态，不能反向定义领域规则 |
-| [design/07_data_schema.sql](design/07_data_schema.sql) | MVP 关系数据结构 SQL 草案；供迁移实现参考，不作为已实施证明 |
-| [design/08_security_permissions.md](design/08_security_permissions.md) | 权限与安全草案；本轮同步 P0 API 认证/文件/管理员边界，完整安全设计和实现仍待后续 |
-| [design/09_quality_observability.md](design/09_quality_observability.md) | QA 与可观测层；错误码体系、结构化错误信封、SSE 错误事件协议、健康检查、诊断快照、测试策略、Inspector Panel |
-| [design/10_operations_deployment.md](design/10_operations_deployment.md) | 运维部署与演进层；占位文档，待补环境变量、部署拓扑、迁移、备份恢复、监控告警和版本演进 |
-| [design/12_gap_decisions_review.md](design/12_gap_decisions_review.md) | 旧决策迁移审核；不等同于旧决策全文或实现完成证明 |
-| [design/12-00_gap_downstream_reference.md](design/12-00_gap_downstream_reference.md) | 12 号审核的下游待细化参考项；不表示已完成实现 |
+| [design/08_security_permissions.md](design/08_security_permissions.md) | 授权矩阵、检查时机、密钥/数据流、不可信内容；SEC-D01/03已决，资料策略转08-01，运行未验证 |
+| [design/08-01_agent_data_access_policy.md](design/08-01_agent_data_access_policy.md) | Agent两级资料读取、文件分类、派生权限及已确认Q1–Q4；跨层同步评估与专题验收 |
+| [design/09_quality_observability.md](design/09_quality_observability.md) | 架构/模块测试设计，保留KV/API-R并新增SEC/OPS细化断言；运行证据另存 |
+| [design/10_operations_deployment.md](design/10_operations_deployment.md) | 最小运行与交付约束：配置、构建证据、升级恢复、容量与失败处置；OPS-D01运行目标待决 |
+
+[退役归档及D项映射](archive/design_retirement_2026-10-19/README.md)保留历史证据；11本已不存在，12移出当前设计，07 SQL不再作为可执行参考。
 
 ### 选型参考（编号顺序）
 
@@ -68,6 +72,10 @@
 
 | 文件 | 职责 |
 |------|------|
+| [workorders/agent_data_policy_closure_2026-10-21.md](workorders/agent_data_policy_closure_2026-10-21.md) | Q1–Q4落实、双向立即生效与剩余设计检查 |
+| [workorders/agent_data_policy_design_2026-10-20.md](workorders/agent_data_policy_design_2026-10-20.md) | SEC-D01/03采纳、独立SEC-D02设计及文档检查证据 |
+| [workorders/security_delivery_refinement_2026-10-19.md](workorders/security_delivery_refinement_2026-10-19.md) | 08/10细化、09安全/交付用例、政策待决清单与文档核验 |
+| [workorders/data_test_design_cleanup_2026-10-19.md](workorders/data_test_design_cleanup_2026-10-19.md) | 07细化、09测试重组、10精简及SQL/12退役的执行和核验证据 |
 | [workorders/api_p0_design_review_2026-10-16.md](workorders/api_p0_design_review_2026-10-16.md) | 本轮 API 独立预案、主代理评审、未决业务项及文档检查证据 |
 | [proposals/ui_design_historical_review_2026-06-01.md](proposals/ui_design_historical_review_2026-06-01.md) | 原 UI 第 10 章历史评审；仅供追溯，不定义现行规范 |
 | [design/backup/06_data_requirements.backup.md](design/backup/06_data_requirements.backup.md) / [design/backup/06_data_model.backup.sql](design/backup/06_data_model.backup.sql) | 历史数据需求与 SQL 备份；仅供追溯，不作为现行权威契约 |
@@ -91,10 +99,10 @@
 | `design/04_information_architecture_ui.md` | 更新路径 | 信息架构与 UI 交互层；ASCII 线框图、路由、页面布局与交互逻辑 | [design/03_ui_workspace.md](design/03_ui_workspace.md)。现行 UI / Workspace 设计承接。 |
 | `design/05_state_workflow.md` | 更新路径 | 状态机与业务流程层；占位文档，待补 Project/Stage/Task、调度、取消、暂停、恢复和补偿策略 | [design/05_application_use_cases.md](design/05_application_use_cases.md)。执行编排由应用用例承接；状态含义与不变量由 Domain 主文及专题附录定义，不声称旧占位设计已经全部实现。 |
 | `design/06_data_requirements.md` | 保留历史说明 | 数据需求设计；从 `02_product_requirements.md` 迁出的原第 6 章，说明关系库、向量库、图数据库和多数据库协同 | [design/backup/06_data_requirements.backup.md](design/backup/06_data_requirements.backup.md)。旧数据需求仅作为备份参考；现行持久化设计见 design/07_data_persistence.md。 |
-| `design/06_data_model.sql` | 保留历史说明 | 数据模型层；PostgreSQL DDL（v1.1）；13 张表结构（含 system\_configs）、索引、约束；**数据层唯一权威** | [design/backup/06_data_model.backup.sql](design/backup/06_data_model.backup.sql)。旧 SQL v1.1 与原“唯一权威”声明属于历史资料；现行 design/07_data_schema.sql 仍是草案，不能据旧目录提升其权威性。 |
+| `design/06_data_model.sql` | 保留历史说明 | 数据模型层；PostgreSQL DDL（v1.1）；13 张表结构（含 system\_configs）、索引、约束；**数据层唯一权威** | [design/backup/06_data_model.backup.sql](design/backup/06_data_model.backup.sql)。旧 SQL v1.1 与原“唯一权威”声明属于历史资料；07 SQL草案已删除，07现行逻辑设计与后续迁移承接数据约束；历史SQL不恢复权威。 |
 | `design/07_api_contract.md` | 更新路径 | API 契约层；所有 HTTP 端点请求/响应格式、前后端接口契约、SSE 通信 | [design/04_api_contracts.md](design/04_api_contracts.md)。现行 API 草案承接；旧详细契约另保存在 design/backup/07_api_contract.backup.md，不表示新草案已经覆盖全部旧端点。 |
 | `design/11_design_audit.md` | 删除失效入口 | 设计审计层；评估设计是否足以无额外信息实现完整 Web App，并列出缺失设计 | design/README.md 明确该历史审计已废弃、不再迁入新版设计集；撤下入口，保留原审计用途，不用其他同编号文件替代。 |
-| `design/12_gap_decisions.md` | 保留历史说明 | 决策待确认层；基于审计和分层重整生成的缺失设计选择与建议，待人工确认后回写各契约文档 | [design/12_gap_decisions_review.md](design/12_gap_decisions_review.md)。指向旧决策的逐项迁移审核，不将审核文件视为原决策全文；未关闭事项另见下游参考。 |
+| `design/12_gap_decisions.md` | 保留历史说明 | 决策待确认层；基于审计和分层重整生成的缺失设计选择与建议，待人工确认后回写各契约文档 | [design/12_gap_decisions_review.md](archive/design_retirement_2026-10-19/12_gap_decisions_review.md)。指向旧决策的逐项迁移审核，不将审核文件视为原决策全文；未关闭事项另见下游参考。 |
 | `spec.md`、`api.md`、`schema.sql`、`ui_design.md`、`ADR_design.md`、`qa_design.md`、`design_layers.md`（7 个入口） | 删除失效入口 | 兼容旧路径；Markdown 文件为跳转入口，`schema.sql` 为指向 `design/06_data_model.sql` 的符号链接 | 当前工作树不存在这些跳转文件或符号链接，撤下兼容入口声明；按主题分别阅读现行需求、API、SQL、UI、分层总览与质量设计。旧兼容机制仅作为历史记录保留。 |
 | `VibeCoding_record.md` | 更新路径 | 开发过程记录；设计演进历史 | [VibeCodingRecord/VibeCoding_record.md](VibeCodingRecord/VibeCoding_record.md)。更新到当前实际保存路径。 |
 
@@ -122,3 +130,13 @@
 | v1.12 | 2026-10-16 | 增加项目状态历史附件入口 |
 | v1.11 | 2026-10-16 | 登记 P0 API 操作/传输附录及审查工作单，同步应用、安全文档定位 |
 | v1.10 | 2026-10-16 | 按设计编号与主文/附属顺序整理导航，补齐 06 号服务草案及 13 号候选参考入口，分列项目入口和历史资料；不改变权威性或业务规则 |
+
+更新日期：2026-10-21
+
+本次修订（2026-10-19）：修复退役文件的链接，指向历史原文或删除记录；历史结论与当时证据保持原义。
+
+本次修订 v1.14（2026-10-19）：同步08/09/10当前职责与执行记录，移除旧占位描述。
+
+本次修订 v1.15（2026-10-20）：登记08-01与执行记录。
+
+本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。

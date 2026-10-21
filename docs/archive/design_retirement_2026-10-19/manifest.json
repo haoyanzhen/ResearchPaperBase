@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-19",
+  "items": [
+    {
+      "source": "docs/design/12_gap_decisions_review.md",
+      "archive": "docs/archive/design_retirement_2026-10-19/12_gap_decisions_review.md",
+      "sha256": "8bf03f27ba5728144851027cd116dac51f2fe33237c543f6b38135d8d5b456c2",
+      "action": "archive-original-and-remove-active"
+    },
+    {
+      "source": "docs/design/12-00_gap_downstream_reference.md",
+      "archive": "docs/archive/design_retirement_2026-10-19/12-00_gap_downstream_reference.md",
+      "sha256": "6495b8f8ec0d1907e08c20ad9d87f08cb0fefac089fa1ce0030faf49dc9686c4",
+      "action": "archive-original-and-remove-active"
+    },
+    {
+      "source": "docs/design/07_data_schema.sql",
+      "sha256": "ff7f42808c321bbd7042b52745b039b5ad6957102d7be90ed5608f923e5aacb8",
+      "action": "delete-obsolete-draft-no-new-sql-copy",
+      "reason": "replaced by 07 persistence design and future executable migrations"
+    },
+    {
+      "source": "docs/design/11_design_audit.md",
+      "action": "already-absent",
+      "reason": "previously retired; not reconstructed"
+    }
+  ]
+}

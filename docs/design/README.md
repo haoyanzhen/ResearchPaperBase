@@ -1,7 +1,7 @@
 # Research Paper Base 设计文档集
 
-文档版本：v1.10
-更新日期：2026-10-16
+文档版本：v1.15
+更新日期：2026-10-21
 适用项目大版本：v1  
 权威基线：`01_functional_requirements.md`、`00_layers.md`
 
@@ -9,14 +9,14 @@
 
 1. `01_functional_requirements.md` 是需求含义、优先级和验收标准的最高依据。
 2. `00_layers.md` 是当前架构分层、依赖方向和横切约束的基础蓝本。
-3. `02_domain_core.md` 与 `02-02`、`02-03`、`02-04` 专题附录按相同设计规格共同展开领域规则，`03` 与 `03-01` 至 `03-04` 附录共同定义 UI，主文和附录具有相同 UI 规范效力，业务规则以 `01`、`02` 及其领域附录为准（02-02 第 10 章状态机已按 2026-10-16 人工决定转为现行规则；不表示相关代码已实现）；`04` 与 04-01/04-02 为本轮 P0 API 设计基线，05 衔接其已定执行约束，API-D01–D07 经 R1-A–R4-A 及用户补充收敛，E01–E04 已关闭，现行裁决见[决策记录](../proposals/api_boundary_redesign_2026-10-16.md)；06–10/SQL 仍为待细化草案，08/09 局部协议修正不代表整体定稿。若发生冲突，按 `01_functional_requirements.md` 裁决，并回写修订到相关设计文件。
+3. `02_domain_core.md` 与 `02-02`、`02-03`、`02-04` 专题附录按相同设计规格共同展开领域规则，`03` 与 `03-01` 至 `03-04` 附录共同定义 UI，主文和附录具有相同 UI 规范效力，业务规则以 `01`、`02` 及其领域附录为准（02-02 第 10 章状态机已按 2026-10-16 人工决定转为现行规则；不表示相关代码已实现）；`04` 与 04-01/04-02 为本轮 P0 API 设计基线，05 衔接其已定执行约束，API-D01–D07 经 R1-A–R4-A 及用户补充收敛，E01–E04 已关闭，现行裁决见[决策记录](../proposals/api_boundary_redesign_2026-10-16.md)；05-01 明确模块所有权与内部执行契约，06 本轮仅细化端口及结果提交边界；06剩余工程细化继续跟踪；08已确认Provider校验与凭据简化规则；08-01独立维护资料读取策略，Q1–Q4已闭合，工程缺项另列；07已细化逻辑持久化与提交协议，09按架构/模块用例组织验收，10保留最小运行约束并补配置与交付证据。SQL草案已删除，物理迁移和运行验证仍未实施。若发生冲突，按 `01_functional_requirements.md` 裁决，并回写修订到相关设计文件。
 4. 历史审计文件 `11_design_audit.md` 已废弃，不再迁入新版设计集。
 5. 旧式大接口清单、质量控制和数据模型仅保留在 `backup/` 目录作为参考，不作为权威契约。
-6. 旧 `12_gap_decisions.md` 的逐项审核结果见 `12_gap_decisions_review.md`；未关闭项应回写到对应新版设计文件。
+6. 11/12 不再作为现行设计入口；12 原文及 D-001–D-015 去向见[历史归档](../archive/design_retirement_2026-10-19/README.md)，开放项仍由 PROJECT_STATUS 跟踪。
 
 ## 2. 文件结构
 
-设计文件按编号数值升序排列；同组主文件在前，派生索引、速查和附录按子编号升序排列。同号持久化主文先于 SQL 草案；选型参考与历史资料单独列出。
+设计文件按编号数值升序排列；同组主文件在前，派生索引、速查和附录按子编号升序排列。选型参考与历史资料单独列出。
 
 | 文件 | 分层定位 | 主要回答 |
 | --- | --- | --- |
@@ -37,15 +37,15 @@
 | [04_api_contracts.md](04_api_contracts.md) | API Boundary 主文 | P0 通用协议、认证、修订/确认、幂等、错误、分期及限制 |
 | [04-01_p0_operation_contracts.md](04-01_p0_operation_contracts.md) | API 操作附录 | P0 请求响应、具名用例、权限/状态前置、流程示例与验收入口 |
 | [04-02_transport_task_file_contracts.md](04-02_transport_task_file_contracts.md) | API 传输附录 | 任务投影、SSE 回放、单文件上传、授权下载与技术限制 |
+| [04-03_machine_contract_governance.md](04-03_machine_contract_governance.md) | API 机器契约与演进 | 已覆盖字段的唯一维护来源、覆盖缺项、校验命令和兼容检查 |
 | [05_application_use_cases.md](05_application_use_cases.md) | Application Use Cases | P0 命令受理、执行、结果提交与类型化状态边界；未决分支和后续能力不冒充定稿 |
+| [05-01_internal_module_contracts.md](05-01_internal_module_contracts.md) | 内部模块与执行契约 | 模块写入归属、类型化调用、内部事件与事务/重试/取消责任 |
 | `06_agent_knowledge_services.md` | Agent & Knowledge Services | Construction、Research、Review Agent 与 Knowledge 能力边界 |
 | `07_data_persistence.md` | Infrastructure / Data | 关系库、文件、向量、图谱、版本和同步状态的持久化设计 |
-| `07_data_schema.sql` | Infrastructure / Data | MVP 关系数据结构草案，供迁移实现参考 |
-| `08_security_permissions.md` | AuthZ 横切约束 | 用户隔离、管理员边界、文件访问、密钥和审计 |
-| `09_quality_observability.md` | Quality 横切约束 | 测试入口、错误分类、日志、健康检查和诊断快照 |
-| `10_operations_deployment.md` | Operations | 本地/MVP 部署、调度、队列、备份、容量和演进策略 |
-| `12_gap_decisions_review.md` | 迁移审核 | 依据旧 `12_gap_decisions.md` 逐项核对新版设计吸收情况 |
-| [12-00_gap_downstream_reference.md](12-00_gap_downstream_reference.md) | 下游细化参考 | 12 号审核拆出的待细化项，不表示实现完成 |
+| [08_security_permissions.md](08_security_permissions.md) | AuthZ 横切约束 | 授权矩阵、校验时机、数据流及不可信内容；SEC-D01/03已决 |
+| [08-01_agent_data_access_policy.md](08-01_agent_data_access_policy.md) | Agent资料策略专题 | 已确认两级读取、作用域、分类、派生内容及双向立即生效；跨层接入缺项另列 |
+| [09_quality_observability.md](09_quality_observability.md) | 核心架构与功能模块测试 | ARC/MOD用例、KV/API-R断言及SEC/OPS细化场景，测试隔离与证据 |
+| [10_operations_deployment.md](10_operations_deployment.md) | 最小运行约束 | 部署隔离、配置契约、构建交付证据、升级恢复及失败处置 |
 
 ### 选型参考（编号顺序）
 
@@ -58,6 +58,7 @@
 | 文件 | 定位 | 说明 |
 | --- | --- | --- |
 | [UI 历史评审](../proposals/ui_design_historical_review_2026-06-01.md) | 历史记录 | 原 UI 第 10 章评审，仅供追溯，不定义现行规范 |
+| [2026-10-19 退役归档](../archive/design_retirement_2026-10-19/README.md) | 历史记录 | 12原文、逐项现行落点、07 SQL删除及11缺席记录；不作为实现规范 |
 | `backup/` | 备份参考 | 旧 API 契约、质量控制、数据模型和数据需求，仅供查证 |
 
 ## 3. 阅读顺序
@@ -73,7 +74,7 @@ Domain 任务先由主文定位边界，再按专题阅读附件：知识库版�
 
 UI 任务先阅读 [主文](03_ui_workspace.md) 的 Shell 布局组合和跨模块约束，再按模块进入 `03-01` 至 `03-04`。附录是详细 UI 规则的唯一维护位置，保留原 P 编号供追踪；主文不重复维护模块线框与交互。历史评审单独保存在 `docs/proposals/`。
 
-API 阅读顺序为 04 公共协议 → 04-01 对应操作 → 04-02 任务/文件 → 05 执行编排。各附录维护协议细节，不复制领域裁决；待决分支和本轮检查证据见 [API 设计审查工作单](../workorders/api_p0_design_review_2026-10-16.md)。
+API 阅读顺序为 04 公共协议 → 04-01 对应操作 → 04-02 任务/文件 → 05 执行编排 → 05-01 内部模块契约。机器契约的覆盖、验证命令与唯一维护来源见 [04-03](04-03_machine_contract_governance.md)；未覆盖部分不得视为已完成机器校验。各附录维护协议细节，不复制领域裁决；历史决策和检查证据见 [API 设计审查工作单](../workorders/api_p0_design_review_2026-10-16.md)。
 
 ## 4. 修订要求
 
@@ -92,3 +93,15 @@ API 阅读顺序为 04 公共协议 → 04-01 对应操作 → 04-02 任务/文�
 本次修订 v1.9（2026-10-16）：更新 API 方向已决与细则待决权威入口。
 
 本次修订 v1.10（2026-10-16）：同步 R1-A–R4-A 及人工补充裁决；本轮细则已关闭，实现与运行验收另行跟踪。
+
+本次修订 v1.11（2026-10-19）：登记内部模块契约及 API 机器契约维护入口，限定 06 局部细化范围；07–12 的后续职责评估见[工作单](../workorders/agent_contracts_and_downstream_review_2026-10-19.md)，评估不代表已执行重整。
+
+本次修订（2026-10-19）：修复退役文件的链接，指向历史原文或删除记录；历史结论与当时证据保持原义。
+
+本次修订 v1.12（2026-10-19）：细化07、将09整理为架构/模块测试设计、精简10；删除SQL草案，将12移入历史归档，08保持原样。
+
+本次修订 v1.13（2026-10-19）：同步08/10细化、09的SEC/OPS用例和待决策入口；不新增默认政策。
+
+本次修订 v1.14（2026-10-20）：登记08-01专题及政策决定，详细策略单点维护，跨层契约仍须在实施前收口。
+
+本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
