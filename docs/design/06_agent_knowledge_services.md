@@ -1,30 +1,32 @@
 # Agent & Knowledge Services 设计
 
-文档版本：v1.7
-更新日期：2026-10-16
+文档版本：v1.11
+更新日期：2026-10-21
 依据文档：`00_layers.md`、`01_functional_requirements.md`
+
+资料分类与派生内容策略见[08-01](08-01_agent_data_access_policy.md)。补充/候选、嵌入、检索和历史上下文均有接入点，不能仅过滤文件下载；Q1–Q4已确认，后续读取/外发/提交均核验当前政策；扩权不重做步骤，收紧不静默剪历史。Provider访问与当前凭据解析遵循08 §12已确认规则，具体网络/认证实现仍需验证。
 
 ## 1. 设计目标
 
 Agent 与 Knowledge 采用共层方案：二者都位于 Application Use Cases 之下、Infrastructure Adapters 之上。Agent 负责智能行为、生成和流程执行；Knowledge 负责论文资产、检索、版本、证据和可复用知识能力。
 
-推荐依赖方向：
+源码依赖方向（运行时经端口调用适配器）：
 
 ```text
 Application Use Cases
   -> services/agents
       -> services/knowledge
-          -> Infrastructure Adapters
+          -> Knowledge ports <- Infrastructure Adapters
 ```
 
-Knowledge 不依赖具体 Agent。
+Knowledge 不依赖具体 Agent；Agent 的 LLM/来源等能力也通过自身端口注入。两者不导入具体适配器或应用用例，领域层不依赖二者。模块写入归属与最小类型见 [05-01 内部契约](05-01_internal_module_contracts.md)。本文细化工程边界及补充接收、候选处理、证据和确认的既定规则；具体适配器、持久化映射和运行验证仍待完成，不表示服务已实现或整体定稿。
 
 ## 2. Agent 服务边界
 
 | Agent | 输入 | 输出 | 不负责 |
 | --- | --- | --- | --- |
-| Construction Agent | Project 主题、检索词、数据源策略、配置快照 | 候选论文、评分、AI 分析、入库建议、构建结果 | 直接绕过用例发布版本或发送邮件 |
-| Research Agent | 用户消息、输出倾向、Knowledge Version、Graph-RAG 证据 | 流式回复、引用、总结草稿 | 修改 Project 知识库 |
+| Construction Agent | Project 主题、检索词、数据源策略、补充/候选输入、配置快照 | 论文/资料候选提案、评分、分类 AI 分析、入库建议、构建结果提案 | 直接绕过用例发布版本或发送邮件 |
+| Research Agent | 用户消息、Knowledge Version、Graph-RAG 证据；输出倾向为 P1 | 流式回复、引用；总结草稿为 P1 | 修改 Project 知识库 |
 | Review Agent | 综述主题、范围、大纲/章节状态、Knowledge Version、证据 | 大纲、章节、审查意见、终稿、参考文献 | 静默覆盖人工编辑内容 |
 
 ## 3. Knowledge 服务能力
@@ -32,13 +34,13 @@ Knowledge 不依赖具体 Agent。
 | 能力 | 职责 | 关联 FR |
 | --- | --- | --- |
 | Paper Identity | 归一化 DOI/arXiv/URL/来源 ID，完成全局去重 | FR-022 |
-| Project Library | 管理 ProjectPaper、有效性、评分、推送状态和 AI 分析 | FR-012, FR-026 |
-| Document Assets | 管理 PDF、解析文本、摘要降级、文件访问引用 | FR-024 |
+| Project Library | 提供 ProjectPaper/ProjectMaterial 的候选处理与只读投影，包括有效性、评分和分类分析；业务提交归应用；推送状态按只读投影展示，邮件执行仍为 P1 | FR-012, FR-026 |
+| Document Assets | 提供论文 PDF、支持格式资料、解析文本、摘要降级及文件访问引用，区分补充暂存、候选和已发布范围 | FR-024 |
 | Vector Index | 写入和查询向量索引，记录同步状态 | FR-026, FR-028 |
 | Knowledge Graph | 构建论文、作者、关键词、概念、方法等节点边 | FR-026, FR-031 |
 | Graph-RAG Retriever | 基于版本检索证据，返回引用定位 | FR-028, FR-032 |
-| Knowledge Version | 发布、稳定绑定、版本变化与证据风险提示、新研究采用检查 | FR-018 |
-| Citation & Evidence | 保存引用、证据片段、论文跳转和版本一致性 | FR-031, FR-033 |
+| Knowledge Version | 发布准备、稳定绑定读取解析、版本变化与证据风险提示、新研究采用检查；应用负责提交发布与绑定 | FR-018 |
+| Citation & Evidence | 解析论文/资料证据片段、文件与图谱跳转，校验版本一致性；引用关联由所属应用保存 | FR-031, FR-033 |
 
 ### 3.1 版本读取与存储适配契约
 
@@ -63,15 +65,39 @@ ResolveEvidence 按当前授权/Project 范围→绑定版本成员→不可变�
 
 空版本是合法 ReadContext：允许浏览、新建 Research/Review，检索返回空证据并明确提示，不按成员数拒绝创建、不自动选择历史版，也不伪造引用。
 
+### 3.3 结果提案与端口实现
+
+异步服务执行携带 [05-01](05-01_internal_module_contracts.md) 的 ExecutionContext；同步正式知识查询使用 ActorContext 与本章 ReadContext，无须制造 command/task/attempt。研究读取使用固定 ReadContext；补充准备使用 SupplementWriteScope，候选准备使用 CandidateWriteScope。补充/候选文件只读入口按 04-02 校验所属请求或 Run，不强造已发布版本。读取句柄不等于授权，也不提供写能力；写资格不能用作跨 Project 读取凭据。
+
+服务仅返回类型化结果、产物引用或安全错误；流式增量经应用记录/投影，不由 Agent 直接写 HTTP/SSE。服务不得自己确认人工内容、推进 Run 成功、发布版本、保存最终正文或发送发布通知。独立生成失败保留可诊断结果，不覆盖已保存正文。
+
+候选文件、向量和图谱的准备只写所属隔离候选空间并返回就绪/完整性依据；校验依据绑定候选修订，不能作为永久有效的发布凭据。独立补充的文件和提取结果使用下节暂存范围，不具备向量/图谱写入或发布资格。应用在最终短事务重新校验资格、确认和基线。外部产物清理由受控应用流程调用；任务失败/取消的技术清理仅处理所属未发布产物，不能由 Provider 自行删除共享或已发布依赖。Project 治理清理仍按既有领域授权、范围和依赖保留规则执行。具体事务与物理映射留给 07，不要求将长时间推理纳入数据库事务。
+
+### 3.4 独立补充暂存与候选纳入
+
+本节承接 [04-02 单文件接收](04-02_transport_task_file_contracts.md#4-单文件上传与补充处理)及[未发布文件读取](04-02_transport_task_file_contracts.md#51-未发布文件读取)，不新增公开端点或确认门槛。
+
+- 接收阶段可为校验、计算幂等指纹暂存字节；这些字节不具有业务确认或候选写资格。通过基础接收后由应用持久受理 supplement/task 并关联文件，异步准备使用与 Project、supplement 修订和当前 attempt 绑定的 SupplementWriteScope。失败或重复请求的无归属临时字节由接收流程清理，不产生重复请求或重复解析。
+- `PrepareSupplement` 只获取/提取所属文件及元数据、标题草稿、可用文本和诊断，返回类型化提案，由 Construction 应用提交补充处理结果；没有 Run 时也合法，不占构建槽，不要求 KnowledgeVersion。只有实际调用 LLM 时才需要相应模型配置，普通静态解析不强制选择模型。
+- 基础接收成功不等于深度解析成功；解析到多候选、元数据冲突或缺标题时按 04 的补充详情/编辑/确认流程处理，不自动确认。深度解析失败保留请求和诊断；安全可读原文件仍可经补充专用入口读取，不能据此进入研究检索。
+- 纳入由应用按 05 §7 固定已确认补充及其有效修订，再建立到 Run/候选的来源关系并签发 CandidateWriteScope。可复用经核验的不可变文件/提取产物，但须重新验证归属、输入及处理依据，不能继承不适用的处理或分析确认。运行开始后新增补充默认待下轮，不能因存在 active Run 就改写其输入。
+- 补充暂存资格不能直接升级为候选/发布资格；任何被撤销资格的迟到提案均拒绝提交。纳入与清理须互斥核验依赖，不能先查一次引用就删除文件。取消 Run 只清理其可清理残留，不删除独立待纳入补充、人工内容或被其他有效依赖使用的文件。保留期限和物理回收方案仍由 07/运维细化，不在本节新增自动删除期限。
+
 ## 4. Construction Pipeline
 
 检索词管理支持 Project 主题生成建议词、用户编辑、检索词级数据源策略和自动更新开关。新生成或新增检索词默认 `auto_update_enabled=true`；用户后续修改自动更新开关是在该默认态上调整。手动 Run 使用本次 selected 检索词；自动 Run 使用 `auto_update_enabled=true` 的检索词。
 
 多源检索支持 arXiv、OpenAlex、Semantic Scholar、ADS 和后续扩展 Provider。Provider 返回统一候选结构，不把 SDK 原始对象泄漏到应用层。数据源失败应分类为缺失配置、密钥失效、限流、连接失败、权限过期或 Provider 不可用。
 
-去重、评分与筛选使用全局论文身份归一化。评分至少包含主题相关性、来源质量、时间新鲜度、摘要匹配度。候选论文可进入人工确认；自动 Run 只可按安全自动确认策略处理低风险项。
+论文去重使用全局论文身份归一化，评分包含主题相关性、来源质量、时间新鲜度、摘要匹配度。资料按 Project 内归一化标题及 content_format/相似格式组识别重复或疑似重复，记录 MaterialDeduplicationDecision/MaterialScreeningDecision，不套用论文身份或强制作者、年份、语言、provider。标题归一化及轻量元数据遵循 [02-03 §5](02-03_construction_assets_appendix.md#5-手动补充与资产边界)。两类候选均保留人工调整和误合并修正依据；手动 Run 确认筛选后才能进入下载解析，自动 Run 仅按 P1 安全自动确认策略处理。
 
-下载解析优先下载 PDF 并解析全文。PDF 缺失或解析失败时使用摘要降级，并记录原因。AI 分析输出一句话总结、亮点、相关性要点、方法与创新；结构化校验失败时不得写入为成功分析。
+论文优先获取 PDF 并解析全文；缺失或失败时，只有实际可用摘要才能作为降级文本，并记录原因及来源，不能生成摘要冒充原文。资料按实际格式静态提取文本，不套用论文摘要降级；获取/解析失败或无可用文本时记录失败或不可用结果，不伪造文本。两类处理分别收敛到 DocumentProcessingState/MaterialProcessingState，后续分析只使用其最终可用文本及修订。
+
+P0 资料格式及能力白名单以 [04-02 §4.2](04-02_transport_task_file_contracts.md#42-基础校验与解析边界)为唯一协议来源，包含 PDF、Office 文档/演示文稿、HTML、文本、结构化文本、notebook 和已声明的代码格式；doc/ppt 不降为 P1。数据表仍 P1，多媒体仍 P2；不运行宏、脚本或 notebook/code。缺解析器只能记录未满足能力和诊断，不能宣称支持或伪造成功。
+
+手动 Run 必须先确认处理摘要、失败/降级/不参与知识构建项，才能分析。`GenerateCandidateAnalysis` 接收 ExecutionContext、CandidateWriteScope、已确认的处理状态及文本修订，按 kind 返回 PaperAnalysis 或 MaterialAnalysis 提案：论文为一句话总结、亮点、相关性要点、方法与创新；资料仅要求 important_summary、relevance_points，字段由 04-01 维护，不强制论文方法/创新字段。结构化失败不记成功，手动确认分析后才进入入库预览；自动确认继续受既有 P1 策略限制。候选编辑、处理互斥及受影响确认失效按 02-03 §6 执行。
+
+有限技术重试使用同一有效输入、文件和配置依据，记录 attempt/诊断；过期结果不得替代当前处理状态。深度解析失败、无可用文本或输出结构失败均不自动确认、不进入正式证据。P0 不因此增加原 Run retry/reconnect/rerun 或补充专用重试端点；公开操作仍限 04，通用恢复沿用 02-04 的 P1 规则。
 
 入库先在本轮隔离候选范围内写 ProjectPaper/ProjectMaterial 修订与文本资产，再写向量库和图谱同步项；不得覆盖已发布证据。发布 Knowledge Version 前校验关系数据、向量索引、图谱和引用定位完整可读。执行边界遵守 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)；本文仍为待细化草案。
 
@@ -84,15 +110,15 @@ ResolveEvidence 按当前授权/Project 范围→绑定版本成员→不可变�
 ## 5. Research Pipeline
 
 - Session 创建时绑定已发布 Knowledge Version，采用新知识创建关联新 Session，不原地切换。
-- 每轮用户消息根据输出倾向选择提示策略：创新、实验、总结。
-- Graph-RAG 返回证据包，包括论文 ID、片段、定位、置信度和版本。
-- 回复必须保存引用列表，引用可跳转到论文详情、PDF 或 Graph 节点。
+- P0 普通回复不依赖输出倾向设置；创新、实验、总结三类倾向为 FR-029 的 P1 能力，启用后仅影响后续回复，不改历史或版本绑定。
+- Graph-RAG 返回同版本论文/资料证据包，正式引用使用 04-01 EvidenceRef（asset_kind=paper/material），包含资产身份、不可变修订依据、文本来源、片段/图谱定位及版本；内部检索评分不作为引用充分性或确认门槛。
+- 应用保存回复及引用列表，引用可跳转到论文/资料详情、授权文件或 Graph 节点。无证据时列表可为空；空检索须按 04-01 的明确选项决定是否继续普通回复并标记无引用上下文，不把检索失败当空结果继续。
 - 若绑定版本缺失或不可访问，消息发送失败并展示修复路径。
 
 ## 6. Review Pipeline
 
 - Review Run 创建时绑定已发布 Knowledge Version，采用新知识创建新版 Review，不在原 Run 混合版本。
-- 大纲生成后必须经过用户确认或编辑。
+- 大纲生成后允许编辑，但编辑不等于确认。只有绑定当前大纲修订和本 Run 知识版本的有效用户确认，才允许生成章节；编辑使受影响旧确认及下游依据失效，保留旧成果。低支撑提示不增加确认阻断门槛，生成/提交仍重查修订和确认有效性。
 - 章节生成携带绑定版本证据；空证据明确标注，不阻断对象创建或伪造来源。
 - 按 FR-033 学术规范审查归属、支持关系和参考信息；机械检查引用链接及版本定位，语义判断只给建议，不计算覆盖率、豁免或 strict 通过分数。
 - 终稿汇总生成单一完整 Markdown 正文；摘要、关键词及参考文献投影与正文同修订，无独立导出快照。accepted 当前稿保存后可 P0 下载，完成后只读；拒绝稿不由编辑复活。生成失败/迟到结果不覆盖人工稿。
@@ -100,12 +126,41 @@ ResolveEvidence 按当前授权/Project 范围→绑定版本成员→不可变�
 
 ## 7. Provider 抽象
 
-Agent/Knowledge 只依赖抽象接口：`LlmProvider`、`PaperSearchProvider`、`PdfFetcher`、`PdfParser`、`EmbeddingProvider`、`VectorStore`、`GraphStore`、`FileStore`、`MailSender`。
+Agent/Knowledge 只依赖抽象接口：`LlmProvider`、`PaperSearchProvider`、`PdfFetcher`、`PdfParser`、`MaterialFetcher`、`MaterialParser`、`EmbeddingProvider`、`VectorStore`、`GraphStore`、`FileStore`；`MailSender` 按 P1 邮件能力启用，不授权 Agent 自行发送通知。
+
+MaterialFetcher 接收经应用校验的来源及补充/候选写入范围，遵守 04-02 的 URL 获取限制；MaterialParser 接收所属不可变文件引用、识别格式及解析参数，按已实现格式路由静态解析器，返回可用文本引用、定位、输入修订和诊断。PDF 实现可复用，但 kind=material 仍返回资料处理/轻量分析语义。提取结果由应用映射到既定处理状态；解析器不能确认、发布或修改业务状态。端口不指定具体库，不用 FileStore 的字节读取能力冒充多格式解析能力。
 
 Provider 必须返回统一错误分类和诊断元数据，不返回密钥明文、真实文件路径或不可序列化 SDK 对象。
 
 ## 8. 输出校验
 
-所有 LLM 结构化输出必须校验 JSON/schema 可解析、必填字段存在、引用论文属于当前 Project 和绑定 Knowledge Version、生成内容没有覆盖受保护人工内容。失败时返回可诊断错误，不把半结构化结果当作成功。
+所有 LLM 结构化输出均按具名操作校验 JSON/schema、必填字段及类型，服务返回独立提案；应用提交时另校验当前权限、执行资格、输入修订和人工内容保护。来源校验必须按使用场景区分，不能以统一“已发布版本成员”门槛阻断发布前处理：
+
+| 输出场景 | 校验依据 | 禁止 |
+| --- | --- | --- |
+| 检索词建议等无证据输出 | 所属 Project/Workspace、实际输入修订和生成配置 | 强造 KnowledgeVersion 或 EvidenceRef；生成即人工确认 |
+| 独立补充提取/元数据或标题草稿 | SupplementWriteScope、请求/文件修订及实际提取来源 | 要求已有 Run/已发布版本；将草稿或临时文本视为正式证据 |
+| 论文/资料候选分析 | CandidateWriteScope、固定候选/处理文本修订、当前有效处理确认及来源归属 | 要求新候选已在基线成员内；跨候选拼接未经本次输入授权的文本；将分析提案视为已确认 |
+| Research/Review 正式证据 | ReadContext、Project、绑定版本清单、paper/material 资产修订、定位及当前授权 | 从补充/未发布候选、其他 Project 或其他版本补齐；缺失时回退 latest |
+
+首次构建无已发布版本不阻断合法候选分析；构建需要读取已发布基线证据时，该读取仍单独使用 ReadContext。补充/候选来源引用与正式 EvidenceRef 分型，不通过修改版本字段相互转换。空版本或经明确选择继续的空检索允许无证据输出，明确说明且不伪造引用。结构化或来源校验失败返回可诊断错误，不把半成品写为成功；此要求不改变 04-01 允许保存人工正文坏标记并提示问题的规则，越权证据读取/关联仍拒绝。
+
+## 9. 本轮一致性验证入口
+
+下列为后续实现验证要求，本次仅作设计复核，不代表自动化或端到端验收通过：
+
+- 大纲仅编辑未确认、确认后再编辑：章节生成不能使用缺失/过期确认。
+- 无 Run 上传及 active Run 期间上传：分别保持独立 supplement；跨 Project 写入拒绝，取消 Run 不误清理独立补充。
+- 首次候选分析不要求已发布版本；过期/跨候选输入拒绝，Research/Review 不能读取未发布候选。
+- 非 PDF 的 P0 资料从静态解析、处理确认、轻量分析、入库确认到发布后引用解析；补充失败、缺标题、解析不可用、重复资料、资料引用越权均有明确结果。doc/ppt 能力另须实际验证，单一格式通过不代表全部格式支持。
+- P0 无输出倾向设置时普通回复正常；空证据明确提示、空列表合法、检索失败不冒充空检索。
 
 本次修订 v1.7（2026-10-16）：同步学术引用、单一终稿、空版研究和论文/资料入库后只读服务边界；实现仍待细化。
+
+本次修订 v1.8（2026-10-19）：明确端口依赖、ReadContext 与写资格分离、服务结果提案和应用提交职责；其余细化及实现仍待完成。
+
+本次修订 v1.9（2026-10-19）：按 A01–A05 审计补齐大纲确认、独立补充暂存资格、分类输出校验、资料解析/分析/引用及 P1 输出倾向；保持 01–04 业务规则和公开协议不变，仅文档修订。
+
+本次修订（2026-10-20）：登记08-01资料策略接缝和08已确认的Provider/凭据规则，不复制未决细节。
+
+本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
