@@ -1,7 +1,7 @@
 # API 附录：异步任务、事件传输与文件
 
-文档版本：v1.10
-更新日期：2026-10-23
+文档版本：v1.11
+更新日期：2026-10-26
 适用项目大版本：v1
 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
 
@@ -365,3 +365,5 @@ A04：`ErrorPayload`通过`TaskError`复用`PublicError`；Task.error也复用�
 
 接收前失败沿原HTTP错误；持久受理后的深度失败沿TaskError及SupplementView安全诊断，不把失败任务改成未受理重试。元数据歧义/缺标题可形成成功准备结果但不可自动确认；状态的两个轴及Task终态映射见06 A08.2。解析失败不必然禁止安全原文件读取，未发布文件入口始终重新检查归属、安全接收与当前权限。解析结果仅暂存/候选材料，不能产生正式EvidenceRef。
 
+
+本次修订 v1.11（2026-10-26）：task026新增机器类型LLMTaskView，限定个人Config.TestLLM/RefreshModels的投影及202响应；不等于完整TaskView或其他业务任务机器转写。个人LLM事件复用既有payload，完整事件信封/通用任务接口继续保留原覆盖缺项。运行证据由task026维护。

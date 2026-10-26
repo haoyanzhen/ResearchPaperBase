@@ -147,7 +147,7 @@ def run_tests(binary_dir: Path, demo: bool = False) -> int:
             ]
         )
         # subprocess.run waits for/kills the sole child before the database cleanup.
-        result = subprocess.run(child, cwd=ROOT / "backend", env=env, timeout=1800 if demo else 300)
+        result = subprocess.run(child, cwd=ROOT / "backend", env=env, timeout=1800 if demo else 600)
         return result.returncode
     finally:
         # Never erase the directory of a server whose stop could not be verified.

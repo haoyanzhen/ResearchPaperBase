@@ -108,10 +108,26 @@ class PublicErrorTests(unittest.TestCase):
  def test_er08_existing_requests_success_and_bindings_preserved(self):
   root=Path(__file__).resolve().parents[2]
   old=json.loads((root/'docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json').read_text())
-  for name,schema in old['components']['schemas'].items(): self.assertEqual(schema,SCHEMAS[name],name)
+  llm_changed={'ModelParameters','LLMWrite','LLMPatch','LLMView','ConnectionTest'}
+  for name,schema in old['components']['schemas'].items():
+   if name not in llm_changed: self.assertEqual(schema,SCHEMAS[name],name)
+   else:
+    # task026 explicitly accepted expansion; LP and LC13 test its new bounded contracts.
+    self.assertFalse(SCHEMAS[name]['additionalProperties'])
+    self.assertTrue(set(schema['properties']) <= set(SCHEMAS[name]['properties']))
   for path,item in old['paths'].items():
    for method,op in item.items():
     updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']
+    if method == 'get' and (path.startswith('/me/llm-configs') or path in {'/me/model-options','/me/model-selection'}):
+     guard=next(p for p in updated['parameters'] if p['name']=='X-Expected-Actor')
+     self.assertEqual(guard, {'name':'X-Expected-Actor','in':'header','required':False,'schema':{'type':'string','format':'uuid'}})
+     updated['parameters'].remove(guard)
+    if method == 'post' and path in {'/me/llm-configs/{config_id}/test','/admin/llm-configs/{config_id}/test'}:
+     self.assertEqual(updated['requestBody']['content']['application/json']['schema'],{'$ref':'#/components/schemas/LLMTestRequest'})
+     updated['requestBody']=copy.deepcopy(op['requestBody'])
+    if method == 'post' and path in {'/me/llm-configs/{config_id}/test','/me/llm-configs/{config_id}/models/refresh'}:
+     self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/LLMTaskView'})
+     del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
     if (path, method) == ('/projects', 'post'):
      # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.
      # Normalize only reviewed deltas, then retain the full historical operation assertion.

@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.22 · 2026-10-26（个人资料独立用户场景测试）
+**文档版本**：v1.23 · 2026-10-26（个人LLM配置闭环）
 **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
 
 ## 当前目录
@@ -158,3 +158,5 @@
 本次修订 v1.21（2026-10-26）：新增[task023](../tasks/023-account-profile.md)、`backend/migrations/versions/0006_account_profile.py`、`backend/tests/integration/test_account_profile.py`及`test_account_profile_browser.py`，分别承接可空显示名迁移、真实事务/身份规则与浏览器恢复验证。状态见任务单。
 
 本次修订 v1.22（2026-10-26）：新增[task024](../tasks/024-profile-user-scenarios.md)、`backend/tests/integration/test_profile_user_journeys.py`（独立浏览器用户旅程）和`backend/tests/integration/test_profile_identity_scenarios.py`（身份/会话/并发操作序列）；业务源码未变，执行与复审证据见任务单。
+
+本次修订 v1.23（2026-10-26）：新增[task025](../tasks/025-personal-llm-design-gate.md)、[参数调研](workorders/task025_llm_parameter_research_2026-10-26.md)、[04-04契约](design/04-04_llm_parameter_contracts.md)和[task026](../tasks/026-llm-parameter-runtime.md)。代码新增`account_config/domain/parameters.py`、`llm_profiles.py`及`application/llm.py`，`adapters/llm_tables.py/llm.py/llm_provider.py/llm_worker.py`、`api/llm.py`与迁移0007；前端`LLMSettings.tsx`、`parameterJson.ts`及其测试；测试新增`test_llm_parameters.py/test_llm_provider.py/test_llm_http.py/test_llm_stream_cleanup.py`、集成`test_llm_configuration.py/test_browser_llm.py/test_llm_demo.py`与机器契约`test_llm_parameter_contracts.py`。运行演示入口装配隔离密钥与Worker，交付证据见task026。

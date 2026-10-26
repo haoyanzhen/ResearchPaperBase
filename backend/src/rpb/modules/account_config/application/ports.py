@@ -5,9 +5,17 @@ from uuid import UUID
 
 
 class AccountError(Exception):
-    def __init__(self, code: str, status: int, affected_account_id: UUID | None = None) -> None:
+    def __init__(
+        self,
+        code: str,
+        status: int,
+        affected_account_id: UUID | None = None,
+        *,
+        details: dict[str, Any] | None = None,
+    ) -> None:
         self.code, self.status = code, status
         self.affected_account_id = affected_account_id
+        self.details = details
         super().__init__(code)
 
 

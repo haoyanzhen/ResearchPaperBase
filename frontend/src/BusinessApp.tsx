@@ -1,3 +1,4 @@
+import { LLMSettings, ModelPicker } from './LLMSettings';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 type User = { id: string; revision: string; username: string; email: string; display_name: string | null; is_admin: boolean };
@@ -195,6 +196,8 @@ function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (
 export function BusinessApp() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState(false);
+  const [llmSettings, setLlmSettings] = useState(false);
+  const [modelRevision, setModelRevision] = useState(0);
   const [project, setProject] = useState<Project | null>(null);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -225,7 +228,7 @@ export function BusinessApp() {
   }
   function clearPrivate(discardPending = false) {
     try { if (discardPending) for (const key of Object.keys(sessionStorage)) if (key.startsWith('rpb:create:')) sessionStorage.removeItem(key); } catch { /* Authentication state must clear even when storage is unavailable. */ }
-    setUser(null); setProfile(false); setProject(null); setPending(null); setName(''); setDescription(''); setScope('');
+    setUser(null); setProfile(false); setLlmSettings(false); setProject(null); setPending(null); setName(''); setDescription(''); setScope('');
     setPassword(''); setConfirmation(''); setShowPassword(false);
     window.history.replaceState(null, '', '/workspace');
   }
@@ -300,12 +303,13 @@ export function BusinessApp() {
 
   return <div className="app business">
     <a className="skip" href="#content">跳到内容</a>
-    <header><a className="brand" href="/workspace">Research Paper Base</a>{user && <div className="account-bar"><span>{user.display_name || user.username}</span><button disabled={busy} onClick={() => setProfile(!profile)}>{profile ? '返回项目' : '个人资料'}</button><button disabled={busy} onClick={() => void logout()}>退出登录</button></div>}</header>
+    <header><a className="brand" href="/workspace">Research Paper Base</a>{user && <div className="account-bar"><span>{user.display_name || user.username}</span><button disabled={busy} onClick={() => { setLlmSettings(false); setProfile(!profile); }}>{profile ? '返回项目' : '个人资料'}</button><button disabled={busy} onClick={() => { setProfile(false); setLlmSettings(!llmSettings); }}>{llmSettings ? '返回项目' : 'LLM设置'}</button><button disabled={busy} onClick={() => void logout()}>退出登录</button></div>}</header>
     <main id="content" tabIndex={-1} aria-busy={busy}>
       <p className="eyebrow">你的研究，始于一个问题</p>
       <h1>{user ? profile ? '账户设置' : '研究项目' : mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
       {notice && <p className="notice" role="status">{notice}</p>}
       {error && <p className="error" role="alert">{error}</p>}
+      {user && <><ModelPicker key={user.id + '-model'} api={json} write={post} actor={user.id} revision={modelRevision} onAuthFailure={explain} /><div hidden={!llmSettings}><LLMSettings key={user.id + '-llm'} api={json} pageApi={envelope} write={post} actor={user.id} onChange={() => setModelRevision(v => v + 1)} onBusy={setBusy} onAuthFailure={explain} /></div></>}
       {user && <div hidden={!profile}><Profile key={user.id} user={user} onChange={setUser} onAuthFailure={explain} onBusy={setBusy} /></div>}
       <div hidden={!!user && profile}>
       {user && !project && !busy && <ProjectList key={user.id} actor={user.id} onAuthFailure={explain} />}

@@ -1,6 +1,6 @@
 # Research Paper Base 设计文档集
 
-文档版本：v1.19
+文档版本：v1.20
 更新日期：2026-10-26
 适用项目大版本：v1  
 权威基线：`01_functional_requirements.md`、`00_layers.md`
@@ -41,6 +41,7 @@
 | [04-01_p0_operation_contracts.md](04-01_p0_operation_contracts.md) | API 操作附录 | P0 请求响应、具名用例、权限/状态前置、流程示例与验收入口 |
 | [04-02_transport_task_file_contracts.md](04-02_transport_task_file_contracts.md) | API 传输附录 | 任务投影、SSE 回放、单文件上传、授权下载与技术限制 |
 | [04-03_machine_contract_governance.md](04-03_machine_contract_governance.md) | API 机器契约与演进 | 已覆盖字段的唯一维护来源、覆盖缺项、校验命令和兼容检查 |
+| [04-04_llm_parameter_contracts.md](04-04_llm_parameter_contracts.md) | LLM参数扩展 | 已接受方案的类型、协议映射、显式测试和保护边界 |
 | [05_application_use_cases.md](05_application_use_cases.md) | Application Use Cases | P0 命令受理、执行、结果提交与类型化状态边界；未决分支和后续能力不冒充定稿 |
 | [05-01_internal_module_contracts.md](05-01_internal_module_contracts.md) | 内部模块与执行契约 | 模块写入归属、类型化调用、内部事件与事务/重试/取消责任 |
 | `06_agent_knowledge_services.md` | Agent & Knowledge Services | Construction、Research、Review Agent 与 Knowledge 能力边界 |

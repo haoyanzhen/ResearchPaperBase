@@ -1,6 +1,6 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.13
+文档版本：v1.15
 更新日期：2026-10-26
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
@@ -108,6 +108,8 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 - `SMTPWrite`（字段见机器schema）；端口 1–65535，认证字段按 auth_type 校验，GET 只返回 SecretView。
 - `SecurityWrite`（字段见机器schema）；正超时/保留天数，重试次数 0–5；不得携带 P1 白名单/平台并发等字段。
 
+参数扩展方案已接受，具体工程规则见[04-04](04-04_llm_parameter_contracts.md)，机器字段与本片覆盖随task026同步；此前“待调研”描述为历史。
+
 ### 2.2 操作表
 
 2026-10-26已决语义：LLM无enabled写入/读取业务字段；`ModelOption.available`仅在当前配置/凭据修订下该模型最小测试成功时为true，列表发现/手填不等于可用。新选择/新启动检查此条件；既有任务遵循08 §12.3。配置级connection_status不能替代逐模型事实。下面两个LLM测试入口及机器schema仍是待校准的旧字段覆盖：空请求不能表达待测model_id，结果尚不能完整表达测试对象修订。实现前须一次补齐个人/系统待测模型、修订绑定及结果投影，保留TaskRef/持久结果协议；本次只同步已决业务含义，不宣称机器覆盖已完成。参数扩展方向B的具体schema待调研收敛。
@@ -123,7 +125,7 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 | GET/PATCH `/me` | `Account.ReadSelf/UpdateSelf` / 001 | 无/UserPatch → UserView | 只读写本人基础信息 |
 | GET/POST `/me/llm-configs` | `Config.ListLLM/CreateLLM` / 002 | 无/LLMWrite → List<LLMView>/LLMView | 私有配置；密钥只写 |
 | GET/PATCH/DELETE `/me/llm-configs/{config_id}` | `Config.ReadLLM/UpdateLLM/DeleteLLM` / 002 | 无/部分LLMWrite+RevCommand/修订query → LLMView/LLMView/204无正文 | 删除不改变历史任务快照；后续选择失效须显式修复 |
-| POST `/me/llm-configs/{config_id}/test` | `Config.TestLLM` / 002 | `{}` → TaskRef | 使用已保存配置；测试失败保留配置 |
+| POST `/me/llm-configs/{config_id}/test` | `Config.TestLLM` / 002 | `LLMTestRequest{model_id}` → TaskRef | 使用已保存配置；冻结修订并逐模型测试，失败保留配置 |
 | POST `/me/llm-configs/{config_id}/models/refresh` | `Config.RefreshModels` / 002 | `{}` → TaskRef | 不自动替换当前模型 |
 | GET `/me/model-options` | `Config.ListUsableModels` / 002,007 | 无 → `{items:ModelOption[]}` | 合并个人/系统可选模型；只暴露可选信息，不泄漏系统密钥 |
 | GET/PUT `/me/model-selection` | `Config.ReadSelection/SelectModel` / 002,007 | 无/`{expected_revision!,selection:ModelSelection\|null}` → `{selection:ModelSelection\|null,revision,valid,reason_code}` | null 明确清除；失效已保存选择可展示但不能启动 |

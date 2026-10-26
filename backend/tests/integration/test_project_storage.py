@@ -48,7 +48,7 @@ def test_ps01_upgrade_existing_account_and_metadata(db):
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0006_account_profile"
+            == "0007_llm_configuration"
         )
 
 
@@ -79,6 +79,11 @@ def test_ps02_pair_commits_defaults_and_independent_read(db):
             "auth_sessions",
             "project_create_commands",
             "project_lifecycle_records",
+            "llm_configs",
+            "llm_commands",
+            "llm_selections",
+            "llm_tasks",
+            "llm_audit",
         }
 
 
@@ -189,7 +194,7 @@ def test_ps05_populated_downgrade_refused_empty_preserves_account(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0006_account_profile"
+            == "0007_llm_configuration"
         )
         conn.execute(cw.delete())
         conn.execute(projects.delete())
@@ -268,7 +273,7 @@ def test_ps06_committing_writer_blocks_destructive_downgrade(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0006_account_profile"
+            == "0007_llm_configuration"
         )
 
 

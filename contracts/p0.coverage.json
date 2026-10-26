@@ -1,6 +1,6 @@
 {
-  "version": "1.7",
-  "date": "2026-10-25",
+  "version": "1.8",
+  "date": "2026-10-26",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -574,11 +574,11 @@
     "MaterialPolicy.Update",
     "MaterialSource.ReadClassification",
     "MaterialSource.ConfirmClassification",
-    "MaterialSource.CorrectClassification"
+    "MaterialSource.CorrectClassification",
+    "Config.TestLLM",
+    "Config.RefreshModels"
   ],
   "request_only_operations": [
-    "Config.TestLLM",
-    "Config.RefreshModels",
     "Config.TestSource",
     "Admin.TestSystemLLM",
     "Admin.RefreshSystemModels",
@@ -636,8 +636,8 @@
     {
       "id": "GAP-TASK",
       "kind": "not-yet-transcribed",
-      "scope": "TaskHandle/TaskView, all asynchronous response operations",
-      "reason": "A07 task010 design accepted; machine transcription and runtime verification remain open."
+      "scope": "General TaskHandle/TaskView and asynchronous operations outside personal LLM test/refresh",
+      "reason": "Task026 types LLMTaskView and two personal LLM 202 responses only; general task APIs and complete event envelopes remain open."
     },
     {
       "id": "GAP-CONFIRM",
@@ -666,8 +666,8 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "1da4fc2cef5008addd86c3226f9b3bf608d4d27ea4eba9f2f114980588de85c8",
-    "04-02_transport_task_file_contracts.md": "728862966bf2f797bab15a8de3ee0a4cc2bec9291e0fdb262eda65252a0da738"
+    "04-01_p0_operation_contracts.md": "307f9fc74df06924aacce63dc76c2b5aafa9a84ac4d0561b16d396df8964be8b",
+    "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
     "Account.GetCSRF": {
@@ -964,19 +964,17 @@
       ]
     },
     "Config.TestLLM": {
-      "status": "request-only",
+      "status": "request-success-partial",
       "gaps": [
         "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-RUNTIME"
       ]
     },
     "Config.RefreshModels": {
-      "status": "request-only",
+      "status": "request-success-partial",
       "gaps": [
         "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-RUNTIME"
       ]
     },
     "Config.TestSource": {
@@ -1453,7 +1451,7 @@
       "source_row_index": 14,
       "status": "partial",
       "typed_operations": {
-        "Config.TestLLM": "request-only"
+        "Config.TestLLM": "request-success-partial"
       },
       "remaining": []
     },
@@ -1461,7 +1459,7 @@
       "source_row_index": 15,
       "status": "partial",
       "typed_operations": {
-        "Config.RefreshModels": "request-only"
+        "Config.RefreshModels": "request-success-partial"
       },
       "remaining": []
     },
@@ -2738,5 +2736,20 @@
       ]
     },
     "scope": "Wire request/success/error binding only; no runtime, persisted command/event payload or HTTP application implemented."
+  },
+  "personal_llm": {
+    "task": "task026",
+    "scope": [
+      "LLM parameters and write/view types",
+      "Personal test/refresh 202 projection",
+      "ConnectionTest diagnostic extension",
+      "Expected actor read guard"
+    ],
+    "remaining": [
+      "per-operation error bindings",
+      "general TaskView and event envelope",
+      "system LLM management",
+      "real cloud model compatibility"
+    ]
   }
 }

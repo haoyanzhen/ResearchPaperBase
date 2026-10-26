@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.7.0",
+    "version": "1.8",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
   },
   "servers": [
@@ -445,6 +445,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -609,6 +618,15 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1183,7 +1201,17 @@
             "sessionCookie": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success; business prerequisites and runtime checks remain mandatory.",
@@ -1239,7 +1267,17 @@
             "sessionCookie": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success; business prerequisites and runtime checks remain mandatory.",
@@ -3505,6 +3543,37 @@
         "responses": {
           "default": {
             "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
+          },
+          "202": {
+            "description": "Durably accepted personal LLM task; current projection on replay.",
+            "headers": {
+              "Location": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/LLMTaskView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -3512,12 +3581,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Empty"
+                "$ref": "#/components/schemas/LLMTestRequest"
               }
             }
           }
-        },
-        "x-coverage": "request-only"
+        }
       }
     },
     "/me/llm-configs/{config_id}/models/refresh": {
@@ -3568,6 +3636,37 @@
         "responses": {
           "default": {
             "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
+          },
+          "202": {
+            "description": "Durably accepted personal LLM task; current projection on replay.",
+            "headers": {
+              "Location": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/LLMTaskView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -3579,8 +3678,7 @@
               }
             }
           }
-        },
-        "x-coverage": "request-only"
+        }
       }
     },
     "/me/data-source-configs/{config_id}/test": {
@@ -3701,7 +3799,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Empty"
+                "$ref": "#/components/schemas/LLMTestRequest"
               }
             }
           }
@@ -9299,15 +9397,135 @@
         "type": "object",
         "properties": {
           "temperature": {
-            "type": "number"
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
           },
           "max_output_tokens": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 1048576
+          },
+          "stop": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "presence_penalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "custom_params": {
+            "type": "object",
+            "properties": {
+              "max_tokens": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1048576
+              },
+              "max_completion_tokens": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1048576
+              },
+              "reasoning_effort": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh"
+                ]
+              },
+              "reasoning": {
+                "type": "object",
+                "properties": {
+                  "effort": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "minimal",
+                      "low",
+                      "medium",
+                      "high",
+                      "xhigh"
+                    ]
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              },
+              "thinking": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "enabled",
+                      "disabled",
+                      "adaptive"
+                    ]
+                  },
+                  "budget_tokens": {
+                    "type": "integer",
+                    "minimum": 1024,
+                    "maximum": 1048575
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              },
+              "thinkingConfig": {
+                "type": "object",
+                "properties": {
+                  "thinkingBudget": {
+                    "type": "integer",
+                    "minimum": -1,
+                    "maximum": 1048576
+                  },
+                  "includeThoughts": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            "required": [],
+            "additionalProperties": false
           }
         },
         "required": [],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Protocol/model capability checks, semantic conflicts and JSON limits are enforced at runtime; see 04-04."
       },
       "LLMWrite": {
         "type": "object",
@@ -9334,6 +9552,24 @@
           },
           "parameters": {
             "$ref": "#/components/schemas/ModelParameters"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "openai_chat",
+              "openai_responses",
+              "anthropic_messages",
+              "gemini_content"
+            ]
+          },
+          "api_version": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120
           }
         },
         "required": [
@@ -9371,6 +9607,24 @@
           },
           "expected_revision": {
             "$ref": "#/components/schemas/Revision"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "openai_chat",
+              "openai_responses",
+              "anthropic_messages",
+              "gemini_content"
+            ]
+          },
+          "api_version": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120
           }
         },
         "required": [
@@ -9433,6 +9687,30 @@
                 "type": "null"
               }
             ]
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "openai_chat",
+              "openai_responses",
+              "anthropic_messages",
+              "gemini_content"
+            ]
+          },
+          "api_version": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelOption"
+            }
           }
         },
         "required": [
@@ -9445,7 +9723,12 @@
           "base_url",
           "secret",
           "connection_status",
-          "last_test_at"
+          "last_test_at",
+          "parameters",
+          "protocol",
+          "api_version",
+          "timeout_seconds",
+          "models"
         ],
         "additionalProperties": false
       },
@@ -9676,6 +9959,58 @@
             "items": {
               "$ref": "#/components/schemas/ModelOption"
             }
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "config_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "credential_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "test_kind": {
+            "enum": [
+              "test",
+              "refresh"
+            ]
+          },
+          "discovered_models": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "tested_parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompiledModelParameters"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "test_overrides": {
+            "type": "object",
+            "properties": {
+              "max_tokens": {
+                "type": "integer",
+                "const": 32
+              }
+            },
+            "additionalProperties": false
           }
         },
         "required": [
@@ -14791,6 +15126,418 @@
           }
         ],
         "description": "Synchronous completed creation/replay must disclose a non-null actual retention expiry; >=24h and persisted equality require runtime checks."
+      },
+      "LLMTestRequest": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      },
+      "LLMTaskView": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "attempt_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "operation_id": {
+            "enum": [
+              "Config.TestLLM",
+              "Config.RefreshModels"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user_llm_config"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "project_id": {
+            "type": "null"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "execution_status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "status_url": {
+            "type": "string"
+          },
+          "events_url": {
+            "type": "string"
+          },
+          "cancel_url": {
+            "type": "null"
+          },
+          "result_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "connection_test"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "enum": [
+              "test",
+              "refresh"
+            ]
+          },
+          "business_state": {
+            "type": "null"
+          },
+          "waiting_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "cancel_requested_at": {
+            "type": "null"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "event_cursor": {
+            "type": "string"
+          },
+          "partial_result_ref": {
+            "type": "null"
+          },
+          "target_location": {
+            "type": "object",
+            "properties": {
+              "parent_type": {
+                "type": "null"
+              },
+              "parent_id": {
+                "type": "null"
+              },
+              "read_url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "parent_type",
+              "parent_id",
+              "read_url"
+            ],
+            "additionalProperties": false
+          },
+          "material_use_notices": {
+            "type": "array",
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_id",
+          "operation_id",
+          "target",
+          "project_id",
+          "knowledge_version_id",
+          "execution_status",
+          "status_url",
+          "events_url",
+          "cancel_url",
+          "result_refs",
+          "revision",
+          "created_at",
+          "updated_at",
+          "started_at",
+          "finished_at",
+          "stage",
+          "business_state",
+          "waiting_items",
+          "cancel_requested_at",
+          "error",
+          "warnings",
+          "event_cursor",
+          "partial_result_ref",
+          "target_location",
+          "material_use_notices"
+        ],
+        "additionalProperties": false
+      },
+      "CompiledModelParameters": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1048576
+          },
+          "stop": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "presence_penalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "max_tokens": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1048576
+          },
+          "max_completion_tokens": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1048576
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ]
+          },
+          "reasoning": {
+            "type": "object",
+            "properties": {
+              "effort": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh"
+                ]
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "thinking": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "enabled",
+                  "disabled",
+                  "adaptive"
+                ]
+              },
+              "budget_tokens": {
+                "type": "integer",
+                "minimum": 1024,
+                "maximum": 1048575
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "thinkingConfig": {
+            "type": "object",
+            "properties": {
+              "thinkingBudget": {
+                "type": "integer",
+                "minimum": -1,
+                "maximum": 1048576
+              },
+              "includeThoughts": {
+                "type": "boolean"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "stop_sequences": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "generationConfig": {
+            "type": "object",
+            "properties": {
+              "temperature": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2
+              },
+              "topP": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "maxOutputTokens": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1048576
+              },
+              "stopSequences": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "frequencyPenalty": {
+                "type": "number",
+                "minimum": -2,
+                "maximum": 2
+              },
+              "presencePenalty": {
+                "type": "number",
+                "minimum": -2,
+                "maximum": 2
+              },
+              "topK": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "thinkingConfig": {
+                "type": "object",
+                "properties": {
+                  "thinkingBudget": {
+                    "type": "integer",
+                    "minimum": -1,
+                    "maximum": 1048576
+                  },
+                  "includeThoughts": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
       }
     },
     "responses": {
