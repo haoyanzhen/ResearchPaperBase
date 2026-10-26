@@ -18,6 +18,11 @@ class ProjectWrite(BaseModel):
     description: Annotated[str, Field(max_length=10000)] = ""
     research_scope: Annotated[str, Field(max_length=10000)] = ""
 
+    @field_validator("name", "description", "research_scope", mode="before")
+    @classmethod
+    def trim_text(cls, value: Any) -> Any:
+        return value.strip() if isinstance(value, str) else value
+
     @field_validator("name")
     @classmethod
     def nonblank(cls, value: str) -> str:

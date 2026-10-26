@@ -400,3 +400,168 @@ def test_ui03_unknown_retry_csrf_rejection_preserves_original(browser_app):
         assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 1
         assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 1
     page.close()
+
+
+def test_sim01_auth_rejections_then_correction(browser_app):
+    browser, base, engine, _ = browser_app
+    page = browser.new_page()
+    register_ui(page, base)
+    for identifier in ["BrowserUser", "Nobody"]:
+        page.get_by_label("用户名或邮箱", exact=True).fill(identifier)
+        page.get_by_label("密码", exact=True).fill("incorrect-password")
+        page.get_by_role("button", name="登录账号", exact=True).click()
+        expect(page.get_by_role("alert")).to_have_text("用户名、邮箱或密码不正确。")
+        expect(page.get_by_role("button", name="退出登录")).to_have_count(0)
+    page.get_by_role("button", name="注册", exact=True).click()
+    page.get_by_label("用户名", exact=True).fill("BROWSERUSER")
+    page.get_by_label("邮箱", exact=True).fill("second@example.invalid")
+    page.get_by_label("密码", exact=True).fill(PASSWORD)
+    page.get_by_label("确认密码", exact=True).fill(PASSWORD)
+    page.get_by_role("button", name="创建账号", exact=True).click()
+    expect(page.get_by_role("alert")).to_have_text("用户名或邮箱已被使用。")
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
+    page.get_by_label("用户名", exact=True).fill("SecondUser")
+    page.get_by_role("button", name="创建账号", exact=True).click()
+    expect(page.get_by_role("status")).to_have_text("注册成功，请登录。")
+    login_ui(page, " SECOND@EXAMPLE.INVALID ")
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 2
+        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 0
+    page.close()
+
+
+@pytest.mark.parametrize("failure", ["before_post", "after_post_read"])
+def test_sim02_network_failure_recovery(browser_app, failure):
+    browser, base, engine, _ = browser_app
+    page = browser.new_page()
+    register_ui(page, base)
+    login_ui(page)
+    keys = []
+    page.on(
+        "request",
+        lambda req: (
+            keys.append(req.headers["idempotency-key"])
+            if req.method == "POST" and req.url == base + "/api/v1/projects"
+            else None
+        ),
+    )
+    pattern = "**/api/v1/projects" if failure == "before_post" else "**/api/v1/projects/*"
+    page.route(pattern, lambda route: route.abort("failed"))
+    page.get_by_label("项目名称", exact=True).fill("Network recovery")
+    page.get_by_role("button", name="创建 Project", exact=True).click()
+    expect(page.get_by_role("button", name="用原请求重试")).to_be_enabled()
+    with engine.connect() as conn:
+        expected = 0 if failure == "before_post" else 1
+        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == expected
+        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == expected
+    page.unroute(pattern)
+    page.reload()
+    expect(page.get_by_role("button", name="用原请求重试")).to_be_enabled()
+    page.get_by_role("button", name="用原请求重试").click()
+    expect(page.get_by_role("heading", name="Network recovery")).to_be_visible()
+    assert len(keys) == 2 and len(set(keys)) == 1
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 1
+        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 1
+    page.close()
+
+
+def test_sim03_storage_unavailable_has_no_write(browser_app):
+    browser, base, engine, _ = browser_app
+    page = browser.new_page()
+    register_ui(page, base)
+    login_ui(page)
+    writes = []
+    page.on(
+        "request",
+        lambda req: (
+            writes.append(req.url)
+            if req.method == "POST" and req.url == base + "/api/v1/projects"
+            else None
+        ),
+    )
+    page.evaluate("""() => { window.originalSetItem = Storage.prototype.setItem;
+        Storage.prototype.setItem = function() { throw new DOMException('blocked'); }; }""")
+    page.get_by_label("项目名称", exact=True).fill("Storage recovered")
+    page.get_by_role("button", name="创建 Project", exact=True).click()
+    expect(page.get_by_role("alert")).to_have_text(
+        "浏览器无法保留待确认请求，请允许本站会话存储后重试。"
+    )
+    expect(page.get_by_label("项目名称", exact=True)).to_be_enabled()
+    assert not writes
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 0
+        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 0
+    page.evaluate("() => { Storage.prototype.setItem = window.originalSetItem; }")
+    page.get_by_role("button", name="创建 Project", exact=True).click()
+    expect(page.get_by_role("heading", name="Storage recovered")).to_be_visible()
+    assert len(writes) == 1
+    page.close()
+
+
+def test_sim04_project_validation_multiple_links_and_literal_text(browser_app):
+    browser, base, engine, _ = browser_app
+    page = browser.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    register_ui(page, base)
+    login_ui(page)
+    page.get_by_label("项目名称", exact=True).fill("   ")
+    page.get_by_role("button", name="创建 Project", exact=True).click()
+    expect(page.get_by_role("alert")).to_be_visible()
+    expect(page.get_by_label("项目名称", exact=True)).to_be_enabled()
+    expect(page.get_by_role("button", name="用原请求重试")).to_have_count(0)
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 0
+        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 0
+    names = ["第一项研究", "第二项研究"]
+    urls = []
+    literal = '<img src=x onerror="window.untrustedExecuted=true">'
+    for name in names:
+        page.get_by_label("项目名称", exact=True).fill(name)
+        page.get_by_label("描述", exact=True).fill(literal)
+        page.get_by_role("button", name="创建 Project", exact=True).click()
+        expect(page.get_by_role("heading", name=name)).to_be_visible()
+        expect(page.get_by_text(literal, exact=True)).to_be_visible()
+        assert page.evaluate("window.untrustedExecuted === undefined")
+        urls.append(page.url)
+        page.get_by_role("link", name="新建项目", exact=True).click()
+        expect(page.get_by_label("项目名称", exact=True)).to_have_value("")
+    for url, name in zip(urls, names, strict=True):
+        page.goto(url)
+        expect(page.get_by_role("heading", name=name)).to_be_visible()
+    page.goto(base + "/workspace?project=00000000-0000-0000-0000-000000000001")
+    expect(page.get_by_role("alert")).to_have_text("资源不可用。")
+    expect(page.get_by_label("项目名称", exact=True)).to_be_enabled()
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 2
+        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 2
+    assert not errors
+    page.close()
+
+
+def test_sim07_inflight_form_blocks_duplicate_submission(browser_app):
+    browser, base, engine, _ = browser_app
+    page = browser.new_page()
+    register_ui(page, base)
+    login_ui(page)
+    posts = []
+
+    def held_request(route):
+        posts.append(route.request.url)
+        expect(page.get_by_role("button", name="处理中…", exact=True)).to_be_disabled()
+        for label in ["项目名称", "描述", "研究范围"]:
+            expect(page.get_by_label(label, exact=True)).to_be_disabled()
+        expect(page.get_by_role("button", name="退出登录")).to_be_disabled()
+        route.continue_()
+
+    page.route("**/api/v1/projects", held_request)
+    page.get_by_label("项目名称", exact=True).fill("Only one in flight")
+    page.get_by_role("button", name="创建 Project", exact=True).click()
+    expect(page.get_by_role("heading", name="Only one in flight")).to_be_visible()
+    assert len(posts) == 1
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 1
+        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 1
+    page.close()

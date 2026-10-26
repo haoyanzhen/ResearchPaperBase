@@ -510,3 +510,35 @@ def test_pc04_exact_valid_key_boundaries(db, key, name):
     )
     assert r.status_code == 201
     assert counts(engine) == (1, 1, 1)
+
+
+@pytest.mark.parametrize(
+    "field,limit", [("name", 200), ("description", 10000), ("research_scope", 10000)]
+)
+def test_sim05_text_length_after_trimming_and_replay(db, field, limit):
+    """04-01 section 1: trim outer whitespace before checking text length."""
+    engine, _ = db
+    c, h = signed_in(engine)
+    body = {"name": "Research", field: " " + "中" * limit + "\n"}
+    response = create(c, h, body)
+    assert response.status_code == 201
+    assert response.json()["data"][field] == "中" * limit
+    replay = create(c, csrf(c), {**body, field: "中" * limit})
+    assert replay.status_code == 201
+    assert replay.json()["data"] == response.json()["data"]
+    assert counts(engine) == (1, 1, 1)
+
+
+def test_sim06_internal_whitespace_preserved(db):
+    engine, _ = db
+    c, h = signed_in(engine)
+    text = "a  b\nc"
+    response = create(
+        c, h, {"name": "  A  B  ", "description": f"\n{text}\t", "research_scope": f" {text} "}
+    )
+    assert response.status_code == 201
+    data = response.json()["data"]
+    assert data["name"] == "A  B"
+    assert data["description"] == data["research_scope"] == text
+    assert c.get(response.headers["location"]).json()["data"] == data
+    assert counts(engine) == (1, 1, 1)
