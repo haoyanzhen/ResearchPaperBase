@@ -57,6 +57,7 @@ def db(storage):
         conn.execute(sa.text("DELETE FROM construction_workspaces"))
         conn.execute(sa.text("DELETE FROM projects"))
         conn.execute(sa.text("DELETE FROM accounts"))
+        conn.execute(sa.text("DELETE FROM source_dispatch_limits"))
     yield engine, cfg
     with engine.begin() as conn:
         conn.execute(sa.text("DELETE FROM project_lifecycle_records"))
@@ -65,3 +66,4 @@ def db(storage):
         conn.execute(sa.text("DELETE FROM construction_workspaces"))
         conn.execute(sa.text("DELETE FROM projects"))
         conn.execute(sa.text("DELETE FROM accounts"))
+        conn.execute(sa.text("DELETE FROM source_dispatch_limits"))

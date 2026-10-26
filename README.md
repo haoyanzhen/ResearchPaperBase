@@ -1,11 +1,11 @@
 # Research Paper Base
 
-文档版本：v1.14
+文档版本：v1.15
 更新日期：2026-10-26
 
 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
 
-当前交付范围与验证结果见[项目状态](docs/PROJECT_STATUS.md)和[第一批骨架审核单](tasks/005-engineering-skeleton.md)。默认api/ui命令保留无库工程预览；注册登录和Project创建/本人读取已有独立本地演示入口，见下方M-P0-01。个人LLM测试已接入持久任务；知识构建尚未接入。
+当前交付范围与验证结果见[项目状态](docs/PROJECT_STATUS.md)和[第一批骨架审核单](tasks/005-engineering-skeleton.md)。默认api/ui命令保留无库工程预览；注册登录和Project创建/本人读取已有独立本地演示入口，见下方M-P0-01。个人LLM和数据源连接测试已接入持久任务；知识构建尚未接入。
 
 ## 当前入口
 
@@ -79,7 +79,7 @@ python3 scripts/engineering.py e2e
 
 浏览器测试针对构建产物，覆盖390/1280宽度、本地导航、键盘入口、无横向溢出和无写请求；不代表业务端到端验收。截图在 `frontend/test-results/`。
 
-`python3 scripts/engineering.py migration-history` 可查看 `0001_account → 0002_project → 0003_auth_sessions → 0004_project_commands → 0005_project_lifecycle → 0006_account_profile` 单链。执行真实存储测试：
+`python3 scripts/engineering.py migration-history` 可查看 `0001_account → 0002_project → 0003_auth_sessions → 0004_project_commands → 0005_project_lifecycle → 0006_account_profile → 0007_llm_configuration → 0008_source_configuration` 单链。执行真实存储测试：
 
 ```bash
 python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
@@ -129,3 +129,10 @@ python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@
 演示命令沿用上节。演示进程包含配置Worker，密钥文件写入本次隔离目录且权限0600，退出清理数据库时一并删除；保存的凭据不回显明文。HTTP Provider默认拒绝私网/回环地址及重定向，内部部署白名单为显式适配器配置，页面不能绕过。实际点击测试可能产生Provider费用；自动验收仅使用FakeProvider或受控本地服务，不代表所有云模型均兼容。生产密钥管理/生产Worker部署和系统LLM管理不在本片交付范围。
 
 任务与验收材料见[task026](tasks/026-llm-parameter-runtime.md)。完整集成运行上限为600秒，超时仍失败并清理测试环境。开发与干净安装均需Node24/npm11，不能用系统Node25代替约定版本。
+
+
+## 个人数据源配置（M-P0-06）
+
+同一临时demo中登录后打开“数据源设置”。支持arXiv、OpenAlex、Semantic Scholar、ADS的配置、启停、加密凭据及显式测试；“检索服务/API入口”填写对应服务入口，具体论文/文件地址属于检索结果或手动补充。保存不外呼，显式测试发送固定非业务查询，可能消耗供应商额度；默认自动验证只使用FakeProvider或受控本地HTTP服务。
+
+匿名模式不发送已存密钥，ADS使用密钥模式；缺key可保存但不能测试成功。实际测试结果、访问模式、时间与失败原因可查看，修改配置后旧结果不恢复新修订可用性。未知请求结果沿页面“核查”恢复，不另建重复命令。尚未实现的非论文检索适配、系统配置管理和Construction运行消费保持后续范围；最新验证与里程碑状态见[task028](tasks/028-personal-source-runtime.md)。

@@ -64,7 +64,8 @@ class HTTPProvider:
         payload: dict[str, Any] | None,
         timeout: int,
         authorize: Callable[[], AbstractContextManager[None]] = nullcontext,
-    ) -> dict[str, Any]:
+        response_format: str = "json",
+    ) -> Any:
         deadline = monotonic() + timeout
         url = urlsplit(base_url)
         host = url.hostname or ""
@@ -115,8 +116,13 @@ class HTTPProvider:
                 headers.update({"x-api-key": secret, "anthropic-version": api_version})
             elif protocol == "gemini_content":
                 headers["x-goog-api-key"] = secret
-            else:
+            elif protocol == "source_semantic_scholar":
+                if secret:
+                    headers["x-api-key"] = secret
+            elif secret:
                 headers["Authorization"] = "Bearer " + secret
+            if response_format == "xml":
+                headers["Accept"] = "application/atom+xml"
             expired = Event()
 
             def expire() -> None:
@@ -157,6 +163,8 @@ class HTTPProvider:
                     raise ProviderFailure("PROVIDER_RESPONSE_INVALID")
                 if expired.is_set():
                     raise ProviderFailure("PROVIDER_TIMEOUT")
+                if response_format == "xml":
+                    return raw
                 value = json.loads(raw)
                 if not isinstance(value, dict):
                     raise ProviderFailure("PROVIDER_RESPONSE_INVALID")

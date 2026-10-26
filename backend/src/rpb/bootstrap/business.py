@@ -12,12 +12,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.engine import Engine
 
 from rpb.adapters.auth import AccountStore
+from rpb.adapters.configuration_tasks import ConfigurationTasks
 from rpb.adapters.construction import ConstructionInitializer
 from rpb.adapters.llm import LLMStore
 from rpb.adapters.project_commands import ProjectUnitOfWork
+from rpb.adapters.sources import SourceStore
 from rpb.api.account import router_for
 from rpb.api.llm import router_for as llm_router
 from rpb.api.projects import router_for as projects_router
+from rpb.api.sources import router_for as sources_router
 from rpb.modules.account_config.application.llm import LLMService
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.account_config.application.service import AccountService
@@ -41,7 +44,13 @@ def create_business_app(
         raise ValueError("Explicit same-origin HTTPS or loopback HTTP origin required")
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     account = AccountStore(engine)
-    app.include_router(llm_router(LLMService(LLMStore(account, encryption_key), origin)))
+    sources = SourceStore(account, encryption_key)
+    app.include_router(sources_router(LLMService(sources, origin)))
+    app.include_router(
+        llm_router(
+            LLMService(ConfigurationTasks(LLMStore(account, encryption_key), sources), origin)
+        )
+    )
     app.include_router(router_for(AccountService(account, origin), parsed.scheme == "https"))
     app.include_router(
         projects_router(ProjectService(ProjectUnitOfWork(account, ConstructionInitializer)), origin)
@@ -59,7 +68,9 @@ def create_business_app(
             content={
                 "error": {
                     "code": code,
-                    "category": code.split("_", 1)[0].lower(),
+                    "category": {"CONFIG": "configuration", "LOCK": "lock_conflict"}.get(
+                        code.split("_", 1)[0], code.split("_", 1)[0].lower()
+                    ),
                     "message": "资源不可用"
                     if code == "PERMISSION_RESOURCE_UNAVAILABLE"
                     else "Request could not be completed",
@@ -102,7 +113,12 @@ def create_business_app(
                     return error(request, "VALIDATION_PAYLOAD_TOO_LARGE", 413)
                 chunks.append(chunk)
             request._body = b"".join(chunks)
-            if request.url.path.startswith("/api/v1/me/llm-configs") and request._body.strip():
+            if (
+                request.url.path.startswith(
+                    ("/api/v1/me/llm-configs", "/api/v1/me/data-source-configs")
+                )
+                and request._body.strip()
+            ):
 
                 def unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
                     result: dict[str, object] = {}

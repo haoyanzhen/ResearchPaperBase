@@ -20,6 +20,9 @@ from rpb.adapters.auth import AccountStore
 from rpb.adapters.llm import LLMStore
 from rpb.adapters.llm_provider import HTTPProvider
 from rpb.adapters.llm_worker import LLMWorker
+from rpb.adapters.source_provider import SourceProvider
+from rpb.adapters.source_worker import SourceWorker
+from rpb.adapters.sources import SourceStore
 from rpb.bootstrap.business import create_business_app
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,9 +105,13 @@ def main() -> None:
     stopped = Event()
     worker = LLMWorker(LLMStore(AccountStore(engine), key), HTTPProvider())
 
+    source_worker = SourceWorker(SourceStore(AccountStore(engine), key), SourceProvider())
+
     def work() -> None:
         while not stopped.is_set():
-            if not worker.run_once():
+            llm_work = worker.run_once()
+            source_work = source_worker.run_once()
+            if not (llm_work or source_work):
                 stopped.wait(0.5)
 
     thread = Thread(target=work, daemon=True)

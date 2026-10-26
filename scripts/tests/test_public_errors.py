@@ -110,7 +110,12 @@ class PublicErrorTests(unittest.TestCase):
   old=json.loads((root/'docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json').read_text())
   llm_changed={'ModelParameters','LLMWrite','LLMPatch','LLMView','ConnectionTest'}
   for name,schema in old['components']['schemas'].items():
-   if name not in llm_changed: self.assertEqual(schema,SCHEMAS[name],name)
+   if name in {'SourceWrite','SourcePatch','SourceView'}:
+    # task027 user decision only adds this exact address-role documentation.
+    updated=copy.deepcopy(SCHEMAS[name])
+    self.assertEqual(updated['properties']['base_url'].pop('description'), '检索服务/API入口，由已实现的Provider适配器解释；具体论文、网页或文件地址属于检索结果或手动补充资料，不属于数据源配置。')
+    self.assertEqual(schema,updated,name)
+   elif name not in llm_changed: self.assertEqual(schema,SCHEMAS[name],name)
    else:
     # task026 explicitly accepted expansion; LP and LC13 test its new bounded contracts.
     self.assertFalse(SCHEMAS[name]['additionalProperties'])
@@ -127,6 +132,9 @@ class PublicErrorTests(unittest.TestCase):
      updated['requestBody']=copy.deepcopy(op['requestBody'])
     if method == 'post' and path in {'/me/llm-configs/{config_id}/test','/me/llm-configs/{config_id}/models/refresh'}:
      self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/LLMTaskView'})
+     del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
+    if method == 'post' and path == '/me/data-source-configs/{config_id}/test':
+     self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/SourceTaskView'})
      del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
     if (path, method) == ('/projects', 'post'):
      # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.

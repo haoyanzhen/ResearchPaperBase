@@ -1,6 +1,6 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.16
+文档版本：v1.17
 更新日期：2026-10-26
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
@@ -105,7 +105,7 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 - `SourceWrite`（字段见机器schema）；enabled 默认 true；速率为正数或 null 表示按 Provider 适配默认，不能越过平台限制。新增其他 provider 须先有实现的能力注册，不以任意字符串宣称支持。
 `base_url`仅表示该适配器的检索服务/API入口；不是某份文件地址，也不因填入搜索网页URL就获得API能力。具体资源地址沿候选/SourceRef及手动补充协议承载，不在SourceWrite中新增文件地址字段。
 - `SourceView`（字段见机器schema）。匿名源允许无密钥，api_key 模式缺密钥不能测试成功或被解析为可用。
-- `ConnectionTest`（字段见机器schema）；非 LLM 的 models 为空。任务型测试先返回 TaskRef，再由结果链接读取此结构。
+- `ConnectionTest`（字段见机器schema）；非 LLM 的 models 为空；数据源测试返回access_mode及所测配置/凭据修订，连接成功与enabled分别展示。任务型测试先返回 TaskRef，再由结果链接读取此结构；个人数据源限定投影由SourceTaskView承载，不代表通用TaskView已全部转写。
 - `SMTPWrite`（字段见机器schema）；端口 1–65535，认证字段按 auth_type 校验，GET 只返回 SecretView。
 - `SecurityWrite`（字段见机器schema）；正超时/保留天数，重试次数 0–5；不得携带 P1 白名单/平台并发等字段。
 

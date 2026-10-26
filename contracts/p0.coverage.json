@@ -1,5 +1,5 @@
 {
-  "version": "1.8",
+  "version": "1.9",
   "date": "2026-10-26",
   "source_rows": [
     {
@@ -576,10 +576,10 @@
     "MaterialSource.ConfirmClassification",
     "MaterialSource.CorrectClassification",
     "Config.TestLLM",
-    "Config.RefreshModels"
+    "Config.RefreshModels",
+    "Config.TestSource"
   ],
   "request_only_operations": [
-    "Config.TestSource",
     "Admin.TestSystemLLM",
     "Admin.RefreshSystemModels",
     "Admin.TestSystemSource",
@@ -666,7 +666,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "98c4e2ea49231e21dfce80ea97b0fe3eae6dce5f02c31ebc0d74c5235b0b1566",
+    "04-01_p0_operation_contracts.md": "41b7642d43ac8b4c456ad8aa1113cf4aaea6c0f23e73a712967478420650b7a6",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -978,11 +978,10 @@
       ]
     },
     "Config.TestSource": {
-      "status": "request-only",
+      "status": "request-success-partial",
       "gaps": [
         "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-RUNTIME"
       ]
     },
     "Admin.TestSystemLLM": {
@@ -1503,7 +1502,7 @@
       "source_row_index": 20,
       "status": "partial",
       "typed_operations": {
-        "Config.TestSource": "request-only"
+        "Config.TestSource": "request-success-partial"
       },
       "remaining": []
     },
@@ -2750,6 +2749,20 @@
       "general TaskView and event envelope",
       "system LLM management",
       "real cloud model compatibility"
+    ]
+  },
+  "personal_sources": {
+    "task": "task028",
+    "scope": [
+      "Personal source test 202 projection",
+      "ConnectionTest access mode"
+    ],
+    "remaining": [
+      "per-operation error bindings",
+      "general TaskView and event envelope",
+      "system source management",
+      "non-paper adapters",
+      "real cloud service compatibility"
     ]
   }
 }

@@ -7,11 +7,15 @@ import time
 from pathlib import Path
 
 import httpx
+import pytest
 from test_account_auth import csrf, login, register
 from test_llm_configuration import create, start
+from test_source_configuration import create as create_source
+from test_source_configuration import start as start_source
 
 
-def test_ld01_demo_worker_process_consumes_queue_without_provider_network(db, request):
+@pytest.mark.parametrize("kind", ["llm", "source"])
+def test_ld01_demo_worker_process_consumes_queue_without_provider_network(db, request, kind):
     root = Path(__file__).resolve().parents[3]
     target = Path(request.config.getoption("--storage-target"))
     with socket.socket() as sock:
@@ -49,8 +53,9 @@ def test_ld01_demo_worker_process_consumes_queue_without_provider_network(db, re
             assert login(client, h, "demo-user").status_code == 200
             h = csrf(client)
             h["Origin"] = origin
-            config = create(client, h, base_url="http://127.0.0.1:9/v1").json()["data"]
-            job = start(client, h, config).json()["data"]
+            creator, starter = (create, start) if kind == "llm" else (create_source, start_source)
+            config = creator(client, h, base_url="http://127.0.0.1:9/v1").json()["data"]
+            job = starter(client, h, config).json()["data"]
             deadline = time.monotonic() + 10
             while True:
                 view = client.get(job["status_url"]).json()["data"]

@@ -37,7 +37,9 @@ def public_error(code: str) -> dict[str, Any]:
     }.get(code, code)
     return {
         "code": code,
-        "category": code.split("_")[0].lower(),
+        "category": {"CONFIG": "configuration", "LOCK": "lock_conflict"}.get(
+            code.split("_", 1)[0], code.split("_", 1)[0].lower()
+        ),
         "message": "连接测试未完成，请检查配置或重试。",
         "retryable": False,
         "details": None,
