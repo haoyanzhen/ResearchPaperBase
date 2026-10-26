@@ -44,7 +44,9 @@ def test_ps01_upgrade_existing_account_and_metadata(db):
         assert conn.execute(sa.select(accounts)).one() == before
         assert conn.scalar(sa.select(accounts.c.id)) == oid
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
-        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0002_project"
+        assert (
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+        )
 
 
 def test_ps02_pair_commits_defaults_and_independent_read(db):
@@ -71,6 +73,7 @@ def test_ps02_pair_commits_defaults_and_independent_read(db):
             "projects",
             "construction_workspaces",
             "alembic_version",
+            "auth_sessions",
         }
 
 
@@ -179,7 +182,9 @@ def test_ps05_populated_downgrade_refused_empty_preserves_account(db):
         migrate(engine, cfg, "downgrade", "0001_account")
     with engine.begin() as conn:
         assert conn.scalar(sa.select(projects.c.id)) == pid
-        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0002_project"
+        assert (
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+        )
         conn.execute(cw.delete())
         conn.execute(projects.delete())
     migrate(engine, cfg, "downgrade", "0001_account")
@@ -255,7 +260,9 @@ def test_ps06_committing_writer_blocks_destructive_downgrade(db):
                     transaction.rollback()
     with engine.connect() as conn:
         assert conn.scalar(sa.select(projects.c.id)) == pid
-        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0002_project"
+        assert (
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+        )
 
 
 @pytest.mark.parametrize(

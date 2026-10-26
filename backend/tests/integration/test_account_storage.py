@@ -44,7 +44,9 @@ def test_ac01_migration_metadata_and_rerun(db):
     with engine.connect() as conn:
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
         assert conn.scalar(sa.select(accounts.c.id)) == identity
-        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0002_project"
+        assert (
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+        )
         columns = sa.inspect(conn).get_columns("accounts")
         assert not {"password", "plaintext_password", "session_token"} & {
             c["name"] for c in columns
@@ -156,7 +158,9 @@ def test_ac06_downgrade_protects_committed_data_then_empty_roundtrip(db):
     with pytest.raises(RuntimeError, match="contains data"):
         migrate(engine, cfg, "downgrade", "base")
     with engine.begin() as conn:
-        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0002_project"
+        assert (
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+        )
         assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
         conn.execute(accounts.delete())
     migrate(engine, cfg, "downgrade", "base")
@@ -196,7 +200,9 @@ def test_ac08_wrong_run_marker_refuses_ddl(db):
         cfg.attributes["test_run_id"] = original
     with engine.connect() as conn:
         assert sa.inspect(conn).has_table("accounts")
-        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0002_project"
+        assert (
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+        )
         privileges = conn.execute(
             sa.text(
                 "SELECT rolsuper, rolcreatedb, rolcreaterole FROM pg_roles "
@@ -259,4 +265,6 @@ def test_ac06_concurrent_committing_writer_prevents_downgrade(db):
                     transaction.rollback()
     with engine.connect() as conn:
         assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
-        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0002_project"
+        assert (
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+        )

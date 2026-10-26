@@ -11,7 +11,7 @@
 
 依据01 FR-001/005首位注册、02 Account、04 §4/7及04-01 §2、07 Session事实、08认证。注册不自动登录；返回UserView，用户显式登录。首位管理员与跨标识唯一在同一账号治理事务锁裁决；未来邮箱/管理员治理必须共用该边界。API阻塞存储调用使用同步路由线程。密码采用随机盐scrypt；会话及CSRF仅存摘要，登录撤销旧会话并生成新随机凭据。Cookie固定rpb_session、HttpOnly、SameSite=Lax、Path=/，仅显式loopback HTTP允许非Secure。
 
-会话有效期属于可配置技术参数，测试使用24小时、预会话30分钟；不是数据清理政策，不自动删除历史记录。已过期/撤销不能恢复。所有写请求校验精确Origin与会话CSRF，认证重新检查enabled。公开错误不返回请求体、密码、SQL或路径；no-store。无生产迁移或部署、不开放密码找回/PATCH me/管理员治理。
+会话有效期属于本片技术默认参数，测试使用24小时、预会话30分钟；不是数据清理政策，不自动删除历史记录。已过期/撤销不能恢复。所有写请求校验精确Origin与会话CSRF，认证重新检查enabled。公开错误不返回请求体、密码、SQL或路径；no-store。无生产迁移或部署、不开放密码找回/PATCH me/管理员治理。
 
 ## 3. 文件落点
 
@@ -45,3 +45,21 @@ D-016-01已决定，不重问。没有新的业务决策；M-P0-01未到。工�
 ## 8. 检查点
 
 流程v1.7；S1完成、S2进行中，S3–S7待执行。批次及里程碑见task016。上一片正在独立修复复审；本片不覆盖其历史基线。下一步实现AU01–08并绑定新快照审查。
+
+密码参数采用scrypt N=32768/r=8/p=3、16字节随机盐、32字节输出，参考[OWASP官方密码存储指南](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)。首轮集成93通过/1失败：并发测试观察连接复用PG统计快照导致看不到新连接；补pg_stat_clear_snapshot后仍保留双请求真实等待断言，不以sleep替代屏障。
+
+### S2/S3修复记录
+
+初审 `/root/project_storage_review` 三项P2：R1禁用拒绝未持久撤销会话，R2注册201缺Location，R3HTTP时间非Z。现已修复：失败事务退出后另事务撤销当前token（不反转治理/session锁序）；Location=/api/v1/me，须以新账号登录后读取；公共投影输出UTC Z。新增禁用后重新启用、头与实际时间/schema断言。jsonschema仅为dev依赖，所有本片已知HTTP操作成功及具名错误变体逐响应验证。补重复logout旧Cookie安全401、跨session CSRF、缺Origin且正确CSRF、Session全部非空/expiry/FK及writer/down真实阻塞交错。
+
+最终候选integration-contract.log：106项通过、实例停止/根清理true。此前103项证据不冒充最新测试。check初次strict metadata显式导出错误已修复，check-fixed通过；新增最后测试后重新执行final检查及构建。S4逐AU复核无已知必需缺项，S5保留冻结迁移/独立事务回归，暂不做无收益重构。S6待固定修复快照独立复审及最终检查。
+
+
+S6复审追加R1b：登录禁用B时不应撤销当前有效A会话。错误内部携带被禁用account_id，拒绝后撤销同时匹配token及该account_id；不对外输出该内部事实。新增A/B回归保留原禁用复活负例。目录自审发现新建account与工程基线account_config不一致，已把本轮两个应用文件放入既有account_config/application，删除本轮空package源码；业务行为不变，纳入最终复审。
+
+
+### S7最终交接
+
+S1–S7工程收口。107项真实PG通过，独立 `/root/project_storage_review` 复审R1/R1b/R2/R3全部闭合，无剩余阻断。独立run_id `rpb_test_14435076d2f94b6693556b9f28216a17`，实例停止/目录清理true；s3-fix2摘要 `549a7b2db5e7c4d45bb3bd518d97f5a68397b36bfb342a9d8a3b235b57eeb46d`，前后无漂移。check-final2通过ruff/format/mypy、82后端/66契约/3前端；build-final通过；document-checks无失效链接。S4逐AU复核及补测完成，S5无需额外抽象；S6修复、归位后独立107重跑及全门禁完成。
+
+当前设计/代码/自动验证/工程收口均限定完成；M-P0-01未触发。最终delivery/receipt只追加任务/项目状态和下一片规范记录，源码与独立受审一致。保留失败及反例证据，不把早先通过计数冒充最终覆盖。接续[task018](018-project-create-runtime.md)和浏览器闭环；无需逐片人工接受。HTTP测试由显式工厂启动，目前默认命令仍为无库骨架；业务演示入口将在闭环切片交付。

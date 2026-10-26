@@ -2,7 +2,7 @@
 
 import sqlalchemy as sa
 
-from rpb.adapters.account import metadata
+from rpb.adapters.account import metadata as metadata
 
 projects = sa.Table(
     "projects",

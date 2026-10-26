@@ -38,7 +38,7 @@
 
 ## 3. 待完成项
 
-2026-10-25用户已授权沿既定分期持续迭代至业务决定或下一里程碑。当前批次见[task016](../tasks/016-project-storage.md)：Project/Construction容器存储已工程收口（65项PG17通过，独立P2补测并复审闭合）；继而[task017账号注册登录](../tasks/017-account-authentication.md)与Project创建业务。用户已确认身份规则A，01/08已同步，未再有该项阻塞。下一业务里程碑为注册登录后创建并读取自己的Project，工程小任务不单设人工门禁。
+2026-10-25用户已授权沿既定分期持续迭代至业务决定或下一里程碑。当前批次见[task016](../tasks/016-project-storage.md)：Project/Construction容器存储已工程收口（65项PG17通过，独立P2补测并复审闭合）；[task017账号注册登录](../tasks/017-account-authentication.md)已工程收口：107项真实PG/HTTP通过，独立R1/R1b/R2/R3修复闭合，82后端/66契约/3前端及构建通过。开始[task018 Project创建与本人读取](../tasks/018-project-create-runtime.md)；UI闭环与M-P0-01仍未到。用户已确认身份规则A，01/08已同步，未再有该项阻塞。下一业务里程碑为注册登录后创建并读取自己的Project，工程小任务不单设人工门禁。
 
 [task015：B02 Account基础物理模型与首条迁移](../tasks/015-account-storage-migration.md)已按流程v1.7完成S1–S7工程收口，M-B02-01已于2026-10-25获用户限定接受（AC01–11及原最终基线）：用户授权选择首片，核对无既有B02执行单；A02持久化方向及已接受A10提供前置。Account基础物理模型/首条迁移、隔离PG17夹具已实现，27项真实存储/82后端/66契约/3前端、构建及干净安装通过；独立审查两项P2（降级竞态/管理员凭据残留）已修复、回归及独立复审通过。Project复合归属、Session、不可变知识修订、业务注册/治理及生产迁移均未交付，TRACK-007a/b/c及008b仍开放。
 
