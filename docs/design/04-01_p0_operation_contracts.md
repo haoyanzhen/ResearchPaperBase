@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.12
-更新日期：2026-10-25
+文档版本：v1.13
+更新日期：2026-10-26
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -109,6 +109,9 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 - `SecurityWrite`（字段见机器schema）；正超时/保留天数，重试次数 0–5；不得携带 P1 白名单/平台并发等字段。
 
 ### 2.2 操作表
+
+2026-10-26已决语义：LLM无enabled写入/读取业务字段；`ModelOption.available`仅在当前配置/凭据修订下该模型最小测试成功时为true，列表发现/手填不等于可用。新选择/新启动检查此条件；既有任务遵循08 §12.3。配置级connection_status不能替代逐模型事实。下面两个LLM测试入口及机器schema仍是待校准的旧字段覆盖：空请求不能表达待测model_id，结果尚不能完整表达测试对象修订。实现前须一次补齐个人/系统待测模型、修订绑定及结果投影，保留TaskRef/持久结果协议；本次只同步已决业务含义，不宣称机器覆盖已完成。参数扩展方向B的具体schema待调研收敛。
+
 
 | 方法/路径 | 用例 ID / FR | 请求 → 响应 | 前置与失败 |
 | --- | --- | --- | --- |
@@ -540,3 +543,6 @@ ProcessingView原status/text_source_kind/failure_reason/participates_in_knowledg
 MetadataCandidate增加必填`assessment:MetadataDraftAssessment`：`{confidence:number|null,missing_fields:string[],evidence:MetadataDraftEvidence[]}`。LLM草稿confidence必为0–1的估计值（不是已校准质量或自动确认门槛），其他提取无估计可null；missing_fields是该kind允许元数据字段名的去重集合，必须与实际缺项一致，不要求资料具备作者/年份。LLM字段缺省拒绝结构化结果，不能以默认1或空数组掩盖缺项。
 
 `MetadataDraftEvidence={field:string,source:SourceRef,document_asset_id:ID|null,file_revision:Revision|null,text_revision_id:ID|null,locator:EvidenceLocator|null}`；field只能是该kind元数据字段，文档身份与file_revision同空/同有；text/locator若存在须对应已保存输入文本和同一文件修订，可通过原授权文件入口定位，未具定位不能伪造。证据为当前补充实际使用的输入来源，不是正式EvidenceRef；provider元数据可无文件/文本定位，但必须指实际解析的SourceRef。无依据字段不编造证据，明确列入缺项或冲突供人工修正；所有引用限当前Project授权，不输出内部路径/依赖闭包。公开投影不能安全提供必要证据时不称已核验，保留安全缺项说明。
+
+
+本次修订（2026-10-26）：落实task025用户决定，P0个人/系统LLM无启停开关；发现/手填只提供待测项，当前配置/凭据修订下逐模型显式测试成功才可选择。扩展参数方向B另行调研，不将方案或机器缺项视为已实现。
