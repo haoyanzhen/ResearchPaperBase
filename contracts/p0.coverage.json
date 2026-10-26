@@ -1,6 +1,6 @@
 {
-  "version": "1.5",
-  "date": "2026-10-23",
+  "version": "1.6",
+  "date": "2026-10-24",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -631,19 +631,19 @@
       "id": "GAP-ERROR",
       "kind": "not-yet-transcribed",
       "scope": "per-operation HTTP error applicability and binding",
-      "reason": "A04 shared errors are typed; A05 five synchronous operations bind applicable error subsets. Other endpoint errors and complete TaskView remain unbound."
+      "reason": "A04 shared errors, A05 five synchronous subsets and B01 Project.Create subset are typed; other endpoint errors remain unbound."
     },
     {
       "id": "GAP-TASK",
       "kind": "not-yet-transcribed",
       "scope": "TaskHandle/TaskView, all asynchronous response operations",
-      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
+      "reason": "A07 task010 design accepted; machine transcription and runtime verification remain open."
     },
     {
       "id": "GAP-CONFIRM",
       "kind": "not-yet-transcribed",
       "scope": "ConfirmationPreview and operations returning confirmations",
-      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
+      "reason": "A07 task010 design accepted; machine transcription and runtime verification remain open."
     },
     {
       "id": "GAP-REMAINING",
@@ -832,9 +832,8 @@
       ]
     },
     "Project.Create": {
-      "status": "request-success-partial",
+      "status": "request-success-errors-partial",
       "gaps": [
-        "GAP-ERROR",
         "GAP-RUNTIME"
       ]
     },
@@ -1634,7 +1633,7 @@
       "status": "partial",
       "typed_operations": {
         "Project.List": "request-success-partial",
-        "Project.Create": "request-success-partial"
+        "Project.Create": "request-success-errors-partial"
       },
       "remaining": []
     },
@@ -2699,5 +2698,45 @@
       "A08 source discovery in full ingestion/detail DTOs",
       "runtime authorization, isolation, persistence, UI and end-to-end acceptance"
     ]
+  },
+  "project_create": {
+    "operation": "Project.Create",
+    "task": "task014",
+    "error_codes": {
+      "400": [
+        "VALIDATION_BAD_REQUEST"
+      ],
+      "401": [
+        "AUTH_REQUIRED",
+        "AUTH_SESSION_INVALID",
+        "AUTH_ACCOUNT_DISABLED"
+      ],
+      "403": [
+        "PERMISSION_CSRF_REJECTED"
+      ],
+      "404": [
+        "PERMISSION_RESOURCE_UNAVAILABLE"
+      ],
+      "409": [
+        "STATE_IDEMPOTENCY_CONFLICT"
+      ],
+      "413": [
+        "VALIDATION_PAYLOAD_TOO_LARGE"
+      ],
+      "415": [
+        "VALIDATION_UNSUPPORTED_FORMAT"
+      ],
+      "422": [
+        "VALIDATION_FIELD_INVALID",
+        "VALIDATION_UNKNOWN_FIELD"
+      ],
+      "429": [
+        "STATE_RESOURCE_LIMIT"
+      ],
+      "500": [
+        "STORAGE_INTERNAL_FAILURE"
+      ]
+    },
+    "scope": "Wire request/success/error binding only; no runtime, persisted command/event payload or HTTP application implemented."
   }
 }

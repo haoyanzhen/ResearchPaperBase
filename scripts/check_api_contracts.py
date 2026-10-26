@@ -92,6 +92,31 @@ def check(spec, coverage):
                 assert schema == {'allOf': expected}, 'material error binding drift'
             assert op['operationId'] in coverage['material_policy']['operations'], 'material coverage drift'
             assert coverage['operation_coverage'][op['operationId']]['status'] == 'request-success-errors-partial'
+    # B01 operation binding guard; expected semantic examples live in requirement tests.
+    create = spec['paths']['/projects']['post']
+    assert create.get('x-contract-slice') == 'project-create-b01', 'Project.Create binding missing'
+    codes = coverage['project_create']['error_codes']
+    assert create.get('x-error-codes') == codes, 'Project.Create error inventory drift'
+    assert set(create['responses']) == {'201'} | set(codes), 'Project.Create status drift'
+    assert coverage['operation_coverage']['Project.Create'] == {
+        'status': 'request-success-errors-partial', 'gaps': ['GAP-RUNTIME']}, 'Project.Create coverage drift'
+    for status, response in create['responses'].items():
+        assert response.get('headers', {}).get('Cache-Control') == {
+            'required': True, 'schema': {'type': 'string', 'const': 'no-store'}}, 'Project.Create cache drift'
+        if status != '201':
+            assert response['content']['application/json']['schema'] == {'allOf': [
+                {'$ref': '#/components/schemas/ErrorEnvelope' + status},
+                {'properties': {'error': {'properties': {'code': {'enum': codes[status]}}}}},
+            ]}, 'Project.Create error binding drift'
+    success = create['responses']['201']
+    assert success['headers']['Location'].get('required') is True, 'Project.Create Location drift'
+    assert success['content']['application/json']['schema']['properties']['meta'] == {
+        '$ref': '#/components/schemas/ProjectCreateMeta'}, 'Project.Create expiry binding drift'
+    assert spec['components']['schemas']['ProjectCreateMeta']['allOf'] == [
+        {'$ref': '#/components/schemas/IdempotentMeta'},
+        {'properties': {'idempotency_expires_at': {'$ref': '#/components/schemas/Time'}}},
+    ], 'Project.Create expiry schema drift'
+    assert create['responses']['429']['headers']['Retry-After'] == spec['components']['responses']['PublicError429']['headers']['Retry-After'], 'Project.Create Retry-After drift'
     assert sorted(ids) == sorted(coverage['typed_operations'] + coverage['request_only_operations']), 'coverage/spec operation mismatch'
     assert len(coverage['row_coverage']) == len(coverage['source_rows'])
     for index, row in enumerate(coverage['row_coverage']):

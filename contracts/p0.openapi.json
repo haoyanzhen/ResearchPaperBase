@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
   },
   "servers": [
@@ -1683,7 +1683,10 @@
               "type": "string",
               "minLength": 16,
               "maxLength": 128,
-              "pattern": "^[\\x20-\\x7e]+$"
+              "pattern": "^[\\x20-\\x7e]+$",
+              "not": {
+                "pattern": "[^\\x20-\\x7e]"
+              }
             }
           }
         ],
@@ -1692,6 +1695,7 @@
             "description": "Success; business prerequisites and runtime checks remain mandatory.",
             "headers": {
               "Cache-Control": {
+                "required": true,
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1701,7 +1705,8 @@
                 "schema": {
                   "type": "string"
                 },
-                "description": "Created resource URL."
+                "description": "Created resource URL.",
+                "required": true
               }
             },
             "content": {
@@ -1713,7 +1718,7 @@
                       "$ref": "#/components/schemas/ProjectView"
                     },
                     "meta": {
-                      "$ref": "#/components/schemas/IdempotentMeta"
+                      "$ref": "#/components/schemas/ProjectCreateMeta"
                     }
                   },
                   "required": [
@@ -1725,8 +1730,376 @@
               }
             }
           },
-          "default": {
-            "description": "Error envelope and status mapping: 04 section 5. Safe details/recovery vocabulary not yet fully typed; see GAP-ERROR."
+          "400": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope400"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "VALIDATION_BAD_REQUEST"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope401"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "AUTH_REQUIRED",
+                                "AUTH_SESSION_INVALID",
+                                "AUTH_ACCOUNT_DISABLED"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope403"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "PERMISSION_CSRF_REJECTED"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope404"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "PERMISSION_RESOURCE_UNAVAILABLE"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope409"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "STATE_IDEMPOTENCY_CONFLICT"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope413"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "VALIDATION_PAYLOAD_TOO_LARGE"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope415"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "VALIDATION_UNSUPPORTED_FORMAT"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope422"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "VALIDATION_FIELD_INVALID",
+                                "VALIDATION_UNKNOWN_FIELD"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope429"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "STATE_RESOURCE_LIMIT"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "required": true,
+                "description": "Delay seconds before considering original request retry; does not authorize business rerun.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Safe public error; applicability follows 04 and operation preconditions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope500"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "STORAGE_INTERNAL_FAILURE"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -1738,6 +2111,42 @@
               }
             }
           }
+        },
+        "x-contract-slice": "project-create-b01",
+        "x-error-codes": {
+          "400": [
+            "VALIDATION_BAD_REQUEST"
+          ],
+          "401": [
+            "AUTH_REQUIRED",
+            "AUTH_SESSION_INVALID",
+            "AUTH_ACCOUNT_DISABLED"
+          ],
+          "403": [
+            "PERMISSION_CSRF_REJECTED"
+          ],
+          "404": [
+            "PERMISSION_RESOURCE_UNAVAILABLE"
+          ],
+          "409": [
+            "STATE_IDEMPOTENCY_CONFLICT"
+          ],
+          "413": [
+            "VALIDATION_PAYLOAD_TOO_LARGE"
+          ],
+          "415": [
+            "VALIDATION_UNSUPPORTED_FORMAT"
+          ],
+          "422": [
+            "VALIDATION_FIELD_INVALID",
+            "VALIDATION_UNKNOWN_FIELD"
+          ],
+          "429": [
+            "STATE_RESOURCE_LIMIT"
+          ],
+          "500": [
+            "STORAGE_INTERNAL_FAILURE"
+          ]
         }
       }
     },
@@ -14356,6 +14765,21 @@
           }
         ],
         "description": "Completed synchronous classification mutation: earliest deduplication expiry is required and non-null. Actual retention is a runtime obligation."
+      },
+      "ProjectCreateMeta": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/IdempotentMeta"
+          },
+          {
+            "properties": {
+              "idempotency_expires_at": {
+                "$ref": "#/components/schemas/Time"
+              }
+            }
+          }
+        ],
+        "description": "Synchronous completed creation/replay must disclose a non-null actual retention expiry; >=24h and persisted equality require runtime checks."
       }
     },
     "responses": {

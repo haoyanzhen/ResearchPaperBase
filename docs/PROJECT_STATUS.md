@@ -1,6 +1,6 @@
 # 项目进度与待完成项
 
-文档版本：v1.58
+文档版本：v1.60
 更新日期：2026-10-24
 适用项目大版本：v1
 
@@ -58,7 +58,7 @@ FR-017已新增[task013规划](../tasks/013-human-content-protection-plan.md)，
 
 | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
 | --- | --- | --- | --- | --- |
-| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | A04已人工接受；其余机器契约/应用验收待完成 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证并获2026-10-23用户限定接受，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)已限定修复并复审；[合并态验证](workorders/task006_p2_fixes_2026-10-22.md)45项契约测试及结构检查通过；A05五个同步操作的错误子集已绑定；其余逐端点错误响应绑定及机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | A04及B01 Project.Create限定机器交付已接受；其余契约/应用验收待完成 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证并获2026-10-23用户限定接受，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)已限定修复并复审；[合并态验证](workorders/task006_p2_fixes_2026-10-22.md)45项契约测试及结构检查通过；A05五个同步操作的错误子集已绑定；其余逐端点错误响应绑定及机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
 | TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | A09首版P0方案已限定恢复；Memory仍延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
 | TRACK-006 | 内部安全参考的版本管理与受控交付（D07） | 延期 | 工作单 D07 | 明确存储、读者和同步机制；不在本表复制内部正文 |
 | TRACK-007a | Project资产、上下文与版本快照字段映射 | 逻辑映射已细化；物理字段待落实 | [07 §3–4](design/07_data_persistence.md#3-逻辑记录与字段映射) | 本轮定义最小持久事实/归属与约束；新核心建立后逐项落实实际表字段、索引和测试，不能将逻辑表当作已迁移 |
@@ -171,3 +171,7 @@ task007修复收尾（2026-10-23）：并行资料契约覆盖补充后，最终
 本次修订 v1.57（2026-10-24）：用户授权推进A10，核对已有任务与交付范围；复用[task005](../tasks/005-engineering-skeleton.md) SK-01–09工程切片，已补可执行验收交接，当前82后端/58契约/3前端/2浏览器及构建/干净安装/wheel/空迁移历史通过；独立审查两项文档意见已修正复审闭合，S1–S3完成，当前S4等待人工审核，S5–S7未开始。task004仍为Project创建示例，task009/013仍为独立规划；A10是逐切片类别，本次不完成全项目A10、不启动新业务实现。[本轮审核包](workorders/task005_a10_review_2026-10-24.md)维护当前证据，既有精简代码与并行改动保留。
 
 本次修订 v1.58（2026-10-24）：用户明确接受task005本轮A10工程骨架限定交付，绑定197文件delivery基线；S5逐SK覆盖复核无新增缺口，S6无需修改，S7文档/差异/完整快照检查通过。仅更新任务、审核包与项目状态，代码/测试/规范未变，原独立复审结论及运行证据继续有效。当前授权队列完成，业务实现和全量A10仍按独立任务推进。
+
+本次修订 v1.59（2026-10-24）：用户授权推进B01并确定首片，建立[task014 Project.Create](../tasks/014-project-create-machine-contract.md)，仅补机器请求边界、201元信息/头及适用错误、契约回归与漂移检查。S1–S3完成：66项契约及结构检查通过，独立复审无剩余阻断项；当前S4等待人工审核，兼容门禁仅POST /projects差异退出1保留供接受，[审核包](workorders/task014_b01_review_2026-10-24.md)记录范围与证据；不启动Project/账号/持久化应用，不关闭TRACK-004及012运行范围，其他B类未自动授权。
+
+本次修订 v1.60（2026-10-24）：用户明确接受[task014](../tasks/014-project-create-machine-contract.md)本轮B01 Project.Create限定机器交付及所列POST /projects兼容差异。S5逐PC复核无新增缺口，S6无需修改，S7文档/结构/快照及接受基线兼容检查通过，S1–S7完成；原入场兼容退出1按用户决定限定接受并保留历史。机器产物/测试不变，66项契约证据及独立复审仍有效；[收口记录](workorders/task014_b01_review_2026-10-24.md#人工接受后的s5s7执行记录)。真实HTTP、身份/CSRF、持久去重和原子创建未实现，TRACK-004/012运行范围不关闭，其他B类未自动启动。

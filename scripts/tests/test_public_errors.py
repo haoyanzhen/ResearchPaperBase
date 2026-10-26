@@ -111,7 +111,19 @@ class PublicErrorTests(unittest.TestCase):
   for name,schema in old['components']['schemas'].items(): self.assertEqual(schema,SCHEMAS[name],name)
   for path,item in old['paths'].items():
    for method,op in item.items():
-    updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']; self.assertEqual(op,updated)
+    updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']
+    if (path, method) == ('/projects', 'post'):
+     # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.
+     # Normalize only reviewed deltas, then retain the full historical operation assertion.
+     del updated['x-contract-slice']; del updated['x-error-codes']
+     next(p for p in updated['parameters'] if p['name']=='Idempotency-Key')['schema'].pop('not')
+     for status in ('400','401','403','404','409','413','415','422','429','500'):
+      del updated['responses'][status]
+     updated['responses']['default']=copy.deepcopy(op['responses']['default'])
+     success=updated['responses']['201']
+     del success['headers']['Cache-Control']['required']; del success['headers']['Location']['required']
+     success['content']['application/json']['schema']['properties']['meta']={'$ref':'#/components/schemas/IdempotentMeta'}
+    self.assertEqual(op,updated)
   self.assertEqual(SPEC_DATA['components']['responses']['PublicError429']['headers']['Retry-After']['required'],True)
 
 if __name__=='__main__': unittest.main()

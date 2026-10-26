@@ -1,7 +1,7 @@
 # API 附录：机器契约、覆盖与变更规则
 
-文档版本：v1.5
-更新日期：2026-10-23
+文档版本：v1.6
+更新日期：2026-10-24
 适用项目大版本：v1
 
 ## 1. 权威与覆盖边界
@@ -67,3 +67,7 @@ A05限定交付见[任务007审核包](../workorders/task007_a05_review_2026-10-
 
 Task目标/等待引用、ConfirmationPreview影响/保留联合及完整事件信封/citation设计已见04-01 §1.1–1.2、04-02 §2–3，新增字段尚未机器转写，待task010人工审核。现有JSON未修改；覆盖清单仅更新经差异审查的源指纹与缺项说明。设计闭合不消除机器或运行缺口；不提高typed_operations覆盖。A06接缝已限定接受，A05人工接受仍待记录，A04已限定接受；前述历史记录保留原时点。
 
+
+## B01 首个机器转写切片（task014）
+
+Project.Create按04 §3/5/7及04-01 §3补具名成功meta和适用错误/响应头，具体字段唯一见JSON。[task014](../../tasks/014-project-create-machine-contract.md)及[审核包](../workorders/task014_b01_review_2026-10-24.md)给出需求反例与兼容方向；并未生成应用或SDK。当前仍为47个请求/成功局部操作、40个仅请求、5/6 SSE payload；新增ProjectCreateMeta后173schema，源行131不变。此操作提高为request-success-errors-partial，运行GAP保留；其他操作覆盖不变。前文A07待审核为历史时点，task010已限定接受，机器转写仍待分片。
