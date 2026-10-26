@@ -1,9 +1,11 @@
 # FR Reference
 
-文档版本：v1.6
-更新日期：2026-10-19
+文档版本：v1.7
+更新日期：2026-10-21
 来源文档：`01_functional_requirements.md`  
 用途：作为功能需求编号、优先级和编号重整关系的参考中间文件。若本文与 `01_functional_requirements.md` 冲突，以 `01_functional_requirements.md` 为准。
+
+本轮只核对首批任务涉及的账号/Project、补充P0分期及版本采用入口；其余派生映射仍按TRACK-010a逐项核验，不能把“初版映射”当作完整验收追踪。
 
 ## 1. 功能需求清单
 
@@ -22,7 +24,7 @@
 | FR-011 | 基础层-项目工作台 | Project Workspace 内部入口、框架与对象切换 | P0 | 管理 Project 状态展示、Construction Workspace 入口、Run/Session 列表、对象打开/切换、主体流程栏和信息面板 |
 | FR-012 | 基础层-项目工作台 | Project 知识资产面板 | P0 | 只读查看 Project 论文库、Project 资料库、文件访问入口、Graph 图谱和 Knowledge Version |
 | FR-013 | 基础层-项目工作台 | Workspace 上下文管理与恢复 | P0 | P0 恢复上次打开对象、基础面板状态和输入草稿；更细粒度的滚动、日志和步骤落点恢复作为 P1 增强 |
-| FR-014 | 基础层-项目工作台 | Run/Session 实例操作 | P0 | P0 提供进入、创建、继续和历史查看；复制、重跑、归档、删除为 P1 受控增强 |
+| FR-014 | 基础层-项目工作台 | Run/Session 实例操作 | P0 | P0提供进入、创建、继续、历史查看及FR-018版本采用专用创建；通用复制、重跑、归档、删除为P1受控增强 |
 | FR-015 | 基础层-项目工作台 | Run/Session 状态展示与运行控制 | P0 | P0 查看状态、阶段、错误、等待项、日志摘要并支持取消；暂停、恢复、重试为 P1 受控增强 |
 | FR-016 | 基础层-项目工作台 | 流程式 Agent 步骤容器 | P0 | 承载构建、综述等流程式 Agent 的当前步骤页面、步骤状态、步骤动作和步骤结果查看 |
 | FR-017 | 基础层-项目工作台 | 内容修改保护基座 | P0 | 提供跨 Agent 的通用内容保护规则，区分 Agent 草稿、人工确认和人工修改状态，防止静默覆盖 |
@@ -31,7 +33,7 @@
 | FR-020 | 构建模式 | 检索词生成与构建检索词管理 | P0 | 管理 Project 检索词、检索词级数据源策略和自动更新开关 |
 | FR-021 | 构建模式 | 多源论文与资料检索 | P0 | 手动 Run 使用本次 selected 检索词，自动 Run 使用自动更新检索词，并按检索词级数据源策略检索论文和 Project 资料 |
 | FR-022 | 构建模式 | 论文与资料去重、评分与筛选 | P0 | 对候选论文和 Project 资料去重、评分、筛选有效项，支持用户确认与调整 |
-| FR-023 | 构建模式 | 论文与资料补充和手动上传 | P1 | 用户通过 PDF、DOI、arXiv ID、URL 或支持格式文件补充论文和 Project 资料 |
+| FR-023 | 构建模式 | 论文与资料补充和手动上传 | P0 | P0单条论文补充和支持格式单文件资料上传；P1批量/数据表，P2多媒体 |
 | FR-024 | 构建模式 | 多格式文件获取与文本解析 | P0 | 自动下载或接收上传文件，解析可用文本，失败时按类型降级或标记不可用 |
 | FR-025 | 构建模式 | 论文与资料 AI 分析生成 | P0 | 为论文生成严格结构化分析，并为非论文资料生成轻量重要摘要 |
 | FR-026 | 构建模式 | 知识库入库与图谱构建 | P0 | 将有效论文和参与知识构建的 Project 资料写入 Project 知识库、向量库和知识图谱 |
@@ -39,7 +41,7 @@
 | FR-028 | 深度研究模式 | Graph-RAG 对话式研究 | P0 | 基于 Project 知识库进行多轮流式研究对话 |
 | FR-029 | 深度研究模式 | 深度研究输出倾向设置 | P1 | 提供输出倾向设置按钮，用户可通过选择不同倾向控制整体对话风格 |
 | FR-030 | 深度研究模式 | 对话历史、总结文件与导出 | P1 | 保存研究过程，生成总结文件并支持导出 |
-| FR-031 | 深度研究模式 | 研究引用与图谱跳转 | P1 | 从对话引用跳转到论文详情、Project 资料详情、文件访问入口和基础层 Graph 图谱 |
+| FR-031 | 深度研究模式 | 研究引用与图谱跳转 | P1 | 引用/图谱增强为P1；FR-012/028/033承接的基础引用展示和跳转仍为P0，按正文子条目验收 |
 | FR-032 | 主题综述模式 | 综述架构设计 | P0 | Agent 生成综述主题、范围和章节架构，用户审查确认 |
 | FR-033 | 主题综述模式 | 章节撰写、引用与修订 | P0 | Agent 逐章撰写并引用 Project 论文库和 Project 资料库，用户审查、编辑或重试 |
 | FR-034 | 主题综述模式 | 综述汇总、终审与稿件下载 | P0 | 汇总章节，执行终审，生成摘要、关键词、参考文献和当前已保存稿及单篇 Markdown 下载 |
@@ -146,7 +148,7 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
 | FR-020 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA | 初版映射 |
 | FR-021 | P0 | UI | API | App | Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
 | FR-022 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA | 初版映射 |
-| FR-023 | P1 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
+| FR-023 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
 | FR-024 | P0 | UI | API | App | Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
 | FR-025 | P0 | UI | API | App | Agent/Knowledge | Data | Security | QA | 初版映射 |
 | FR-026 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
@@ -189,7 +191,7 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
 | FR-020 | P0 | `06_agent_knowledge_services.md`, `05_application_use_cases.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `07_data_persistence.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
 | FR-021 | P0 | `06_agent_knowledge_services.md`, `05_application_use_cases.md` | `04_api_contracts.md`, `07_data_persistence.md`, `10_operations_deployment.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
 | FR-022 | P0 | `06_agent_knowledge_services.md`, `02_domain_core.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `07_data_persistence.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
-| FR-023 | P1 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md` | `08_security_permissions.md`, `09_quality_observability.md`, `10_operations_deployment.md` | 初版映射 |
+| FR-023 | P0 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md` | `08_security_permissions.md`, `09_quality_observability.md`, `10_operations_deployment.md` | 初版映射 |
 | FR-024 | P0 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `10_operations_deployment.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
 | FR-025 | P0 | `06_agent_knowledge_services.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `07_data_persistence.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
 | FR-026 | P0 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `02_domain_core.md`, `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `10_operations_deployment.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
@@ -217,3 +219,5 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
 本次修订 v1.5（2026-10-16）：同步R2-A当前稿下载，取消独立导出版本入口；通用导出仍P1。
 
 本次修订（2026-10-19）：同步数据设计、测试用例入口及历史归档引用；不修改业务语义。
+
+本次修订 v1.7（2026-10-21）：按01修正FR-023单条/单文件P0及相关分期映射，补FR-014版本采用与FR-031基础引用边界；不修改需求。

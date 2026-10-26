@@ -2,8 +2,8 @@
 
 Author: haoyanzhen
 Date:   2026-06-01
-Updated: 2026-10-16
-Document version: v1.0
+Updated: 2026-10-22
+Document version: v1.1
 
 This file introduce the main aim and structure of this project.
 
@@ -46,9 +46,21 @@ Accomplish a web app as a deep search and research scholar workspace.
 - A deferred item or backlog entry is not execution authorization. If additional scope is needed, explain it and pause only the dependent work while continuing work within scope.
 - When a decision is needed, present: the question, available evidence, options and their effects, the recommended option, and the work blocked by the decision.
 
+## Codex delivery principles
+
+- Humans own product decisions and acceptance; Codex owns implementation quality, requirement-oriented tests, verification, and a reviewable delivery within the authorized scope.
+- Deliver small slices defined by observable behavior, including rejection and failure paths. Make routine engineering choices independently and explain material tradeoffs; do not expand scope through incidental refactoring or backlog work.
+- Preserve existing working-tree changes. Bind review and verification to the actual artifact, including relevant uncommitted and untracked files, rather than HEAD alone.
+- Self-review the diff, requirement coverage, critical boundaries, and execution evidence before requesting human review. Fix independently resolvable defects first; do not hand basic debugging or missing verification to the reviewer.
+- Keep design completion, code completion, automated verification, and human acceptance distinct. Never infer human approval from passing checks or claim overall acceptance from a partial slice.
+- Human review procedure is maintained in the [implementation entry](docs/IMPLEMENTATION_ENTRY.md); task-specific scope, traceability, evidence, and decisions are recorded using the [task template](tasks/example.md), without duplicating those procedures here.
+
 ## Verification requirements
 
-- New or changed business behavior requires corresponding automated verification. Bug fixes should add regression tests that reproduce the defect.
+- Codex must write requirement-oriented test cases for every testable requirement and ensure they pass. Apply this obligation to every requirement in the authorized delivery scope, including affected existing requirements; track remaining project requirements explicitly without treating backlog as execution authorization.
+- Derive test inputs, expected observable results, and prohibited side effects from requirements and approved rules, not from the implementation. Maintain traceability from each requirement to scenarios, executable tests, and current execution evidence; test counts or code coverage alone do not prove requirement coverage.
+- Cover applicable success, rejection, failure, boundary, duplicate, concurrency, authorization, version-binding, and human-content-protection cases. Bug fixes require a regression test that reproduces the defect. Exercise real persistence and deterministic interleavings where the requirement depends on commits or races.
+- Run all required cases for the delivery and affected regressions, repair defects, and rerun until they pass before declaring verification complete. Do not remove or weaken assertions, skip required cases, or change requirements merely to obtain a passing result. If a requirement is ambiguous or not yet executable, record the specific gap and resolve it through the existing decision or dependency process; it is not covered or passed.
 - Run checks relevant to the change. If verification cannot be executed, record the reason, unverified scope, and follow-up commands; do not report acceptance as passed.
 - For documentation-only changes, check references, versions, and consistency; unrelated application tests are not required.
 - Database tests must explicitly use an isolated test environment and must not fall back to a business database configuration. Verify that test writes, including commits inside services, remain isolated and can be cleaned up.
@@ -64,7 +76,7 @@ For each task:
 1. Restate the goal briefly.
 2. Identify the files that need to change.
 3. Make the smallest sufficient change.
-4. Add or update automated verification for changed business behavior; use reference, version, and consistency checks for documentation-only changes.
+4. Apply the verification requirements above to all in-scope testable requirements; use reference, version, and consistency checks for documentation-only changes.
 5. Run relevant checks and report actual results, or explain why they could not run and what remains unverified.
 6. Summarize the diff.
 7. Explain remaining risks or unknowns.

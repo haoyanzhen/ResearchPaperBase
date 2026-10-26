@@ -1,6 +1,6 @@
 # Layer Design File Mapping
 
-文档版本：v1.10
+文档版本：v1.11
 更新日期：2026-10-21
 依据文档：`00_layers.md`  
 用途：保存当前 `docs/design/` 目录中实际存在的分层设计与设计文件对应表，供其他设计文档引用，避免引用已删除或已改名的旧文件。
@@ -10,6 +10,7 @@
 | 分层/设计域 | 主要设计文件 | 协作设计文件 | 说明 |
 | --- | --- | --- | --- |
 | 分层总览与文件映射 | `00_layers.md`、`00-00_layer_design_file_mapping.md` | `README.md` | `00_layers.md` 定义分层原则；`00-00` 保存层到文件的对应表；`README.md` 作为目录入口。 |
+| 工程基线 | [00-01_engineering_baseline.md](00-01_engineering_baseline.md) | `00_layers.md`、`05-01_internal_module_contracts.md`、`07_data_persistence.md`、`10_operations_deployment.md` | 首版具体工具/目录/运行与隔离选择，未创建工程，不改变业务规则。 |
 | Functional Requirements / 需求与验收 | `01_functional_requirements.md`、`01-01-FR-reference.md` | [退役归档](../archive/design_retirement_2026-10-19/README.md) | FR 是需求含义和验收标准的最高依据；01-01 仅为派生速查，不定义独立需求规则；缺口决策文档用于追溯和审查。 |
 | Domain Core / 领域核心 | [02_domain_core.md](02_domain_core.md)、[02-01-domain-reference.md](02-01-domain-reference.md)、[02-02_construction_versioning_appendix.md](02-02_construction_versioning_appendix.md)、[02-03_construction_assets_appendix.md](02-03_construction_assets_appendix.md)、[02-04_run_recovery_appendix.md](02-04_run_recovery_appendix.md) | `01_functional_requirements.md`、`07_data_persistence.md` | 主文定义核心边界、接口和领域事件；02-02 集中知识库版本规则，02-03 集中构建资产规则，02-04 集中运行恢复规则；附件与主文同规格、同规范效力，02-01 仅作派生速查，不定义 UI/API/数据库字段细节。 |
 | UI / Workspace | [03_ui_workspace.md](03_ui_workspace.md)、[03-01_ui_system_pages_appendix.md](03-01_ui_system_pages_appendix.md)、[03-02_ui_construction_appendix.md](03-02_ui_construction_appendix.md)、[03-03_ui_research_review_appendix.md](03-03_ui_research_review_appendix.md)、[03-04_ui_shared_interactions_appendix.md](03-04_ui_shared_interactions_appendix.md) | `01_functional_requirements.md`、`02_domain_core.md` 及领域附录、`04_api_contracts.md`、`08_security_permissions.md` | 主文定义全局导航、Shell 布局组合和跨模块约束；附录分别维护系统页面、构建、研究与综述、共用交互的详细规范。主文与附录具有相同 UI 规范效力；业务规则以 01/02 为准。 |
@@ -54,3 +55,5 @@
 本次修订 v1.9（2026-10-20）：登记08-01独立专题，不改变分层职责。
 
 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
+
+本次修订 v1.11（2026-10-21）：登记00-01工程基线，当前任务与审核通过实施入口定位。

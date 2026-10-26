@@ -1,7 +1,7 @@
 # API 附录：异步任务、事件传输与文件
 
-文档版本：v1.5
-更新日期：2026-10-19
+文档版本：v1.10
+更新日期：2026-10-23
 适用项目大版本：v1
 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
 
@@ -23,8 +23,9 @@
 | 字段 | 类型与含义 |
 | --- | --- |
 | `task_id` | UUID；一次受理执行的稳定标识 |
-| `project_id` | UUID 或 null；Project 操作必须有值，个人/系统配置测试可为空 |
-| `target` | `{type:string,id:UUID}`；业务目标，例如 construction_run、research_response_attempt、review_chapter、review_final、supplement、user_llm_config；枚举由操作契约限定，客户端不得自行新增 |
+| `project_id` | UUID 或 null；Project操作必须有值，配置与账号治理任务按§2.1.1允许为空 |
+| `knowledge_version_id` | ID或null，必填；Research/Review为创建时固定版，其余为null；与事件绑定一致 |
+| `target` | `{type:string,id:UUID}`；封闭目标及操作映射见§2.1.1；客户端不得自行新增 |
 | `attempt_id` | UUID；本次执行尝试身份，不因网络重订阅改变 |
 | `execution_status` | `queued / running / waiting_user / succeeded / failed / cancelled`；仅为技术执行投影 |
 | `status_url` | `/api/v1/tasks/{task_id}` |
@@ -43,7 +44,7 @@ TaskView 在上述字段上增加：
 | `business_state` | `{target_type,target_id,state,revision}` 或 null；明确归属对象，不把 Task 状态传播为 Session 或整个 Review 状态 |
 | `waiting_items` | 等待项引用数组，沿用业务契约的确认身份、依据修订与允许动作；无等待项时为空 |
 | `cancel_requested_at` | RFC3339 时间或 null；技术取消请求事实，不新增领域 cancelling 状态 |
-| `error` | 主文定义的安全错误对象或 null；不得返回密钥、内部路径、完整日志 |
+| `error` | 机器契约TaskError（受约束的PublicError）或 null；语义见04 §5.1；不得返回密钥、内部路径、完整日志 |
 | `warnings` | 可展示风险/降级信息数组，元素 `{code,message}` |
 | `event_cursor` | 不透明游标；对应本次快照已包含的最后一个事件位置 |
 | `partial_result_ref` | `{type,id,url}` 或 null；本 Task 已保存的累计输出读取引用，可在任务运行或失败/取消后恢复显示；不代表已采纳或成功内容 |
@@ -54,11 +55,58 @@ TaskView 在上述字段上增加：
 
 配置连接测试及模型刷新任务的 `result_refs` 指向 `GET /tasks/{task_id}/result`（`Task.ReadConnectionResult`）：200 的 data 为 `{result_type:"connection_test",payload:ConnectionTest}`，ConnectionTest 结构见04-01。未完成返回409 `STATE_OPERATION_NOT_ALLOWED`，无此结果类型返回安全404；执行失败优先读取TaskView.error。此路由只承接配置测试结果，不作为可写通用业务结果入口。其他任务通过其业务结果URL读取具名投影。
 
+### 2.1.1 Task目标、定位与结果引用（A07设计）
+
+本节新增结构尚未机器转写，字段由本文维护；现有BusinessState/ResultRef/StatusPayload等机器类型继续由JSON维护，本节补跨字段约束。Task目标一经受理不能因阶段变化、重连或生成新结果而换ID；生成前尚无内容对象时使用已存在的父对象，不生成占位正文。任务的技术attempt_id与target.id所属业务身份分别校验，不按字符串恰好相同推导关系。
+
+| target.type / id含义 | 产生操作（04-01具名用例） | Project / 业务版本 | 取消与结果定位 |
+| --- | --- | --- | --- |
+| user_llm_config / config_id | Config.TestLLM、RefreshModels | project_id=null，无KV | 无公开取消；结果走Task.ReadConnectionResult |
+| user_data_source_config / config_id | Config.TestSource | null，无KV | 同上 |
+| system_llm_config / config_id | Admin.TestSystemLLM、RefreshSystemModels | null，无KV，当前管理员 | 同上，不泄漏密钥 |
+| system_data_source_config / config_id | Admin.TestSystemSource | null，无KV，当前管理员 | 同上 |
+| system_smtp_config / 服务端稳定配置身份 | Admin.TestSMTPConnection | null，无KV，当前管理员 | 定位既有单例配置入口，不新增按ID路由；连接/认证，不发送邮件 |
+| account / user_id | Admin.DeleteUser在返回异步CommandResult时 | null，无KV，仅对应治理权限 | 无通用取消；只读治理结果安全摘要，不读该用户Project内容 |
+| project / project_id | Project.Cleanup等既定操作在返回异步CommandResult时 | 当前Project，无固定KV | 无通用取消；原Project状态/安全结果，删除后不可读私人内容 |
+| construction_workspace / Workspace身份 | Construction.GenerateTerms | 当前Project，无KV | 无通用取消；原检索词列表及实际生成词 |
+| supplement / supplement_id | Construction.SubmitSupplement、UploadSupplement | 当前Project，无KV，无需Run | 无补充重跑/取消新路由；补充详情及静态/解析结果 |
+| construction_run / run_id | Construction.Start、ClearAssociations、AppendSearchTerms、ScoreCandidates及步骤继续 | 当前Project；顶层knowledge_version_id=null | 既有Construction取消；Run详情及已提交结果，基线/发布版本从具名业务投影读取 |
+| construction_candidate / candidate_id | Construction.GenerateAnalysis | 当前Project、所属Run；顶层KV=null | 仅原操作允许的Run级取消，不能暗示只取消候选；候选详情 |
+| research_response_attempt / 业务回复attempt_id | Research.SendMessage、ContinueWithoutEvidence | 当前Project、Session固定KV | 仅原回复取消；attempt详情、已保存回复/输出 |
+| review_run / run_id | Review.Create、AdoptVersion、首次Finalize（无终稿身份时） | 当前Project、Run固定KV | 既有Review指定Task取消；Run详情及后续实际产物引用 |
+| review_outline / 所属run_id | Review.GenerateOutline、ReviewOutline | 当前Project、Run固定KV；大纲为Run内单例 | 同上；outline详情，id使用父Run身份且type明确，不虚构大纲UUID |
+| review_chapter / chapter_id | Review.GenerateChapter、ReviewChapter | 当前Project、Run固定KV | 同上；chapter详情 |
+| review_final / final_id | Review.ReviewFinal、RegenerateFinalComponents、重汇总到已有终稿 | 当前Project、Run固定KV | 同上；当前final详情；finalize目标选择在受理时固定 |
+
+`TaskView.target_location:TaskTargetLocation`为必填只读补充：`{parent_type:project|construction_run|research_session|review_run|null,parent_id:ID|null,read_url:string|null}`。parent两字段同时为空或同时非空；需Run/Session祖先的目标必须提供对应父身份，Workspace/补充/Project子范围以Project作父，配置/账号无父。read_url由服务端生成，使用04-01现有读取入口（singleton/list也可），只在当前主体合法可读时非空；它不是外部URL、任意路由分发或授权。TaskHandle保持轻量，客户端用status_url取得完整定位；SSE不另外复制此定位，可刷新TaskView。
+
+配置单例/Workspace的稳定身份由既有对象注册记录提供，不能由客户端指定，也不要求增加公开ID读路由。账号治理Task的project_id=null是既有账号级治理的表达，不给予管理员Project权限；返回安全治理摘要，不把私人Project列表塞入result_refs/business_state。其他Project业务Task必须有project_id。
+
+ResultRef字段复用机器schema；其type在P0限定为connection_test、account、project、search_term、supplement、construction_run、construction_candidate、knowledge_version、research_response_attempt、review_run、review_outline、review_chapter、review_final、task_output。id为实际目标身份，url来自上述既有授权入口；connection_test/task_output的id为task_id。不存在的结果不返回引用；search_term多项逐项引用，生成前父目标保持不变。published才可引用本次新knowledge_version，no_change只能引用核验既有版。partial_result_ref只允许task_output且指向本Task的output；不得把未采纳文本加入成功业务result_refs冒充正文。关系/权限/URL路径匹配属于后续运行断言，宽泛机器string暂不能验证这些条件。
+
+### 2.1.2 等待引用与资料提示（A07设计）
+
+`TaskView.waiting_items`具体为`TaskWaitingRef[]`。每项必填`kind`、`subject:{type,id}`、`subject_revision:Revision`、`owner:{type,id}`、`read_url:string`、`allowed_actions:string[]`；数组按(kind,subject.type,subject.id)去重。subject_revision取被确认依据对象的当前修订，不取Task revision；owner为受授权的所属Run/Session/Workspace。所有ID须与Task/project_id祖先关系一致。read_url只允许现有详情/预览入口；allowed_actions只列下表与当前权限、状态、已实现能力的交集，无合法动作则[]，不包含token或任意命令URL。
+
+| kind | subject / owner及读取落点 | 可提供的已有动作与提交依据 |
+| --- | --- | --- |
+| construction_step | waiting_item / construction_run；Run详情，ingestion_preview亦可经原入库预览读取 | confirm；仅screening等待点可另有append_search_terms；取消从Task.cancel_url单列。confirm用WaitingItem.revision作expected_revision，并提交其确认对象的subject_revision/candidate_revision；追加词用Run修订，不挪用等待项修订 |
+| research_empty | research_response_attempt / research_session；attempt详情 | continue_without_evidence，仅retrieval_status=empty；failed检索不得映射成该等待。expected_revision为attempt修订，详情confirmations提供token |
+| supplement_confirmation | supplement / construction_workspace；supplement详情 | edit、confirm按原入口及当前可确认条件裁剪；未解析/歧义/缺标题时不伪造confirm可用；不新建重试接口 |
+| review_outline_confirmation | review_outline / review_run；outline详情 | edit、confirm；expected_revision为OutlineView.revision，固定KV与低支撑提示不变 |
+| review_chapter_confirmation | review_chapter / review_run；chapter详情 | edit、confirm；expected_revision为ChapterView.revision，不新增覆盖率门槛 |
+
+WaitingItem实体仍由04-01维护，kind仅原六类search_terms/retrieval/screening/processing/analysis/ingestion_preview；TaskWaitingRef.kind是引用变体，两者不能混用。详情的confirmations/allowed_actions是当前安全投影，执行仍重查；旧引用通过读取owner刷新，不新建通用waiting-item GET/confirm路由。
+
+这些引用表示与任务产物相关的未完成业务确认，不要求Task本身waiting_user。已完成解析/章节生成可succeeded而相关对象仍待确认；无等待项为[]。只有原业务流程实际挂起该执行时才投影waiting_user，确认后继续同一合法流程；Review Run待操作不制造一个永久活跃Task，终稿默认accepted无需额外确认引用。已失效/完成/无权的项不再作为当前可执行等待返回，历史记录仍按原审计保留。
+
+新增`TaskView.material_use_notices:MaterialUseNotice[]`及`TaskOutputSnapshot.material_use_notices:MaterialUseNotice[]`，缺项不得省略，无提示为[]；元素复用A05机器schema，只读、安全、与对应快照游标一致。warning事件仍用既有Warning，资料提示变化通过既有status提示客户端刷新快照，不新增SSE类型或在Warning塞额外字段。A06必需资料拒绝依旧是TaskError，不生成一种“等待开启私人”的新Task状态/通用恢复动作；设置/分类同步操作不制造Task。classification未确认只提供安全说明及已有目标详情，不能把分类确认混成处理/入库确认。
+
 ### 2.2 累计文本恢复
 
 对于产生 delta 的文本任务，`partial_result_ref.url` 指向 `GET /tasks/{task_id}/output`；相同当前任务权限适用。不存在已保存输出时 partial_result_ref 为 null，直接调用返回安全 404。输出对象为：
 
-`{task_id,attempt_id,output_revision,text,text_length_chars,execution_status,event_cursor,citations,warnings,result_refs,business_state}`。
+`{task_id,attempt_id,output_revision,text,text_length_chars,execution_status,event_cursor,citations,warnings,result_refs,business_state,material_use_notices}`。
 
 `citations` 为截至该游标的完整证据引用快照，元素固定使用04-01 EvidenceRef；当前权限不可读取的证据不能泄漏内容，也不能用其他版本证据补齐。`warnings` 为截至该游标仍需展示的 `{code,message}` 数组；`result_refs`、`business_state` 与 TaskView 的结构和语义一致。空集合返回 []，无业务状态时返回 null。这些字段与累计文本、执行状态、event_cursor 必须属于同一个原子快照，不能仅恢复文本而跳过此前 citation/warning/status 事件。
 
@@ -92,7 +140,7 @@ API-D04 A：Project 归档/删除/清理生效即撤销影响范围内的执行�
 
 ### 3.1 订阅和事件结构
 
-`status/delta/warning/done` 的payload字段唯一维护于[机器契约](../../contracts/p0.openapi.json)的 `StatusPayload/DeltaPayload/Warning/DonePayload`；下表仅导航。完整事件信封、citation/error及流行为尚未完成机器转写，覆盖与检查见[04-03](04-03_machine_contract_governance.md)。
+`status/delta/warning/done` 的payload字段唯一维护于[机器契约](../../contracts/p0.openapi.json)的 `StatusPayload/DeltaPayload/Warning/DonePayload`；下表仅导航。完整信封/citation的设计见§3.4，仍未机器转写；error已由A04 ErrorPayload/TaskError维护，流行为仍待运行验证，覆盖与检查见[04-03](04-03_machine_contract_governance.md)。
 
 `GET /tasks/{task_id}/events` 返回 `text/event-stream`，采用主文同源会话认证。订阅是只读操作，不创建 Task 或触发模型生成。认证失败在流建立前按 HTTP 错误处理；连接存续期间持续核验当前授权，身份失效或权限撤销后停止推送和关闭连接。
 
@@ -104,7 +152,7 @@ data: {"event_id":"<uuid>","sequence":12,"task_id":"<uuid>","project_id":"<uuid>
 ```
 
 - `event_id` 是去重身份；`sequence` 是该 Task/attempt 内单调递增整数，不承诺全 Project 的全局顺序。
-- `project_id` 仅配置类任务可为空；`knowledge_version_id` 对无知识版本任务可为空，Research/Review 必须等于其实际绑定版本；Construction 的基线/候选/发布版本通过明确命名的 payload 字段表达，不能以一个含糊版本字段互相替代。
+- `project_id` 仅§2.1.1的配置/账号治理任务可为空；`knowledge_version_id` 对无知识版本任务可为空，Research/Review 必须等于其实际绑定版本；Construction 的基线/候选/发布版本通过明确命名的 payload 字段表达，不能以一个含糊版本字段互相替代。
 - `task_revision` 必填，对应该事件提交时 TaskView.revision；`target_revision` 可为空，非空时对应 target 业务对象修订，不能混用。`business_state.revision` 仅对应 business_state.target_id 的业务对象，若与事件 target 相同则应与 target_revision 一致。两类修订均不比较大小，事件顺序由 sequence 决定。
 - delta 必须可重放或包含在可恢复快照中后才能发送。客户端按 event_id 去重；不得重复追加文本。
 
@@ -141,6 +189,42 @@ data: {"event_id":"<uuid>","sequence":12,"task_id":"<uuid>","project_id":"<uuid>
 ```
 
 任务失败后的 GET 响应仍可为 200，`data.execution_status="failed"`，`data.error.code="PROVIDER_UNAVAILABLE"`；这不授权客户端自动创建新 attempt。API 主文的错误前缀和恢复动作限制适用于所有事件错误。
+
+### 3.4 完整事件信封与累计快照关联（A07设计）
+
+SSE帧由id、event、data组成：id是本事件可用于续读的不透明游标，event仅status/delta/citation/warning/error/done六值；data为下表`TaskEventEnvelope`，event与payload必须按下表配对，不把event额外放进data或将内部事件schema_version直接透传。信封字段全部必填，只有明确null分支可空。
+
+| TaskEventEnvelope字段 | 类型及依据 |
+| --- | --- |
+| event_id | ID；持久事件去重身份，同事实重放保持相同 |
+| sequence | integer≥1；Task/attempt内严格递增，客户端只比较顺序，不把revision转整数 |
+| task_id / attempt_id | ID；必须是订阅Task和其实际执行尝试；重连不改变 |
+| project_id | ID或null；与Task作用域一致 |
+| target | TaskHandle.target，同Task固定目标；不能换成新生成产物 |
+| knowledge_version_id | ID或null；Research/Review等于绑定版；配置/治理/补充/构建为null，构建版本从业务结果读取 |
+| task_revision | Revision；对应该持久提交的Task视图 |
+| target_revision | Revision或null；尚无/不提供目标修订时null；若business_state指同目标，其revision须匹配 |
+| occurred_at | Time；提交事实时间，不是重放发送时间 |
+| payload | 下表对应的具名结构；不接收额外凭据/内部诊断 |
+
+| SSE event | payload唯一维护位置 | 引用与消费约束 |
+| --- | --- | --- |
+| status | 机器StatusPayload | 更新技术状态/阶段/明确目标的business_state；收到后重新读TaskView获取当前等待项和资料提示，不从状态猜确认动作 |
+| delta | 机器DeltaPayload | 只追加相同attempt生成缓冲；空字符串按机器约束，不伪造成功正文 |
+| citation | 本文`CitationPayload={citation_ref:EvidenceRef}`，必填非空 | EvidenceRef完整字段以04-01 §5/5.1为准；project_id/KV须与流绑定一致，不可引用候选或别版替代。无知识版本的任务不能发citation |
+| warning | 机器Warning | 安全展示；不将任意code当可执行动作，不输出其他主体来源明细 |
+| error | 机器ErrorPayload，其error为TaskError | 已受理失败不得使用命令未受理或自动重试语义；不能代替最终快照 |
+| done | 机器DonePayload | 仅三终态，result_refs按§2.1.1；business_state需从同提交快照读取，不据done结束Session/整个Run |
+
+`TaskOutputSnapshot`为§2.2累计结构的具名名称，另含§2.1.2资料提示；其text允许空字符串，text_length_chars≥0且等于Unicode码点数，不是UTF-8字节或UTF-16单元数（例如“研😀”长度2）。首次尚无事件时TaskView.event_cursor和已有空输出的event_cursor使用服务端签发的起始游标，不能为空串或客户端猜测的0；起始游标仍绑定Task/attempt/当前授权范围。游标只用于定位，不能从中解析授权或把它当sequence。
+
+每次形成可投影事件的业务提交，应用同时持久更新Task修订、事件序号/游标，以及适用的累计文本、引用、warning、结果/业务状态和资料提示；没有文本增量的status/citation/warning/error/done也必须推进输出快照的相应投影，避免输出长期停在旧running。无输出对象时只更新TaskView；不能为了状态事件创建假正文。快照游标表示该快照已吸收的最后事件，读取不混合不同提交；任何事件只能在持久化后发送。
+
+恢复先读TaskView，再有文本则读output并完全替换同attempt临时缓冲；随后从选定快照游标之后订阅。允许后续sequence不从1开始、也不要求相邻加一；服务器必须保证从该游标之后不漏已授权事件。客户端不凭不透明游标猜sequence：恢复时建立新的订阅代次，丢弃旧连接的迟到帧；本次新流内按event_id去重并按sequence拒绝较旧帧。一旦检测实际顺序异常/身份不匹配，丢弃该流并重新读取快照，不能继续拼接已知不一致的正文。订阅代次只是本地显示隔离，不创建业务attempt。Last-Event-ID与after_event_id的冲突、错流、过期和无权错误沿§3.2/A04。
+
+事件存储不保存确认token、带token的预览、当前scope授权或完整来源依赖。回放时先按当前权限检查整体Task与引用，无法安全投影时停止流并要求当前快照/安全不可用处理，不能原样重放私有旧payload、伪造缺引用成功或偷偷换KV。旧event_id/sequence不会变成新的业务命令；当前可见性过滤不使已保存历史事实被改写。私人模式开关只控制Agent使用，合法人工读取沿原权限，不能用关闭Agent私人读取把合法UI历史全删。
+
+合法例：回复attempt A在V12累计“研😀”、length=2，输出游标c12后重连，仅消费c12之后属于A/V12的事件；重复event_id不再追加。反例：把A的delta送到B、citation指V13、waiting_user配done、error携带未受理重试、回放携带旧token、c13配c12文本均不得成为有效当前展示；后续真实测试须同时检查数据库记录与浏览器缓冲，schema不能证明原子性。
 
 ## 4. 单文件上传与补充处理
 
@@ -267,4 +351,17 @@ P0 使用鉴权代理下载流。业务资源的 `file-access` 入口返回：
 
 本次修订 v1.4（2026-10-16）：同步 R1-A–R4-A 及人工补充裁决；本轮细则已关闭，实现与运行验收另行跟踪。
 
-本次修订 v1.5（2026-10-19）：四类事件payload转为机器字段来源，明确完整SSE/任务/错误缺项，不宣称传输运行验收。
+本次修订 v1.5（2026-10-19）：当时四类事件payload转为机器字段来源，明确完整SSE/任务/错误缺项，不宣称传输运行验收。
+
+A04：`ErrorPayload`通过`TaskError`复用`PublicError`；Task.error也复用该受约束公共对象，成功/无错误时可空。异步已受理失败不允许直接重试请求的提示；200读取失败Task不改成Provider HTTP错误。完整Task/SSE仍未转写。
+
+## A05 分类与传输接缝
+
+文件及检索/历史来源的安全接收及必要静态提取先于分类确认，其模型/嵌入外发必须在确认之后且重验当前政策；可信本次主动文字在绑定的本次命令内无需额外分类确认，例外不延伸至历史自动取用或上传文件，详见04-01 §10.1；资料开关不阻止用户原有合法查看。分类操作、只读来源身份及同步错误矩阵见[04-01 §10](04-01_p0_operation_contracts.md#10-a05-资料设置与来源分类)。它们不返回Task。既有异步执行的必需资料受限复用TaskError/STATE_OPERATION_NOT_ALLOWED，不改变Task GET的200读取成功语义；可见性丧失仍优先安全404。完整TaskView/等待项和来源详情承载未在本次补齐。
+
+## A08 解析能力与安全失败交接
+
+4.2格式白名单及6节限额保持不变，逐格式能力/失败样本由[06 A08.4](06_agent_knowledge_services.md#a084-解析能力与有限技术重试)维护；接口capabilities只能列实际实现格式。P0基础格式未实现即记录缺口，不能以unsupported结果声称整个白名单通过。
+
+接收前失败沿原HTTP错误；持久受理后的深度失败沿TaskError及SupplementView安全诊断，不把失败任务改成未受理重试。元数据歧义/缺标题可形成成功准备结果但不可自动确认；状态的两个轴及Task终态映射见06 A08.2。解析失败不必然禁止安全原文件读取，未发布文件入口始终重新检查归属、安全接收与当前权限。解析结果仅暂存/候选材料，不能产生正式EvidenceRef。
+

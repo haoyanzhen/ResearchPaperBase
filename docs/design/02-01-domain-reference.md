@@ -1,9 +1,11 @@
 # Domain Reference
 
-文档版本：v1.6
-更新日期：2026-10-16
+文档版本：v1.7
+更新日期：2026-10-21
 来源文档：[Domain Core](02_domain_core.md)、[知识库版本附录](02-02_construction_versioning_appendix.md)、[构建资产附录](02-03_construction_assets_appendix.md)、[运行恢复附录](02-04_run_recovery_appendix.md)
 用途：作为 Domain Core 的聚合边界、领域对象、关键链路和 FR 映射速查文件。本文是主文及其同规格领域附录的派生速查，不独立定义规则；如有冲突，以对应领域规范及 FR 为准。
+
+本表列出跨分期对象，不是P0迁移/实现清单。首批任务的写入所有权须同时阅读[05-01](05-01_internal_module_contracts.md)，分期回查01子条目；PasswordResetRequest、协作、ExportJob、Review历史等不得因列在此处自动前置。A01仅核对入口及关键所有权，全面派生核对仍由TRACK-010a跟踪。
 
 详细规则阅读索引：
 
@@ -256,3 +258,5 @@ EmailPushJob
 3. 本文只提供领域对象和聚合边界速查，不定义 API、数据库字段、Provider SDK、队列实现或文件存储实现。
 
 本次修订 v1.6（2026-10-16）：按R2-A移除独立ReviewExportableVersion速查对象，保留当前稿与知识版本规则。
+
+本次修订 v1.7（2026-10-21）：明确跨分期对象索引不构成P0实现清单，补当前模块所有权入口。

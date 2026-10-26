@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.16 · 2026-10-21（资料读取策略专题）
+**文档版本**：v1.18 · 2026-10-21（A01–A03工程与审核准备）
 **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
 
 ## 当前目录
@@ -24,8 +24,11 @@
 |------|------|
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | 项目进度与待完成项统一入口；汇总当前状态、开放决策、延期事项、关闭条件和证据 |
 | [PROJECT_STATUS_APPENDIX.md](PROJECT_STATUS_APPENDIX.md) | 项目状态附件；保存已收口事项细节、历轮验证和主文件修改记录 |
+| [IMPLEMENTATION_ENTRY.md](IMPLEMENTATION_ENTRY.md) | 首批任务阅读与审核入口；区分当前规范、派生速查和历史计划 |
+| [workorders/a01_a03_design_closure_2026-10-21.md](workorders/a01_a03_design_closure_2026-10-21.md) | A01–A03限定核对、工程/模板交付和摘要基线证据 |
 | [design/README.md](design/README.md) | 分层设计文档集入口；说明权威性、文件结构和阅读顺序 |
 | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
+| [workorders/preimplementation_design_tasks_2026-10-21.md](workorders/preimplementation_design_tasks_2026-10-21.md) | Codex编码与人工审核的设计补齐小任务；区分实施前门槛、随实现细化、依赖、验收和人工决定；状态仍以PROJECT_STATUS为准 |
 
 ### 设计文件（编号顺序）
 
@@ -35,6 +38,7 @@
 |------|------|
 | [design/00_layers.md](design/00_layers.md) | 分层总览；定义架构边界、依赖方向与横切约束 |
 | [design/00-00_layer_design_file_mapping.md](design/00-00_layer_design_file_mapping.md) | 分层文件映射；定位现行设计文件 |
+| [design/00-01_engineering_baseline.md](design/00-01_engineering_baseline.md) | 首版技术选择、模块目录、持久任务与测试隔离；未创建工程 |
 | [design/01_functional_requirements.md](design/01_functional_requirements.md) | 现行功能需求基线；需求含义、优先级和验收以本需求正文为准 |
 | [design/01-01-FR-reference.md](design/01-01-FR-reference.md) | FR 派生速查；不定义独立需求规则 |
 | [design/02_domain_core.md](design/02_domain_core.md) | Domain 主文；聚合边界、模块接口、通用规则与专题附录索引 |
@@ -58,9 +62,9 @@
 | [design/08_security_permissions.md](design/08_security_permissions.md) | 授权矩阵、检查时机、密钥/数据流、不可信内容；SEC-D01/03已决，资料策略转08-01，运行未验证 |
 | [design/08-01_agent_data_access_policy.md](design/08-01_agent_data_access_policy.md) | Agent两级资料读取、文件分类、派生权限及已确认Q1–Q4；跨层同步评估与专题验收 |
 | [design/09_quality_observability.md](design/09_quality_observability.md) | 架构/模块测试设计，保留KV/API-R并新增SEC/OPS细化断言；运行证据另存 |
-| [design/10_operations_deployment.md](design/10_operations_deployment.md) | 最小运行与交付约束：配置、构建证据、升级恢复、容量与失败处置；OPS-D01运行目标待决 |
+| [design/10_operations_deployment.md](design/10_operations_deployment.md) | 最小运行与交付约束：配置、构建证据、升级恢复、容量与失败处置；单部署方向已决，运行数值目标待明确 |
 
-[退役归档及D项映射](archive/design_retirement_2026-10-19/README.md)保留历史证据；11本已不存在，12移出当前设计，07 SQL不再作为可执行参考。
+[退役归档及D项映射](archive/design_retirement_2026-10-19/README.md)保留历史证据；旧11_design_audit审计入口已退役，12移出当前设计，07 SQL不再作为可执行参考。
 
 ### 选型参考（编号顺序）
 
@@ -140,3 +144,7 @@
 本次修订 v1.15（2026-10-20）：登记08-01与执行记录。
 
 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
+
+本次修订 v1.17（2026-10-21）：登记实施前设计任务清单入口，不改变现行规范或已有执行状态。
+
+本次修订 v1.18（2026-10-21）：登记实施入口、工程基线、A01–A03证据；任务模板见[tasks/example.md](../tasks/example.md)，示例见[tasks/004](../tasks/004-project-create-idempotency-example.md)，基线证据见[证据目录](workorders/evidence/a01_a03_2026-10-21/README.md)。

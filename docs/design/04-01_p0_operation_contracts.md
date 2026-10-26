@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.6
-更新日期：2026-10-19
+文档版本：v1.11
+更新日期：2026-10-23
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -24,7 +24,7 @@
 | `Content` | `content:string,revision:Revision,content_state:agent_draft\|manual_confirm\|manual_edit,last_modified_by:ID\|null,last_modified_at:Time,source_action:string`；Agent 作者可空，不冒充人工 |
 | `TaskRef` | 04-02 `TaskHandle` 的完整别名，字段及 `execution_status` 不在此重复定义；不得缩减必需字段 |
 | `CommandResult` | `resource_id:ID,revision:Revision,task:TaskRef\|null`；有异步执行返回 202，否则 200；创建已持久化对象可为 201 |
-| `ConfirmationPreview` | 完整包含04主文确认对象字段，另加 `affected_items:object[],retained_items:object[],blocked_reasons:string[]`；使用 `subject_revision`，预览不执行业务动作 |
+| `ConfirmationPreview` | §1.1定义完整具名影响/保留结构；使用subject_revision，预览不执行业务动作 |
 | `Trace` | `actor_id:ID\|null,at:Time,source_action:string,content_revision:Revision`；只保存必要追溯，不代表 P2 历史版本功能 |
 
 仅承担确认凭据读取的详情返回 `confirmations:ConfirmationPreview[]`：检索词、补充请求、候选（含分析）、大纲、章节、Research attempt 和终稿详情；当前无合法确认动作时为空数组。WaitingItem、IngestionPreview 与 FinalizationPreview 保留各自已定义确认字段。PendingRevisionView 的 confirmations 沿用其显式结构，无适用动作时为空。其他普通详情、列表和 Workspace 显示上下文不要求附带 confirmations，也不为读取计算全部动作的影响范围。阶段确认、无证据继续、人工内容覆盖、治理、删除清理和版本采用的既有确认要求不变；普通保存只按所属操作表要求，不增加确认步骤。
@@ -43,6 +43,52 @@
 proposed_changes 仅允许该 action 对应操作表已有可写字段，不是任意命令分发入口。DELETE 确认同时传 confirmation_token、expected_revision，风险 ID 以重复 query 参数 `acknowledged_risk_ids=x&acknowledged_risk_ids=y` 编码；仅 DELETE 可省略风险参数代表空数组，存在风险必须逐项提交。
 
 所有 Project 资源及嵌套 ID 均校验所属 Project。P0 只有有效 Owner 可使用自己的 Project；管理员身份不提供 Project 内容访问权。可读须非 deleted，可写须 active。返回旧版本不等于错误；候选与正式已发布版本禁止互相补齐。
+
+### 1.1 ConfirmationPreview具名影响与保留项（A07设计）
+
+以下新增字段仍由本文维护，尚未机器转写；公共确认字段语义服从04 §6。ConfirmationPreview完整必填：confirmation_id:ID、action:string、target:{type,id}、subject_revision:Revision、impact_revision:Revision、knowledge_version_id:ID|null、candidate_revision:Revision|null、risks:{id:string,message:string}[]、expires_at:Time、confirmation_token:string、affected_items:PreviewAffectedItem[]、retained_items:PreviewRetainedItem[]、blocked_reasons:string[]。无适用版本/候选时显式null，其余不能省略；无风险/影响/保留/阻断分别[]。风险id在本预览内唯一，token非空且不透明，不记录到普通日志/SSE。
+
+subject_revision标识该动作直接依据，expected_revision按第7节取目标/等待项修订，两者不强求相同；impact_revision绑定全部影响对象修订、选定范围及动作参数的服务端摘要身份。列表按语义身份去重、必须完整，不能静默截断后照常签发覆盖“大概范围”的token；无法形成完整预览则安全失败。blocked_reasons非空的预览仅解释不可执行原因，所含token不得用于执行；条件改变后重新预览，不能把旧阻断token自动解锁。风险提示不创建新同意制度。
+
+`PreviewObjectRef={type,id,project_id,revision,read_url}`：全部必填；type取下表实际对象类别，id为ID，project_id为ID|null，revision为Revision|null，read_url为同源既有读取入口|null。可变被影响对象必须有准确revision，不可变knowledge_version/shared_identity依其不可变id定位可为null；按当前权限决定能否展示对象及链接。父Run/Session等定位由既有读取入口包含，不能只核验孤立id。管理员无权的私人对象不得用这个结构列出，使用治理摘要变体。
+
+| PreviewAffectedItem.kind | 该变体其他必需字段（不接受其他变体字段） | 所属语义与边界 |
+| --- | --- | --- |
+| content_change | object:PreviewObjectRef、operation:replace\|edit\|reject、content_state:agent_draft\|manual_confirm\|manual_edit、content_scope:string[]、reason:string | object.type为search_term/construction_workspace/construction_candidate/review_brief/review_outline/review_chapter/review_final；只表示已授权具体内容范围，不作为PATCH载荷 |
+| confirmation_invalidation | object:PreviewObjectRef、confirmation_revision:Revision、reason:string | 已确认内容或候选的依据失效；标明受影响旧确认，保留原稿，不等于删除历史 |
+| execution_revocation | object:PreviewObjectRef、attempt_id:ID\|null、reason:string | object.type为construction_run/research_response_attempt/review_run/task；未分配attempt时可null；只有原治理/关联移除用例允许的执行才可列为本次终止范围 |
+| association_removal | object:PreviewObjectRef、asset_kind:paper\|material、asset_revision:Revision、base_knowledge_version_id:ID | object.type与asset_kind一致，移除Project关联，不删旧版本/共享身份；与AssociationRemovalPreview.targets逐项相等 |
+| private_cleanup | object:PreviewObjectRef、artifact_kind:document\|text\|vector\|graph\|private_record、reason:string | object.type为document_asset/project_record/vector_view/graph_view；由当前Project治理授权枚举实际私有对象，不暴露物理路径/桶key；共享依赖校验后才清理 |
+| account_governance | account_id:ID、account_revision:Revision、operation:change_email\|enable\|disable\|grant_admin\|revoke_admin\|reset_password\|delete、summary:string | 仅已授权账号治理事实；具体邮箱参数绑定token而非从summary反解析；不得附私人Project/文件/标题/URL；摘要不是可扩大执行范围的选择器 |
+| version_adoption | source:PreviewObjectRef、target_knowledge_version_id:ID、source_content_revisions:PreviewContentRevision[]、regeneration_scope:string[] | source.type为research_session/review_run；仅复制已选稳定背景或明确人工参考，绑定目标版，不能原地迁移 |
+
+content_change.content_scope为非空、去重的封闭语义范围，按原动作裁剪：检索词生成用search_terms（列明每个受保护词对象，尚无词时用workspace）；评分用screening；候选分析用analysis；大纲用outline；章节用chapter；简报用brief；终稿允许body、abstract、references。generate_components严格等于原请求components选集（abstract/references）；终稿人工编辑只列实际改动字段，重汇总及reject列实际完整终稿范围。不得将选定摘要扩大成body或把候选分析扩大为processing；不支持的操作/范围组合拒绝。每项object.revision绑定该范围所依附的当前内容修订，服务端token同时绑定请求参数及全部范围；UI按此回显，不从reason解析。范围列表不是新增可写字段或任意JSON路径。
+
+`PreviewContentRevision={type:research_message|review_brief|review_outline|review_chapter|review_final,id:ID,revision:Revision}`，全部必填；review_brief/outline单例id为Run ID，必须以type区分；禁止流式未采纳片段，跨Project/Run/Session引用拒绝。AdoptionPreview的source_content_revisions原object[]具体改为此数组，与version_adoption项同一集合；Research只使用稳定message，Review只使用选定参考及主题/简报，不继承确认。regeneration_scope仅既有Research背景继承/Review从头生成的安全说明，不是可执行指令。
+
+PreviewRetainedItem为以下封闭联合：
+
+- `kind=object`：必填object:PreviewObjectRef、reason:string。type为knowledge_version、research_session、research_message、review_run、review_outline、review_chapter、review_final、shared_identity、export_file；表示本次保持的具体对象，不获得新读取权，也不提前实现P1导出。
+- `kind=protected_scope`：必填scope:shared_identity|other_projects|historical_evidence|completed_exports|existing_content、reason:string。只描述既有保留规则，不附无权ID、数量、路径或正文；用于账号治理及无法安全逐项公开的保留范围，不替代服务端真实依赖核验。不能用此摘要代替必须明示授权的覆盖/终止对象清单。
+
+### 1.2 预览变体与既有操作、等待实体对应
+
+| 既有入口/动作族 | 允许影响变体 | 保留与精确依据 |
+| --- | --- | --- |
+| 检索词生成、评分、候选分析及Review内容覆盖预览 | content_change、confirmation_invalidation | 原内容修订/内容状态、具体替换参数与下游确认；保留独立原成果；不豁免执行锁 |
+| 阶段等待确认、检索词/补充/大纲/章节确认 | 仅实际发生的confirmation_invalidation；通常affected_items=[] | 确认对象/步骤与候选/KV依据，未确认不虚构旧确认；不能为了显示影响创造覆盖动作 |
+| Admin.PreviewAccountAction | account_governance | 所属治理范围和安全protected_scope保留说明；管理员无权读私人Project内容，不枚举私人ID来“证明完整” |
+| Project.PreviewLifecycle / PreviewCleanup | execution_revocation；cleanup另用private_cleanup | 现有Project状态/治理修订与固定影响范围；保留共享身份/他人数据/受保护旧依赖与默认保留导出；archive不物理删除 |
+| Construction.PreviewClearAssociations | association_removal、execution_revocation | targets/asset_revision/基线/conflicting_runs固定；retained_items解释旧版引用与共享身份保留；新冲突须刷新，不扩大取消 |
+| Research/Review.PreviewAdoption | version_adoption | 原绑定、目标KV、稳定继承内容修订；retained_items列原对象/原稿；出现新版不换目标 |
+| Review.PreviewFinalization | 重新覆盖时content_change及实际失效项；首次无受保护稿confirmations=[] | source_revisions完整绑定大纲与必需章节，不给首次汇总增加token；可选缺失不阻断 |
+| Review.RejectFinal | content_change(operation=reject)，只指目标final | 既有拒绝与文件清理范围；保留其他accepted成果、历史诊断；不承诺撤回下载副本 |
+
+本表不取代每条操作的权限/确认条件，也不把所有动作都改成异步。`WaitingItem`保留id/kind/revision/confirmation/allowed_actions；confirmation为公共确认对象，subject_revision指该步骤确认快照，candidate_revision在该阶段没有候选时null，已有候选则必须匹配。ConfirmStep请求的candidate_revision按已存在机器schema允许值执行；无候选的检索词确认走原检索词入口，不伪造候选修订让请求过关。六种kind仅标识原业务等待阶段，不能由客户端新建；当前操作仅按原路由开放。
+
+TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的subject_revision是被审快照依据，两者通过具名字段区分。Research空证据确认从attempt详情confirmations读取，不能把retrieval_status=failed转为empty；补充缺标题/多候选先沿详情edit/confirm合法流程，深度结果形状留A08。A05风险同意与来源分类写入仍使用自身字段，不套通用ConfirmationPreview，也不新增“分类waiting_item”。
+
+合法实例：关联移除预览固定paper A/r3、基线V12和冲突Run R/r5；affected_items列A的association_removal与R的execution_revocation，retained_items列V12旧引用保留；执行前出现R2则旧token不授权终止R2。非法实例：以protected_scope=existing_content替代具体人工覆盖对象、把未知revision写null、预览V13后执行偷偷改V14、管理员预览列他人文件URL，均拒绝而非补默认。
 
 ## 2. 账号、配置与模型选择
 
@@ -127,7 +173,7 @@ Workspace 草稿保存不是章节/检索词内容保存；业务写入必须调
 - `SearchTermWrite={query:string!,keywords?:string[],synonyms?:string[],exclusions?:string[],rationale?:string,coverage?:string,source_policy?:SourcePolicy,auto_update_enabled?:boolean}`；字符串数组每项1–200、最多100项；缺省数组空，理由/覆盖空串，source_policy 默认 all_resolvable，auto_update_enabled 默认 true。
 - `SearchTermView=Resource+SearchTermWrite+{content_state:string,confirmed_revision:Revision|null,confirmed_at:Time|null}`；不存在独立 enabled 字段。
 - `ConstructionWorkspaceView=Resource+{auto_update_enabled:boolean,scheduler_available:boolean,occupying_run_id:ID|null,pending_supplement_count:integer,pending_revision_count:integer}`；P0 scheduler_available=false。
-- `SupplementCreate={kind:paper|material!,source:{type:doi|arxiv_id|url!,value:string!},title?:string}`；paper 可 DOI/arXiv/URL，material 只 URL；单文件使用下表 upload。`SupplementView=Resource+{kind,source,title:string|null,content_format:string|null,metadata_candidates:MetadataCandidate[],resolution_status:pending|resolved|ambiguous|failed,confirmation_status:unconfirmed|confirmed,inclusion_status:pending|processing|published,assigned_run_id:ID|null,published_version_id:ID|null,error:object|null}`；未解析不伪造 title/format，ambiguous 必须用户选择。
+- `SupplementCreate={kind:paper|material!,source:{type:doi|arxiv_id|url!,value:string!},title?:string}`；paper 可 DOI/arXiv/URL，material 只 URL；单文件使用下表 upload。`SupplementView=Resource+{kind,source,title:string|null,content_format:string|null,metadata_candidates:MetadataCandidate[],resolution_status:pending|resolved|ambiguous|failed,confirmation_status:unconfirmed|confirmed,inclusion_status:pending|processing|published,assigned_run_id:ID|null,published_version_id:ID|null,error:TaskError|null}`；未解析不伪造 title/format，ambiguous 必须用户选择。
 - `SupplementPatch={expected_revision!,title?:string,selected_candidate_id?:ID,source_note?:string,metadata?:{doi?:string|null,arxiv_id?:string|null,title?:string,authors?:string[],year?:integer|null}}`；metadata 仅 paper；source_note为1–10000字符的人工来源说明，供关键元数据不足时确认依据；资料不强制作者/年份/语言/provider。
 - `PendingRevisionCreate` 不再是公开写 DTO。已发布 paper/material 只读；移除必须走 association-clear-preview/confirm，由服务端生成仅 operation=exclude、changes={} 的 PendingRevisionView 并直接关联移除构建；不得借 pending revision 修改已发布内容。
 - `RetrievalConstructionStart={mode?:retrieval,selected_terms:{term_id:ID,confirmed_revision:Revision}[]!,supplement_ids?:ID[],retrieval_range:{published_from:Time|null,published_until:Time|null}!,result_limit_per_source:integer!,model_selection:ModelSelection!,graph_mode?:incremental|rebuild}`；默认空补充范围、incremental；检索时间为左闭右开，null 表示该端无界，两端同时非空时from<until；result_limit_per_source为1–1000，每个解析后数据源按全部选中检索词累计返回上限，服务端能力上限更低时明确拒绝而不静默截断；去重后数量可更少。首次构建实际创建图谱。selected_terms 必须非空，表示常规检索构建；ConstructionStart 的另一分支见下文。
@@ -189,7 +235,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 | POST `CR/candidates/{candidate_id}/analysis/generate` | `Construction.GenerateAnalysis` / 025 | `{expected_revision!,confirmation_token?:string,acknowledged_risk_ids:string[]!}` → TaskRef | 使用本Run冻结模型配置和已确认处理文本，禁止变更model_selection；P0阶段重生成，不是P1通用重跑 |
 | GET `CR/ingestion-preview` | `Construction.PreviewIngestion` / 026 | 无 → IngestionPreview | 明列失败/降级等；失败或零结果不得伪造可发布，有意移除全部按统一确认及空版本发布规则 |
 | POST `CR/waiting-items/{waiting_item_id}/confirm` | `Construction.ConfirmStep` / 016,022,024–026 | `{expected_revision!,subject_revision!,candidate_revision!,confirmation_token!,acknowledged_risk_ids:string[]!}` → CommandResult | token绑定具体等待项、步骤及快照；风险未确认/候选已改拒绝 |
-| POST `CR/cancel` | `Construction.Cancel` / 015 | `{expected_revision!,attempt_id:ID|null!}` → CommandResult | 无已分配执行身份时 attempt_id 才可为空，按 Run ID 和修订取消；与 published/no_change 完成排他裁决；旧 Worker 写资格先失效再释放槽；请求接收不等于清理完成；failed 放弃恢复不改 cancelled |
+| POST `CR/cancel` | `Construction.Cancel` / 015 | `{expected_revision!,attempt_id:ID\|null!}` → CommandResult | 无已分配执行身份时 attempt_id 才可为空，按 Run ID 和修订取消；与 published/no_change 完成排他裁决；旧 Worker 写资格先失效再释放槽；请求接收不等于清理完成；failed 放弃恢复不改 cancelled |
 
 输入冻结后新上传默认待下一轮；同 Run 返回检索只允许手动 retrieval Run 的筛选等待点追加已确认词，不允许其他阶段或 revision_only。保留原词、原解析来源集合、时间范围、每源总预算、模型、配置和知识基线；新词来源策略不得引入新来源，按剩余额度执行，额度已耗尽拒绝。只合并新增候选并重新去重/筛选，原人工决定及无关结果保留；受影响确认失效，旧执行资格撤销，迟到结果不得写入新输入修订。发布只由 Construction 内部执行。
 
@@ -217,7 +263,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 
 论文过滤query：title/abstract/author/source为可选1–200字符字符串，score_min/score_max为可选有限数且min≤max、按资产返回的score_scale解释；valid/cited为可选boolean，push_status可选not_enabled|not_sent|sent|failed。资料过滤query：title/source为可选1–200字符，content_format为04-02已支持格式枚举，processing_status可选pending|processing|available|degraded|failed|unsupported，participates_in_knowledge为可选boolean。q为可选1–200字符全文匹配词；未列字段拒绝，不接受任意排序表达式。P0 push_status 只能展示未启用或已有事实，不能隐式触发推送。空过滤结果为成功空列表，缺失版本为明确错误。
 
-`AdoptionPreviewRequest={expected_revision!,target_knowledge_version_id:ID!,inheritance:{stable_message_ids?:ID[],reference_content_ids?:ID[]}}`。预览返回 ConfirmationPreview 加 `{source_object_id,source_bound_version_id,target_knowledge_version_id,source_content_revisions:object[],regeneration_scope:string[],cost_notice:string}`。cost_notice 可说明无法估算，不伪造精确费用。Research 继承只取已保存稳定内容，标为待复核背景；Review 保留原主题，人工内容仅为明确参考，不继承确认状态。
+`AdoptionPreviewRequest={expected_revision!,target_knowledge_version_id:ID!,inheritance:{stable_message_ids?:ID[],reference_content_ids?:ID[]}}`。预览返回 ConfirmationPreview 加 `{source_object_id,source_bound_version_id,target_knowledge_version_id,source_content_revisions:PreviewContentRevision[],regeneration_scope:string[],cost_notice:string}`。cost_notice 可说明无法估算，不伪造精确费用。Research 继承只取已保存稳定内容，标为待复核背景；Review 保留原主题，人工内容仅为明确参考，不继承确认状态。
 
 ### 5.1 版本摘要与引用解析补充
 
@@ -378,6 +424,8 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 
 ### 8.4 必须覆盖的文档/后续实现验收
 
+公共错误投影及恢复建议统一见04 §5.1和机器契约PublicError；本表的真实授权、并发和副作用验收不能由A04的结构测试代替。
+
 | 场景 | 对应契约可判定结果 |
 | --- | --- |
 | 并发首位注册/最后管理员治理 | 只一位首位管理员、至少保留一位启用管理员 |
@@ -420,3 +468,73 @@ D02 B 的消息编辑/删除及失败片段编辑/采纳仍为P1；D04 A 管理�
 本次修订 v1.5（2026-10-16）：同步 R1-A–R4-A 及人工补充裁决；本轮细则已关闭，实现与运行验收另行跟踪。
 
 本次修订 v1.6（2026-10-19）：迁移本批具名字段到局部OpenAPI，保留操作/业务规则，明确未迁移范围及机器校验非业务验收。
+
+## 10. A05 资料设置与来源分类
+
+本节只细化[08-01](08-01_agent_data_access_policy.md)已决策略；字段唯一来源为机器schema `MaterialPolicyWrite/View`、`MaterialSourceIdentity`、`MaterialClassificationWrite/View/Fact`、`MaterialProvenance`、`MaterialUseNotice`。所有操作同步返回200及标准data/meta；不创建Task，不调用模型。路径仍按本文P缩写。
+
+| 方法/路径 | 用例 ID / FR | 请求 → 响应 | 前置与失败 |
+| --- | --- | --- | --- |
+| GET `P/material-policy` | `MaterialPolicy.Read` / 008,017 | 无 → MaterialPolicyView | 本人×Project；active/archived可读，缺记录返回public_only及稳定初始修订、空风险时间；不恢复Workspace授权 |
+| PUT `P/material-policy` | `MaterialPolicy.Update` / 008,017 | MaterialPolicyWrite → MaterialPolicyView | active Owner；expected_revision指政策记录；allow_private需已展示风险并明确同意，public_only不要求确认；成功返回新修订 |
+| GET `P/material-sources/{source_id}/classification` | `MaterialSource.ReadClassification` / 008,017 | 无 → MaterialClassificationView | 当前Project具体来源；active/archived可读；不得以DOI或物理哈希跨Project定位授权 |
+| POST `P/material-sources/{source_id}/classification/confirm` | `MaterialSource.ConfirmClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationConfirmedView | active Owner；仅unconfirmed；明确选择和依据，在首次模型使用前完成 |
+| POST `P/material-sources/{source_id}/classification/correct` | `MaterialSource.CorrectClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationConfirmedView | active Owner；仅confirmed；public放宽必须Owner明确确认及具体公开依据；不更新正文或引用 |
+
+### 10.1 修订、确认及可信来源
+
+政策revision独立于Project/Workspace修订，分类revision独立于内容修订。每次受理的新写命令（即使选项相同）获得不可复用新修订；打开→关闭→打开不得复用。GET在尚无记录时返回稳定默认投影而非修改Project业务状态；首次PUT可使用该修订。`risk_acknowledged`记录此次界面风险同意，不是通用ConfirmationPreview/token；public_only写入false，开启写入true，服务端记录操作者、时间、当时所展示的当前Provider及风险说明。未选模型时明确显示“未选择”，设置不自动选模型；真正外呼仍需合法模型选择。关闭后保留最近一次风险同意时间供审计，初始为null。服务端不从客户端接收user_id、审计时间或Provider授权。
+
+确认/更正请求的expected_revision针对当前分类；content_revision必须匹配该source_id的不可变具体内容。任一失配为412，缺必需修订为428；其他缺字段/非法组合为422。confirm作用于已确认记录、correct作用于未确认记录均409 STATE_OPERATION_NOT_ALLOWED，不以更换入口覆盖人工事实。同键同参按04重放原执行事实，不再执行、不重新检查旧修订制造冲突；同键异参409。PUT响应丢失先GET核查，不自动换修订提交。可见性及归档写保护优先于重放；来源不存在、其他Project、deleted、管理员但非Owner均安全404。
+
+上传初始private/unconfirmed；检索可建议public但仍unconfirmed，建议不构成授权。无分类历史按private/unconfirmed保守投影，保留原事实，禁止批量public。分类确认不等于分析/处理/入库确认，不自动启动后续流水线。文件及检索/历史来源的安全接收、隔离暂存与必要静态提取先于分类，分类确认先于这些来源的模型/嵌入外发；私人模式也不能跳过未确认。可信本次主动文字按下文例外处理，不增加分类确认步骤。用户原有合法查看与静态接收不受该开关阻止。
+
+basis是针对具体实际内容的非空依据说明，不收凭据或正文；公网URL/DOI/公开摘要不足以证明机构全文公开。服务端必须核验依据及Owner身份，字符串合法不等于证据充分；不充分返回422 VALIDATION_FIELD_INVALID（basis）。confirmed_by/time由服务端写入，LLM不可代填。更新只写当前分类及审计，已发布正文、入库时事实、引用和版本成员不改；普通Project/资产metadata PATCH不得接收这些字段。
+
+`MaterialProvenance`为只读可信投影。current_submission仅由接收当前明确提交的应用入口签发submission_scope_id并绑定操作者、Project及本次命令；客户端不能选择该标记，复制ID不构成授权。后续自动取用同一文字必须投影historical_input且scope为null；上传文件不因主动上传而取得文字例外。derived_content的dependency_status由服务端追踪全部实际输入，complete不代表public；混合私人、缺依赖或unknown不能推定公开。unknown的dependency_status必须unknown；current_submission必须complete。其余类型按实际证据标记，不由引用列表或LLM自评。可信current_submission对应的本次明确提交文字，可在绑定的当前主体、Project及本次命令范围内直接使用，无需额外分类确认；这不把文字标为public，不改原分类事实，不授权自动读取历史、草稿或其他文件。该例外不适用于上传文件；后续历史/自动取用、派生产物仍按08-01检查分类及全部来源依赖。该投影不是可转移的授权凭据；除上述本次文字例外外不能代替分类确认。不提供任意来源注册或授权端点；source_id由既有接收/内容生产链创建并通过详情提供，相关完整详情转写留A08。
+
+两个分类POST成功data使用 `MaterialClassificationConfirmedView`，meta使用 `MaterialClassificationMutationMeta`；字段约束只在机器schema维护。GET保持 `MaterialClassificationView`，允许显示未确认来源；设置GET/PUT仍使用通用Meta。同步分类写入及同键重放均须返回已确认事实和明确的最早去重失效时间；真实至少24小时保留按04 §7落实，schema不证明保留时长。
+
+### 10.2 错误、UI和异步对应
+
+每条操作的精确HTTP/code子集以机器`x-error-codes`及响应schema为准，复用A04而不新增错误码。所有操作：400格式错误、401认证、404安全不可用、422字段问题、429资源保护、500存储失败。写操作另含403 CSRF、409只读/操作不允许、412冲突、428缺修订、413请求过大、415媒体类型不支持；分类POST另含409幂等冲突。不向这些同步路由绑定Provider失败或Task恢复。
+
+| 结果/原因 | UI动作与不可发生事项 |
+| --- | --- |
+| 200 | 展示服务端当前值及新修订；分类重放展示原执行事实后可重新读取当前状态，不回写旧状态 |
+| 401 / 403 CSRF | 重新认证/刷新凭据；不自动重发修改 |
+| 404 | 安全不可用空态；不显示他人Project、存在性、修订或链接 |
+| 409只读/不允许 | 保留当前内容，显示只读/不适用；无强制覆盖或解除归档入口 |
+| 409幂等冲突 | 核查原操作结果；不换键自动执行 |
+| 412 / 428 | 重新读取当前依据并保留用户未提交选择；不拿新revision自动覆盖 |
+| 400 / 422 | 修正字段；不回显任意字段名/原值；依据不足不改变分类 |
+| 429 / 500 / 断网 | 按A04结果未知规则先核查；只有有未受理证据才允许原条件技术重试，不创建业务attempt |
+
+既有异步任务在当前政策下不再能使用必需输入时，仍沿A04 `TaskError`投影STATE_OPERATION_NOT_ALLOWED（安全原因、details/recovery均null、retryable=false），Task GET成功读取仍200；资源可见性丧失先走安全404，不披露诊断。具体attempt终止与提交裁决留A06，不新增业务状态。`MaterialUseNotice`为受控读取/上下文构造的只读提示词汇：private_source、classification_unconfirmed、provenance_unknown、dependencies_incomplete、required_history_restricted、available_subset；没有在本任务绑定新的TaskView字段，完整消费接口尚待A06/A07。
+
+### 10.3 执行交接与验证边界
+
+下一正常受控读取、实际派发和提交均用当前政策/分类修订；受理快照只作审计。扩权不重跑结束任务、恢复终止attempt、追加冻结输入、扩大确认范围或改绑KnowledgeVersion；收紧不删除合法旧成果、不承诺撤回在途字节。缓存与派生数据重验全部依赖，受限必需历史明确阻断，不静默删消息继续；合法检索子集显示范围受限，不能说完整知识库无结果。
+
+A06负责可信scope签发/消费、分类与内容修订核验、全输入依赖、read/dispatch/commit原子裁决和缓存；07的逻辑记录不在本次转成数据库。A07/A08负责完整任务/详情承载。测试见 `scripts/tests/test_material_policy_contracts.py` 和[任务007审核包](../workorders/task007_a05_review_2026-10-22.md)：schema/操作矩阵可测，真实身份、事务、并发、模型发送、版本保护和UI运行效果均未验证。
+
+## A08 补充详情与处理依据投影
+
+新增具名字段仍待机器转写；既有PaperAnalysis/MaterialAnalysis、MetadataCandidate、ProcessingView以本文原定义为唯一来源。SupplementView.error由object收紧为`TaskError|null`（A04机器schema），仅反映对应准备任务的安全失败；元数据缺项/歧义使用下述诊断，不伪造终态TaskError。
+
+SupplementView增加必填`input_revision:Revision,selected_candidate_id:ID|null,processing:ProcessingView,processing_basis:ProcessingBasis|null,preparation_notices:PreparationNotice[],duplicate:SupplementDuplicateView`。
+
+`PreparationNotice={reason:PreparationReason,message:string}`，reason复用06 A08.1词汇，message仅安全摘要，不返回内部诊断ID/来源依赖；权限错误仍防枚举。`SupplementDuplicateView={decision:not_checked|distinct|duplicate|suspected,matched_project_asset:{kind:paper|material,id:ID}|null,reason:string|null}`；匹配只限当前Project可见成员，未检查不得返回distinct；它是已有去重决策投影，不自动合并、覆盖或确认。
+
+`ProcessingBasis={processing_revision:Revision,input_revision:Revision,text_revision_id:ID|null,document_asset_id:ID|null,file_revision:Revision|null,confirmed_revision:Revision|null}`。所有字段必填；file_revision与document_asset_id同空/同有，text_revision_id仅实际可用文本非空。confirmed_revision指当前有效处理确认；独立补充无Run处理确认故为null，元数据确认不填这里。processing_revision为已持久处理结果身份，pending且无结果时整个basis=null。内部文件摘要、依赖闭包不公开。
+
+CandidateView和AssetView增加必填`processing_basis:ProcessingBasis|null,analysis_basis:AnalysisBasis|null`，AnalysisBasis字段唯一见06 A08.3。无分析/无有效结果时null；失效旧结果不作为当前有效analysis/basis，人工旧稿按现有保护保留而不混入有效投影。正式AssetView只取指定版本固化依据，不能用当前候选修订补齐；引用字段存在不授权其他Project或未发布数据读取。
+
+ProcessingView原status/text_source_kind/failure_reason/participates_in_knowledge按06 A08.2映射。pending/processing无最终文本，failed/unsupported无文本且参与=false；available/degraded仅表示文本能力，不自动参与知识构建，仍须有效性、确认、纳入和发布规则，排除项参与=false。paper degraded仅abstract_fallback，material没有摘要降级。成功读取含失败状态仍HTTP200，不重放生成命令；Task等待和文件读取保持A07/04-02规则。
+
+选择MetadataCandidate必须属于当前补充input_revision；CorrectSupplement的expected_revision绑定当前详情，旧候选选择返回既有修订/状态错误。选择/修正后重新核验关键元数据与冲突，确认时再次检查；不能以选过一个ID绕过缺标题。确认仅使其待纳入，不表示已有全文、处理确认或分析确认。
+
+
+MetadataCandidate增加必填`assessment:MetadataDraftAssessment`：`{confidence:number|null,missing_fields:string[],evidence:MetadataDraftEvidence[]}`。LLM草稿confidence必为0–1的估计值（不是已校准质量或自动确认门槛），其他提取无估计可null；missing_fields是该kind允许元数据字段名的去重集合，必须与实际缺项一致，不要求资料具备作者/年份。LLM字段缺省拒绝结构化结果，不能以默认1或空数组掩盖缺项。
+
+`MetadataDraftEvidence={field:string,source:SourceRef,document_asset_id:ID|null,file_revision:Revision|null,text_revision_id:ID|null,locator:EvidenceLocator|null}`；field只能是该kind元数据字段，文档身份与file_revision同空/同有；text/locator若存在须对应已保存输入文本和同一文件修订，可通过原授权文件入口定位，未具定位不能伪造。证据为当前补充实际使用的输入来源，不是正式EvidenceRef；provider元数据可无文件/文本定位，但必须指实际解析的SourceRef。无依据字段不编造证据，明确列入缺项或冲突供人工修正；所有引用限当前Project授权，不输出内部路径/依赖闭包。公开投影不能安全提供必要证据时不称已核验，保留安全缺项说明。

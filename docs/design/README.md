@@ -1,7 +1,7 @@
 # Research Paper Base 设计文档集
 
-文档版本：v1.15
-更新日期：2026-10-21
+文档版本：v1.17
+更新日期：2026-10-22
 适用项目大版本：v1  
 权威基线：`01_functional_requirements.md`、`00_layers.md`
 
@@ -14,6 +14,8 @@
 5. 旧式大接口清单、质量控制和数据模型仅保留在 `backup/` 目录作为参考，不作为权威契约。
 6. 11/12 不再作为现行设计入口；12 原文及 D-001–D-015 去向见[历史归档](../archive/design_retirement_2026-10-19/README.md)，开放项仍由 PROJECT_STATUS 跟踪。
 
+当前任务与人类审核流程见[实施入口](../IMPLEMENTATION_ENTRY.md)，具体工程选择见[00-01](00-01_engineering_baseline.md)。二者不覆盖01/02业务规则；精确核对范围与基线见[A01–A03记录](../workorders/a01_a03_design_closure_2026-10-21.md)。
+
 ## 2. 文件结构
 
 设计文件按编号数值升序排列；同组主文件在前，派生索引、速查和附录按子编号升序排列。选型参考与历史资料单独列出。
@@ -22,6 +24,7 @@
 | --- | --- | --- |
 | [00_layers.md](00_layers.md) | 总览 | 系统分几层、层间如何依赖、横切约束是什么 |
 | [00-00_layer_design_file_mapping.md](00-00_layer_design_file_mapping.md) | 总览派生索引 | 各设计层对应哪些实际文件 |
+| [00-01_engineering_baseline.md](00-01_engineering_baseline.md) | 工程决策 | 首版运行时、模块目录、适配器、持久交接和测试隔离；落地证据见项目状态 |
 | [01_functional_requirements.md](01_functional_requirements.md) | 需求基线 | 系统必须满足哪些功能、优先级和验收标准 |
 | [01-01-FR-reference.md](01-01-FR-reference.md) | 需求派生速查 | FR 编号、优先级和编号重整关系；不定义独立需求规则 |
 | [02_domain_core.md](02_domain_core.md) | Domain Core | 聚合边界、跨模块接口、通用领域规则与专题附件索引；paused ConstructionRun 的占槽交接见 02-02/02-04 |
@@ -105,3 +108,5 @@ API 阅读顺序为 04 公共协议 → 04-01 对应操作 → 04-02 任务/文�
 本次修订 v1.14（2026-10-20）：登记08-01专题及政策决定，详细策略单点维护，跨层契约仍须在实施前收口。
 
 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
+
+本次修订 v1.16（2026-10-21）：登记工程基线与实施/审核入口，区分历史计划、派生速查与现行规范。

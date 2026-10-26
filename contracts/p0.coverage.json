@@ -1,6 +1,6 @@
 {
-  "version": "1.0",
-  "date": "2026-10-19",
+  "version": "1.5",
+  "date": "2026-10-23",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -459,6 +459,26 @@
       "use_cases": "`Review.AdoptVersion` / 018"
     },
     {
+      "signature": "GET `P/material-policy`",
+      "use_cases": "`MaterialPolicy.Read` / 008,017"
+    },
+    {
+      "signature": "PUT `P/material-policy`",
+      "use_cases": "`MaterialPolicy.Update` / 008,017"
+    },
+    {
+      "signature": "GET `P/material-sources/{source_id}/classification`",
+      "use_cases": "`MaterialSource.ReadClassification` / 008,017"
+    },
+    {
+      "signature": "POST `P/material-sources/{source_id}/classification/confirm`",
+      "use_cases": "`MaterialSource.ConfirmClassification` / 008,017"
+    },
+    {
+      "signature": "POST `P/material-sources/{source_id}/classification/correct`",
+      "use_cases": "`MaterialSource.CorrectClassification` / 008,017"
+    },
+    {
       "signature": "GET /me/model-selection",
       "use_cases": "04-01_p0_operation_contracts.md"
     },
@@ -549,7 +569,12 @@
     "Workspace.SaveContext",
     "Admin.ReadSMTP",
     "Admin.SaveSMTP",
-    "System.ReadCapabilities"
+    "System.ReadCapabilities",
+    "MaterialPolicy.Read",
+    "MaterialPolicy.Update",
+    "MaterialSource.ReadClassification",
+    "MaterialSource.ConfirmClassification",
+    "MaterialSource.CorrectClassification"
   ],
   "request_only_operations": [
     "Config.TestLLM",
@@ -597,27 +622,28 @@
     "status",
     "delta",
     "warning",
-    "done"
+    "done",
+    "error"
   ],
-  "coverage_level": "request/success shapes only; not full HTTP or business acceptance",
+  "coverage_level": "partial request/success plus shared public errors; not full HTTP or business acceptance",
   "gaps": [
     {
       "id": "GAP-ERROR",
-      "kind": "design-detail-missing",
-      "scope": "all operations; SSE error",
-      "reason": "Safe error details/recovery fields lack a closed vocabulary; no permissive object schema substituted."
+      "kind": "not-yet-transcribed",
+      "scope": "per-operation HTTP error applicability and binding",
+      "reason": "A04 shared errors are typed; A05 five synchronous operations bind applicable error subsets. Other endpoint errors and complete TaskView remain unbound."
     },
     {
       "id": "GAP-TASK",
-      "kind": "design-detail-missing",
+      "kind": "not-yet-transcribed",
       "scope": "TaskHandle/TaskView, all asynchronous response operations",
-      "reason": "Task target types are examples, not exhaustive; waiting_items reference shape is not closed. No generic object or invented enumeration."
+      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
     },
     {
       "id": "GAP-CONFIRM",
-      "kind": "design-detail-missing",
+      "kind": "not-yet-transcribed",
       "scope": "ConfirmationPreview and operations returning confirmations",
-      "reason": "affected_items/retained_items remain object[] without named fields."
+      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
     },
     {
       "id": "GAP-REMAINING",
@@ -629,7 +655,7 @@
       "id": "GAP-SSE",
       "kind": "not-yet-transcribed",
       "scope": "citation payload, complete event envelope, Task output and SSE endpoint",
-      "reason": "EvidenceRef cross-field/locator/target constraints and stream envelope have not been fully transferred. Four payload schemas alone do not validate complete SSE messages."
+      "reason": "EvidenceRef cross-field/locator/target constraints and stream envelope have not been fully transferred. Five payload schemas alone do not validate complete SSE messages."
     },
     {
       "id": "GAP-RUNTIME",
@@ -639,9 +665,9 @@
     }
   ],
   "normative_fingerprints": {
-    "04_api_contracts.md": "473a3f0499a3b3bea7e07151b847aa97cb36e5a38f525722baa776c79c809c2a",
-    "04-01_p0_operation_contracts.md": "2d2f791b647edc7d5affd194b2fd8ba529ca01ee8c47b9e325a79976c9d34429",
-    "04-02_transport_task_file_contracts.md": "dd45e177573c956d29223f2f28b7b1302848e1672c7f699e3db573003f7c61b5"
+    "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
+    "04-01_p0_operation_contracts.md": "d7563787508e297bcab467b8c425dc8e2a21299cedd43612c83d87393267d43c",
+    "04-02_transport_task_file_contracts.md": "728862966bf2f797bab15a8de3ee0a4cc2bec9291e0fdb262eda65252a0da738"
   },
   "operation_coverage": {
     "Account.GetCSRF": {
@@ -1256,6 +1282,36 @@
         "GAP-ERROR",
         "GAP-RUNTIME",
         "GAP-REMAINING"
+      ]
+    },
+    "MaterialPolicy.Read": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "MaterialPolicy.Update": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "MaterialSource.ReadClassification": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "MaterialSource.ConfirmClassification": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "MaterialSource.CorrectClassification": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
       ]
     }
   },
@@ -2415,7 +2471,47 @@
       ]
     },
     {
-      "source_row_index": 114,
+      "status": "partial",
+      "typed_operations": {
+        "MaterialPolicy.Read": "request-success-errors-partial"
+      },
+      "remaining": [],
+      "source_row_index": 114
+    },
+    {
+      "status": "partial",
+      "typed_operations": {
+        "MaterialPolicy.Update": "request-success-errors-partial"
+      },
+      "remaining": [],
+      "source_row_index": 115
+    },
+    {
+      "status": "partial",
+      "typed_operations": {
+        "MaterialSource.ReadClassification": "request-success-errors-partial"
+      },
+      "remaining": [],
+      "source_row_index": 116
+    },
+    {
+      "status": "partial",
+      "typed_operations": {
+        "MaterialSource.ConfirmClassification": "request-success-errors-partial"
+      },
+      "remaining": [],
+      "source_row_index": 117
+    },
+    {
+      "status": "partial",
+      "typed_operations": {
+        "MaterialSource.CorrectClassification": "request-success-errors-partial"
+      },
+      "remaining": [],
+      "source_row_index": 118
+    },
+    {
+      "source_row_index": 119,
       "status": "partial",
       "typed_operations": {
         "Config.ReadSelection": "request-success-partial"
@@ -2423,7 +2519,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 115,
+      "source_row_index": 120,
       "status": "partial",
       "typed_operations": {
         "Admin.ReadSMTP": "request-success-partial"
@@ -2431,7 +2527,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 116,
+      "source_row_index": 121,
       "status": "partial",
       "typed_operations": {
         "Admin.ReadSecurity": "request-success-partial"
@@ -2439,7 +2535,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 117,
+      "source_row_index": 122,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2450,7 +2546,7 @@
       ]
     },
     {
-      "source_row_index": 118,
+      "source_row_index": 123,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2461,7 +2557,7 @@
       ]
     },
     {
-      "source_row_index": 119,
+      "source_row_index": 124,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2472,7 +2568,7 @@
       ]
     },
     {
-      "source_row_index": 120,
+      "source_row_index": 125,
       "status": "partial",
       "typed_operations": {
         "Task.ReadConnectionResult": "request-success-partial"
@@ -2480,7 +2576,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 121,
+      "source_row_index": 126,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2491,7 +2587,7 @@
       ]
     },
     {
-      "source_row_index": 122,
+      "source_row_index": 127,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2502,7 +2598,7 @@
       ]
     },
     {
-      "source_row_index": 123,
+      "source_row_index": 128,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2513,7 +2609,7 @@
       ]
     },
     {
-      "source_row_index": 124,
+      "source_row_index": 129,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2524,12 +2620,84 @@
       ]
     },
     {
-      "source_row_index": 125,
+      "source_row_index": 130,
       "status": "partial",
       "typed_operations": {
         "System.ReadCapabilities": "request-success-partial"
       },
       "remaining": []
     }
-  ]
+  ],
+  "public_errors": {
+    "schema": "PublicError",
+    "envelope": "ErrorEnvelope",
+    "task_projection": "TaskError or null; constrained PublicError for accepted tasks; complete TaskView excluded",
+    "variants": [
+      "VALIDATION_BAD_REQUEST",
+      "VALIDATION_CURSOR_MISMATCH",
+      "VALIDATION_CURSOR_EXPIRED",
+      "AUTH_REQUIRED",
+      "AUTH_SESSION_INVALID",
+      "AUTH_ACCOUNT_DISABLED",
+      "AUTH_INVALID_CREDENTIALS",
+      "PERMISSION_ADMIN_REQUIRED",
+      "PERMISSION_CSRF_REJECTED",
+      "PERMISSION_RESOURCE_UNAVAILABLE",
+      "STATE_OPERATION_NOT_ALLOWED",
+      "STATE_PROJECT_READ_ONLY",
+      "STATE_NOT_CANCELLABLE",
+      "STATE_LAST_ADMIN_REQUIRED",
+      "STATE_IDEMPOTENCY_CONFLICT",
+      "STATE_CONFIRMATION_STALE",
+      "STATE_CONFIRMATION_REQUIRED",
+      "LOCK_CONSTRUCTION_OCCUPIED",
+      "LOCK_RESPONSE_ACTIVE",
+      "LOCK_CONTENT_BUSY",
+      "VERSION_REQUIRED",
+      "VERSION_BINDING_MISMATCH",
+      "VERSION_BASELINE_STALE",
+      "CONFIG_MODEL_SELECTION_REQUIRED",
+      "CONFIG_MISSING",
+      "CONFIG_SECRET_UNAVAILABLE",
+      "CONFIG_SOURCE_DISABLED",
+      "CONFIG_CONNECTION_FAILED",
+      "STATE_EVENT_REPLAY_UNAVAILABLE",
+      "STORAGE_FILE_UNAVAILABLE",
+      "STATE_REVISION_CONFLICT",
+      "STATE_REVISION_REQUIRED",
+      "VALIDATION_PAYLOAD_TOO_LARGE",
+      "VALIDATION_UNSUPPORTED_FORMAT",
+      "VALIDATION_FIELD_INVALID",
+      "VALIDATION_UNKNOWN_FIELD",
+      "VALIDATION_FILE_UNREADABLE",
+      "STATE_RESOURCE_LIMIT",
+      "PROVIDER_FAILED",
+      "PROVIDER_UNAVAILABLE",
+      "PROVIDER_TIMEOUT",
+      "STORAGE_INTERNAL_FAILURE"
+    ],
+    "runtime_limits": [
+      "authorization before details",
+      "message/revision/field/URL sanitization",
+      "submission outcome evidence",
+      "action eligibility",
+      "no automatic business rerun"
+    ]
+  },
+  "material_policy": {
+    "operations": [
+      "MaterialPolicy.Read",
+      "MaterialPolicy.Update",
+      "MaterialSource.ReadClassification",
+      "MaterialSource.ConfirmClassification",
+      "MaterialSource.CorrectClassification"
+    ],
+    "scope": "A05 request/success and applicable A04 error subsets; producer contracts only",
+    "remaining": [
+      "A06 trusted provenance and atomic read/dispatch/commit",
+      "A07 complete TaskView notice carrier",
+      "A08 source discovery in full ingestion/detail DTOs",
+      "runtime authorization, isolation, persistence, UI and end-to-end acceptance"
+    ]
+  }
 }

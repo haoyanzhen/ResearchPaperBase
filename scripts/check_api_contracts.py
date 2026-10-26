@@ -68,7 +68,7 @@ def check(spec, coverage):
         assert op['x-phase'] == 'P0'
         assert op['x-use-case'] and op['x-fr'] and op['x-authorization']
         assert op['x-version-binding'] in {'not-applicable','bound-object','explicit-or-default-at-creation'}
-        assert op['x-errors'] == 'markdown-only:04-section-5', 'error schemas are not yet closed'
+        assert op['x-errors'] == '#/components/schemas/PublicError', 'public error reference drift'
         names = {p['name'] for p in op.get('parameters', [])}
         required_headers = {p['name'] for p in op.get('parameters', []) if p['in'] == 'header' and p.get('required') is True}
         assert set(re.findall(r'{([^}]+)}', path)) <= names, path
@@ -81,6 +81,17 @@ def check(spec, coverage):
         if path.startswith('/projects/'):
             assert op['x-authorization'] == ('project-owner-readable' if method == 'get' else 'project-owner-active')
         assert op['security'] == ([] if path in ['/auth/csrf', '/auth/register', '/auth/login'] else [{'sessionCookie': []}])
+        if 'x-material-policy' in op:
+            assert set(op['responses']) == {'200'} | set(op['x-error-codes']), 'material error status drift'
+            for status, codes in op['x-error-codes'].items():
+                schema = op['responses'][status]['content']['application/json']['schema']
+                expected = [
+                    {'$ref': '#/components/schemas/ErrorEnvelope' + status},
+                    {'properties': {'error': {'properties': {'code': {'enum': codes}}}}},
+                ]
+                assert schema == {'allOf': expected}, 'material error binding drift'
+            assert op['operationId'] in coverage['material_policy']['operations'], 'material coverage drift'
+            assert coverage['operation_coverage'][op['operationId']]['status'] == 'request-success-errors-partial'
     assert sorted(ids) == sorted(coverage['typed_operations'] + coverage['request_only_operations']), 'coverage/spec operation mismatch'
     assert len(coverage['row_coverage']) == len(coverage['source_rows'])
     for index, row in enumerate(coverage['row_coverage']):
@@ -103,6 +114,23 @@ def check(spec, coverage):
     bounded(spec)
     for schema in spec['components']['schemas'].values():
         Draft202012Validator.check_schema(schema)
+    error_refs = spec['components']['schemas']['PublicError']['oneOf']
+    variants = [spec['components']['schemas'][r['$ref'].rsplit('/', 1)[1]] for r in error_refs]
+    assert sorted(v['properties']['code']['const'] for v in variants) == sorted(coverage['public_errors']['variants']), 'public error coverage drift'
+    expected_members = {}
+    for reference, variant in zip(error_refs, variants):
+        status = str(variant['x-http-status'])
+        expected_members.setdefault(status, []).append(reference['$ref'])
+    # Compare multisets: omissions, extra members and duplicates must all fail.
+    envelopes = {name.removeprefix('ErrorEnvelope'): schema
+                 for name, schema in spec['components']['schemas'].items()
+                 if re.fullmatch(r'ErrorEnvelope[0-9]{3}', name)}
+    assert set(envelopes) == set(expected_members), 'public error status groups drift'
+    for status, expected in expected_members.items():
+        response = spec['components']['responses']['PublicError' + status]
+        assert response['content']['application/json']['schema']['$ref'] == '#/components/schemas/ErrorEnvelope' + status
+        actual = envelopes[status]['properties']['error']['oneOf']
+        assert sorted(member['$ref'] for member in actual) == sorted(expected), 'public error status membership drift: ' + status
     assert set(coverage['event_payloads_typed']) == set(spec['x-sse-payloads'])
 
 
@@ -144,7 +172,7 @@ def main():
           f"{len(coverage['source_rows'])} inventoried source rows; {len(spec['x-sse-payloads'])}/6 SSE payload types")
     if not args.baseline:
         print('COMPATIBILITY NOT CHECKED: no prior reviewed --baseline supplied.')
-    print('NOT VERIFIED: runtime authorization/state/transactions, error details, TaskView/output and uncovered operations; see coverage.')
+    print('NOT VERIFIED: runtime authorization/state/transactions, runtime error sanitization/action eligibility, TaskView/output and uncovered operations; see coverage.')
 
 
 if __name__ == '__main__':
