@@ -32,7 +32,9 @@ def main() -> None:
             "migration-history",
         ],
     )
-    action = parser.parse_args().action
+    parser.add_argument("--postgres-bin", type=Path)
+    args = parser.parse_args()
+    action = args.action
     if action == "install":
         if (
             not (ROOT / "backend/uv.lock").is_file()
@@ -66,6 +68,8 @@ def main() -> None:
         check_paths = (
             "src",
             "tests",
+            "migrations",
+            "../scripts/run_storage_tests.py",
             "../scripts/check_architecture.py",
             "../scripts/engineering.py",
             "../scripts/verify_skeleton_delivery.py",
@@ -101,9 +105,16 @@ def main() -> None:
     elif action == "e2e":
         run(["npm", "run", "test:e2e"], ROOT / "frontend")
     elif action == "integration":
-        raise SystemExit(
-            "Database integration unavailable: isolated fixture and business schema "
-            "not implemented. No connection attempted."
+        if args.postgres_bin is None:
+            raise SystemExit(
+                "Database integration unavailable: explicit --postgres-bin required. "
+                "No connection attempted."
+            )
+        backend(
+            "python",
+            "../scripts/run_storage_tests.py",
+            "--postgres-bin",
+            str(args.postgres_bin.resolve()),
         )
     elif action == "migration-history":
         backend("alembic", "history")

@@ -2,8 +2,8 @@
 
 Author: haoyanzhen
 Date:   2026-06-01
-Updated: 2026-10-22
-Document version: v1.1
+Updated: 2026-10-25
+Document version: v1.2
 
 This file introduce the main aim and structure of this project.
 
@@ -43,17 +43,18 @@ Accomplish a web app as a deep search and research scholar workspace.
 
 - Independently complete local implementation, fixes, tests, and necessary documentation updates within the authorized scope. Do not repeatedly ask for confirmation of already authorized work.
 - Changes to business semantics, permission boundaries, human-content protection, knowledge-version binding, or product phasing require an explicit human decision unless already authorized.
+- A full-project task map is planning, not execution authorization. Continue through an explicitly authorized queue without per-task approval; pause only work dependent on an unresolved business decision or required milestone acceptance.
 - A deferred item or backlog entry is not execution authorization. If additional scope is needed, explain it and pause only the dependent work while continuing work within scope.
 - When a decision is needed, present: the question, available evidence, options and their effects, the recommended option, and the work blocked by the decision.
 
 ## Codex delivery principles
 
-- Humans own product decisions and acceptance; Codex owns implementation quality, requirement-oriented tests, verification, and a reviewable delivery within the authorized scope.
+- Humans own business decisions and milestone acceptance; Codex owns implementation quality, requirement-oriented tests, independent review, verification, and engineering closeout within the authorized scope. Per-task human review is not a gate.
 - Deliver small slices defined by observable behavior, including rejection and failure paths. Make routine engineering choices independently and explain material tradeoffs; do not expand scope through incidental refactoring or backlog work.
 - Preserve existing working-tree changes. Bind review and verification to the actual artifact, including relevant uncommitted and untracked files, rather than HEAD alone.
-- Self-review the diff, requirement coverage, critical boundaries, and execution evidence before requesting human review. Fix independently resolvable defects first; do not hand basic debugging or missing verification to the reviewer.
+- Self-review the diff, requirement coverage, critical boundaries, and execution evidence; complete independent review, coverage repair, behavior-preserving simplification, and final verification before engineering closeout. Fix independently resolvable defects without waiting for human review.
 - Keep design completion, code completion, automated verification, and human acceptance distinct. Never infer human approval from passing checks or claim overall acceptance from a partial slice.
-- Human review procedure is maintained in the [implementation entry](docs/IMPLEMENTATION_ENTRY.md); task-specific scope, traceability, evidence, and decisions are recorded using the [task template](tasks/example.md), without duplicating those procedures here.
+- Engineering delivery, business decision, and milestone acceptance procedures are maintained in the [implementation entry](docs/IMPLEMENTATION_ENTRY.md); task-specific scope, traceability, evidence, and decisions are recorded using the [task template](tasks/example.md), without duplicating those procedures here.
 
 ## Verification requirements
 

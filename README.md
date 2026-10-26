@@ -1,7 +1,7 @@
 # Research Paper Base
 
-文档版本：v1.7
-更新日期：2026-10-23
+文档版本：v1.8
+更新日期：2026-10-25
 
 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
 
@@ -79,7 +79,13 @@ python3 scripts/engineering.py e2e
 
 浏览器测试针对构建产物，覆盖390/1280宽度、本地导航、键盘入口、无横向溢出和无写请求；不代表业务端到端验收。截图在 `frontend/test-results/`。
 
-`python3 scripts/engineering.py migration-history` 可查看空迁移链。`integration` 和 `alembic upgrade head` 当前明确失败，不连接任何数据库；真实PostgreSQL 17、隔离夹具及第一份业务迁移须随后续存储切片交付。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
+`python3 scripts/engineering.py migration-history` 可查看首条 `0001_account` 迁移。执行真实存储测试：
+
+```bash
+python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
+```
+
+`--postgres-bin` 必须显式指向 PostgreSQL 17 的二进制目录（其他机器替换路径）。命令创建仅 Unix socket 可达的临时实例、独立测试库和非管理员角色；测试内部提交保留到本轮结束，随后停止进程并删除该实例。未传目标的 `integration` 和直接 `alembic upgrade head` 仍拒绝，忽略业务 DATABASE_URL；没有生产迁移入口。默认 `check` 执行无数据库测试，真实存储测试须另行运行且缺目标为失败，不是跳过。Account 仅有存储结构，没有注册、登录或权限服务；[task015](tasks/015-account-storage-migration.md)记录范围与证据。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
 
 本次修订（2026-10-22）：增加首批工程安装、启停、检查和构建入口；审核结论由人工记录。
 
