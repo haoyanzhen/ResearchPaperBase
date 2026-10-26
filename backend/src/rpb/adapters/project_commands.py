@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
@@ -62,11 +62,104 @@ commands = sa.Table(
 )
 
 
+lifecycle = sa.Table(
+    "project_lifecycle_records",
+    metadata,
+    sa.Column("id", sa.Uuid, primary_key=True),
+    sa.Column("actor_id", sa.Uuid, nullable=False),
+    sa.Column("project_id", sa.Uuid, nullable=False),
+    sa.ForeignKeyConstraint(
+        ["project_id", "actor_id"], ["projects.id", "projects.owner_id"], name="fk_lifecycle_owner"
+    ),
+    sa.Column("action", sa.Text, nullable=False),
+    sa.Column("key", sa.String(128, collation="C"), nullable=True),
+    sa.Column("fingerprint", sa.String(64), nullable=False),
+    sa.Column("schema_version", sa.Integer, nullable=False),
+    sa.Column("subject_revision", sa.Uuid, nullable=False),
+    sa.Column("confirmation", JSONB, nullable=False),
+    sa.Column("result", JSONB, nullable=False),
+    sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=False),
+    sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
+    sa.UniqueConstraint("actor_id", "project_id", "action", "key", name="uq_lifecycle_key"),
+    sa.UniqueConstraint("project_id", "subject_revision", name="uq_lifecycle_revision"),
+    sa.CheckConstraint("action IN ('archive','delete')", name="ck_lifecycle_action"),
+    sa.CheckConstraint(
+        "(action = 'archive' AND key IS NOT NULL AND expires_at IS NOT NULL "
+        "AND expires_at >= accepted_at + interval '24 hours') "
+        "OR (action = 'delete' AND key IS NULL AND expires_at IS NULL)",
+        name="ck_lifecycle_receipt",
+    ),
+    sa.CheckConstraint(
+        "key IS NULL OR (char_length(key) BETWEEN 16 AND 128 AND key !~ '[^ -~]')",
+        name="ck_lifecycle_key",
+    ),
+    sa.CheckConstraint(
+        "char_length(fingerprint) = 64 AND fingerprint !~ '[^0-9a-f]'",
+        name="ck_lifecycle_fingerprint",
+    ),
+    sa.CheckConstraint(
+        "jsonb_typeof(confirmation) = 'object' AND jsonb_typeof(result) = 'object'",
+        name="ck_lifecycle_objects",
+    ),
+)
+
+
 class Transaction:
     def __init__(
         self, conn: Connection, actor_id: UUID, construction: ConstructionInitializer
     ) -> None:
         self.conn, self.actor_id, self.construction = conn, actor_id, construction
+
+    def update_metadata(
+        self, identity: UUID, data: dict[str, str], now: datetime
+    ) -> dict[str, Any]:
+        row = (
+            self.conn.execute(
+                projects.update()
+                .where(projects.c.id == identity, projects.c.owner_id == self.actor_id)
+                .values(**data, revision=uuid4(), updated_at=now)
+                .returning(projects)
+            )
+            .mappings()
+            .one()
+        )
+        return self.project_view(row)
+
+    def transition(self, identity: UUID, status: str, now: datetime) -> dict[str, Any]:
+        row = (
+            self.conn.execute(
+                projects.update()
+                .where(projects.c.id == identity, projects.c.owner_id == self.actor_id)
+                .values(
+                    status=status,
+                    authority_epoch=projects.c.authority_epoch + 1,
+                    revision=uuid4(),
+                    updated_at=now,
+                )
+                .returning(projects)
+            )
+            .mappings()
+            .one()
+        )
+        return self.project_view(row)
+
+    def find_lifecycle(self, identity: UUID, key: str) -> dict[str, Any] | None:
+        row = (
+            self.conn.execute(
+                sa.select(lifecycle).where(
+                    lifecycle.c.actor_id == self.actor_id,
+                    lifecycle.c.project_id == identity,
+                    lifecycle.c.action == "archive",
+                    lifecycle.c.key == key,
+                )
+            )
+            .mappings()
+            .first()
+        )
+        return dict(row) if row else None
+
+    def save_lifecycle(self, record: dict[str, Any]) -> None:
+        self.conn.execute(lifecycle.insert().values(**record))
 
     def find_command(self, key: str) -> dict[str, Any] | None:
         row = (

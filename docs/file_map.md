@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.19 · 2026-10-25（Project Hub入口登记）
+**文档版本**：v1.20 · 2026-10-25（Project基础维护入口登记）
 **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
 
 ## 当前目录
@@ -151,3 +151,6 @@
 
 
 本次修订 v1.19（2026-10-25）：登记本轮新增[task021](../tasks/021-project-hub.md)、`backend/tests/integration/test_project_list.py`（本人分页/权限/失败）与`backend/tests/integration/test_project_hub_browser.py`（真实浏览器列表/恢复/身份时序）。运行代码为`backend/src/rpb/`与`frontend/src/`，业务演示由`scripts/run_business_demo.py`装配；工程命令见[README](../README.md)。纠正顶部退役后“未启动实现”的过期描述，不改写历史证据。
+
+
+本次修订 v1.20（2026-10-25）：新增[task022](../tasks/022-project-maintenance.md)、`backend/migrations/versions/0005_project_lifecycle.py`（确认审计与归档回执）、`backend/tests/integration/test_project_maintenance.py`（真实PG/HTTP维护与并发/迁移）和`backend/tests/integration/test_project_maintenance_browser.py`（编辑/确认/故障恢复真实浏览器）。未交付范围仍在PROJECT_STATUS及任务单维护。

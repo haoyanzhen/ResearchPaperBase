@@ -89,6 +89,8 @@ def create_business_app(engine: Engine, origin: str) -> FastAPI:
                     return error(request, "VALIDATION_PAYLOAD_TOO_LARGE", 413)
                 chunks.append(chunk)
             request._body = b"".join(chunks)
+            if request.method == "DELETE" and request._body.strip():
+                return error(request, "VALIDATION_BAD_REQUEST", 400)
         try:
             response = await call_next(request)
         except Exception:

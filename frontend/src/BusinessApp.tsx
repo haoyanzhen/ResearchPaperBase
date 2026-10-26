@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 type User = { id: string; username: string; is_admin: boolean };
-type Project = { id: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null; last_construction_at: string | null; last_activity_at: string | null };
+type Project = { id: string; revision: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null; last_construction_at: string | null; last_activity_at: string | null };
 type ProjectInput = { name: string; description: string; research_scope: string };
 class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
@@ -17,6 +17,7 @@ const messages: Record<string, string> = {
 };
 async function envelope<T>(url: string, init?: RequestInit): Promise<{ data: T; meta: { next_cursor: string | null; has_more: boolean } }> {
   const response = await fetch(url, { credentials: 'same-origin', ...init });
+  if (response.status === 204) return { data: undefined as T, meta: { next_cursor: null, has_more: false } };
   const value = await response.json();
   if (!response.ok) throw new ApiError(response.status, value.error?.code ?? 'UNKNOWN', value.error?.message ?? '请求未完成。');
   return value;
@@ -24,7 +25,7 @@ async function envelope<T>(url: string, init?: RequestInit): Promise<{ data: T; 
 async function json<T>(url: string, init?: RequestInit): Promise<T> {
   return (await envelope<T>(url, init)).data;
 }
-async function post<T>(path: string, body: unknown, key?: string, expectedActor?: string): Promise<T> {
+async function post<T>(path: string, body: unknown, key?: string, expectedActor?: string, method = 'POST'): Promise<T> {
   const csrf = await json<{ csrf_token: string }>('/api/v1/auth/csrf');
   // Order is deliberate: the token binds this request to the session observed
   // before identity validation. A later login rotation makes this token invalid.
@@ -32,7 +33,95 @@ async function post<T>(path: string, body: unknown, key?: string, expectedActor?
     const current = await json<User>('/api/v1/me');
     if (current.id !== expectedActor) throw new ApiError(401, 'AUTH_SESSION_INVALID', '登录账号已变化，请重新确认。');
   }
-  return json<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: JSON.stringify(body) });
+  return json<T>(path, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: method === 'DELETE' ? undefined : JSON.stringify(body) });
+}
+
+type LifecyclePreview = { action: 'archive' | 'delete'; subject_revision: string; confirmation_token: string; risks: { id: string; message: string }[]; retained_items: { reason: string }[] };
+function ProjectMaintenance({ project, actor, onChange, onDeleted, onUnavailable, onBusy, onAuthFailure }: {
+  project: Project; actor: string; onChange: (p: Project) => void; onDeleted: () => void; onUnavailable: () => void;
+  onBusy: (value: boolean) => void; onAuthFailure: (error: unknown) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<ProjectInput>({ name: project.name, description: project.description, research_scope: project.research_scope });
+  const [preview, setPreview] = useState<LifecyclePreview | null>(null);
+  const [acknowledged, setAcknowledged] = useState<string[]>([]);
+  const [pendingArchive, setPendingArchive] = useState<{ key: string; body: unknown } | null>(null);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState('');
+  const [uncertain, setUncertain] = useState(false);
+  async function run(action: () => Promise<void>, writing = false) {
+    setWorking(true); onBusy(true); setError('');
+    try { await action(); }
+    catch (reason) {
+      if (reason instanceof ApiError && (reason.status === 401 || reason.code === 'PERMISSION_CSRF_REJECTED')) onAuthFailure(reason);
+      else if (reason instanceof ApiError && [400, 413, 415, 422, 428].includes(reason.status)) { setError('输入未通过校验，请修正后再保存。'); if (!uncertain) setPendingArchive(null); }
+      else if (reason instanceof ApiError && reason.status === 412) { setError('项目已被修改。草稿已保留，请核对最新内容后再编辑。'); setUncertain(true); }
+      else if (reason instanceof ApiError && reason.status === 404) onUnavailable();
+      else if (reason instanceof ApiError && reason.code.startsWith('STATE_CONFIRMATION_')) { setPreview(null); setPendingArchive(null); setError('确认依据已失效，请重新预览。'); }
+      else if (reason instanceof ApiError && reason.code === 'STATE_PROJECT_READ_ONLY') { setError('项目已只读，请加载当前内容。'); setUncertain(true); }
+      else { setError(writing ? '提交结果尚未确认，请先核查当前内容。' : '读取未完成，请重试。'); if (writing) setUncertain(true); }
+    } finally { setWorking(false); onBusy(false); }
+  }
+  function loadCurrent() {
+    void run(async () => {
+      const current = await json<Project>(`/api/v1/projects/${project.id}`);
+      onChange(current); setDraft({ name: current.name, description: current.description, research_scope: current.research_scope });
+      setEditing(false); setPreview(null); setPendingArchive(null); setUncertain(false);
+    });
+  }
+  function save(event: FormEvent) {
+    event.preventDefault();
+    void run(async () => {
+      const current = await post<Project>(`/api/v1/projects/${project.id}`, { ...draft, expected_revision: project.revision }, undefined, actor, 'PATCH');
+      onChange(current); setEditing(false); setUncertain(false);
+    }, true);
+  }
+  function requestPreview(action: 'archive' | 'delete') {
+    void run(async () => {
+      const result = await post<LifecyclePreview>(`/api/v1/projects/${project.id}/action-preview`, { action, expected_revision: project.revision }, undefined, actor);
+      setPreview(result); setAcknowledged([]); setEditing(false); setPendingArchive(null);
+    });
+  }
+  function confirm() {
+    if (!preview) return;
+    void run(async () => {
+      const body = { expected_revision: preview.subject_revision, confirmation_token: preview.confirmation_token, acknowledged_risk_ids: acknowledged };
+      if (preview.action === 'archive') {
+        const command = pendingArchive ?? { key: crypto.randomUUID(), body };
+        setPendingArchive(command);
+        const current = await post<Project>(`/api/v1/projects/${project.id}/archive`, command.body, command.key, actor);
+        onChange(current); setPendingArchive(null); setPreview(null); setUncertain(false);
+      } else {
+        const query = new URLSearchParams({ expected_revision: preview.subject_revision, confirmation_token: preview.confirmation_token });
+        acknowledged.forEach(id => query.append('acknowledged_risk_ids', id));
+        await post(`/api/v1/projects/${project.id}?${query}`, undefined, undefined, actor, 'DELETE');
+        onDeleted();
+      }
+    }, true);
+  }
+  return <section className="maintenance" aria-label="项目维护" aria-busy={working}>
+    {error && <p className="error" role="alert">{error}</p>}
+    {uncertain && <button disabled={working} onClick={loadCurrent}>核查并加载当前内容（放弃草稿）</button>}
+    {project.status === 'active' && !editing && !preview && !uncertain && <div className="list-pages">
+      <button disabled={working} onClick={() => { setDraft({ name: project.name, description: project.description, research_scope: project.research_scope }); setEditing(true); }}>编辑信息</button>
+      <button disabled={working} onClick={() => requestPreview('archive')}>归档项目</button>
+      <button disabled={working} onClick={() => requestPreview('delete')}>删除项目</button>
+    </div>}
+    {editing && <form onSubmit={save}>
+      <h3>编辑项目</h3>
+      <label>项目名称<input required maxLength={200} value={draft.name} disabled={working} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
+      <label>描述<textarea maxLength={10000} value={draft.description} disabled={working} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
+      <label>研究范围<textarea maxLength={10000} value={draft.research_scope} disabled={working} onChange={e => setDraft({ ...draft, research_scope: e.target.value })} /></label>
+      <div className="list-pages"><button type="submit" disabled={working || uncertain}>保存修改</button><button type="button" disabled={working} onClick={() => setEditing(false)}>取消编辑</button></div>
+    </form>}
+    {preview && <div className="confirmation" role="group" aria-label="操作确认">
+      <h3>{preview.action === 'archive' ? '确认归档' : '确认软删除'}</h3>
+      <p>将操作：{project.name}</p>
+      {preview.risks.map(r => <label className="checkbox" key={r.id}><input type="checkbox" disabled={working || !!pendingArchive} checked={acknowledged.includes(r.id)} onChange={e => setAcknowledged(e.target.checked ? [...acknowledged, r.id] : acknowledged.filter(id => id !== r.id))} />{r.message}</label>)}
+      <ul>{preview.retained_items.map((item, i) => <li key={i}>{item.reason}</li>)}</ul>
+      <div className="list-pages"><button disabled={working || acknowledged.length !== preview.risks.length || (uncertain && !pendingArchive)} onClick={confirm}>{pendingArchive ? '核查原归档请求' : '确认执行'}</button><button disabled={working || uncertain} onClick={() => { setPreview(null); setPendingArchive(null); }}>取消操作</button></div>
+    </div>}
+  </section>;
 }
 
 function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (error: unknown) => void }) {
@@ -203,6 +292,7 @@ export function BusinessApp() {
         <h3>研究范围</h3><p className="preserve">{project.research_scope || '未填写'}</p>
         <p className="knowledge-state">{project.default_knowledge_version_id ? '已有知识版本' : '尚未构建知识版本'}</p>
         <a href={`/workspace?project=${encodeURIComponent(project.id)}`}>项目链接</a>
+        <ProjectMaintenance key={project.id} project={project} actor={user.id} onChange={setProject} onBusy={setBusy} onAuthFailure={explain} onUnavailable={() => { setProject(null); setName(''); setDescription(''); setScope(''); setNotice(''); setError('资源不可用。'); window.history.replaceState(null, '', '/workspace'); }} onDeleted={() => { setProject(null); window.history.replaceState(null, '', '/workspace'); setNotice('Project 已软删除。'); }} />
       </section> : <section className="form-card" aria-label="新建研究项目">
         <h2>新建 Project</h2><p className="hint">定义研究问题与范围，建立自己的研究容器。</p>
         <form onSubmit={event => void createProject(event)}>

@@ -1,6 +1,6 @@
 # Research Paper Base
 
-文档版本：v1.11
+文档版本：v1.12
 更新日期：2026-10-25
 
 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
@@ -118,4 +118,4 @@ python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@
 
 登录后可在“我的项目”查看本人项目（默认每页20项），点击名称进入，返回列表或退出重登后重新找回；归档项目标为只读，已删除项目不显示，管理员也不列出他人项目。列表失败可重试，游标失效可回第一页。
 
-当前未提供配置、治理、Project修改/归档/删除操作、知识构建等后续功能。默认根路径工程预览不等于业务入口；以/workspace和显式demo为验收对象。原认证/创建闭环已获限定接受，见[task019](tasks/019-browser-milestone.md)；Project Hub新增范围、验证和M-P0-02验收包见[task021](tasks/021-project-hub.md)。
+当前active项目可编辑名称/描述/研究范围，或经预览、勾选风险确认后归档/软删除。归档后只读且不提供解除归档或删除入口；软删除保留存储记录但不再允许进入。编辑冲突保留草稿，不自动以新修订覆盖；结果未知先核查，归档可核查同一原请求。当前未提供配置、账号治理、私人资产物理清理、知识构建等后续功能。默认根路径工程预览不等于业务入口；以/workspace和显式demo为验收对象。原认证/创建闭环已获限定接受，见[task019](tasks/019-browser-milestone.md)；Project Hub已获M-P0-02限定接受，见[task021](tasks/021-project-hub.md)。本批维护新增范围、验证与M-P0-03验收包见[task022](tasks/022-project-maintenance.md)。

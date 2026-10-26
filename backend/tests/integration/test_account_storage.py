@@ -46,7 +46,7 @@ def test_ac01_migration_metadata_and_rerun(db):
         assert conn.scalar(sa.select(accounts.c.id)) == identity
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0004_project_commands"
+            == "0005_project_lifecycle"
         )
         columns = sa.inspect(conn).get_columns("accounts")
         assert not {"password", "plaintext_password", "session_token"} & {
@@ -161,7 +161,7 @@ def test_ac06_downgrade_protects_committed_data_then_empty_roundtrip(db):
     with engine.begin() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0004_project_commands"
+            == "0005_project_lifecycle"
         )
         assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
         conn.execute(accounts.delete())
@@ -204,7 +204,7 @@ def test_ac08_wrong_run_marker_refuses_ddl(db):
         assert sa.inspect(conn).has_table("accounts")
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0004_project_commands"
+            == "0005_project_lifecycle"
         )
         privileges = conn.execute(
             sa.text(
@@ -270,5 +270,5 @@ def test_ac06_concurrent_committing_writer_prevents_downgrade(db):
         assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0004_project_commands"
+            == "0005_project_lifecycle"
         )

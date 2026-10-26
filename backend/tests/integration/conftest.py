@@ -51,6 +51,7 @@ def storage(request):
 def db(storage):
     engine, cfg = storage
     with engine.begin() as conn:
+        conn.execute(sa.text("DELETE FROM project_lifecycle_records"))
         conn.execute(sa.text("DELETE FROM project_create_commands"))
         conn.execute(sa.text("DELETE FROM auth_sessions"))
         conn.execute(sa.text("DELETE FROM construction_workspaces"))
@@ -58,6 +59,7 @@ def db(storage):
         conn.execute(sa.text("DELETE FROM accounts"))
     yield engine, cfg
     with engine.begin() as conn:
+        conn.execute(sa.text("DELETE FROM project_lifecycle_records"))
         conn.execute(sa.text("DELETE FROM project_create_commands"))
         conn.execute(sa.text("DELETE FROM auth_sessions"))
         conn.execute(sa.text("DELETE FROM construction_workspaces"))
