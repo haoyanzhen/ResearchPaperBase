@@ -92,6 +92,21 @@ class AccountStore:
                     )
             raise
 
+    @contextmanager
+    def authorized_connection(
+        self, token: str, csrf: str | None
+    ) -> Iterator[tuple[Connection, UUID]]:
+        """Account-owned authorization for a composed application transaction."""
+        with self._transaction(token) as conn:
+            conn.execute(
+                sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK}
+            )
+            session = self._session(conn, token, csrf)
+            if session["account_id"] is None:
+                raise AccountError("AUTH_REQUIRED", 401)
+            self._user(conn, session["account_id"])
+            yield conn, session["account_id"]
+
     def _session(self, conn: Connection, token: str, csrf: str | None = None) -> dict[str, Any]:
         row = (
             conn.execute(

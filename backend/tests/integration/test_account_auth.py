@@ -39,6 +39,8 @@ class ContractClient(TestClient):
         result = super().request(*args, **kwargs)
         path = result.request.url.path.removeprefix("/api/v1")
         method = result.request.method.lower()
+        if path.startswith("/projects/"):
+            path = "/projects/{project_id}"
         operation = SPEC["paths"].get(path, {}).get(method)
         if operation:
             body = result.json()
@@ -593,7 +595,8 @@ def test_au07_session_writer_downgrade_race_preserves_committed_row(db):
     with engine.connect() as conn:
         assert conn.scalar(sa.select(sessions.c.token_hash)) == "a" * 64
         assert (
-            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0003_auth_sessions"
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+            == "0004_project_commands"
         )
 
 

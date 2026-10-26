@@ -15,7 +15,7 @@
 
 Project应用协调UoW和Construction公开初始化端口，PostgreSQL adapter分别写自己事实；不造Task/outbox。去重键显式含actor/operation/scope/key，scope固定本人Project创建集合；JSON摘要仅包含规范化后的三个业务输入，默认空串归一，排除CSRF/请求ID。应用事务统一账号治理→会话→Project，短事务提交后才返回。当前版本为空，只返回显式null，不创建假KnowledgeVersion。
 
-去重最早失效E默认t0+48h（>=24h）；无自动回收，超过E仍可保留原记录。测试时钟只替换受理时间来源，独立连接持久查询期限与重放，epsilon=1微秒。不增加生产保留政策。读取当前Owner与生命周期，deleted/非Owner返回404，archived可读但创建旧结果的写重放按当前只读保护拒绝。无Project修改/归档/删除/列表端点；它们后续独立切片，不在UI暗示可用。
+去重最早失效E默认t0+48h（>=24h）；无自动回收，超过E仍可保留原记录。测试时钟只替换受理时间来源，独立连接持久查询期限与重放，epsilon=1微秒。不增加生产保留政策。读取当前Owner与生命周期，deleted/非Owner返回404，archived可读且重放仅返回历史创建事实、不再次写入；deleted拒绝重放。无Project修改/归档/删除/列表端点；它们后续独立切片，不在UI暗示可用。
 
 ## 4. 追踪
 
@@ -46,4 +46,23 @@ Project应用协调UoW和Construction公开初始化端口，PostgreSQL adapter�
 
 ## 8. 检查点
 
-流程v1.7；S1规范与测试规格准备完成；代码S2待task017最终复审闭合后开始；S3–S7未执行。保留既有所有工作区修改。
+流程v1.7；S1规范与测试规格准备完成；task017已独立复审通过并S7，S2已实现且156项PG通过；S3独立审查中，S4–S7待最终执行。保留既有所有工作区修改。
+
+
+### 自验与工程选择
+
+初轮集成两项失败：资源安全404文案须严格“资源不可用”，公共错误映射已修复，实际schema回归识别原问题。当前integration-fixed为156项通过、实例停止/清理true；增加命令全部必需字段、operation/scope/key/hash/result身份、24h下界、同Owner复合FK/唯一键、故障升级及writer/down并发。所有旧AC/PS/AU回归保留，仅head/table集合适应新增迁移；原迁移0001–0003不改。
+
+当前选择账号治理事务锁覆盖受理，确保禁用与创建有同一排序边界；粒度较粗，会串行不同账号的短创建事务，不宣称吞吐验收。Construction写入由bootstrap注入其初始化端口，Project应用只协调，不直接写其私有表。S5自审移除未使用的writing分支，保留当前可见性检查；未改权限或断言。最终源码复验/独立审查后收口。
+
+
+### 独立审查修复与覆盖复核
+
+S3 `/root/project_storage_review` 发现R1：JSON null的result.id使CHECK得到SQL NULL而被接受，已增加jsonb_typeof(id)=string及JSON null回归；R2：持久重放载荷缺独立版本，现保存schema_version=1，未知版本在当前授权检查后安全拒绝且不改写/删除，测试v2拒绝及原记录保持。初审混合态重跑与修复DDL重载重叠的3失败不计固定基线结论，完整保留说明；修复快照后重跑。S4补实际字段NULL/研究范围上限/未知status及16/128键边界，沿用task004全部T01–T10。版本不是文档/OpenAPI版本，无旧业务库回填。
+
+
+### S7最终工程收口
+
+S1–S7完成。S3/S6独立 `/root/project_storage_review` 固定s3-fix2复验168项真实PG全部通过，run_id `rpb_test_8f25a755524a4ab5ba8708799bc21349`，实例停止/目录清理true；manifest SHA256 `a9d712b6cb9e6a802584bfca6c695f95ca969f1d7f7c22e1ced5faf5f2707d2e`，前后无漂移。R1/R2和覆盖缺口全部闭合。S4按PC01–08/task004 T01–T10及R01–13核对完整；S5无需额外简化，已移除未消费分支。check-final2：82后端/66契约/3前端、ruff/format/mypy通过；build-final通过；最新测试仅新增合法name1组合，独立168项实际执行覆盖该最终内容。详见receipt及独立记录。
+
+设计、代码、自动验证与工程收口限定完成；M-P0-01未到触发点，继续[task019](019-browser-milestone.md)真实浏览器闭环。未实现的Project列表/修改/归档/删除等不算本片完成，也不恢复逐任务人工门禁。最终delivery相对受审仅追加交接记录。

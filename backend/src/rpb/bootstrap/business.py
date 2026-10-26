@@ -10,9 +10,13 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.engine import Engine
 
 from rpb.adapters.auth import AccountStore
+from rpb.adapters.construction import ConstructionInitializer
+from rpb.adapters.project_commands import ProjectUnitOfWork
 from rpb.api.account import router_for
+from rpb.api.projects import router_for as projects_router
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.account_config.application.service import AccountService
+from rpb.modules.project.application.service import ProjectService
 
 
 def create_business_app(engine: Engine, origin: str) -> FastAPI:
@@ -29,8 +33,10 @@ def create_business_app(engine: Engine, origin: str) -> FastAPI:
     ):
         raise ValueError("Explicit same-origin HTTPS or loopback HTTP origin required")
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+    account = AccountStore(engine)
+    app.include_router(router_for(AccountService(account, origin), parsed.scheme == "https"))
     app.include_router(
-        router_for(AccountService(AccountStore(engine), origin), parsed.scheme == "https")
+        projects_router(ProjectService(ProjectUnitOfWork(account, ConstructionInitializer)), origin)
     )
 
     def error(request: Request, code: str, status: int) -> JSONResponse:
@@ -41,7 +47,9 @@ def create_business_app(engine: Engine, origin: str) -> FastAPI:
                 "error": {
                     "code": code,
                     "category": code.split("_", 1)[0].lower(),
-                    "message": "Request could not be completed",
+                    "message": "资源不可用"
+                    if code == "PERMISSION_RESOURCE_UNAVAILABLE"
+                    else "Request could not be completed",
                     "retryable": False,
                     "details": None,
                     "recovery": None,
