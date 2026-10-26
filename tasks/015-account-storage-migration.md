@@ -1,6 +1,6 @@
 # Task015：B02 Account基础物理模型与首条迁移
 
-文档版本：v1.0
+文档版本：v1.1
 更新日期：2026-10-25
 
 ## 1. 目标与授权
@@ -129,3 +129,11 @@ M-B02-01：用户明确要求本轮“再提交我审核”，据此保留限定
 [最终check](../docs/workorders/evidence/task015_b02_2026-10-25/check-final.log)再次通过ruff/format、mypy、82后端、66契约、3前端；最终存储27项通过且清理成功。反例日志的2失败/1 teardown错误为故意恢复数据丢失/凭据暴露缺陷的预期结果，不是最终产物失败；整实例仍成功清理。未重跑无关浏览器端到端，未将骨架浏览器结果作为Account业务验收。
 
 [限定文档检查](../docs/workorders/evidence/task015_b02_2026-10-25/document-checks.json)及[复现脚本](../docs/workorders/evidence/task015_b02_2026-10-25/check_delivery.py)核验14个本轮文件、链接、版本日期及受审源码无漂移；并行流程修改单列保留，不计B02成果。最终快照含所有未提交/未跟踪源码，manifest摘要和复验信息保存在[receipt](../docs/workorders/evidence/task015_b02_2026-10-25/receipt.json)，避免自引用摘要。
+
+## 10. 2026-10-25 真实用户限定接受（后续记录）
+
+用户在 local 聊天 `01a16eab-7cfa-7542-9bb5-b35cf70b45fb` 的消息 `01a1710b-4928-7a31-b70b-68ca1b2a2922` 明确表示：“接受 M-B02-01 的限定交付，自动新建任务继续推进项目，按照 project-delivery 流程自由迭代，直到遇到需要我决策或下一个里程碑再停下。”本轮已通过 read_thread 核实原文。
+
+M-B02-01 已限定接受本单 AC01–11 的 Account基础物理模型、首条迁移及隔离PG17测试，绑定第9节 delivery/receipt，manifest SHA256 `e6ce09609b86c046b5bee32a6f0dc26e6888ff610ba9013e25f91e9b6037205e`。不扩大为注册登录、完整Account业务、Project持久化、生产迁移或整个B02。前文待接受/授权耗尽为当时历史记录，由本节更新当前状态。
+
+入场核对：Account代码、迁移、测试和执行入口无漂移；四份后续整理文档（项目状态、设计索引、任务地图、task013规划）变化保留，详见[差异](../docs/workorders/evidence/task016_project_storage_2026-10-25/acceptance-drift.patch)。这些变化不修改AC01–11的规则或实现，不迁移旧接受到其他业务。后续批次及检查点见[task016](016-project-storage.md)。

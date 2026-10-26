@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-from rpb.adapters.account import metadata
+from rpb.adapters.project import metadata
 
 ERROR = "Migration execution unavailable: verified isolated test connection required"
 try:
