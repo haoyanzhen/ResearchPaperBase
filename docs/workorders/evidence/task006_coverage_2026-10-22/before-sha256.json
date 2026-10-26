@@ -1,0 +1,9 @@
+{
+  "contracts/p0.openapi.json": "2652913408e215e5de7560c1d3e523b403c88c2823a1f7a31eede609aee34acf",
+  "contracts/p0.coverage.json": "172bf78f18cc2e44145eafe44a1bd820ebb2a306e0e2771a3a8b2c66c5d346ba",
+  "scripts/check_api_contracts.py": "e14b30f1069cd69121a420ce4146dea29bb462d6b961694f188af964980fec1b",
+  "scripts/tests/test_public_errors.py": "d17fe48605d5b7671bd8634782170993b79a548df0560fd5aa9f7015dfca2861",
+  "scripts/tests/test_api_contracts.py": "8ce673a3c2c9a63fc3598b18e4c3475d8d5cbd9e10afd80c562b71e561cbdd09",
+  "tasks/006-public-error-recovery-contract.md": "8b4c0279f1b5f2b959fa4cd3f014ee7aa3806a1f15899294a375731f52a052a6",
+  "docs/PROJECT_STATUS.md": "f35e4b74c107e2222b8ec043bafb24053a6839d7b49647b7bfce3a1199c3ccec"
+}

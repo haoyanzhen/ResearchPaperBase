@@ -1,0 +1,48 @@
+{
+  "old_evidence_count": 275,
+  "old_evidence_changed": [],
+  "reviewed_scope_matches_original_hashes": true,
+  "task007_historical_sections_preserved": true,
+  "final_snapshot_files": 184,
+  "final_current_files_match": true,
+  "changed_sources": [
+    "README.md",
+    "contracts/p0.coverage.json",
+    "contracts/p0.openapi.json",
+    "docs/IMPLEMENTATION_ENTRY.md",
+    "docs/PROJECT_STATUS.md",
+    "docs/design/03-04_ui_shared_interactions_appendix.md",
+    "docs/design/04-01_p0_operation_contracts.md",
+    "docs/design/04-02_transport_task_file_contracts.md",
+    "docs/design/04-03_machine_contract_governance.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "scripts/tests/test_material_policy_contracts.py",
+    "tasks/007-skeleton-review-fixes.md",
+    "tasks/008-material-policy-internal-contracts.md",
+    "tasks/example.md"
+  ],
+  "added_sources": [
+    ".agents/skills/project-delivery/SKILL.md",
+    "docs/NIGHTLY_MAINTENANCE.md",
+    "docs/workorders/nightly_maintenance_2026-10-23.md",
+    "docs/workorders/project_delivery_skill_2026-10-23.md",
+    "docs/workorders/task007_coverage_closure_2026-10-23.md",
+    "docs/workorders/task007_fixes_2026-10-23.md",
+    "scripts/tests/test_material_policy_coverage.py",
+    "scripts/tests/test_material_policy_review_regressions.py"
+  ],
+  "parallel_changes_preserved": [
+    "README.md",
+    "docs/IMPLEMENTATION_ENTRY.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "tasks/008-material-policy-internal-contracts.md",
+    "tasks/example.md",
+    ".agents/skills/project-delivery/SKILL.md",
+    "docs/NIGHTLY_MAINTENANCE.md",
+    "docs/workorders/nightly_maintenance_2026-10-23.md",
+    "docs/workorders/project_delivery_skill_2026-10-23.md",
+    "docs/workorders/task007_coverage_closure_2026-10-23.md",
+    "scripts/tests/test_material_policy_coverage.py"
+  ],
+  "links_checked": 146
+}

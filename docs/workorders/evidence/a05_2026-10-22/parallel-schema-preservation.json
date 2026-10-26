@@ -1,0 +1,6 @@
+{
+  "ErrorTaskStatusURL": true,
+  "ErrorTaskDetails": true,
+  "ErrorStateEventReplayUnavailable": true,
+  "TaskError": true
+}

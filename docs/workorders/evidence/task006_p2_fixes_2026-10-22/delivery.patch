@@ -1,0 +1,357 @@
+--- before/contracts/p0.openapi.json
++++ after/contracts/p0.openapi.json
+@@ -2,7 +2,7 @@
+   "openapi": "3.1.0",
+   "info": {
+     "title": "Research Paper Base P0 typed contract subset",
+-    "version": "1.1.0",
++    "version": "1.2.0",
+     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+   },
+   "servers": [
+@@ -8381,7 +8381,7 @@
+         "type": "object",
+         "properties": {
+           "status_url": {
+-            "$ref": "#/components/schemas/ErrorResourceURL"
++            "$ref": "#/components/schemas/ErrorTaskStatusURL"
+           }
+         },
+         "required": [
+@@ -9765,14 +9765,7 @@
+             "const": false
+           },
+           "details": {
+-            "oneOf": [
+-              {
+-                "$ref": "#/components/schemas/ErrorTaskDetails"
+-              },
+-              {
+-                "type": "null"
+-              }
+-            ]
++            "$ref": "#/components/schemas/ErrorTaskDetails"
+           },
+           "recovery": {
+             "oneOf": [
+@@ -11524,11 +11517,33 @@
+                     "type": "null"
+                   }
+                 }
++              },
++              "details": {
++                "not": {
++                  "required": [
++                    "outcome"
++                  ],
++                  "properties": {
++                    "outcome": {
++                      "const": "not_accepted"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
+               }
+             }
+           }
+         ],
+         "description": "Error after task acceptance; same public vocabulary, never authorizes retry of the accepted request."
++      },
++      "ErrorTaskStatusURL": {
++        "type": "string",
++        "pattern": "^/api/v1/tasks/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
++        "minLength": 50,
++        "maxLength": 50,
++        "description": "Task status endpoint only. Authorization and task ownership must still be checked at runtime."
+       }
+     },
+     "responses": {
+--- before/contracts/p0.coverage.json
++++ after/contracts/p0.coverage.json
+@@ -1,5 +1,5 @@
+ {
+-  "version": "1.1",
++  "version": "1.2",
+   "date": "2026-10-22",
+   "source_rows": [
+     {
+--- before/scripts/check_api_contracts.py
++++ after/scripts/check_api_contracts.py
+@@ -106,10 +106,20 @@
+     error_refs = spec['components']['schemas']['PublicError']['oneOf']
+     variants = [spec['components']['schemas'][r['$ref'].rsplit('/', 1)[1]] for r in error_refs]
+     assert sorted(v['properties']['code']['const'] for v in variants) == sorted(coverage['public_errors']['variants']), 'public error coverage drift'
+-    for variant in variants:
++    expected_members = {}
++    for reference, variant in zip(error_refs, variants):
+         status = str(variant['x-http-status'])
++        expected_members.setdefault(status, []).append(reference['$ref'])
++    # Compare multisets: omissions, extra members and duplicates must all fail.
++    envelopes = {name.removeprefix('ErrorEnvelope'): schema
++                 for name, schema in spec['components']['schemas'].items()
++                 if re.fullmatch(r'ErrorEnvelope[0-9]{3}', name)}
++    assert set(envelopes) == set(expected_members), 'public error status groups drift'
++    for status, expected in expected_members.items():
+         response = spec['components']['responses']['PublicError' + status]
+         assert response['content']['application/json']['schema']['$ref'] == '#/components/schemas/ErrorEnvelope' + status
++        actual = envelopes[status]['properties']['error']['oneOf']
++        assert sorted(member['$ref'] for member in actual) == sorted(expected), 'public error status membership drift: ' + status
+     assert set(coverage['event_payloads_typed']) == set(spec['x-sse-payloads'])
+ 
+ 
+--- before/scripts/tests/test_public_errors.py
++++ after/scripts/tests/test_public_errors.py
+@@ -22,7 +22,7 @@
+ CASES=[(code,status,category) for status,category,codes in GROUPS for code in codes.split()]
+ RID='00000000-0000-4000-8000-000000000002'
+ def error(code,category):
+- return dict(code=code,category=category,message='资源不可用' if code=='PERMISSION_RESOURCE_UNAVAILABLE' else '操作未完成',retryable=False,details=None,recovery=None)
++ return dict(code=code,category=category,message='资源不可用' if code=='PERMISSION_RESOURCE_UNAVAILABLE' else '操作未完成',retryable=False,details=({'status_url': '/api/v1/tasks/' + RID} if code == 'STATE_EVENT_REPLAY_UNAVAILABLE' else None),recovery=None)
+ def action(name,label): return dict(action=name,label=label)
+ 
+ class PublicErrorTests(unittest.TestCase):
+--- before/scripts/tests/test_public_error_requirements.py
++++ after/scripts/tests/test_public_error_requirements.py
+@@ -148,8 +148,8 @@
+                             else (advice == 'check_result' if outcome == 'unknown' else advice != 'retry_request'))
+                 with self.subTest(code=code, outcome=outcome, retryable=retryable, advice=advice):
+                     self.assertEqual(valid('PublicError', value), expected)
+-                    self.assertEqual(valid('TaskError', value), expected and not retryable)
+-                    self.assertEqual(valid('ErrorPayload', {'error': value}), expected and not retryable)
++                    self.assertEqual(valid('TaskError', value), expected and not retryable and outcome != 'not_accepted')
++                    self.assertEqual(valid('ErrorPayload', {'error': value}), expected and not retryable and outcome != 'not_accepted')
+ 
+     def test_er01_er07_all_http_statuses_and_envelope_boundaries(self):
+         statuses = {status for _, status, _ in CASES}
+--- before/scripts/tests/test_public_error_review_regressions.py
++++ after/scripts/tests/test_public_error_review_regressions.py
+@@ -0,0 +1,70 @@
++"""Task006 independent review R01–R03 requirement regressions."""
++import copy
++import json
++import unittest
++from test_api_contracts import SPEC_DATA, valid
++from test_public_errors import RID, error, action
++from check_api_contracts import COVERAGE, check
++
++
++class ReviewRegressionTests(unittest.TestCase):
++    def test_r01_replay_requires_task_status_reference(self):
++        base = error('STATE_EVENT_REPLAY_UNAVAILABLE', 'state')
++        for recovery in (None, action('reload_task', '重新读取状态')):
++            for details in (None, {}, {'status_url': None}):
++                self.assertFalse(valid('PublicError', base | {'details': details, 'recovery': recovery}))
++            good = base | {'details': {'status_url': '/api/v1/tasks/' + RID}, 'recovery': recovery}
++            for schema in ('PublicError', 'TaskError'):
++                self.assertTrue(valid(schema, good))
++            self.assertTrue(valid('ErrorEnvelope409', {'error': good, 'meta': {'request_id': RID}}))
++            self.assertTrue(valid('ErrorPayload', {'error': good}))
++
++    def test_r01_task_status_url_exact_route(self):
++        for task_id in (RID, RID.upper(), 'ffffffff-ffff-ffff-ffff-ffffffffffff'):
++            self.assertTrue(valid('ErrorTaskDetails', {'status_url': '/api/v1/tasks/' + task_id}))
++        for url in ('/api/v1/me', '/api/v1/tasks/not-uuid', '/api/v1/tasks/',
++                    '/api/v1/tasks/' + RID + '/events', '/api/v1/tasks/' + RID + '/',
++                    '/api/v1/tasks/' + RID + '?token=x', '/api/v1/tasks/' + RID + '#x',
++                    '/api/v1/tasks/' + RID + '\n', 'https://evil.test/api/v1/tasks/' + RID,
++                    '/api/v1/tasks/../' + RID):
++            self.assertFalse(valid('ErrorTaskDetails', {'status_url': url}), url)
++        # Lock errors can still omit an undisclosable task reference.
++        self.assertTrue(valid('PublicError', error('LOCK_CONTENT_BUSY', 'lock_conflict')))
++
++    def test_r02_accepted_carriers_reject_not_accepted(self):
++        for code, category in [('STATE_RESOURCE_LIMIT', 'state'), ('STORAGE_INTERNAL_FAILURE', 'storage'),
++                               ('PROVIDER_FAILED', 'provider'), ('PROVIDER_UNAVAILABLE', 'provider'),
++                               ('PROVIDER_TIMEOUT', 'provider')]:
++            for advice in (None, action('check_result', '核查原操作结果')):
++                value = error(code, category) | {'details': {'outcome': 'not_accepted'}, 'recovery': advice}
++                self.assertTrue(valid('PublicError', value))
++                self.assertFalse(valid('TaskError', value))
++                self.assertFalse(valid('ErrorPayload', {'error': value}))
++            unknown = error(code, category) | {'details': {'outcome': 'unknown'},
++                                              'recovery': action('check_result', '核查原操作结果')}
++            self.assertTrue(valid('TaskError', unknown))
++            self.assertTrue(valid('ErrorPayload', {'error': unknown}))
++            self.assertTrue(valid('TaskError', error(code, category)))
++
++    def test_r03_status_and_envelope_membership_drift_rejected(self):
++        coverage = json.loads(COVERAGE.read_text())
++        check(SPEC_DATA, coverage)  # An unrelated broken baseline must not make mutations pass.
++        def metadata(s):
++            s['components']['schemas']['ErrorPermissionResourceUnavailable']['x-http-status'] = 500
++        def removed(s):
++            s['components']['schemas']['ErrorEnvelope409']['properties']['error']['oneOf'].pop()
++        def added(s):
++            s['components']['schemas']['ErrorEnvelope500']['properties']['error']['oneOf'].append(
++                {'$ref': '#/components/schemas/ErrorPermissionResourceUnavailable'})
++        def duplicate(s):
++            members = s['components']['schemas']['ErrorEnvelope404']['properties']['error']['oneOf']
++            members.append(copy.deepcopy(members[0]))
++        for mutate, expected_message in ((metadata, 'public error status groups drift'),
++                                         (removed, 'public error status membership drift'),
++                                         (added, 'public error status membership drift'),
++                                         (duplicate, 'public error status membership drift')):
++            changed = copy.deepcopy(SPEC_DATA)
++            mutate(changed)
++            with self.subTest(mutation=mutate.__name__), self.assertRaisesRegex(
++                    AssertionError, expected_message):
++                check(changed, coverage)
+--- before/docs/design/04-03_machine_contract_governance.md
++++ after/docs/design/04-03_machine_contract_governance.md
+@@ -1,6 +1,6 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.2
++文档版本：v1.3
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+@@ -8,7 +8,7 @@
+ 
+ 01/02 决定业务含义、权限和分期；04/04-01/04-02 维护跨字段、执行与传输语义。[OpenAPI 3.1 JSON](../../contracts/p0.openapi.json)只对其实际包含的具名 schema、请求、成功响应和公共错误字段提供机器维护来源；没有 schema 的操作继续由 Markdown 维护，不能据此生成宽松 `object` 代用品。结构与业务规则冲突时停止依赖该冲突的代码生成并修正规范，不修改业务去迎合 schema。
+ 
+-本次机器覆盖为 **42 个操作的请求/成功响应结构、另40个操作的仅请求结构、159 个 schema、5 类 SSE payload**，全部为局部覆盖，**没有任何操作被宣称为完整 HTTP 契约或运行验收通过**。A04公共错误42个变体及details/recovery已转写；每个操作的具体错误响应绑定尚未补齐，不能从公共组件推定所有错误适用于每条路由；SSE 的 payload 验证不等于完整 event/流验证。SDK、服务端模型和路由代码尚未生成。
++task006 P2修复限定快照的机器覆盖为 **42 个操作的请求/成功响应结构、另40个操作的仅请求结构、160 个 schema、5 类 SSE payload**，全部为局部覆盖，**没有任何操作被宣称为完整 HTTP 契约或运行验收通过**。A04公共错误42个变体及details/recovery已转写；A05五个同步操作已绑定适用错误子集，其他操作的具体错误响应绑定尚未补齐，不能从公共组件推定所有错误适用于每条路由；SSE 的 payload 验证不等于完整 event/流验证。SDK、服务端模型和路由代码尚未生成。
+ 
+ [覆盖清单](../../contracts/p0.coverage.json)保留 04-01 所有操作表行及 04-01/04-02 正文具名 HTTP 路由的源签名。一个表行可含多个方法和路径，因此源行数不是端点数。校验器重新抽取源签名并逐项比较，新增、删除或变更操作行后必须显式更新覆盖，不能悄悄遗漏。三份04规范文件另保留完整SHA-256审核摘要（保守地包含历史及元信息）；任意正文变更会要求重新审查并同步摘要。它检测漂移，不证明Markdown和schema语义等价；不得自动刷新摘要后跳过审查。`typed_operations` 列出请求/成功响应局部覆盖，`request_only_operations` 列出只校验请求的操作；后者没有成功响应schema，不能从缺失推断无正文。`row_coverage` 为每条源行分别列出操作覆盖与剩余项。两类清单列出可消费的机器操作；其余源行不等于已经实现或完成转写。
+ 
+@@ -56,3 +56,7 @@
+ 本次修订 v1.1（2026-10-21）：登记精确基线与审查层级，现有JSON和覆盖指纹未修改。
+ 
+ A04验收命令另含 `python -m unittest discover -s scripts/tests -p 'test_public_errors.py' -v`。当前差异及执行结果见[任务006](../../tasks/006-public-error-recovery-contract.md)；兼容门禁的非零结果保留，定向审查不代替人工接受。
++
++2026-10-22 P2修复：回放过期错误要求具名Task状态URL；TaskError排除命令未受理结果；静态检查逐状态核对变体与响应信封成员（含遗漏、额外和重复）。字段仍由JSON单一维护，详见[修复记录](../workorders/task006_p2_fixes_2026-10-22.md)。
++
++A05限定交付见[任务007审核包](../workorders/task007_a05_review_2026-10-22.md)。资料来源投影/提示词汇已具名，但完整来源详情、TaskView承载及可信签发/并发裁决仍待A06–A08；新增字段不构成运行授权。发现模式 `python -m unittest discover -s scripts/tests -p 'test_*.py' -v` 包含全部契约回归。本次兼容对比使用入场实际工作树快照，不称其为人工已接受基线；A04原基线差异仍待人工接受；并行R01–R03修复归属[task006修复包](../workorders/task006_p2_fixes_2026-10-22.md)，本轮合并态回归涵盖其修复，不将其计为A05新增成果。
+--- before/tasks/006-public-error-recovery-contract.md
++++ after/tasks/006-public-error-recovery-contract.md
+@@ -1,6 +1,6 @@
+ # Task 006：A04 公共错误与恢复提示契约
+ 
+-文档版本：v1.2
++文档版本：v1.3
+ 更新日期：2026-10-22
+ 
+ ## 1. 目标、授权与下一轮边界
+@@ -134,3 +134,9 @@
+ | ER-08 | `test_er08_error_coverage_and_response_drift_rejected`及原ContractTests/ER-08 | 错误覆盖遗漏、响应错绑拒绝；删除错误/Task约束或429组件触发兼容审查；原请求/成功响应回归保留 |
+ 
+ 以上规范来源沿用第8节逐项映射；枚举、长度、具名结构按04 §5.1指定的机器字段契约写成固定预期，未从schema动态生成期望。新增测试由既有工程入口的unittest discover自动发现。当前执行日志、命令、输入快照和SHA-256见报告；契约测试通过不替代人工接受或端到端验收。
++
++## 10. 独立审核P2修复与复审（2026-10-22）
++
++用户授权修复3项P2、保留并行修改、补回归并复审。R01回放恢复引用、R02已受理Task的outcome、R03状态映射漂移检查均已修复；4个新增回归修复前失败、修复后通过，原31方法保留并按明确规则收紧受影响预期。限定快照共35方法与结构检查通过，两位subagent复审未发现范围内残留缺陷，见[修复审核包](../docs/workorders/task006_p2_fixes_2026-10-22.md)。
++
++共享工作区的并行Material契约/规范更新已同步，最终根目录45项契约测试及结构检查通过（47+40操作、170 schemas、131源行），兼容subagent再次复审当前合并版本及4个回归通过。中间并行漂移失败记录保留，不改写历史证据；本单关闭三项P2修复与复审，不代填人工接受。原第8–9节为历史证据，不覆盖本节限定。API/真实授权/事务/UI与端到端验收继续未完成。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.35
++文档版本：v1.38
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+@@ -20,7 +20,7 @@
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+ | 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已交付；独立审核发现3项P2待修，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已交付；3项P2已限定修复并通过subagent复审；合并态45项契约测试及结构检查通过，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付，见task007审核包；A06–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -33,15 +33,17 @@
+ 
+ ## 3. 待完成项
+ 
+-下一步任务已在[task007第6节](../tasks/007-skeleton-review-fixes.md#6-下一阶段计划a05-资料设置与分类操作契约)登记：A05资料设置与分类UI/API契约，分设置操作、分类操作、错误/UI对应、契约测试四步。本轮仅建单，A05执行待开始；原task007骨架修复历史保留。A06及后续任务另列依赖，不自动启动业务实现或恢复延期选型。
++下一步任务已在[task007第6节](../tasks/007-skeleton-review-fixes.md#6-下一阶段计划a05-资料设置与分类操作契约)登记：A05资料设置与分类UI/API契约，分设置操作、分类操作、错误/UI对应、契约测试四步。A05限定设计、五个同步操作及契约验证已交付，见[审核包](workorders/task007_a05_review_2026-10-22.md)；原task007骨架修复历史保留。A06及后续任务另列依赖，不自动启动业务实现或恢复延期选型。
++
++[task008：A06资料来源与当前政策内部契约](../tasks/008-material-policy-internal-contracts.md)已按“task007的A05完成”假设建单，拆为类型、读取/缓存、派发/提交裁决、逻辑持久事实、验收交接五步。建单假设保留为历史；A05本轮交付见task007审核包，A06仍待开始，执行时须核对实际快照及A04修复/人工接受范围；不自动执行task008。
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
+-面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)已交付设计、机器结构及契约测试；本次需求覆盖复核补充8组测试，全部31项契约测试通过，详见[task006覆盖补齐报告](workorders/task006_coverage_closure_2026-10-22.md)；兼容门禁83项差异已作定向技术审查，保留退出1；[独立审核](workorders/task006_independent_review_2026-10-22.md)发现恢复目标、已受理Task的outcome及状态映射漂移检查3项P2待修，人工接受待记录；不自动启动A05–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
++面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)已交付设计、机器结构及契约测试；本次需求覆盖复核补充8组测试，全部31项契约测试通过，详见[task006覆盖补齐报告](workorders/task006_coverage_closure_2026-10-22.md)；兼容门禁83项差异已作定向技术审查，保留退出1；[独立审核](workorders/task006_independent_review_2026-10-22.md)发现的3项P2已修复，35项限定快照测试及subagent复审通过；[修复包](workorders/task006_p2_fixes_2026-10-22.md)保留并行写入期间的漂移记录，最终合并态45项契约测试及结构检查通过，人工接受待记录；A05当前交付另见task007；不自动启动A06–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
+ 
+ | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
+ | --- | --- | --- | --- | --- |
+-| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)待修；逐端点错误响应绑定及其余机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
++| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)已限定修复并复审；[合并态验证](workorders/task006_p2_fixes_2026-10-22.md)45项契约测试及结构检查通过；A05五个同步操作的错误子集已绑定；其余逐端点错误响应绑定及机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+ | TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | 延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
+ | TRACK-006 | 内部安全参考的版本管理与受控交付（D07） | 延期 | 工作单 D07 | 明确存储、读者和同步机制；不在本表复制内部正文 |
+ | TRACK-007a | Project资产、上下文与版本快照字段映射 | 逻辑映射已细化；物理字段待落实 | [07 §3–4](design/07_data_persistence.md#3-逻辑记录与字段映射) | 本轮定义最小持久事实/归属与约束；新核心建立后逐项落实实际表字段、索引和测试，不能将逻辑表当作已迁移 |
+@@ -63,7 +65,7 @@
+ | TRACK-012e | P0 运行验收与缺项报告 | 待开始 | TRACK-012a–012d；新核心建立后确认安装/测试入口 | 在隔离测试环境执行相关自动化与端到端验收，报告命令、结果、失败项和未覆盖范围 |
+ | TRACK-018 | 资产复用与读取一致性实现 | 待开始 | [02-02 §2.5](design/02-02_construction_versioning_appendix.md#25-不可变逻辑快照与资产复用边界)、04/05/06/07、[09 §4.1](design/09_quality_observability.md#41-不可变快照一致性验收) | 将已确认的资产复用、索引/图谱隔离、发布可见性及回收竞争边界落实到存储与读取路径；历史保留时长与容量政策另行决策；版本绑定和 KV-I01–I09 由 TRACK-012b 跟踪 |
+ | TRACK-019 | 引用有效性与版本选择实现验收 | 待开始 | [设计评审](workorders/knowledge_citation_selection_review_2026-10-16.md)、02-02 §2.6–2.7、04-01 §5.1、09 §4.2 | 按已细化设计实现不可变引用解析、目标版本新引用、范围/风险投影及显式版本选择；执行 KV-C01–C05/KV-V01–V05；跨 Project 联合引用不在范围；引用规范与空版本消费已按R1/R3及补充决定关闭，后续验收不得恢复旧覆盖率或空版创建禁令 |
+-| TRACK-021 | 资料策略跨层契约与实现接入 | Q1–Q4已闭合；接口/实现待收口 | [08-01 §11](design/08-01_agent_data_access_policy.md#11-闭合检查与剩余工作) | 按G01–G03补设置/分类/错误投影、类型与来源字段、缓存/派发/提交裁决及迁移验证；不再请求Q1–Q4决定。G04已按用户决定关闭：P1互联网公开来源自动public，内网通常不纳入，见08-01 §4.4；工程收口仍需落实自动来源记录和对应测试；见[检查记录](workorders/agent_data_policy_closure_2026-10-21.md) |
++| TRACK-021 | 资料策略跨层契约与实现接入 | Q1–Q4已闭合；A05限定契约已交付，内部/运行待收口 | [08-01 §11](design/08-01_agent_data_access_policy.md#11-闭合检查与剩余工作) | A05设置/分类/错误子集及来源只读字段见[task007审核包](workorders/task007_a05_review_2026-10-22.md)；G01/G03剩余完整载体与可信来源消费、G02缓存/派发/提交及迁移验证仍开放；不再请求Q1–Q4决定。G04已按用户决定关闭：P1互联网公开来源自动public，内网通常不纳入，见08-01 §4.4；工程收口仍需落实自动来源记录和对应测试；见[检查记录](workorders/agent_data_policy_closure_2026-10-21.md) |
+ | TRACK-022 | 运行目标OPS-D01 | 方案A已定；数值目标待明确 | [10 §9](design/10_operations_deployment.md#9-待决策的运行目标)；TRACK-007c/009b/011b | 已选单部署、管理员始终可授权计划停机、人工恢复；不采纳前轮示例RPO/RTO/备份周期，实际部署前再明确必要目标；实际证据复用既有跟踪项 |
+ 
+ ## 4. 历史记录与验证
+@@ -122,3 +124,7 @@
+ 本次修订 v1.35（2026-10-22）：task006补齐恢复动作/details矩阵、字段边界、技术重试组合、HTTP/Task/SSE载体和错误契约漂移回归；31项契约测试及结构检查通过。机器契约及业务源码未改，历史兼容门禁仍退出1（83项），人工接受、真实鉴权/脱敏/事务及端到端验收仍未完成，见[覆盖报告](workorders/task006_coverage_closure_2026-10-22.md)。
+ 
+ 本次修订 v1.35（2026-10-22）：按用户要求将下一步拆分追加到已存在的task007，保留原修复历史；限定A05下一阶段计划及后续依赖。本轮仅文档建单，未执行契约或业务实现，不改变人工接受状态。
++
++本次修订 v1.36（2026-10-22）：新增task008条件化计划，承接task007的A05之后的A06内部契约设计；区分规划假设与实际进度，保留task006审核待修记录及既有改动。本轮仅建单。
++
++本次修订（2026-10-22）：按task007完成A05 N01–N04限定设计与机器契约，新增11方法，合并态46项契约测试及结构检查通过（含并行task006 P2修复）；保留入场及历史兼容门禁的非零差异，方向解释见[审核包](workorders/task007_a05_review_2026-10-22.md)。业务运行与人工接受未完成，task008只保留计划。
+--- before/docs/workorders/task006_p2_fixes_2026-10-22.md
++++ after/docs/workorders/task006_p2_fixes_2026-10-22.md
+@@ -0,0 +1,50 @@
++# Task006 三项P2修复与复审
++
++文档版本：v1.0
++更新日期：2026-10-22
++
++## 结果与边界
++
++[独立审核](task006_independent_review_2026-10-22.md)的R01–R03已修复，新增4个回归方法；修复前4方法产生7个失败，修复后限定快照的35方法和结构检查全部通过。两位subagent完成修复后的安全/恢复与兼容专项复审，均未发现范围内残留问题；人工接受未记录。
++
++共享工作区同时有其他任务写入Material契约、路由、规范及状态。本任务未回滚它们，也未替它们更新覆盖清单。中间检查因操作文档与覆盖清单不同步失败，原日志保留；并行同步后，**当前合并工作区45项契约测试及结构检查通过**，兼容subagent再次复审当前合并版本并跑4个回归通过。不启动其他业务实现。
++
++## 修复与回归追踪
++
++| 审核项/任务要求 | 实际变更 | 回归证据 |
++| --- | --- | --- |
++| R01；ER-01/06/07；04-02 §2.1/3.2 | 新增ErrorTaskStatusURL，仅接受UUID任务状态端点；ErrorTaskDetails使用该类型；回放过期错误details不再可空。锁冲突仍可省略无权披露的任务引用 | `test_r01_replay_requires_task_status_reference`、`test_r01_task_status_url_exact_route`：正确UUID/载体正例；null、缺字段、其他端点、events、query/fragment、尾换行、路径穿越和外链反例 |
++| R02；ER-05/07；04 §5.1 | TaskError排除命令级not_accepted，SSE通过复用继承约束；HTTP公共错误仍允许未受理，Task的unknown与空详情仍合法 | `test_r02_accepted_carriers_reject_not_accepted`：5技术错误×两种建议，另保留unknown/空值正例；并行90组合测试的Task/SSE两条期望收紧 |
++| R03；ER-08；04-03 §3 | 逐HTTP状态比较变体和响应信封的成员多重集合；分组、成员遗漏、额外成员、重复成员均拒绝 | `test_r03_status_and_envelope_membership_drift_rejected`：未变异基线先通过；每种变异精确匹配groups/membership错误，避免无关失败假绿 |
++
++回归文件：[test_public_error_review_regressions.py](../../scripts/tests/test_public_error_review_regressions.py)。并行新增的[test_public_error_requirements.py](../../scripts/tests/test_public_error_requirements.py)完整保留，仅两条Task/SSE期望增加排除not_accepted；[test_public_errors.py](../../scripts/tests/test_public_errors.py)只修正回放错误的合法fixture，不再将本应必填的details为空视作正例。原请求/成功响应及80个最初schema未改，未删除其他断言。
++
++## 兼容定向审查
++
++相对本轮修改前快照，保守兼容门禁退出1，准确报告3个既有schema收紧：ErrorTaskDetails的URL、ErrorStateEventReplayUnavailable的必填details、TaskError的outcome。新增ErrorTaskStatusURL是独立新增类型。三项都是修复既定规范的生产端约束遗漏，会拒绝旧的非法输出；不改请求、成功响应、权限或业务状态。不得把非零门禁改成无差异通过。
++
++相对7ba2a2c638500eaa43f2137d16a6a0686b663630的原始A04基线，仍为83项已审查差异：82操作错误引用+1个SSE映射；本次修复的错误schema在该早期基线中尚不存在，故必须另作上面的修复前比较。两个基线都保留，未将本次JSON冒充批准基线。
++
++## 执行证据和复现
++
++证据目录：[task006_p2_fixes_2026-10-22](evidence/task006_p2_fixes_2026-10-22/scoped-commands.json)。独立Python环境 `/tmp/rpb-a04-contract`；未加载业务数据库、Provider或邮件配置。
++
++| 验证 | 结果与日志 |
++| --- | --- |
++| 修复前新增回归 | [regression-before.log](evidence/task006_p2_fixes_2026-10-22/regression-before.log)：4方法、7失败，覆盖3个缺陷 |
++| 首轮工作区测试 | [tests.log](evidence/task006_p2_fixes_2026-10-22/tests.log)：35方法通过；随后并行写入改变了全局契约，不作为当前合并态通过证据 |
++| 最终限定快照 | [scoped-tests.log](evidence/task006_p2_fixes_2026-10-22/scoped-tests.log)：35方法通过；[scoped-structure.log](evidence/task006_p2_fixes_2026-10-22/scoped-structure.log)：160 schemas/126源行/42+40操作/5类payload通过 |
++| 修复前兼容比较 | [scoped-compatibility-before.log](evidence/task006_p2_fixes_2026-10-22/scoped-compatibility-before.log)：退出1，3个schema收紧，如上定向审查 |
++| 原始基线比较 | [scoped-compatibility-original.log](evidence/task006_p2_fixes_2026-10-22/scoped-compatibility-original.log)：退出1，83项历史差异 |
++| 最终共享工作区 | [live-tests-final.log](evidence/task006_p2_fixes_2026-10-22/live-tests-final.log)：45方法通过（含并行Material的10方法）；[live-structure-final.log](evidence/task006_p2_fixes_2026-10-22/live-structure-final.log)：47+40操作、170 schemas、131源行通过。中间coverage/spec及规范漂移失败保留在structure/intermediate日志 |
++
++限定快照保存在 `evidence/task006_p2_fixes_2026-10-22/verified-scope/`：以本轮before OpenAPI/coverage为底，合入4个修复schema、当前检查器及全部35测试。规范文本从原A04保存的preimage+delivery.patch恢复，SHA-256逐份匹配本轮before coverage中的指纹；没有忽略检查或重写摘要来消除并行错误。首次隔离尝试复制到并行变动中的规范，发生漂移失败，保留intermediate日志及快照；随后改为恢复精确输入并重新执行。
++
++复现限定快照：在上述verified-scope目录运行 `/tmp/rpb-a04-contract/bin/python -m unittest discover -s scripts/tests -v` 和 `/tmp/rpb-a04-contract/bin/python scripts/check_api_contracts.py`。已在项目根运行同样入口确认当前合并态；限定快照只用于独立复现本次修复。最终合并态另执行两个基线比较，live-compatibility-before/original日志仍分别为3项和83项定向审查差异，退出1保留。
++
++## 修复后subagent复审
++
++- `p2_security_recheck`：实际运行R01/R02三个回归及90组合、动作/details和HTTP载体矩阵，共6方法通过；确认无断言删减、未发现R01/R02残留问题。提出R03可能受无关异常掩盖的测试建议，已修正。
++- `p2_compat_recheck`：对正常隔离集合及四种变异执行核验；最终测试先检查正常基线，随后精确匹配每个拒绝原因，通过；确认仅3个既有schema收紧，没有请求/成功响应变更。未发现新的范围内缺陷。并行收口后再次复审当前合并checker与4个回归，全部通过；其新增Material检查块未覆盖P2成员检查或4个修复schema。
++
++复审与最终限定快照绑定的代码/schema摘要见 `reviewed-sha256.json`，完整交付及并行变化记录见 `delivery-sha256.json`、`preservation.json`。它们不替换原审核/覆盖包。自由文本脱敏、真实资源授权、动作资格、事务与端到端验收仍未执行。

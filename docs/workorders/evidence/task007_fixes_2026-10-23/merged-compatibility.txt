@@ -1,0 +1,5 @@
+operation changed/removed: GET /projects/{project_id}/material-policy
+operation changed/removed: PUT /projects/{project_id}/material-policy
+operation changed/removed: GET /projects/{project_id}/material-sources/{source_id}/classification
+operation changed/removed: POST /projects/{project_id}/material-sources/{source_id}/classification/confirm
+operation changed/removed: POST /projects/{project_id}/material-sources/{source_id}/classification/correct

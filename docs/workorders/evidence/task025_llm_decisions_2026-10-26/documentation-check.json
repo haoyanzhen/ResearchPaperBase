@@ -1,0 +1,26 @@
+{
+  "changed": [
+    "docs/PROJECT_STATUS.md",
+    "docs/design/01_functional_requirements.md",
+    "docs/design/02_domain_core.md",
+    "docs/design/03-01_ui_system_pages_appendix.md",
+    "docs/design/04-01_p0_operation_contracts.md",
+    "docs/design/05_application_use_cases.md",
+    "docs/design/07_data_persistence.md",
+    "docs/design/08_security_permissions.md",
+    "docs/design/09_quality_observability.md",
+    "tasks/025-personal-llm-design-gate.md"
+  ],
+  "added": [
+    "docs/workorders/task025_llm_parameter_research_2026-10-26.md"
+  ],
+  "versions_incremented": true,
+  "local_references": "passed",
+  "source_sections_unchanged": [
+    "P06c",
+    "P10c"
+  ],
+  "business_code_contracts_tests": "unchanged",
+  "business_tests": "not run; documentation-only",
+  "baseline_files": 253
+}

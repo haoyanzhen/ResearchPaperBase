@@ -1,0 +1,4 @@
+COMMAND: python3 scripts/engineering.py migration-history
++ uv run --locked alembic history
+
+EXIT: 0

@@ -1,0 +1,51 @@
+{
+  "reviewer": "/root/next_stage_design_review",
+  "date": "2026-10-26",
+  "scope": "Task023 AP01–05 and affected login identity/UI navigation boundaries",
+  "conclusion": "R1/R2/R3 closed; no remaining blocking findings in reviewed scope",
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "P2",
+      "status": "closed",
+      "evidence": "hidden preserves Profile and project branches; browser draft navigation plus conflict/lost-response roundtrips preserve draft and disabled save state"
+    },
+    {
+      "id": "R2",
+      "severity": "P2",
+      "status": "closed",
+      "evidence": "login checks current identity keys under governance lock; real committed email change while login waits rejects old email; new email login succeeds"
+    },
+    {
+      "id": "R3",
+      "severity": "P2",
+      "status": "closed",
+      "evidence": "expected_revision max_length=128; 129-character request rejects 422 without write"
+    }
+  ],
+  "coverage_review": {
+    "AP01": "partial edit, null clear, no-op, trim/length, reread and protected facts covered",
+    "AP02": "cross-field uniqueness, own username allowance, changed-email login, concurrent edit/register and stale-login interleaving covered",
+    "AP03": "auth/session/disabled/CSRF/origin, revision presence/staleness/length and invalid/readonly fields reject without profile write",
+    "AP04": "real transaction fault rollback; upgrade preserves old facts; metadata match; downgrade data guard and committed-write interleaving; DB length constraint",
+    "AP05": "desktop/narrow edit/cancel/save/reload; validation correction; conflict and lost response; cross-account cookie; profile/project draft navigation"
+  },
+  "independent_execution": {
+    "command": "PYTEST_ADDOPTS='-k ap0' python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin",
+    "passed": 31,
+    "deselected": 271,
+    "seconds": 38.72,
+    "run_id": "rpb_test_9f61a80091274a73a0556d9df63d717a",
+    "server_stopped": true,
+    "root_removed": true,
+    "log": "independent-profile-final.log"
+  },
+  "artifact_hashes": "independent-final-input.json",
+  "artifact_drift": [],
+  "limitations": [
+    "Independent execution selects AP tests, not all project regressions; final full suite remains primary agent responsibility.",
+    "No real Provider/email calls or production deployment validation.",
+    "Static review of test_project_storage old-column migration fix confirms original comparison plus new nullable-column assertion preserved; not selected in independent AP run.",
+    "Existing Starlette testclient deprecation warning remains."
+  ]
+}

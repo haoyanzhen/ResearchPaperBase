@@ -1,0 +1,17 @@
+{
+  "local_reference_targets_checked": 119,
+  "broken_targets": [],
+  "versions": {
+    "docs/design/04_api_contracts.md": "文档版本：v1.12",
+    "docs/design/04-01_p0_operation_contracts.md": "文档版本：v1.7",
+    "docs/design/04-02_transport_task_file_contracts.md": "文档版本：v1.6",
+    "docs/design/04-03_machine_contract_governance.md": "文档版本：v1.2",
+    "docs/design/08_security_permissions.md": "文档版本：v1.9",
+    "docs/design/09_quality_observability.md": "文档版本：v1.17",
+    "tasks/006-public-error-recovery-contract.md": "文档版本：v1.1",
+    "docs/PROJECT_STATUS.md": "文档版本：v1.34",
+    "docs/workorders/evidence/a04_2026-10-22/review.md": "文档版本：v1.0"
+  },
+  "git_diff_check_exit": 0,
+  "scope": "changed current documents; historical snapshots excluded; no application verification"
+}

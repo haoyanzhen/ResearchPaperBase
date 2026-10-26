@@ -1,0 +1,11 @@
+{
+  "status": "success",
+  "time": "2026-10-23T09:49:37.332261+08:00",
+  "timezone": "Asia/Shanghai",
+  "head": "7ba2a2c638500eaa43f2137d16a6a0686b663630",
+  "before": "docs/workorders/evidence/nightly_2026-10-23_manual/before",
+  "after": "docs/workorders/evidence/nightly_2026-10-23_manual/after",
+  "after_manifest_sha256": "a31f2c425b08ae1514fadeff028cf8d8a6bd505d70cdc3b38d969baecc480687",
+  "validation": "docs/workorders/evidence/nightly_2026-10-23_manual/validation.json",
+  "scope": "document maintenance; not product acceptance"
+}

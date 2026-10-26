@@ -1,0 +1,72 @@
+[
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "log": "structure-final.txt",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-p",
+      "test_*.py",
+      "-v"
+    ],
+    "log": "tests-final.txt",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a05_2026-10-22/before.openapi.json"
+    ],
+    "log": "compatibility-entry.txt",
+    "exit_code": 1
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json"
+    ],
+    "log": "compatibility-original.txt",
+    "exit_code": 1
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "log": "structure-delivery.txt",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "python3",
+      "scripts/delivery_snapshot.py",
+      "verify",
+      "--directory",
+      "docs/workorders/evidence/a05_2026-10-22/delivery"
+    ],
+    "result": "175 files reconstructed and verified",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0
+  }
+]

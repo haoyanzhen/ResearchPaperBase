@@ -1,0 +1,4 @@
+Review links verified: 18. git diff --check passed.
+Report v1.0; PROJECT_STATUS v1.32; date 2026-10-22.
+Only expected old-manifest drift: docs/PROJECT_STATUS.md (review status update).
+Implementation, locks, build artifacts, original evidence unchanged.

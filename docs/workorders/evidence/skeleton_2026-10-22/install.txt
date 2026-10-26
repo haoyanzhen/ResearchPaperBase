@@ -1,0 +1,35 @@
++ uv sync --locked
+Resolved 37 packages in 6ms
+Checked 34 packages in 0.78ms
++ npm ci --no-audit --no-fund
+
+added 108 packages in 1s
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
++ uv venv --python 3.14 --allow-existing /Users/qingyue/projects/ResearchPaperBase_codex/contracts/.venv
+Using CPython 3.14.4 interpreter at: /opt/homebrew/opt/python@3.14/bin/python3.14
+Creating virtual environment at: contracts/.venv
+Activate with: source contracts/.venv/bin/activate
++ uv pip install --python /Users/qingyue/projects/ResearchPaperBase_codex/contracts/.venv/bin/python -r contracts/requirements.txt
+Using Python 3.14.4 environment at: contracts/.venv
+Resolved 18 packages in 3.11s
+Prepared 11 packages in 1.50s
+Installed 16 packages in 9ms
+ + attrs==26.1.0
+ + certifi==2026.10.19
+ + charset-normalizer==3.5.2
+ + idna==3.20
+ + jsonschema-path==0.3.4
+ + jsonschema-specifications==2025.9.1
+ + lazy-object-proxy==1.13.0
+ + openapi-schema-validator==0.6.3
+ + pathable==0.4.4
+ + pyyaml==6.0.3
+ + referencing==0.36.2
+ + requests==2.34.2
+ + rfc3339-validator==0.1.4
+ + rpds-py==2026.9.1
+ + six==1.17.0
+ + urllib3==2.8.0

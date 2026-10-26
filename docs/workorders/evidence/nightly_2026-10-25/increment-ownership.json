@@ -1,0 +1,157 @@
+[
+  {
+    "path": ".agents/skills/project-delivery/SKILL.md",
+    "owner": "workflow autonomy v1.7",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "AGENTS.md",
+    "owner": "workflow autonomy v1.7",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "README.md",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/alembic.ini",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/migrations/env.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/migrations/versions/0001_account.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/pyproject.toml",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/src/rpb/adapters/account.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/tests/conftest.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/tests/integration/conftest.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/tests/integration/test_account_storage.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "backend/tests/integration/test_fixture_cleanup.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "contracts/p0.coverage.json",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "contracts/p0.openapi.json",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "docs/IMPLEMENTATION_ENTRY.md",
+    "owner": "workflow autonomy v1.7",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "docs/PROJECT_STATUS.md",
+    "owner": "task005/012/014/015 and workflow current summary",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "docs/design/04-03_machine_contract_governance.md",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "docs/workorders/task005_a10_review_2026-10-24.md",
+    "owner": "task005 A10",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "docs/workorders/task012_a09_review_2026-10-23.md",
+    "owner": "task012 A09",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "docs/workorders/task014_b01_review_2026-10-24.md",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "docs/workorders/workflow_autonomy_2026-10-25.md",
+    "owner": "workflow autonomy v1.7",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "scripts/check_api_contracts.py",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "scripts/engineering.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "scripts/run_storage_tests.py",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "scripts/tests/test_project_create_contract.py",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "scripts/tests/test_public_errors.py",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "tasks/005-engineering-skeleton.md",
+    "owner": "task005 A10",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "tasks/012-graph-rag-technical-design.md",
+    "owner": "task012 A09",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "tasks/014-project-create-machine-contract.md",
+    "owner": "task014 B01",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "tasks/015-account-storage-migration.md",
+    "owner": "task015 B02",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  },
+  {
+    "path": "tasks/example.md",
+    "owner": "workflow autonomy v1.7",
+    "review": "content diff and final delivery snapshot; historical acceptance remains scoped"
+  }
+]

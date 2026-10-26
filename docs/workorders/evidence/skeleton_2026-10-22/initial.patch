@@ -1,0 +1,712 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 1382c4a..d520dbe 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -2,8 +2,8 @@
+ 
+ Author: haoyanzhen
+ Date:   2026-06-01
+-Updated: 2026-10-16
+-Document version: v1.0
++Updated: 2026-10-22
++Document version: v1.1
+ 
+ This file introduce the main aim and structure of this project.
+ 
+@@ -46,9 +46,21 @@ Accomplish a web app as a deep search and research scholar workspace.
+ - A deferred item or backlog entry is not execution authorization. If additional scope is needed, explain it and pause only the dependent work while continuing work within scope.
+ - When a decision is needed, present: the question, available evidence, options and their effects, the recommended option, and the work blocked by the decision.
+ 
++## Codex delivery principles
++
++- Humans own product decisions and acceptance; Codex owns implementation quality, requirement-oriented tests, verification, and a reviewable delivery within the authorized scope.
++- Deliver small slices defined by observable behavior, including rejection and failure paths. Make routine engineering choices independently and explain material tradeoffs; do not expand scope through incidental refactoring or backlog work.
++- Preserve existing working-tree changes. Bind review and verification to the actual artifact, including relevant uncommitted and untracked files, rather than HEAD alone.
++- Self-review the diff, requirement coverage, critical boundaries, and execution evidence before requesting human review. Fix independently resolvable defects first; do not hand basic debugging or missing verification to the reviewer.
++- Keep design completion, code completion, automated verification, and human acceptance distinct. Never infer human approval from passing checks or claim overall acceptance from a partial slice.
++- Human review procedure is maintained in the [implementation entry](docs/IMPLEMENTATION_ENTRY.md); task-specific scope, traceability, evidence, and decisions are recorded using the [task template](tasks/example.md), without duplicating those procedures here.
++
+ ## Verification requirements
+ 
+-- New or changed business behavior requires corresponding automated verification. Bug fixes should add regression tests that reproduce the defect.
++- Codex must write requirement-oriented test cases for every testable requirement and ensure they pass. Apply this obligation to every requirement in the authorized delivery scope, including affected existing requirements; track remaining project requirements explicitly without treating backlog as execution authorization.
++- Derive test inputs, expected observable results, and prohibited side effects from requirements and approved rules, not from the implementation. Maintain traceability from each requirement to scenarios, executable tests, and current execution evidence; test counts or code coverage alone do not prove requirement coverage.
++- Cover applicable success, rejection, failure, boundary, duplicate, concurrency, authorization, version-binding, and human-content-protection cases. Bug fixes require a regression test that reproduces the defect. Exercise real persistence and deterministic interleavings where the requirement depends on commits or races.
++- Run all required cases for the delivery and affected regressions, repair defects, and rerun until they pass before declaring verification complete. Do not remove or weaken assertions, skip required cases, or change requirements merely to obtain a passing result. If a requirement is ambiguous or not yet executable, record the specific gap and resolve it through the existing decision or dependency process; it is not covered or passed.
+ - Run checks relevant to the change. If verification cannot be executed, record the reason, unverified scope, and follow-up commands; do not report acceptance as passed.
+ - For documentation-only changes, check references, versions, and consistency; unrelated application tests are not required.
+ - Database tests must explicitly use an isolated test environment and must not fall back to a business database configuration. Verify that test writes, including commits inside services, remain isolated and can be cleaned up.
+@@ -64,7 +76,7 @@ For each task:
+ 1. Restate the goal briefly.
+ 2. Identify the files that need to change.
+ 3. Make the smallest sufficient change.
+-4. Add or update automated verification for changed business behavior; use reference, version, and consistency checks for documentation-only changes.
++4. Apply the verification requirements above to all in-scope testable requirements; use reference, version, and consistency checks for documentation-only changes.
+ 5. Run relevant checks and report actual results, or explain why they could not run and what remains unverified.
+ 6. Summarize the diff.
+ 7. Explain remaining risks or unknowns.
+diff --git a/README.md b/README.md
+index f38219a..ba93800 100644
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,7 @@
+ # Research Paper Base
+ 
+-文档版本：v1.3
+-更新日期：2026-10-19
++文档版本：v1.4
++更新日期：2026-10-21
+ 
+ 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
+ 
+@@ -11,12 +11,15 @@
+ 
+ - [项目进度](docs/PROJECT_STATUS.md)
+ - [现行设计索引](docs/design/README.md)
++- [新核心设计与审核入口](docs/IMPLEMENTATION_ENTRY.md)
++- [最小工程基线](docs/design/00-01_engineering_baseline.md)
++- [A01–A03交付与基线记录](docs/workorders/a01_a03_design_closure_2026-10-21.md)
+ - [API 机器契约范围与验证命令](docs/design/04-03_machine_contract_governance.md)
+ - [内部模块与执行契约](docs/design/05-01_internal_module_contracts.md)
+ - [安全与交付设计细化记录](docs/workorders/security_delivery_refinement_2026-10-19.md)
+ - [数据、测试与文档清理记录](docs/workorders/data_test_design_cleanup_2026-10-19.md)
+ - [历史设计归档](docs/archive/design_retirement_2026-10-19/README.md)
+-- [核心重写计划](docs/proposals/core_rewrite_plan_2026-10-16.md)
++- [历史核心重写计划（不作为现行执行单）](docs/proposals/core_rewrite_plan_2026-10-16.md)
+ - [独立审查与拆分结果](docs/proposals/reuse_independent_review_2026-10-16.md)
+ - [或许有用的逻辑存档](archive/maybe_useful/README.md)
+ - [实际清理记录](docs/workorders/legacy_cleanup_execution_2026-10-16.md)
+@@ -36,3 +39,5 @@
+ 本次修订 v1.2（2026-10-19）：同步07/09/10及退役归档入口，未启动应用实现。
+ 
+ 本次修订 v1.3（2026-10-19）：同步安全与交付设计入口，未启动应用实现。
++
++本次修订 v1.4（2026-10-21）：建立当前实施/审核入口；历史重写计划仅用于追溯，未开始编码或环境安装。
+diff --git a/docs/PROJECT_STATUS.md b/docs/PROJECT_STATUS.md
+index 3dcfa7e..1be9963 100644
+--- a/docs/PROJECT_STATUS.md
++++ b/docs/PROJECT_STATUS.md
+@@ -1,7 +1,7 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.25
+-更新日期：2026-10-21
++文档版本：v1.30
++更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+ ## 1. 用途与维护规则
+@@ -20,6 +20,7 @@
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+ | 应用实现基础 | 已清理 | 旧源码、迁移、测试及依赖环境删除；仅保留独立候选片段，见[执行记录](workorders/legacy_cleanup_execution_2026-10-16.md)；新核心未实现 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04–A10及实现未启动，相关TRACK运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -34,6 +35,8 @@
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
++面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程；A04–A10及编码未启动，后续仍按各自范围授权。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
++
+ | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
+ | --- | --- | --- | --- | --- |
+ | TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；仍需补齐机器契约缺项、实现协议并执行运行验收，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+@@ -47,11 +50,11 @@
+ | TRACK-008c | 资料解析/同步实现与验收 | 待开始 | 06–07；04-02；09 | 用 mock 外部依赖验证成功、重复、失败和重试；发布只在完整门槛满足后可见，并记录未覆盖范围 |
+ | TRACK-009a | 管理员诊断字段、脱敏与授权边界（C06） | 延期 | 工作单第 4 节；08/09 | 列出诊断快照字段、可见角色、脱敏规则及审计要求；核验不会扩展管理员业务权限 |
+ | TRACK-009b | 容量公式、参数与分期 | 公式/分期已修正；实测待开始 | 10 §2/4、09 ARC-09 | 本轮更正200 GB示例并移除P1服务的P0依赖；部署前填实测大小/峰值/余量，不能以公式修订宣称容量验收 |
+-| TRACK-010a | 派生速查与索引内容核对 | 延期 | [重整提案](proposals/design_document_reorganization_proposal_2026-10-15.md)、[提案审查](proposals/design_document_reorganization_review_2026-10-15.md)、01-01/02-01 | 先确定适用范围，再逐份比对速查与权威文档，更新过期编号、术语和入口；不按原提案编号推定已执行 |
+-| TRACK-010b | 剩余文档重整与链接验收 | 延期 | 同上；全体公开设计文档 | 按批准范围执行重整；核验入口完整性、本地链接和锚点，并记录跳过项与结果 |
++| TRACK-010a | 派生速查与索引内容核对 | 首批入口子集已核对；其余延期 | [重整提案](proposals/design_document_reorganization_proposal_2026-10-15.md)、[提案审查](proposals/design_document_reorganization_review_2026-10-15.md)、01-01/02-01 | 先确定适用范围，再逐份比对速查与权威文档，更新过期编号、术语和入口；不按原提案编号推定已执行 |
++| TRACK-010b | 剩余文档重整与链接验收 | 本轮入口已核对；全面重整延期 | 同上；全体公开设计文档 | 按批准范围执行重整；核验入口完整性、本地链接和锚点，并记录跳过项与结果 |
+ | TRACK-011b | 同步补偿与文件生命周期剩余细化 | 协议已细化；参数/运行未完成 | 07 §5–9、10、[历史D项映射](archive/design_retirement_2026-10-19/README.md#2-d-001d-015-当前去向) | 与TRACK-007/008/018共用实现证据；保留期、P1导出清理政策与实际恢复验证仍待明确，历史归档不自动关闭 |
+ | TRACK-011c | FR-036下游映射 | P0现行映射已核对；P2细化延期 | 02 §8.1、04-01 §7、07 §5.5、09 MOD-08/12；历史D-011归档 | P0为单一当前稿，无ReviewExportableVersion；P2按FR-036授权时再细化完整历史，旧merge/标签建议不作为授权 |
+-| TRACK-012a | 新核心P0需求—设计—验收追踪基线 | 用例族已组织；逐项可执行追踪待建立 | 09 ARC-01–11/MOD-01–12、00–07/08 | 保留KV-I/KV-C/KV-V/API-R与领域S/传输TTF入口；实际FR子条目到代码/测试/执行证据映射仍须建立，不虚报已运行 |
++| TRACK-012a | 新核心P0需求—设计—验收追踪基线 | 用例族已组织；逐项可执行追踪待建立 | 09 ARC-01–11/MOD-01–12、00–07/08 | 保留KV-I/KV-C/KV-V/API-R与领域S/传输TTF入口；A03已建立任务/审核模板及Project创建幂等示例；[复审R01](workorders/a01_a03_review_2026-10-22.md#3-发现与处置建议)已补24小时保留/到期元信息场景及逐需求追踪，设计缺口关闭、业务测试未执行；实际FR子条目到代码/测试/执行证据映射仍须逐切片建立，不虚报已运行 |
+ | TRACK-012b | 知识版本绑定与不可变快照实现验收 | 待开始 | 02-02 §2.5/§10、04–07、09 | 明确存储方案后实现版本绑定、快照读取和并发可见性；覆盖 KV-I01–I09 与状态机验收场景 |
+ | TRACK-012c | Project 隔离与文件访问实现验收 | 待开始 | 01、02-03、04-02、08–09 | 映射身份共享与 Project 私有资产边界，验证跨 Project 读写/下载均受授权约束 |
+ | TRACK-012d | Construction 唯一写者与人工内容保护验收 | 待开始 | 01、02-02/02-04、04–05、08–09 | 验证只有成功 ConstructionRun 发布知识版本、迟到 Worker 无写资格，且 Agent 不覆盖人工确认/编辑内容 |
+@@ -93,3 +96,13 @@
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
+ 
+ 本次修订（2026-10-21）：关闭DAP-G04政策问题，互联网检索来源自动确认public，内网通常不参与无人值守；保留G01–G03工程接入，证据见[记录](workorders/unattended_source_classification_2026-10-21.md)。
++
++本次修订 v1.26（2026-10-21）：登记实施前设计任务清单，区分共同准备、模块前置、随实现细化和部署前决定；关联原TRACK，不新增业务规则、不启动子任务或编码、不更改延期状态。
++
++本次修订 v1.27（2026-10-21）：完成授权的A01–A03设计和流程准备，修正FR-023派生分期及当前入口，建立单点工程决策、任务模板、示例和精确审查基线；不实现应用、不关闭A04–A10或相关运行验收，人类审核尚未记录。
++
++本次修订 v1.28（2026-10-22）：按用户授权完善[AGENTS](../AGENTS.md)执行原则与全部可测需求的测试义务、[实施入口](IMPLEMENTATION_ENTRY.md)人工审核流程和[任务模板](../tasks/example.md)需求—用例—执行证据追踪。职责单点维护，业务边界与分期不变；本次仅文档更新，引用、版本及差异一致性已核验，不启动实现、不关闭运行验收项、不代填人工批准。
++
++本次修订 v1.29（2026-10-22）：按更新后的协作规范复审A01–A03，记录A03示例R01验收缺项；重建历史40个输入/44个输出并核验摘要，复跑契约结构检查及15项测试通过。仓库新核心未实现；不把本轮Codex审查记作人工批准或应用验收，详见[复审记录](workorders/a01_a03_review_2026-10-22.md)。
++
++本次修订 v1.30（2026-10-22）：按授权补齐Task 004的T09/T10幂等期限和到期元信息场景、R01–R13需求追踪及审核字段；复审R01仅在设计/文档核验层面关闭，证据见[复审§7](workorders/a01_a03_review_2026-10-22.md#7-r01修复与文档核验2026-10-22)。本次未启动应用实现、未执行业务测试、不关闭TRACK-012a剩余追踪或TRACK-012e运行验收、不代填人工接受。
+diff --git a/docs/design/00-00_layer_design_file_mapping.md b/docs/design/00-00_layer_design_file_mapping.md
+index b619319..fddf849 100644
+--- a/docs/design/00-00_layer_design_file_mapping.md
++++ b/docs/design/00-00_layer_design_file_mapping.md
+@@ -1,6 +1,6 @@
+ # Layer Design File Mapping
+ 
+-文档版本：v1.10
++文档版本：v1.11
+ 更新日期：2026-10-21
+ 依据文档：`00_layers.md`  
+ 用途：保存当前 `docs/design/` 目录中实际存在的分层设计与设计文件对应表，供其他设计文档引用，避免引用已删除或已改名的旧文件。
+@@ -10,6 +10,7 @@
+ | 分层/设计域 | 主要设计文件 | 协作设计文件 | 说明 |
+ | --- | --- | --- | --- |
+ | 分层总览与文件映射 | `00_layers.md`、`00-00_layer_design_file_mapping.md` | `README.md` | `00_layers.md` 定义分层原则；`00-00` 保存层到文件的对应表；`README.md` 作为目录入口。 |
++| 工程基线 | [00-01_engineering_baseline.md](00-01_engineering_baseline.md) | `00_layers.md`、`05-01_internal_module_contracts.md`、`07_data_persistence.md`、`10_operations_deployment.md` | 首版具体工具/目录/运行与隔离选择，未创建工程，不改变业务规则。 |
+ | Functional Requirements / 需求与验收 | `01_functional_requirements.md`、`01-01-FR-reference.md` | [退役归档](../archive/design_retirement_2026-10-19/README.md) | FR 是需求含义和验收标准的最高依据；01-01 仅为派生速查，不定义独立需求规则；缺口决策文档用于追溯和审查。 |
+ | Domain Core / 领域核心 | [02_domain_core.md](02_domain_core.md)、[02-01-domain-reference.md](02-01-domain-reference.md)、[02-02_construction_versioning_appendix.md](02-02_construction_versioning_appendix.md)、[02-03_construction_assets_appendix.md](02-03_construction_assets_appendix.md)、[02-04_run_recovery_appendix.md](02-04_run_recovery_appendix.md) | `01_functional_requirements.md`、`07_data_persistence.md` | 主文定义核心边界、接口和领域事件；02-02 集中知识库版本规则，02-03 集中构建资产规则，02-04 集中运行恢复规则；附件与主文同规格、同规范效力，02-01 仅作派生速查，不定义 UI/API/数据库字段细节。 |
+ | UI / Workspace | [03_ui_workspace.md](03_ui_workspace.md)、[03-01_ui_system_pages_appendix.md](03-01_ui_system_pages_appendix.md)、[03-02_ui_construction_appendix.md](03-02_ui_construction_appendix.md)、[03-03_ui_research_review_appendix.md](03-03_ui_research_review_appendix.md)、[03-04_ui_shared_interactions_appendix.md](03-04_ui_shared_interactions_appendix.md) | `01_functional_requirements.md`、`02_domain_core.md` 及领域附录、`04_api_contracts.md`、`08_security_permissions.md` | 主文定义全局导航、Shell 布局组合和跨模块约束；附录分别维护系统页面、构建、研究与综述、共用交互的详细规范。主文与附录具有相同 UI 规范效力；业务规则以 01/02 为准。 |
+@@ -54,3 +55,5 @@
+ 本次修订 v1.9（2026-10-20）：登记08-01独立专题，不改变分层职责。
+ 
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
++
++本次修订 v1.11（2026-10-21）：登记00-01工程基线，当前任务与审核通过实施入口定位。
+diff --git a/docs/design/00_layers.md b/docs/design/00_layers.md
+index 05f6003..8fbbce2 100644
+--- a/docs/design/00_layers.md
++++ b/docs/design/00_layers.md
+@@ -1,7 +1,7 @@
+ # Research Paper Base 分层设计总览
+ 
+-文档版本：v1.9
+-更新日期：2026-10-19
++文档版本：v1.10
++更新日期：2026-10-21
+ 依据文档：`01_functional_requirements.md`、`00-00_layer_design_file_mapping.md`  
+ 用途：作为当前阶段分层设计的总览入口，明确最小必要架构、层间职责、横切约束和后续修订方向。
+ 
+@@ -42,6 +42,8 @@
+ - 后续 `05` 按 FR-017 细化命令触发的内容状态转换、校验顺序、冲突响应和执行流程，不得改变 `02` 的状态含义或不变量；`04` 承接接口协议，`06` 承接服务契约，`07` 承接存储映射，`08–10` 承接安全、质量和运维。
+ - 速查、历史SQL、调研及历史审查不覆盖现行需求和领域规则；跨职责冲突应提交人工裁决，不能按编号或更新时间自动覆盖。
+ 
++具体运行时、目录、适配器和测试隔离的首版选择统一见[00-01工程基线](00-01_engineering_baseline.md)；本文件继续维护依赖原则，不表示工程已建立。
++
+ ## 1. 设计基线
+ 
+ 当前项目推荐采用轻量但边界明确的共层方案：
+@@ -330,3 +332,5 @@ MVP 实施顺序：
+ 本次修订（2026-10-19）：同步数据设计、测试用例入口及历史归档引用；不修改业务语义。
+ 
+ 本次修订 v1.9（2026-10-19）：同步08/09/10细化范围，不改变分层、权限和产品分期。
++
++本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
+diff --git a/docs/design/01-01-FR-reference.md b/docs/design/01-01-FR-reference.md
+index 665f170..e9b6df1 100644
+--- a/docs/design/01-01-FR-reference.md
++++ b/docs/design/01-01-FR-reference.md
+@@ -1,10 +1,12 @@
+ # FR Reference
+ 
+-文档版本：v1.6
+-更新日期：2026-10-19
++文档版本：v1.7
++更新日期：2026-10-21
+ 来源文档：`01_functional_requirements.md`  
+ 用途：作为功能需求编号、优先级和编号重整关系的参考中间文件。若本文与 `01_functional_requirements.md` 冲突，以 `01_functional_requirements.md` 为准。
+ 
++本轮只核对首批任务涉及的账号/Project、补充P0分期及版本采用入口；其余派生映射仍按TRACK-010a逐项核验，不能把“初版映射”当作完整验收追踪。
++
+ ## 1. 功能需求清单
+ 
+ | 需求编号 | 所属层/模式 | 需求名称 | 优先级 | 说明 |
+@@ -22,7 +24,7 @@
+ | FR-011 | 基础层-项目工作台 | Project Workspace 内部入口、框架与对象切换 | P0 | 管理 Project 状态展示、Construction Workspace 入口、Run/Session 列表、对象打开/切换、主体流程栏和信息面板 |
+ | FR-012 | 基础层-项目工作台 | Project 知识资产面板 | P0 | 只读查看 Project 论文库、Project 资料库、文件访问入口、Graph 图谱和 Knowledge Version |
+ | FR-013 | 基础层-项目工作台 | Workspace 上下文管理与恢复 | P0 | P0 恢复上次打开对象、基础面板状态和输入草稿；更细粒度的滚动、日志和步骤落点恢复作为 P1 增强 |
+-| FR-014 | 基础层-项目工作台 | Run/Session 实例操作 | P0 | P0 提供进入、创建、继续和历史查看；复制、重跑、归档、删除为 P1 受控增强 |
++| FR-014 | 基础层-项目工作台 | Run/Session 实例操作 | P0 | P0提供进入、创建、继续、历史查看及FR-018版本采用专用创建；通用复制、重跑、归档、删除为P1受控增强 |
+ | FR-015 | 基础层-项目工作台 | Run/Session 状态展示与运行控制 | P0 | P0 查看状态、阶段、错误、等待项、日志摘要并支持取消；暂停、恢复、重试为 P1 受控增强 |
+ | FR-016 | 基础层-项目工作台 | 流程式 Agent 步骤容器 | P0 | 承载构建、综述等流程式 Agent 的当前步骤页面、步骤状态、步骤动作和步骤结果查看 |
+ | FR-017 | 基础层-项目工作台 | 内容修改保护基座 | P0 | 提供跨 Agent 的通用内容保护规则，区分 Agent 草稿、人工确认和人工修改状态，防止静默覆盖 |
+@@ -31,7 +33,7 @@
+ | FR-020 | 构建模式 | 检索词生成与构建检索词管理 | P0 | 管理 Project 检索词、检索词级数据源策略和自动更新开关 |
+ | FR-021 | 构建模式 | 多源论文与资料检索 | P0 | 手动 Run 使用本次 selected 检索词，自动 Run 使用自动更新检索词，并按检索词级数据源策略检索论文和 Project 资料 |
+ | FR-022 | 构建模式 | 论文与资料去重、评分与筛选 | P0 | 对候选论文和 Project 资料去重、评分、筛选有效项，支持用户确认与调整 |
+-| FR-023 | 构建模式 | 论文与资料补充和手动上传 | P1 | 用户通过 PDF、DOI、arXiv ID、URL 或支持格式文件补充论文和 Project 资料 |
++| FR-023 | 构建模式 | 论文与资料补充和手动上传 | P0 | P0单条论文补充和支持格式单文件资料上传；P1批量/数据表，P2多媒体 |
+ | FR-024 | 构建模式 | 多格式文件获取与文本解析 | P0 | 自动下载或接收上传文件，解析可用文本，失败时按类型降级或标记不可用 |
+ | FR-025 | 构建模式 | 论文与资料 AI 分析生成 | P0 | 为论文生成严格结构化分析，并为非论文资料生成轻量重要摘要 |
+ | FR-026 | 构建模式 | 知识库入库与图谱构建 | P0 | 将有效论文和参与知识构建的 Project 资料写入 Project 知识库、向量库和知识图谱 |
+@@ -39,7 +41,7 @@
+ | FR-028 | 深度研究模式 | Graph-RAG 对话式研究 | P0 | 基于 Project 知识库进行多轮流式研究对话 |
+ | FR-029 | 深度研究模式 | 深度研究输出倾向设置 | P1 | 提供输出倾向设置按钮，用户可通过选择不同倾向控制整体对话风格 |
+ | FR-030 | 深度研究模式 | 对话历史、总结文件与导出 | P1 | 保存研究过程，生成总结文件并支持导出 |
+-| FR-031 | 深度研究模式 | 研究引用与图谱跳转 | P1 | 从对话引用跳转到论文详情、Project 资料详情、文件访问入口和基础层 Graph 图谱 |
++| FR-031 | 深度研究模式 | 研究引用与图谱跳转 | P1 | 引用/图谱增强为P1；FR-012/028/033承接的基础引用展示和跳转仍为P0，按正文子条目验收 |
+ | FR-032 | 主题综述模式 | 综述架构设计 | P0 | Agent 生成综述主题、范围和章节架构，用户审查确认 |
+ | FR-033 | 主题综述模式 | 章节撰写、引用与修订 | P0 | Agent 逐章撰写并引用 Project 论文库和 Project 资料库，用户审查、编辑或重试 |
+ | FR-034 | 主题综述模式 | 综述汇总、终审与稿件下载 | P0 | 汇总章节，执行终审，生成摘要、关键词、参考文献和当前已保存稿及单篇 Markdown 下载 |
+@@ -146,7 +148,7 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
+ | FR-020 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA | 初版映射 |
+ | FR-021 | P0 | UI | API | App | Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
+ | FR-022 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA | 初版映射 |
+-| FR-023 | P1 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
++| FR-023 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
+ | FR-024 | P0 | UI | API | App | Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
+ | FR-025 | P0 | UI | API | App | Agent/Knowledge | Data | Security | QA | 初版映射 |
+ | FR-026 | P0 | UI | API | App | Domain, Agent/Knowledge | Data | Security | QA, Ops | 初版映射 |
+@@ -189,7 +191,7 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
+ | FR-020 | P0 | `06_agent_knowledge_services.md`, `05_application_use_cases.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `07_data_persistence.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
+ | FR-021 | P0 | `06_agent_knowledge_services.md`, `05_application_use_cases.md` | `04_api_contracts.md`, `07_data_persistence.md`, `10_operations_deployment.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
+ | FR-022 | P0 | `06_agent_knowledge_services.md`, `02_domain_core.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `07_data_persistence.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
+-| FR-023 | P1 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md` | `08_security_permissions.md`, `09_quality_observability.md`, `10_operations_deployment.md` | 初版映射 |
++| FR-023 | P0 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md` | `08_security_permissions.md`, `09_quality_observability.md`, `10_operations_deployment.md` | 初版映射 |
+ | FR-024 | P0 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `10_operations_deployment.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
+ | FR-025 | P0 | `06_agent_knowledge_services.md` | `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `07_data_persistence.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
+ | FR-026 | P0 | `06_agent_knowledge_services.md`, `07_data_persistence.md` | `02_domain_core.md`, `03_ui_workspace.md`, `04_api_contracts.md`, `05_application_use_cases.md`, `10_operations_deployment.md` | `08_security_permissions.md`, `09_quality_observability.md` | 初版映射 |
+@@ -217,3 +219,5 @@ Domain 专题定位（以下导航不改变 FR 定义、优先级或分层主责
+ 本次修订 v1.5（2026-10-16）：同步R2-A当前稿下载，取消独立导出版本入口；通用导出仍P1。
+ 
+ 本次修订（2026-10-19）：同步数据设计、测试用例入口及历史归档引用；不修改业务语义。
++
++本次修订 v1.7（2026-10-21）：按01修正FR-023单条/单文件P0及相关分期映射，补FR-014版本采用与FR-031基础引用边界；不修改需求。
+diff --git a/docs/design/02-01-domain-reference.md b/docs/design/02-01-domain-reference.md
+index b83cbbf..f2d1c88 100644
+--- a/docs/design/02-01-domain-reference.md
++++ b/docs/design/02-01-domain-reference.md
+@@ -1,10 +1,12 @@
+ # Domain Reference
+ 
+-文档版本：v1.6
+-更新日期：2026-10-16
++文档版本：v1.7
++更新日期：2026-10-21
+ 来源文档：[Domain Core](02_domain_core.md)、[知识库版本附录](02-02_construction_versioning_appendix.md)、[构建资产附录](02-03_construction_assets_appendix.md)、[运行恢复附录](02-04_run_recovery_appendix.md)
+ 用途：作为 Domain Core 的聚合边界、领域对象、关键链路和 FR 映射速查文件。本文是主文及其同规格领域附录的派生速查，不独立定义规则；如有冲突，以对应领域规范及 FR 为准。
+ 
++本表列出跨分期对象，不是P0迁移/实现清单。首批任务的写入所有权须同时阅读[05-01](05-01_internal_module_contracts.md)，分期回查01子条目；PasswordResetRequest、协作、ExportJob、Review历史等不得因列在此处自动前置。A01仅核对入口及关键所有权，全面派生核对仍由TRACK-010a跟踪。
++
+ 详细规则阅读索引：
+ 
+ - paused ConstructionRun 持续持有 Project 独占构建资格；取消清除、继续沿用原实例、重跑创建新实例接管的规则见 [02-02 §3.1](02-02_construction_versioning_appendix.md#31-构建槽不变量) 和 [02-04 §3](02-04_run_recovery_appendix.md#3-重试重连与重跑)。
+@@ -256,3 +258,5 @@ EmailPushJob
+ 3. 本文只提供领域对象和聚合边界速查，不定义 API、数据库字段、Provider SDK、队列实现或文件存储实现。
+ 
+ 本次修订 v1.6（2026-10-16）：按R2-A移除独立ReviewExportableVersion速查对象，保留当前稿与知识版本规则。
++
++本次修订 v1.7（2026-10-21）：明确跨分期对象索引不构成P0实现清单，补当前模块所有权入口。
+diff --git a/docs/design/04-03_machine_contract_governance.md b/docs/design/04-03_machine_contract_governance.md
+index b0e8dca..9c6f30c 100644
+--- a/docs/design/04-03_machine_contract_governance.md
++++ b/docs/design/04-03_machine_contract_governance.md
+@@ -1,7 +1,7 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.0
+-更新日期：2026-10-19
++文档版本：v1.1
++更新日期：2026-10-21
+ 适用项目大版本：v1
+ 
+ ## 1. 权威与覆盖边界
+@@ -18,6 +18,8 @@
+ | 设计字段尚未闭合 | Error.details/recovery 安全字段词表；Task 目标类型完整枚举、waiting_items 引用；ConfirmationPreview.affected_items/retained_items | 定义具名字段及允许变体，关联对应用例后再转写；不要猜业务默认 |
+ | 实现验证 | 权限、跨 Project 防枚举、Origin/CSRF、状态、修订、确认、去重、原子快照、模型能力范围、SMTP认证类型字段组合、Workspace草稿object/part唯一性等 | 后续实际服务、隔离存储和端到端验收；schema 不能替代 |
+ 
++可重定位的本轮Agent限定核对基线见[A01–A03记录](../workorders/a01_a03_design_closure_2026-10-21.md)。它记录Git对象与内容摘要，不提升机器覆盖、不代表人类批准；后续兼容检查从指定Git对象提取旧JSON，不能拿本次修改后的JSON自比。
++
+ ## 2. 单一维护与操作身份
+ 
+ - 已覆盖 schema 的字段、必填、可空、枚举及长度只修改 JSON；Markdown 对相应结构保留 schema 名、语义及链接，不再人工维护另一份完整字段副本。新增未覆盖结构暂留 Markdown，迁入时同批移除重复字段定义。
+@@ -50,3 +52,5 @@ python3 -m venv /tmp/rpb-contract-check
+ 验证器执行 OpenAPI 3.1 结构校验、JSON Schema 2020-12 定义校验、本地 `$ref`、操作唯一身份、覆盖漂移、P0/权限声明、CSRF/幂等头和路径参数检查。单元测试包含未知写字段、null、修订缺失、密钥clear/set、格式、终态事件、响应缺项、权限/枚举/字段/操作删除和覆盖漂移负例。
+ 
+ 2026-10-19 已执行前三类校验及15项测试；compatibility 的正负例由测试执行。没有既有机器基线，不能声称完成历史版本兼容验收。未执行应用、数据库、真实Provider、SSE回放或端到端验收。依赖固定于独立 requirements，不属于新应用安装入口。
++
++本次修订 v1.1（2026-10-21）：登记精确基线与审查层级，现有JSON和覆盖指纹未修改。
+diff --git a/docs/design/05-01_internal_module_contracts.md b/docs/design/05-01_internal_module_contracts.md
+index 9e91f7a..6762293 100644
+--- a/docs/design/05-01_internal_module_contracts.md
++++ b/docs/design/05-01_internal_module_contracts.md
+@@ -1,6 +1,6 @@
+ # 内部模块与执行契约
+ 
+-文档版本：v1.3
++文档版本：v1.4
+ 更新日期：2026-10-21
+ 依据文档：[00](00_layers.md)、[02](02_domain_core.md)、[04](04_api_contracts.md)、[05](05_application_use_cases.md)、[06](06_agent_knowledge_services.md)
+ 
+@@ -12,6 +12,8 @@
+ 
+ 以下类型为语言无关的具名结构，尚不是可编译模型。`Id<T>`、`Revision<T>` 为不透明标识，`Ref<T>` 为可校验对象引用，`Option<T>` 表示显式可缺省，`List<T>` 表示同类型序列。各操作的具体 payload 按 04-01 逐项映射，不能把通用结构实现为接收任意字段的字典。任务与事件的持久载荷在工程实现时须补齐 schema 和兼容测试；本次不声称已生成代码或已运行架构检查。
+ 
++具体工程选择和规划代码位置见[00-01](00-01_engineering_baseline.md)，本文件的语言无关契约不因此变成已生成代码。
++
+ ## 2. 模块职责与写入所有权
+ 
+ “写者”指有权组织领域校验并提交业务事实的应用模块；repository/适配器是该模块端口的实现，不是另一业务写者。下列为代码职责边界，不要求部署为独立服务。
+@@ -130,3 +132,5 @@ SupplementWriteScope 与 CandidateWriteScope 是不同范围，不互相充当
+ 本次修订（2026-10-20）：登记08-01资料策略接缝和08已确认的Provider/凭据规则，不复制未决细节。
+ 
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
++
++本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
+diff --git a/docs/design/07_data_persistence.md b/docs/design/07_data_persistence.md
+index e3c98ed..eaae9e3 100644
+--- a/docs/design/07_data_persistence.md
++++ b/docs/design/07_data_persistence.md
+@@ -1,6 +1,6 @@
+ # Data Persistence 设计
+ 
+-文档版本：v1.10
++文档版本：v1.11
+ 更新日期：2026-10-21
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -12,6 +12,8 @@
+ 
+ 资料策略的选择、来源分类、执行依据及派生依赖逻辑扩展见[08-01 §4](08-01_agent_data_access_policy.md#4-文件分类与入库流程)。Q1–Q4已确认；字段、约束和迁移仍需接入，执行依据记录每次当前政策/分类修订，不保留启动权限上限作为授权；不把本文现有记录表视为已覆盖新增分类/政策事实。凭据更新不能改写历史业务配置快照，详见08 §12.3。
+ 
++首版具体存储/迁移工具与测试隔离选择见[00-01](00-01_engineering_baseline.md)。本文维护逻辑约束；可执行字段仍由未来版本化迁移维护。
++
+ ## 2. 存储分工
+ 
+ | 存储 | 用途 | 说明 |
+@@ -229,3 +231,5 @@ v1.8（2026-10-19）：按用户授权删除旧 SQL 草案，细化逻辑记录
+ 本次修订（2026-10-20）：登记08-01资料策略接缝和08已确认的Provider/凭据规则，不复制未决细节。
+ 
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
++
++本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
+diff --git a/docs/design/09_quality_observability.md b/docs/design/09_quality_observability.md
+index 0169c6d..f329c8f 100644
+--- a/docs/design/09_quality_observability.md
++++ b/docs/design/09_quality_observability.md
+@@ -1,6 +1,6 @@
+ # 核心架构与功能模块测试设计
+ 
+-文档版本：v1.14
++文档版本：v1.15
+ 更新日期：2026-10-21
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -24,6 +24,8 @@ UI / 后台入口
+   -> Diagnostic Signal
+ ```
+ 
++任务级规范映射、正负场景和人工审核字段统一使用[任务模板](../../tasks/example.md)，填写示例见[Project创建幂等](../../tasks/004-project-create-idempotency-example.md)。流程见[实施入口](../IMPLEMENTATION_ENTRY.md)；示例不是已运行测试，也不关闭全P0追踪。
++
+ ## 3. 核心架构级测试用例
+ 
+ 每个用例必须记录：稳定 ID、规范来源/FR子条目、适用分期、前置数据、动作/并发屏障、故障注入点、正负断言、预期不发生的副作用、诊断证据和清理方式。运行报告另记录测试代码、命令、环境/提交、实际结果与未覆盖项；改变关键断言须说明规范依据，不能为迁就实现删断言。
+@@ -186,3 +188,5 @@ ARC-11 不能由逐模块测试相加或健康检查替代；真实模型/论文
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
+ 
+ 本次修订（2026-10-21）：同步P1互联网来源自动分类及内网边界测试入口，不提前运行验收。
++
++本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
+diff --git a/docs/design/10_operations_deployment.md b/docs/design/10_operations_deployment.md
+index 2540fde..4b27ef7 100644
+--- a/docs/design/10_operations_deployment.md
++++ b/docs/design/10_operations_deployment.md
+@@ -1,7 +1,7 @@
+ # 部署、升级与恢复的最小运行约束
+ 
+-文档版本：v1.6
+-更新日期：2026-10-19
++文档版本：v1.7
++更新日期：2026-10-21
+ 依据：[00](00_layers.md)、[07](07_data_persistence.md)、[08](08_security_permissions.md)、[09](09_quality_observability.md)
+ 
+ ## 1. 保留范围
+@@ -10,6 +10,8 @@
+ 
+ 当前没有可启动新核心，以下是实施约束，不是已验证的安装手册。工程建立后把实际安装、启停、迁移和故障操作命令写入相应runbook并关联验收；不复制旧应用命令。
+ 
++首版运行时、包管理、API/Worker形态及工程入口责任见[00-01](00-01_engineering_baseline.md)。该工程决策未执行安装、构建、迁移或部署验证。
++
+ ## 2. P0运行边界
+ 
+ API与Worker可同进程或分进程，使用同一受控应用入口、持久任务和执行资格协议；进程重启不恢复旧写资格，不自动将paused Run释放。关系、文件、向量和图谱适配器需满足07的隔离与可读屏障，不强制购买/部署独立产品。
+@@ -117,3 +119,5 @@ v1.4（2026-10-19）：按用户要求精简为有独立价值的运行约束，
+ v1.5（2026-10-19）：补配置契约、可重复构建、交付证据和发布失败处置，单列OPS-D01；未指定部署工具/新默认政策，未执行部署验收。
+ 
+ v1.6（2026-10-19）：采纳OPS-D01方案A及管理员允许计划停机；未采纳前轮示例恢复/备份数值。
++
++本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
+diff --git a/docs/design/README.md b/docs/design/README.md
+index 259359e..a03af4b 100644
+--- a/docs/design/README.md
++++ b/docs/design/README.md
+@@ -1,6 +1,6 @@
+ # Research Paper Base 设计文档集
+ 
+-文档版本：v1.15
++文档版本：v1.16
+ 更新日期：2026-10-21
+ 适用项目大版本：v1  
+ 权威基线：`01_functional_requirements.md`、`00_layers.md`
+@@ -14,6 +14,8 @@
+ 5. 旧式大接口清单、质量控制和数据模型仅保留在 `backup/` 目录作为参考，不作为权威契约。
+ 6. 11/12 不再作为现行设计入口；12 原文及 D-001–D-015 去向见[历史归档](../archive/design_retirement_2026-10-19/README.md)，开放项仍由 PROJECT_STATUS 跟踪。
+ 
++当前任务与人类审核流程见[实施入口](../IMPLEMENTATION_ENTRY.md)，具体工程选择见[00-01](00-01_engineering_baseline.md)。二者不覆盖01/02业务规则；精确核对范围与基线见[A01–A03记录](../workorders/a01_a03_design_closure_2026-10-21.md)。
++
+ ## 2. 文件结构
+ 
+ 设计文件按编号数值升序排列；同组主文件在前，派生索引、速查和附录按子编号升序排列。选型参考与历史资料单独列出。
+@@ -22,6 +24,7 @@
+ | --- | --- | --- |
+ | [00_layers.md](00_layers.md) | 总览 | 系统分几层、层间如何依赖、横切约束是什么 |
+ | [00-00_layer_design_file_mapping.md](00-00_layer_design_file_mapping.md) | 总览派生索引 | 各设计层对应哪些实际文件 |
++| [00-01_engineering_baseline.md](00-01_engineering_baseline.md) | 工程决策 | 首版运行时、模块目录、适配器、持久交接和测试隔离；未安装运行 |
+ | [01_functional_requirements.md](01_functional_requirements.md) | 需求基线 | 系统必须满足哪些功能、优先级和验收标准 |
+ | [01-01-FR-reference.md](01-01-FR-reference.md) | 需求派生速查 | FR 编号、优先级和编号重整关系；不定义独立需求规则 |
+ | [02_domain_core.md](02_domain_core.md) | Domain Core | 聚合边界、跨模块接口、通用领域规则与专题附件索引；paused ConstructionRun 的占槽交接见 02-02/02-04 |
+@@ -105,3 +108,5 @@ API 阅读顺序为 04 公共协议 → 04-01 对应操作 → 04-02 任务/文
+ 本次修订 v1.14（2026-10-20）：登记08-01专题及政策决定，详细策略单点维护，跨层契约仍须在实施前收口。
+ 
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
++
++本次修订 v1.16（2026-10-21）：登记工程基线与实施/审核入口，区分历史计划、派生速查与现行规范。
+diff --git a/docs/file_map.md b/docs/file_map.md
+index 2ba912c..0c26d14 100644
+--- a/docs/file_map.md
++++ b/docs/file_map.md
+@@ -1,6 +1,6 @@
+ # 项目文件功能目录
+ 
+-**文档版本**：v1.16 · 2026-10-21（资料读取策略专题）
++**文档版本**：v1.18 · 2026-10-21（A01–A03工程与审核准备）
+ **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
+ 
+ ## 当前目录
+@@ -24,8 +24,11 @@
+ |------|------|
+ | [PROJECT_STATUS.md](PROJECT_STATUS.md) | 项目进度与待完成项统一入口；汇总当前状态、开放决策、延期事项、关闭条件和证据 |
+ | [PROJECT_STATUS_APPENDIX.md](PROJECT_STATUS_APPENDIX.md) | 项目状态附件；保存已收口事项细节、历轮验证和主文件修改记录 |
++| [IMPLEMENTATION_ENTRY.md](IMPLEMENTATION_ENTRY.md) | 首批任务阅读与审核入口；区分当前规范、派生速查和历史计划 |
++| [workorders/a01_a03_design_closure_2026-10-21.md](workorders/a01_a03_design_closure_2026-10-21.md) | A01–A03限定核对、工程/模板交付和摘要基线证据 |
+ | [design/README.md](design/README.md) | 分层设计文档集入口；说明权威性、文件结构和阅读顺序 |
+ | [file_map.md](file_map.md) | **本文件**；项目文件功能目录 |
++| [workorders/preimplementation_design_tasks_2026-10-21.md](workorders/preimplementation_design_tasks_2026-10-21.md) | Codex编码与人工审核的设计补齐小任务；区分实施前门槛、随实现细化、依赖、验收和人工决定；状态仍以PROJECT_STATUS为准 |
+ 
+ ### 设计文件（编号顺序）
+ 
+@@ -35,6 +38,7 @@
+ |------|------|
+ | [design/00_layers.md](design/00_layers.md) | 分层总览；定义架构边界、依赖方向与横切约束 |
+ | [design/00-00_layer_design_file_mapping.md](design/00-00_layer_design_file_mapping.md) | 分层文件映射；定位现行设计文件 |
++| [design/00-01_engineering_baseline.md](design/00-01_engineering_baseline.md) | 首版技术选择、模块目录、持久任务与测试隔离；未创建工程 |
+ | [design/01_functional_requirements.md](design/01_functional_requirements.md) | 现行功能需求基线；需求含义、优先级和验收以本需求正文为准 |
+ | [design/01-01-FR-reference.md](design/01-01-FR-reference.md) | FR 派生速查；不定义独立需求规则 |
+ | [design/02_domain_core.md](design/02_domain_core.md) | Domain 主文；聚合边界、模块接口、通用规则与专题附录索引 |
+@@ -58,9 +62,9 @@
+ | [design/08_security_permissions.md](design/08_security_permissions.md) | 授权矩阵、检查时机、密钥/数据流、不可信内容；SEC-D01/03已决，资料策略转08-01，运行未验证 |
+ | [design/08-01_agent_data_access_policy.md](design/08-01_agent_data_access_policy.md) | Agent两级资料读取、文件分类、派生权限及已确认Q1–Q4；跨层同步评估与专题验收 |
+ | [design/09_quality_observability.md](design/09_quality_observability.md) | 架构/模块测试设计，保留KV/API-R并新增SEC/OPS细化断言；运行证据另存 |
+-| [design/10_operations_deployment.md](design/10_operations_deployment.md) | 最小运行与交付约束：配置、构建证据、升级恢复、容量与失败处置；OPS-D01运行目标待决 |
++| [design/10_operations_deployment.md](design/10_operations_deployment.md) | 最小运行与交付约束：配置、构建证据、升级恢复、容量与失败处置；单部署方向已决，运行数值目标待明确 |
+ 
+-[退役归档及D项映射](archive/design_retirement_2026-10-19/README.md)保留历史证据；11本已不存在，12移出当前设计，07 SQL不再作为可执行参考。
++[退役归档及D项映射](archive/design_retirement_2026-10-19/README.md)保留历史证据；旧11_design_audit审计入口已退役，12移出当前设计，07 SQL不再作为可执行参考。
+ 
+ ### 选型参考（编号顺序）
+ 
+@@ -140,3 +144,7 @@
+ 本次修订 v1.15（2026-10-20）：登记08-01与执行记录。
+ 
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
++
++本次修订 v1.17（2026-10-21）：登记实施前设计任务清单入口，不改变现行规范或已有执行状态。
++
++本次修订 v1.18（2026-10-21）：登记实施入口、工程基线、A01–A03证据；任务模板见[tasks/example.md](../tasks/example.md)，示例见[tasks/004](../tasks/004-project-create-idempotency-example.md)，基线证据见[证据目录](workorders/evidence/a01_a03_2026-10-21/README.md)。
+diff --git a/docs/proposals/core_rewrite_plan_2026-10-16.md b/docs/proposals/core_rewrite_plan_2026-10-16.md
+index 4d44a48..f00f4ba 100644
+--- a/docs/proposals/core_rewrite_plan_2026-10-16.md
++++ b/docs/proposals/core_rewrite_plan_2026-10-16.md
+@@ -1,7 +1,7 @@
+ # 核心重写与外围复用计划
+ 
+-文档版本：v1.2  
+-日期：2026-10-16  
++文档版本：v1.3
++日期：2026-10-21
+ 适用项目大版本：v1  
+ 状态：旧实现提取与清理已执行，新核心未开始；数据库未操作
+ 
+@@ -9,6 +9,10 @@
+ 
+ 后续独立审查：[外围代码独立审查与逻辑拆分结果](reuse_independent_review_2026-10-16.md)。三名 subagent 对候选复用项审查后，没有整模块通过；下文“审查后复用”“拆分复用”为原候选范围，最终去留以该报告的 X 片段白名单、R 规则重写和 D 历史存档裁决为准。无需维持旧项目完整性或接口兼容，只保留有用逻辑；代码尚未物理拆分。
+ 
++## 当前使用说明（2026-10-21）
++
++本文主体保留2026-10-16计划历史，包括当时的源码路径、04+草案状态、待决事项及工作包。不能用正文历史措辞判定当前文件、分期或未决范围；新任务改从[现行实施入口](../IMPLEMENTATION_ENTRY.md)及[PROJECT_STATUS](../PROJECT_STATUS.md)进入。实际清理以执行记录为准，本轮不改写历史结论。
++
+ ## 1 目标与范围
+ 
+ 按最新需求与领域设计重建业务核心，保留可独立验证的外围能力。旧代码作为历史行为和适配器实现参考，不作为新领域模型或验收规则的依据。本轮只新增本计划。
+@@ -200,3 +204,5 @@ G01–G13 按对应能力落地逐步加入集成/故障测试。单元测试数
+ | v1.2 | 2026-10-16 | 关联实际提取、候选存档和旧实现删除记录；新核心未开始 |
+ | v1.1 | 2026-10-16 | 关联独立审查与最终拆分裁决；原候选复用范围下调为限定片段/规则留存，无整模块通过 |
+ | v1.0 | 2026-10-16 | 建立核心重写、外围复用、旧代码存档、迁移条件、实施工作包与验收计划；未执行代码修改 |
++
++本次修订 v1.3（2026-10-21）：增加现行入口与历史正文边界，不复活旧源码计划。
+diff --git a/tasks/example.md b/tasks/example.md
+index 03144bb..8c60501 100644
+--- a/tasks/example.md
++++ b/tasks/example.md
+@@ -1,90 +1,90 @@
+-# Task <编号>: <任务名称>
++# Task 编号与名称
+ 
+-文档版本：v1.0
++文档版本：v1.2
++更新日期：2026-10-22
+ 
+-更新日期：2026-10-16
++本模板用于一个可观察行为及其拒绝/失败路径。执行与测试原则见[AGENTS](../AGENTS.md#verification-requirements)，协作流程及人工审核要点见[实施入口](../docs/IMPLEMENTATION_ENTRY.md#2-任务与审核流程)；本单只记录任务实例。填写内容不自动授权执行；设计、实现、自动验证与人类审核分别记录。已填写示例见[Project创建幂等](004-project-create-idempotency-example.md)。
+ 
+-你是本项目的开发助手。请遵守根目录 AGENTS.md，并在使用本模板时填写以下任务范围与验收条件。占位内容不构成执行授权。
++## 1. 目标与授权
+ 
+-## Goal
+-<描述本次任务要解决的问题及预期结果。>
++- 用户可观察结果：<一句话描述触发与结果>。
++- 任务类型：<设计 / 实现 / 修复>；来源：<用户授权及日期>。
++- 本次范围：<操作、模块、文件；必要测试和文档同步>。
++- 不包含：<排除的能力、分期及延期事项>。
++- 开始条件：<所需A类任务、工程/夹具/契约>；尚缺：<具体项或无>。
++- 关联跟踪：<TRACK及用例ID>；全项目进度只在PROJECT_STATUS汇总。
+ 
+-## In Scope
+-- <明确本次已授权的实现或文档范围。>
++## 2. 当前依据与基线
+ 
+-## Out of Scope
+-- <明确不包含和继续延期的事项。>
++先读[AGENTS](../AGENTS.md)、[项目状态](../docs/PROJECT_STATUS.md)、[实施入口](../docs/IMPLEMENTATION_ENTRY.md)、[设计索引](../docs/design/README.md)，再列相关段落：
+ 
+-## Acceptance Criteria
+-- <可观察、可验证的验收条件。>
+-- <相关检查方式；代码任务填写适用的测试，文档任务填写引用、版本和一致性检查。>
++| FR子条目/规范段落 | 文档版本与路径 | 本任务采用的规则 | 操作/模块/写入所有者 |
++| --- | --- | --- | --- |
++| <精确段落或稳定ID，不能只列整条FR> | <版本、链接> | <可验证规则> | <operationId、公开端口、所有者> |
+ 
+-## Must read
+-- [AGENTS.md](../AGENTS.md)
+-- [项目进度](../docs/PROJECT_STATUS.md)
+-- [设计索引](../docs/design/README.md)
+-- <补充本任务实际相关且存在的文件；核对其适用状态。>
++记录HEAD、初始工作区差异、相关文件SHA-256和机器基线来源。未提交/未跟踪文件必须纳入，不能仅写HEAD；准确补丁或内容快照用于重定位。区分Agent核对与人类批准，附真实结论；基线漂移后复核，不能直接刷新摘要绕过审核。
+ 
+-## Initial State Check
++初始状态：<存在的文件/入口、已有修改、计划与实际差异、仅受影响的阻塞>。历史计划和旧测试不作为当前完成证据。
+ 
+-- 检查 Git 工作区及任务相关文件，将文档中的完成声明与实际文件、执行证据核对。
+-- 分开识别计划、已执行与已验证；矛盾标记为“待核验”，不得为了符合文档而擅自删除或恢复文件。
+-- 只暂停依赖矛盾结论的操作，继续不受影响的工作。
++## 3. 修改落点
+ 
+-## Human Decisions
++| 文件/模块（拟建须标明） | 修改职责 | 可写事实与禁止副作用 | 依赖契约 |
++| --- | --- | --- | --- |
++| <路径> | <最小变化> | <所有权、保护规则> | <已定schema/接口；缺项另列> |
+ 
+-- 已授权范围内的局部实现、修复、测试及必要文档同步自主完成，不重复请求确认。
+-- 改变业务语义、权限边界、人工内容保护、知识版本绑定或产品分期，需要明确的人工决策；已有授权不重复询问。
+-- 延期事项或待办登记不等于执行授权。需要决策时说明：待决问题、证据、方案及影响、推荐方案、受阻工作。
++必要工程选择与理由：<本次取舍、依赖兼容和锁文件验证；无则填无>。需人工决定的事项记录到第6节。不修改无关认证、连接或全局配置；数据库结构变化必须有迁移。
+ 
+-## Verification
++## 4. 验收规格
+ 
+-- 新增或修改业务行为须有相应自动化验证；缺陷修复应增加能复现问题的回归测试。
+-- 数据库测试显式使用隔离测试环境，不回退业务数据库配置；核验服务内部提交后的数据隔离与清理。
+-- 默认模拟 LLM、论文源和邮件服务；真实集成验证须明确测试目标、外部副作用及适用授权。
+-- Mock、健康检查和存档片段测试不能替代端到端验收。
+-- 记录实际执行的命令及结果；无法执行时记录原因、未验证范围和后续命令，不标记验收通过。
+-- 纯文档修改检查引用、版本和一致性，无需运行无关应用测试。新工程入口建立后记录经验证的安装、测试与构建命令，不照搬旧命令。
++| 场景ID/规范依据 | 前置与动作 | 并发屏障/故障点 | 正向结果 | 必须不发生的副作用 | 观察与清理 |
++| --- | --- | --- | --- | --- | --- |
++| <复用ARC/MOD/KV/API-R/DAP/TTF；子场景可附局部后缀> | <数据和操作> | <无或确定交错> | <用户及持久效果> | <越权/覆盖/重复等> | <查询/计数/日志及清理> |
+ 
+-## Document Versions
++逐项列出本次范围内及受影响的全部可测需求，不只列已写测试的需求。场景断言按AGENTS验证要求制定；文档任务对应引用、版本、差异与一致性检查。
+ 
+-- 设计文档保持 `v1.x`；修改带版本声明的自有文档时递增该文档次版本并更新日期，无版本文档首次标注为 `v1.0`。
+-- 源码通过 Git 追踪，不要求逐文件添加版本号；依赖版本、锁文件格式和迁移编号遵循各自规则，不为匹配项目版本而改写。
++| 需求子条目/规则 | 场景ID | 可执行测试路径与用例名 | 第5节执行证据 | 覆盖缺项/处置 |
++| --- | --- | --- | --- | --- |
++| <与第2节逐项对齐，含受影响既有需求> | <对应上表> | <实际测试；未建立明确标注> | <当前产物的结果引用> | <无，或缺项及阻塞范围；不得记为已覆盖> |
+ 
+-## Additional Order
+-1. 只完成当前任务，不要扩展范围。
+-2. 不要新增未批准的依赖。
+-3. 不要修改认证、数据库连接、全局配置，除非任务明确要求。
+-4. 如果发现任务需要超出范围的修改，先说明并暂停依赖该决策的部分，继续已授权且不受影响的工作。
+-5. 按本模板 Verification 和 AGENTS.md 执行验证。
+-6. API 修改遵循本任务适用的契约；不得沿用失效路径或未经核对的旧接口。
+-7. 所有数据库修改必须有 migration。
+-8. 完成后输出审查报告。
++暂不可测或标准不明确的条目：<依据、原因、需补的条件及第6节决定引用；无则填无>。
+ 
+-## Output format
+-1. 当前任务要解决什么问题
+-2. 涉及哪些 Web 开发概念
+-3. 本项目采用的设计选择
+-4. 替代方案有哪些
+-5. 为什么暂时不选替代方案
+-6. 具体代码修改
+-7. 如何验证 & 测试
+-8. 有哪些风险或限制
+-9. 有哪些知识点（在 web app 方面）
++## 5. 验证计划与证据
+ 
+-## Final Response Format
++| 检查/场景 | 计划命令与工作目录 | 环境/隔离/外部副作用 | 实际执行及结果 | 报告、摘要与未覆盖 |
++| --- | --- | --- | --- | --- |
++| <名称> | <入口存在才写可执行命令；否则待建立及责任> | <真实库或mock、运行ID> | <待执行/通过/失败/跳过及原因> | <路径、准确版本> |
+ 
+-Use this format after completing a task:
++- 隔离与清理证据：<目标库/角色、运行标识、文件根、进程停止、内部commit/Worker隔离及残留检查；不适用说明原因>。
++- 外部依赖：<mock边界；真实检查的目标、副作用及已有授权>。
++- 验证层级与限制：<静态/单元/真实存储集成/浏览器端到端分别记录，不以局部检查替代整体验收>。
++- 自审与复验：<需求追踪缺项、关键边界、diff与证据一致性检查；发现的问题、修复及受影响重跑结果>。
++- 未通过/未执行项：<原因、受影响需求、后续命令或待建立入口；全部必需用例通过前不得标记自动验证完成>。
+ 
+-### Summary
+-- What changed
++## 6. 人类决定与审核
+ 
+-### Verification
+-- Commands or document checks run and actual results
+-- If not run: reason, unverified scope, and follow-up commands; do not claim acceptance passed
++无新增业务决定时填“无”，不以审批常规细节阻塞。确需决定时填写：
+ 
+-### Risks / Notes
+-- Remaining concerns
++| 问题及证据 | 选项与影响 | 建议 | 仅被阻塞的工作 | 已有决定/待决定 |
++| --- | --- | --- | --- | --- |
++| <问题> | <可比较选择> | <理由> | <独立工作继续> | <真实来源，不伪造批准> |
+ 
+-### Human Review Checklist
+-- Specific things the human should inspect
++按实施入口的人工审核要点填写本次审核包：
++
++| 适用审核项 | 关键文件/位置与场景 | 复现步骤及预期观察 | 证据引用/限制 |
++| --- | --- | --- | --- |
++| <需求、隔离、写入权、绑定、人工保护、一致性或证据；不适用说明原因> | <实际位置> | <可复现步骤；无UI时给API/用例及持久结果> | <第4/5节引用，避免重复报告> |
++
++| 审核者/日期 | 产物基线 | 接受范围与结论 | 问题及类型 | 处置/复验依据 |
++| --- | --- | --- | --- | --- |
++| <待人工填写> | <精确内容基线> | <未审核/接受/需修复；注明范围> | <缺陷或新增需求，后者另列授权> | <记录引用> |
++
++交付状态分别填写：设计<状态>；代码<状态>；自动验证<状态>；人工审核<状态>。自动检查不能代填人工批准；不适用项说明原因。
++
++## 7. 单一交付报告
++
++1. 结果与差异：问题、变更文件和行为；必要工程选择及理由。
++2. 验证：实际命令/结果、场景与产物；未执行/失败/跳过分列。
++3. 人工审核：需检查的位置、复现步骤、尚需决定事项。
++4. 风险与后续：未覆盖范围与前置；同步PROJECT_STATUS和证据。
++
++带版本文档递增v1次版本并更新日期；源码、锁文件和迁移遵循各自规则。不要另写重复的教学报告，必要技术解释放在对应选择处；不把本次设计、样例或检查扩写为整体产品验收。

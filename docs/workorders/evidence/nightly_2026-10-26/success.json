@@ -1,0 +1,20 @@
+{
+  "status": "success",
+  "time": "2026-10-26T02:59:59.411443+08:00",
+  "timezone": "Asia/Shanghai",
+  "head": "7ba2a2c638500eaa43f2137d16a6a0686b663630",
+  "previous_success": "docs/workorders/evidence/nightly_2026-10-25/success.json",
+  "before": "docs/workorders/evidence/nightly_2026-10-26/before",
+  "after": "docs/workorders/evidence/nightly_2026-10-26/after",
+  "after_manifest_sha256": "6bf181f36a2d0fbdefa26999683d976be74fc25af5fa0e0df2c4fa6b0968ffed",
+  "validation": "docs/workorders/evidence/nightly_2026-10-26/validation.json",
+  "changed_files": [
+    "docs/PROJECT_STATUS.md",
+    "docs/design/README.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "tasks/022-project-maintenance.md",
+    "docs/workorders/nightly_maintenance_2026-10-26.md"
+  ],
+  "outside_scope_drift": [],
+  "scope": "documentation maintenance only; historical execution and scoped acceptance remain distinct"
+}

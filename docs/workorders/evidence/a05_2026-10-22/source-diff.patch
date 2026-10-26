@@ -1,0 +1,3590 @@
+--- before/contracts/p0.coverage.json
++++ after/contracts/p0.coverage.json
+@@ -1,5 +1,5 @@
+ {
+-  "version": "1.1",
++  "version": "1.2",
+   "date": "2026-10-22",
+   "source_rows": [
+     {
+@@ -457,6 +457,26 @@
+     {
+       "signature": "POST `RV/adoptions`",
+       "use_cases": "`Review.AdoptVersion` / 018"
++    },
++    {
++      "signature": "GET `P/material-policy`",
++      "use_cases": "`MaterialPolicy.Read` / 008,017"
++    },
++    {
++      "signature": "PUT `P/material-policy`",
++      "use_cases": "`MaterialPolicy.Update` / 008,017"
++    },
++    {
++      "signature": "GET `P/material-sources/{source_id}/classification`",
++      "use_cases": "`MaterialSource.ReadClassification` / 008,017"
++    },
++    {
++      "signature": "POST `P/material-sources/{source_id}/classification/confirm`",
++      "use_cases": "`MaterialSource.ConfirmClassification` / 008,017"
++    },
++    {
++      "signature": "POST `P/material-sources/{source_id}/classification/correct`",
++      "use_cases": "`MaterialSource.CorrectClassification` / 008,017"
+     },
+     {
+       "signature": "GET /me/model-selection",
+@@ -549,7 +569,12 @@
+     "Workspace.SaveContext",
+     "Admin.ReadSMTP",
+     "Admin.SaveSMTP",
+-    "System.ReadCapabilities"
++    "System.ReadCapabilities",
++    "MaterialPolicy.Read",
++    "MaterialPolicy.Update",
++    "MaterialSource.ReadClassification",
++    "MaterialSource.ConfirmClassification",
++    "MaterialSource.CorrectClassification"
+   ],
+   "request_only_operations": [
+     "Config.TestLLM",
+@@ -606,7 +631,7 @@
+       "id": "GAP-ERROR",
+       "kind": "not-yet-transcribed",
+       "scope": "per-operation HTTP error applicability and binding",
+-      "reason": "PublicError, status-specific response components and SSE ErrorPayload are typed. Endpoint-specific error responses are not yet bound; TaskView remains incomplete."
++      "reason": "A04 shared errors are typed; A05 five synchronous operations bind applicable error subsets. Other endpoint errors and complete TaskView remain unbound."
+     },
+     {
+       "id": "GAP-TASK",
+@@ -641,8 +666,8 @@
+   ],
+   "normative_fingerprints": {
+     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
+-    "04-01_p0_operation_contracts.md": "3a8634e699e286bc10e3ed04279d5c4f9a4ba723b80c625b8a01a34894399bcb",
+-    "04-02_transport_task_file_contracts.md": "990407413d42294568f1363504bb02dc617bd104ab79b072fd7dedf009039f7e"
++    "04-01_p0_operation_contracts.md": "b372118043a6301ccfea371bb8406150c3d95a2f34de33013ba13593e663657b",
++    "04-02_transport_task_file_contracts.md": "4422ede39693c7ced1a257d8b0f0a05d190f3217886b2617c41af9f4de8ddd8c"
+   },
+   "operation_coverage": {
+     "Account.GetCSRF": {
+@@ -1257,6 +1282,36 @@
+         "GAP-ERROR",
+         "GAP-RUNTIME",
+         "GAP-REMAINING"
++      ]
++    },
++    "MaterialPolicy.Read": {
++      "status": "request-success-errors-partial",
++      "gaps": [
++        "GAP-RUNTIME"
++      ]
++    },
++    "MaterialPolicy.Update": {
++      "status": "request-success-errors-partial",
++      "gaps": [
++        "GAP-RUNTIME"
++      ]
++    },
++    "MaterialSource.ReadClassification": {
++      "status": "request-success-errors-partial",
++      "gaps": [
++        "GAP-RUNTIME"
++      ]
++    },
++    "MaterialSource.ConfirmClassification": {
++      "status": "request-success-errors-partial",
++      "gaps": [
++        "GAP-RUNTIME"
++      ]
++    },
++    "MaterialSource.CorrectClassification": {
++      "status": "request-success-errors-partial",
++      "gaps": [
++        "GAP-RUNTIME"
+       ]
+     }
+   },
+@@ -2416,7 +2471,47 @@
+       ]
+     },
+     {
+-      "source_row_index": 114,
++      "status": "partial",
++      "typed_operations": {
++        "MaterialPolicy.Read": "request-success-errors-partial"
++      },
++      "remaining": [],
++      "source_row_index": 114
++    },
++    {
++      "status": "partial",
++      "typed_operations": {
++        "MaterialPolicy.Update": "request-success-errors-partial"
++      },
++      "remaining": [],
++      "source_row_index": 115
++    },
++    {
++      "status": "partial",
++      "typed_operations": {
++        "MaterialSource.ReadClassification": "request-success-errors-partial"
++      },
++      "remaining": [],
++      "source_row_index": 116
++    },
++    {
++      "status": "partial",
++      "typed_operations": {
++        "MaterialSource.ConfirmClassification": "request-success-errors-partial"
++      },
++      "remaining": [],
++      "source_row_index": 117
++    },
++    {
++      "status": "partial",
++      "typed_operations": {
++        "MaterialSource.CorrectClassification": "request-success-errors-partial"
++      },
++      "remaining": [],
++      "source_row_index": 118
++    },
++    {
++      "source_row_index": 119,
+       "status": "partial",
+       "typed_operations": {
+         "Config.ReadSelection": "request-success-partial"
+@@ -2424,7 +2519,7 @@
+       "remaining": []
+     },
+     {
+-      "source_row_index": 115,
++      "source_row_index": 120,
+       "status": "partial",
+       "typed_operations": {
+         "Admin.ReadSMTP": "request-success-partial"
+@@ -2432,7 +2527,7 @@
+       "remaining": []
+     },
+     {
+-      "source_row_index": 116,
++      "source_row_index": 121,
+       "status": "partial",
+       "typed_operations": {
+         "Admin.ReadSecurity": "request-success-partial"
+@@ -2440,7 +2535,7 @@
+       "remaining": []
+     },
+     {
+-      "source_row_index": 117,
++      "source_row_index": 122,
+       "status": "not-typed",
+       "typed_operations": {},
+       "remaining": [
+@@ -2451,7 +2546,7 @@
+       ]
+     },
+     {
+-      "source_row_index": 118,
++      "source_row_index": 123,
+       "status": "not-typed",
+       "typed_operations": {},
+       "remaining": [
+@@ -2462,7 +2557,7 @@
+       ]
+     },
+     {
+-      "source_row_index": 119,
++      "source_row_index": 124,
+       "status": "not-typed",
+       "typed_operations": {},
+       "remaining": [
+@@ -2473,7 +2568,7 @@
+       ]
+     },
+     {
+-      "source_row_index": 120,
++      "source_row_index": 125,
+       "status": "partial",
+       "typed_operations": {
+         "Task.ReadConnectionResult": "request-success-partial"
+@@ -2481,7 +2576,7 @@
+       "remaining": []
+     },
+     {
+-      "source_row_index": 121,
++      "source_row_index": 126,
+       "status": "not-typed",
+       "typed_operations": {},
+       "remaining": [
+@@ -2492,7 +2587,7 @@
+       ]
+     },
+     {
+-      "source_row_index": 122,
++      "source_row_index": 127,
+       "status": "not-typed",
+       "typed_operations": {},
+       "remaining": [
+@@ -2503,7 +2598,7 @@
+       ]
+     },
+     {
+-      "source_row_index": 123,
++      "source_row_index": 128,
+       "status": "not-typed",
+       "typed_operations": {},
+       "remaining": [
+@@ -2514,7 +2609,7 @@
+       ]
+     },
+     {
+-      "source_row_index": 124,
++      "source_row_index": 129,
+       "status": "not-typed",
+       "typed_operations": {},
+       "remaining": [
+@@ -2525,7 +2620,7 @@
+       ]
+     },
+     {
+-      "source_row_index": 125,
++      "source_row_index": 130,
+       "status": "partial",
+       "typed_operations": {
+         "System.ReadCapabilities": "request-success-partial"
+@@ -2588,5 +2683,21 @@
+       "action eligibility",
+       "no automatic business rerun"
+     ]
++  },
++  "material_policy": {
++    "operations": [
++      "MaterialPolicy.Read",
++      "MaterialPolicy.Update",
++      "MaterialSource.ReadClassification",
++      "MaterialSource.ConfirmClassification",
++      "MaterialSource.CorrectClassification"
++    ],
++    "scope": "A05 request/success and applicable A04 error subsets; producer contracts only",
++    "remaining": [
++      "A06 trusted provenance and atomic read/dispatch/commit",
++      "A07 complete TaskView notice carrier",
++      "A08 source discovery in full ingestion/detail DTOs",
++      "runtime authorization, isolation, persistence, UI and end-to-end acceptance"
++    ]
+   }
+ }
+--- before/contracts/p0.openapi.json
++++ after/contracts/p0.openapi.json
+@@ -2,7 +2,7 @@
+   "openapi": "3.1.0",
+   "info": {
+     "title": "Research Paper Base P0 typed contract subset",
+-    "version": "1.1.0",
++    "version": "1.3.0",
+     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+   },
+   "servers": [
+@@ -5902,6 +5902,2034 @@
+         },
+         "x-coverage": "request-only"
+       }
++    },
++    "/projects/{project_id}/material-policy": {
++      "get": {
++        "operationId": "MaterialPolicy.Read",
++        "x-use-case": "MaterialPolicy.Read",
++        "x-fr": [
++          "FR-008",
++          "FR-017"
++        ],
++        "x-phase": "P0",
++        "x-authorization": "project-owner-readable",
++        "x-version-binding": "not-applicable",
++        "x-errors": "#/components/schemas/PublicError",
++        "security": [
++          {
++            "sessionCookie": []
++          }
++        ],
++        "parameters": [
++          {
++            "name": "project_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Success; business prerequisites and runtime checks remain mandatory.",
++            "headers": {
++              "Cache-Control": {
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            },
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "properties": {
++                    "data": {
++                      "$ref": "#/components/schemas/MaterialPolicyView"
++                    },
++                    "meta": {
++                      "$ref": "#/components/schemas/Meta"
++                    }
++                  },
++                  "required": [
++                    "data",
++                    "meta"
++                  ],
++                  "additionalProperties": false
++                }
++              }
++            }
++          },
++          "400": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope400"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_BAD_REQUEST"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "401": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope401"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "AUTH_REQUIRED",
++                                "AUTH_SESSION_INVALID",
++                                "AUTH_ACCOUNT_DISABLED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "404": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope404"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_RESOURCE_UNAVAILABLE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "422": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope422"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_FIELD_INVALID",
++                                "VALIDATION_UNKNOWN_FIELD"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "429": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope429"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_RESOURCE_LIMIT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Retry-After": {
++                "schema": {
++                  "type": "integer",
++                  "minimum": 1
++                }
++              }
++            }
++          },
++          "500": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope500"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STORAGE_INTERNAL_FAILURE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          }
++        },
++        "x-coverage": "request-success-errors-partial",
++        "x-material-policy": {
++          "scope": "authenticated-user-project",
++          "synchronous": true,
++          "current_policy_at": [
++            "read",
++            "dispatch",
++            "commit"
++          ],
++          "preserves": [
++            "knowledge_version",
++            "frozen_inputs",
++            "confirmation_scope",
++            "historical_content"
++          ],
++          "revision": "non-reusable",
++          "task_created": false
++        },
++        "x-error-codes": {
++          "400": [
++            "VALIDATION_BAD_REQUEST"
++          ],
++          "401": [
++            "AUTH_REQUIRED",
++            "AUTH_SESSION_INVALID",
++            "AUTH_ACCOUNT_DISABLED"
++          ],
++          "404": [
++            "PERMISSION_RESOURCE_UNAVAILABLE"
++          ],
++          "422": [
++            "VALIDATION_FIELD_INVALID",
++            "VALIDATION_UNKNOWN_FIELD"
++          ],
++          "429": [
++            "STATE_RESOURCE_LIMIT"
++          ],
++          "500": [
++            "STORAGE_INTERNAL_FAILURE"
++          ]
++        }
++      },
++      "put": {
++        "operationId": "MaterialPolicy.Update",
++        "x-use-case": "MaterialPolicy.Update",
++        "x-fr": [
++          "FR-008",
++          "FR-017"
++        ],
++        "x-phase": "P0",
++        "x-authorization": "project-owner-active",
++        "x-version-binding": "not-applicable",
++        "x-errors": "#/components/schemas/PublicError",
++        "security": [
++          {
++            "sessionCookie": []
++          }
++        ],
++        "parameters": [
++          {
++            "name": "project_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          },
++          {
++            "name": "X-CSRF-Token",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Success; business prerequisites and runtime checks remain mandatory.",
++            "headers": {
++              "Cache-Control": {
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            },
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "properties": {
++                    "data": {
++                      "$ref": "#/components/schemas/MaterialPolicyView"
++                    },
++                    "meta": {
++                      "$ref": "#/components/schemas/Meta"
++                    }
++                  },
++                  "required": [
++                    "data",
++                    "meta"
++                  ],
++                  "additionalProperties": false
++                }
++              }
++            }
++          },
++          "400": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope400"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_BAD_REQUEST"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "401": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope401"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "AUTH_REQUIRED",
++                                "AUTH_SESSION_INVALID",
++                                "AUTH_ACCOUNT_DISABLED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "404": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope404"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_RESOURCE_UNAVAILABLE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "422": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope422"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_FIELD_INVALID",
++                                "VALIDATION_UNKNOWN_FIELD"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "429": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope429"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_RESOURCE_LIMIT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Retry-After": {
++                "schema": {
++                  "type": "integer",
++                  "minimum": 1
++                }
++              }
++            }
++          },
++          "500": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope500"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STORAGE_INTERNAL_FAILURE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "403": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope403"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_CSRF_REJECTED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "409": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope409"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_PROJECT_READ_ONLY",
++                                "STATE_OPERATION_NOT_ALLOWED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "412": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope412"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_REVISION_CONFLICT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "428": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope428"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_REVISION_REQUIRED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "413": {
++            "description": "Request body exceeds limits or media type is unsupported.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope413"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_PAYLOAD_TOO_LARGE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "415": {
++            "description": "Request body exceeds limits or media type is unsupported.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope415"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_UNSUPPORTED_FORMAT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          }
++        },
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/MaterialPolicyWrite"
++              }
++            }
++          }
++        },
++        "x-coverage": "request-success-errors-partial",
++        "x-material-policy": {
++          "scope": "authenticated-user-project",
++          "synchronous": true,
++          "current_policy_at": [
++            "read",
++            "dispatch",
++            "commit"
++          ],
++          "preserves": [
++            "knowledge_version",
++            "frozen_inputs",
++            "confirmation_scope",
++            "historical_content"
++          ],
++          "revision": "non-reusable",
++          "task_created": false
++        },
++        "x-error-codes": {
++          "400": [
++            "VALIDATION_BAD_REQUEST"
++          ],
++          "401": [
++            "AUTH_REQUIRED",
++            "AUTH_SESSION_INVALID",
++            "AUTH_ACCOUNT_DISABLED"
++          ],
++          "403": [
++            "PERMISSION_CSRF_REJECTED"
++          ],
++          "404": [
++            "PERMISSION_RESOURCE_UNAVAILABLE"
++          ],
++          "409": [
++            "STATE_PROJECT_READ_ONLY",
++            "STATE_OPERATION_NOT_ALLOWED"
++          ],
++          "412": [
++            "STATE_REVISION_CONFLICT"
++          ],
++          "422": [
++            "VALIDATION_FIELD_INVALID",
++            "VALIDATION_UNKNOWN_FIELD"
++          ],
++          "428": [
++            "STATE_REVISION_REQUIRED"
++          ],
++          "429": [
++            "STATE_RESOURCE_LIMIT"
++          ],
++          "500": [
++            "STORAGE_INTERNAL_FAILURE"
++          ],
++          "413": [
++            "VALIDATION_PAYLOAD_TOO_LARGE"
++          ],
++          "415": [
++            "VALIDATION_UNSUPPORTED_FORMAT"
++          ]
++        }
++      }
++    },
++    "/projects/{project_id}/material-sources/{source_id}/classification": {
++      "get": {
++        "operationId": "MaterialSource.ReadClassification",
++        "x-use-case": "MaterialSource.ReadClassification",
++        "x-fr": [
++          "FR-008",
++          "FR-017"
++        ],
++        "x-phase": "P0",
++        "x-authorization": "project-owner-readable",
++        "x-version-binding": "not-applicable",
++        "x-errors": "#/components/schemas/PublicError",
++        "security": [
++          {
++            "sessionCookie": []
++          }
++        ],
++        "parameters": [
++          {
++            "name": "project_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          },
++          {
++            "name": "source_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Success; business prerequisites and runtime checks remain mandatory.",
++            "headers": {
++              "Cache-Control": {
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            },
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "properties": {
++                    "data": {
++                      "$ref": "#/components/schemas/MaterialClassificationView"
++                    },
++                    "meta": {
++                      "$ref": "#/components/schemas/Meta"
++                    }
++                  },
++                  "required": [
++                    "data",
++                    "meta"
++                  ],
++                  "additionalProperties": false
++                }
++              }
++            }
++          },
++          "400": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope400"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_BAD_REQUEST"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "401": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope401"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "AUTH_REQUIRED",
++                                "AUTH_SESSION_INVALID",
++                                "AUTH_ACCOUNT_DISABLED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "404": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope404"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_RESOURCE_UNAVAILABLE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "422": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope422"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_FIELD_INVALID",
++                                "VALIDATION_UNKNOWN_FIELD"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "429": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope429"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_RESOURCE_LIMIT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Retry-After": {
++                "schema": {
++                  "type": "integer",
++                  "minimum": 1
++                }
++              }
++            }
++          },
++          "500": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope500"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STORAGE_INTERNAL_FAILURE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          }
++        },
++        "x-coverage": "request-success-errors-partial",
++        "x-material-policy": {
++          "scope": "project-source-content-revision",
++          "synchronous": true,
++          "current_policy_at": [
++            "read",
++            "dispatch",
++            "commit"
++          ],
++          "preserves": [
++            "knowledge_version",
++            "frozen_inputs",
++            "confirmation_scope",
++            "historical_content"
++          ],
++          "revision": "non-reusable",
++          "task_created": false
++        },
++        "x-error-codes": {
++          "400": [
++            "VALIDATION_BAD_REQUEST"
++          ],
++          "401": [
++            "AUTH_REQUIRED",
++            "AUTH_SESSION_INVALID",
++            "AUTH_ACCOUNT_DISABLED"
++          ],
++          "404": [
++            "PERMISSION_RESOURCE_UNAVAILABLE"
++          ],
++          "422": [
++            "VALIDATION_FIELD_INVALID",
++            "VALIDATION_UNKNOWN_FIELD"
++          ],
++          "429": [
++            "STATE_RESOURCE_LIMIT"
++          ],
++          "500": [
++            "STORAGE_INTERNAL_FAILURE"
++          ]
++        }
++      }
++    },
++    "/projects/{project_id}/material-sources/{source_id}/classification/confirm": {
++      "post": {
++        "operationId": "MaterialSource.ConfirmClassification",
++        "x-use-case": "MaterialSource.ConfirmClassification",
++        "x-fr": [
++          "FR-008",
++          "FR-017"
++        ],
++        "x-phase": "P0",
++        "x-authorization": "project-owner-active",
++        "x-version-binding": "not-applicable",
++        "x-errors": "#/components/schemas/PublicError",
++        "security": [
++          {
++            "sessionCookie": []
++          }
++        ],
++        "parameters": [
++          {
++            "name": "project_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          },
++          {
++            "name": "X-CSRF-Token",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string"
++            }
++          },
++          {
++            "name": "source_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          },
++          {
++            "name": "Idempotency-Key",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "minLength": 16,
++              "maxLength": 128,
++              "pattern": "^[\\x20-\\x7e]+$"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Success; business prerequisites and runtime checks remain mandatory.",
++            "headers": {
++              "Cache-Control": {
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            },
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "properties": {
++                    "data": {
++                      "$ref": "#/components/schemas/MaterialClassificationView"
++                    },
++                    "meta": {
++                      "$ref": "#/components/schemas/Meta"
++                    }
++                  },
++                  "required": [
++                    "data",
++                    "meta"
++                  ],
++                  "additionalProperties": false
++                }
++              }
++            }
++          },
++          "400": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope400"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_BAD_REQUEST"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "401": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope401"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "AUTH_REQUIRED",
++                                "AUTH_SESSION_INVALID",
++                                "AUTH_ACCOUNT_DISABLED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "404": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope404"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_RESOURCE_UNAVAILABLE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "422": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope422"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_FIELD_INVALID",
++                                "VALIDATION_UNKNOWN_FIELD"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "429": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope429"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_RESOURCE_LIMIT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Retry-After": {
++                "schema": {
++                  "type": "integer",
++                  "minimum": 1
++                }
++              }
++            }
++          },
++          "500": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope500"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STORAGE_INTERNAL_FAILURE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "403": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope403"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_CSRF_REJECTED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "409": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope409"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_PROJECT_READ_ONLY",
++                                "STATE_OPERATION_NOT_ALLOWED",
++                                "STATE_IDEMPOTENCY_CONFLICT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "412": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope412"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_REVISION_CONFLICT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "428": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope428"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_REVISION_REQUIRED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "413": {
++            "description": "Request body exceeds limits or media type is unsupported.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope413"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_PAYLOAD_TOO_LARGE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "415": {
++            "description": "Request body exceeds limits or media type is unsupported.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope415"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_UNSUPPORTED_FORMAT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          }
++        },
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/MaterialClassificationWrite"
++              }
++            }
++          }
++        },
++        "x-coverage": "request-success-errors-partial",
++        "x-material-policy": {
++          "scope": "project-source-content-revision",
++          "synchronous": true,
++          "current_policy_at": [
++            "read",
++            "dispatch",
++            "commit"
++          ],
++          "preserves": [
++            "knowledge_version",
++            "frozen_inputs",
++            "confirmation_scope",
++            "historical_content"
++          ],
++          "revision": "non-reusable",
++          "task_created": false
++        },
++        "x-error-codes": {
++          "400": [
++            "VALIDATION_BAD_REQUEST"
++          ],
++          "401": [
++            "AUTH_REQUIRED",
++            "AUTH_SESSION_INVALID",
++            "AUTH_ACCOUNT_DISABLED"
++          ],
++          "403": [
++            "PERMISSION_CSRF_REJECTED"
++          ],
++          "404": [
++            "PERMISSION_RESOURCE_UNAVAILABLE"
++          ],
++          "409": [
++            "STATE_PROJECT_READ_ONLY",
++            "STATE_OPERATION_NOT_ALLOWED",
++            "STATE_IDEMPOTENCY_CONFLICT"
++          ],
++          "412": [
++            "STATE_REVISION_CONFLICT"
++          ],
++          "422": [
++            "VALIDATION_FIELD_INVALID",
++            "VALIDATION_UNKNOWN_FIELD"
++          ],
++          "428": [
++            "STATE_REVISION_REQUIRED"
++          ],
++          "429": [
++            "STATE_RESOURCE_LIMIT"
++          ],
++          "500": [
++            "STORAGE_INTERNAL_FAILURE"
++          ],
++          "413": [
++            "VALIDATION_PAYLOAD_TOO_LARGE"
++          ],
++          "415": [
++            "VALIDATION_UNSUPPORTED_FORMAT"
++          ]
++        }
++      }
++    },
++    "/projects/{project_id}/material-sources/{source_id}/classification/correct": {
++      "post": {
++        "operationId": "MaterialSource.CorrectClassification",
++        "x-use-case": "MaterialSource.CorrectClassification",
++        "x-fr": [
++          "FR-008",
++          "FR-017"
++        ],
++        "x-phase": "P0",
++        "x-authorization": "project-owner-active",
++        "x-version-binding": "not-applicable",
++        "x-errors": "#/components/schemas/PublicError",
++        "security": [
++          {
++            "sessionCookie": []
++          }
++        ],
++        "parameters": [
++          {
++            "name": "project_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          },
++          {
++            "name": "X-CSRF-Token",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string"
++            }
++          },
++          {
++            "name": "source_id",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "$ref": "#/components/schemas/ID"
++            }
++          },
++          {
++            "name": "Idempotency-Key",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "minLength": 16,
++              "maxLength": 128,
++              "pattern": "^[\\x20-\\x7e]+$"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Success; business prerequisites and runtime checks remain mandatory.",
++            "headers": {
++              "Cache-Control": {
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            },
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "properties": {
++                    "data": {
++                      "$ref": "#/components/schemas/MaterialClassificationView"
++                    },
++                    "meta": {
++                      "$ref": "#/components/schemas/Meta"
++                    }
++                  },
++                  "required": [
++                    "data",
++                    "meta"
++                  ],
++                  "additionalProperties": false
++                }
++              }
++            }
++          },
++          "400": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope400"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_BAD_REQUEST"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "401": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope401"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "AUTH_REQUIRED",
++                                "AUTH_SESSION_INVALID",
++                                "AUTH_ACCOUNT_DISABLED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "404": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope404"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_RESOURCE_UNAVAILABLE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "422": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope422"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_FIELD_INVALID",
++                                "VALIDATION_UNKNOWN_FIELD"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "429": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope429"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_RESOURCE_LIMIT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Retry-After": {
++                "schema": {
++                  "type": "integer",
++                  "minimum": 1
++                }
++              }
++            }
++          },
++          "500": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope500"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STORAGE_INTERNAL_FAILURE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "403": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope403"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_CSRF_REJECTED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "409": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope409"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_PROJECT_READ_ONLY",
++                                "STATE_OPERATION_NOT_ALLOWED",
++                                "STATE_IDEMPOTENCY_CONFLICT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "412": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope412"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_REVISION_CONFLICT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "428": {
++            "description": "Applicable A04 errors; authorization precedes state and replay.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope428"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_REVISION_REQUIRED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "413": {
++            "description": "Request body exceeds limits or media type is unsupported.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope413"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_PAYLOAD_TOO_LARGE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          "415": {
++            "description": "Request body exceeds limits or media type is unsupported.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope415"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_UNSUPPORTED_FORMAT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            }
++          }
++        },
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/MaterialClassificationWrite"
++              }
++            }
++          }
++        },
++        "x-coverage": "request-success-errors-partial",
++        "x-material-policy": {
++          "scope": "project-source-content-revision",
++          "synchronous": true,
++          "current_policy_at": [
++            "read",
++            "dispatch",
++            "commit"
++          ],
++          "preserves": [
++            "knowledge_version",
++            "frozen_inputs",
++            "confirmation_scope",
++            "historical_content"
++          ],
++          "revision": "non-reusable",
++          "task_created": false
++        },
++        "x-error-codes": {
++          "400": [
++            "VALIDATION_BAD_REQUEST"
++          ],
++          "401": [
++            "AUTH_REQUIRED",
++            "AUTH_SESSION_INVALID",
++            "AUTH_ACCOUNT_DISABLED"
++          ],
++          "403": [
++            "PERMISSION_CSRF_REJECTED"
++          ],
++          "404": [
++            "PERMISSION_RESOURCE_UNAVAILABLE"
++          ],
++          "409": [
++            "STATE_PROJECT_READ_ONLY",
++            "STATE_OPERATION_NOT_ALLOWED",
++            "STATE_IDEMPOTENCY_CONFLICT"
++          ],
++          "412": [
++            "STATE_REVISION_CONFLICT"
++          ],
++          "422": [
++            "VALIDATION_FIELD_INVALID",
++            "VALIDATION_UNKNOWN_FIELD"
++          ],
++          "428": [
++            "STATE_REVISION_REQUIRED"
++          ],
++          "429": [
++            "STATE_RESOURCE_LIMIT"
++          ],
++          "500": [
++            "STORAGE_INTERNAL_FAILURE"
++          ],
++          "413": [
++            "VALIDATION_PAYLOAD_TOO_LARGE"
++          ],
++          "415": [
++            "VALIDATION_UNSUPPORTED_FORMAT"
++          ]
++        }
++      }
+     }
+   },
+   "components": {
+@@ -8381,7 +10409,7 @@
+         "type": "object",
+         "properties": {
+           "status_url": {
+-            "$ref": "#/components/schemas/ErrorResourceURL"
++            "$ref": "#/components/schemas/ErrorTaskStatusURL"
+           }
+         },
+         "required": [
+@@ -9765,14 +11793,7 @@
+             "const": false
+           },
+           "details": {
+-            "oneOf": [
+-              {
+-                "$ref": "#/components/schemas/ErrorTaskDetails"
+-              },
+-              {
+-                "type": "null"
+-              }
+-            ]
++            "$ref": "#/components/schemas/ErrorTaskDetails"
+           },
+           "recovery": {
+             "oneOf": [
+@@ -11524,11 +13545,407 @@
+                     "type": "null"
+                   }
+                 }
++              },
++              "details": {
++                "not": {
++                  "required": [
++                    "outcome"
++                  ],
++                  "properties": {
++                    "outcome": {
++                      "const": "not_accepted"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
+               }
+             }
+           }
+         ],
+         "description": "Error after task acceptance; same public vocabulary, never authorizes retry of the accepted request."
++      },
++      "ErrorTaskStatusURL": {
++        "type": "string",
++        "pattern": "^/api/v1/tasks/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
++        "minLength": 50,
++        "maxLength": 50,
++        "description": "Task status endpoint only. Authorization and task ownership must still be checked at runtime."
++      },
++      "MaterialUseMode": {
++        "type": "string",
++        "enum": [
++          "public_only",
++          "allow_private"
++        ]
++      },
++      "MaterialPolicyWrite": {
++        "type": "object",
++        "properties": {
++          "expected_revision": {
++            "$ref": "#/components/schemas/Revision"
++          },
++          "mode": {
++            "$ref": "#/components/schemas/MaterialUseMode"
++          },
++          "risk_acknowledged": {
++            "type": "boolean"
++          }
++        },
++        "required": [
++          "expected_revision",
++          "mode",
++          "risk_acknowledged"
++        ],
++        "additionalProperties": false,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "mode": {
++                  "const": "allow_private"
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "risk_acknowledged": {
++                  "const": true
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "risk_acknowledged": {
++                  "const": false
++                }
++              }
++            }
++          }
++        ]
++      },
++      "MaterialPolicyView": {
++        "type": "object",
++        "properties": {
++          "user_id": {
++            "$ref": "#/components/schemas/ID"
++          },
++          "project_id": {
++            "$ref": "#/components/schemas/ID"
++          },
++          "mode": {
++            "$ref": "#/components/schemas/MaterialUseMode"
++          },
++          "revision": {
++            "$ref": "#/components/schemas/Revision"
++          },
++          "risk_acknowledged_at": {
++            "anyOf": [
++              {
++                "$ref": "#/components/schemas/Time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "user_id",
++          "project_id",
++          "mode",
++          "revision",
++          "risk_acknowledged_at"
++        ],
++        "additionalProperties": false,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "mode": {
++                  "const": "allow_private"
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "risk_acknowledged_at": {
++                  "$ref": "#/components/schemas/Time"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "MaterialSourceIdentity": {
++        "type": "object",
++        "properties": {
++          "project_id": {
++            "$ref": "#/components/schemas/ID"
++          },
++          "source_id": {
++            "$ref": "#/components/schemas/ID"
++          },
++          "content_revision": {
++            "$ref": "#/components/schemas/Revision"
++          }
++        },
++        "required": [
++          "project_id",
++          "source_id",
++          "content_revision"
++        ],
++        "additionalProperties": false
++      },
++      "MaterialProvenance": {
++        "type": "object",
++        "properties": {
++          "kind": {
++            "enum": [
++              "current_submission",
++              "historical_input",
++              "uploaded_file",
++              "retrieved_content",
++              "derived_content",
++              "unknown"
++            ]
++          },
++          "submission_scope_id": {
++            "anyOf": [
++              {
++                "$ref": "#/components/schemas/ID"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "dependency_status": {
++            "enum": [
++              "complete",
++              "incomplete",
++              "unknown"
++            ]
++          }
++        },
++        "required": [
++          "kind",
++          "submission_scope_id",
++          "dependency_status"
++        ],
++        "additionalProperties": false,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "kind": {
++                  "const": "current_submission"
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "submission_scope_id": {
++                  "$ref": "#/components/schemas/ID"
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "submission_scope_id": {
++                  "type": "null"
++                }
++              }
++            }
++          },
++          {
++            "if": {
++              "properties": {
++                "kind": {
++                  "const": "current_submission"
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "dependency_status": {
++                  "const": "complete"
++                }
++              }
++            }
++          },
++          {
++            "if": {
++              "properties": {
++                "kind": {
++                  "const": "unknown"
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "dependency_status": {
++                  "const": "unknown"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "MaterialClassification": {
++        "type": "string",
++        "enum": [
++          "public",
++          "private"
++        ]
++      },
++      "MaterialClassificationWrite": {
++        "type": "object",
++        "properties": {
++          "expected_revision": {
++            "$ref": "#/components/schemas/Revision"
++          },
++          "content_revision": {
++            "$ref": "#/components/schemas/Revision"
++          },
++          "classification": {
++            "$ref": "#/components/schemas/MaterialClassification"
++          },
++          "basis": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 2000,
++            "pattern": "\\S"
++          },
++          "explicit_confirmation": {
++            "const": true
++          }
++        },
++        "required": [
++          "expected_revision",
++          "content_revision",
++          "classification",
++          "basis",
++          "explicit_confirmation"
++        ],
++        "additionalProperties": false
++      },
++      "MaterialClassificationFact": {
++        "type": "object",
++        "properties": {
++          "basis": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 2000,
++            "pattern": "\\S"
++          },
++          "confirmed_by": {
++            "$ref": "#/components/schemas/ID"
++          },
++          "confirmed_at": {
++            "$ref": "#/components/schemas/Time"
++          }
++        },
++        "required": [
++          "basis",
++          "confirmed_by",
++          "confirmed_at"
++        ],
++        "additionalProperties": false
++      },
++      "MaterialClassificationView": {
++        "type": "object",
++        "properties": {
++          "source": {
++            "$ref": "#/components/schemas/MaterialSourceIdentity"
++          },
++          "classification": {
++            "$ref": "#/components/schemas/MaterialClassification"
++          },
++          "confirmation_status": {
++            "enum": [
++              "unconfirmed",
++              "confirmed"
++            ]
++          },
++          "revision": {
++            "$ref": "#/components/schemas/Revision"
++          },
++          "confirmation": {
++            "anyOf": [
++              {
++                "$ref": "#/components/schemas/MaterialClassificationFact"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "provenance": {
++            "$ref": "#/components/schemas/MaterialProvenance"
++          }
++        },
++        "required": [
++          "source",
++          "classification",
++          "confirmation_status",
++          "revision",
++          "confirmation",
++          "provenance"
++        ],
++        "additionalProperties": false,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "confirmation_status": {
++                  "const": "confirmed"
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "confirmation": {
++                  "$ref": "#/components/schemas/MaterialClassificationFact"
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "confirmation": {
++                  "type": "null"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "MaterialUseNotice": {
++        "type": "object",
++        "properties": {
++          "reason": {
++            "enum": [
++              "private_source",
++              "classification_unconfirmed",
++              "provenance_unknown",
++              "dependencies_incomplete",
++              "required_history_restricted",
++              "available_subset"
++            ]
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256,
++            "pattern": "\\S"
++          }
++        },
++        "required": [
++          "reason",
++          "message"
++        ],
++        "additionalProperties": false
+       }
+     },
+     "responses": {
+--- before/docs/IMPLEMENTATION_ENTRY.md
++++ after/docs/IMPLEMENTATION_ENTRY.md
+@@ -1,6 +1,6 @@
+ # 新核心设计与审核入口
+ 
+-文档版本：v1.2
++文档版本：v1.3
+ 更新日期：2026-10-22
+ 
+ ## 1. 当前依据
+@@ -14,7 +14,7 @@
+ | 工程初始化 | [00](design/00_layers.md)、[工程基线](design/00-01_engineering_baseline.md)、[05-01](design/05-01_internal_module_contracts.md)、[09](design/09_quality_observability.md)、[10](design/10_operations_deployment.md) | 目录落地与验证证据见任务005；不把层拆成服务 |
+ | 账号、配置、Project | [01](design/01_functional_requirements.md) FR-001–008适用子条目、[02](design/02_domain_core.md)、[03-01](design/03-01_ui_system_pages_appendix.md)、[04-01](design/04-01_p0_operation_contracts.md)对应操作、[05](design/05_application_use_cases.md)、[07](design/07_data_persistence.md)、[08](design/08_security_permissions.md) | 配置测试字段仍须按08 §12.2校准，不推定已有schema全部闭合 |
+ | 受理与提交 | 04 §7、05 §3/§12、05-01 §2/§4、07 §6、09 ARC-03/04 | 同步命令不创建伪Task/outbox；异步先持久提交再返回 |
+-| 补充、解析、分类 | [02-03](design/02-03_construction_assets_appendix.md)、[03-02](design/03-02_ui_construction_appendix.md)、[04-02](design/04-02_transport_task_file_contracts.md)、[06](design/06_agent_knowledge_services.md)、[08-01](design/08-01_agent_data_access_policy.md)及对应05/07 | 单文件为P0；A05–A08未闭合，不能用通用metadata接口补洞 |
++| 补充、解析、分类 | [02-03](design/02-03_construction_assets_appendix.md)、[03-02](design/03-02_ui_construction_appendix.md)、[04-02](design/04-02_transport_task_file_contracts.md)、[06](design/06_agent_knowledge_services.md)、[08-01](design/08-01_agent_data_access_policy.md)及对应05/07 | 单文件为P0；A05限定字段契约已交付（task007）；A06–A08未闭合，不能用通用metadata接口补洞 |
+ | 发布、研究与综述 | [02-02](design/02-02_construction_versioning_appendix.md)、[03-03](design/03-03_ui_research_review_appendix.md)、[03-04](design/03-04_ui_shared_interactions_appendix.md)、04–09对应章节 | 空版合法、旧对象固定版本；A09选型仍延期 |
+ | HTTP与任务交付 | [04](design/04_api_contracts.md)、04-01/04-02、[04-03](design/04-03_machine_contract_governance.md)、08、09 | 机器契约只约束实际覆盖结构；错误/任务/资料策略缺项按任务收口 |
+ 
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.35
++文档版本：v1.38
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+@@ -20,7 +20,7 @@
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+ | 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已交付；独立审核发现3项P2待修，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已交付；3项P2已限定修复并通过subagent复审；合并态45项契约测试及结构检查通过，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付，见task007审核包；A06–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -33,15 +33,17 @@
+ 
+ ## 3. 待完成项
+ 
+-下一步任务已在[task007第6节](../tasks/007-skeleton-review-fixes.md#6-下一阶段计划a05-资料设置与分类操作契约)登记：A05资料设置与分类UI/API契约，分设置操作、分类操作、错误/UI对应、契约测试四步。本轮仅建单，A05执行待开始；原task007骨架修复历史保留。A06及后续任务另列依赖，不自动启动业务实现或恢复延期选型。
++下一步任务已在[task007第6节](../tasks/007-skeleton-review-fixes.md#6-下一阶段计划a05-资料设置与分类操作契约)登记：A05资料设置与分类UI/API契约，分设置操作、分类操作、错误/UI对应、契约测试四步。A05限定设计、五个同步操作及契约验证已交付，见[审核包](workorders/task007_a05_review_2026-10-22.md)；原task007骨架修复历史保留。A06及后续任务另列依赖，不自动启动业务实现或恢复延期选型。
++
++[task008：A06资料来源与当前政策内部契约](../tasks/008-material-policy-internal-contracts.md)已按“task007的A05完成”假设建单，拆为类型、读取/缓存、派发/提交裁决、逻辑持久事实、验收交接五步。建单假设保留为历史；A05本轮交付见task007审核包，A06仍待开始，执行时须核对实际快照及A04修复/人工接受范围；不自动执行task008。
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
+-面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)已交付设计、机器结构及契约测试；本次需求覆盖复核补充8组测试，全部31项契约测试通过，详见[task006覆盖补齐报告](workorders/task006_coverage_closure_2026-10-22.md)；兼容门禁83项差异已作定向技术审查，保留退出1；[独立审核](workorders/task006_independent_review_2026-10-22.md)发现恢复目标、已受理Task的outcome及状态映射漂移检查3项P2待修，人工接受待记录；不自动启动A05–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
++面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)已交付设计、机器结构及契约测试；本次需求覆盖复核补充8组测试，全部31项契约测试通过，详见[task006覆盖补齐报告](workorders/task006_coverage_closure_2026-10-22.md)；兼容门禁83项差异已作定向技术审查，保留退出1；[独立审核](workorders/task006_independent_review_2026-10-22.md)发现的3项P2已修复，35项限定快照测试及subagent复审通过；[修复包](workorders/task006_p2_fixes_2026-10-22.md)保留并行写入期间的漂移记录，最终合并态45项契约测试及结构检查通过，人工接受待记录；A05当前交付另见task007；不自动启动A06–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
+ 
+ | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
+ | --- | --- | --- | --- | --- |
+-| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)待修；逐端点错误响应绑定及其余机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
++| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)已限定修复并复审；[合并态验证](workorders/task006_p2_fixes_2026-10-22.md)45项契约测试及结构检查通过；A05五个同步操作的错误子集已绑定；其余逐端点错误响应绑定及机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+ | TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | 延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
+ | TRACK-006 | 内部安全参考的版本管理与受控交付（D07） | 延期 | 工作单 D07 | 明确存储、读者和同步机制；不在本表复制内部正文 |
+ | TRACK-007a | Project资产、上下文与版本快照字段映射 | 逻辑映射已细化；物理字段待落实 | [07 §3–4](design/07_data_persistence.md#3-逻辑记录与字段映射) | 本轮定义最小持久事实/归属与约束；新核心建立后逐项落实实际表字段、索引和测试，不能将逻辑表当作已迁移 |
+@@ -63,7 +65,7 @@
+ | TRACK-012e | P0 运行验收与缺项报告 | 待开始 | TRACK-012a–012d；新核心建立后确认安装/测试入口 | 在隔离测试环境执行相关自动化与端到端验收，报告命令、结果、失败项和未覆盖范围 |
+ | TRACK-018 | 资产复用与读取一致性实现 | 待开始 | [02-02 §2.5](design/02-02_construction_versioning_appendix.md#25-不可变逻辑快照与资产复用边界)、04/05/06/07、[09 §4.1](design/09_quality_observability.md#41-不可变快照一致性验收) | 将已确认的资产复用、索引/图谱隔离、发布可见性及回收竞争边界落实到存储与读取路径；历史保留时长与容量政策另行决策；版本绑定和 KV-I01–I09 由 TRACK-012b 跟踪 |
+ | TRACK-019 | 引用有效性与版本选择实现验收 | 待开始 | [设计评审](workorders/knowledge_citation_selection_review_2026-10-16.md)、02-02 §2.6–2.7、04-01 §5.1、09 §4.2 | 按已细化设计实现不可变引用解析、目标版本新引用、范围/风险投影及显式版本选择；执行 KV-C01–C05/KV-V01–V05；跨 Project 联合引用不在范围；引用规范与空版本消费已按R1/R3及补充决定关闭，后续验收不得恢复旧覆盖率或空版创建禁令 |
+-| TRACK-021 | 资料策略跨层契约与实现接入 | Q1–Q4已闭合；接口/实现待收口 | [08-01 §11](design/08-01_agent_data_access_policy.md#11-闭合检查与剩余工作) | 按G01–G03补设置/分类/错误投影、类型与来源字段、缓存/派发/提交裁决及迁移验证；不再请求Q1–Q4决定。G04已按用户决定关闭：P1互联网公开来源自动public，内网通常不纳入，见08-01 §4.4；工程收口仍需落实自动来源记录和对应测试；见[检查记录](workorders/agent_data_policy_closure_2026-10-21.md) |
++| TRACK-021 | 资料策略跨层契约与实现接入 | Q1–Q4已闭合；A05限定契约已交付，内部/运行待收口 | [08-01 §11](design/08-01_agent_data_access_policy.md#11-闭合检查与剩余工作) | A05设置/分类/错误子集及来源只读字段见[task007审核包](workorders/task007_a05_review_2026-10-22.md)；G01/G03剩余完整载体与可信来源消费、G02缓存/派发/提交及迁移验证仍开放；不再请求Q1–Q4决定。G04已按用户决定关闭：P1互联网公开来源自动public，内网通常不纳入，见08-01 §4.4；工程收口仍需落实自动来源记录和对应测试；见[检查记录](workorders/agent_data_policy_closure_2026-10-21.md) |
+ | TRACK-022 | 运行目标OPS-D01 | 方案A已定；数值目标待明确 | [10 §9](design/10_operations_deployment.md#9-待决策的运行目标)；TRACK-007c/009b/011b | 已选单部署、管理员始终可授权计划停机、人工恢复；不采纳前轮示例RPO/RTO/备份周期，实际部署前再明确必要目标；实际证据复用既有跟踪项 |
+ 
+ ## 4. 历史记录与验证
+@@ -122,3 +124,7 @@
+ 本次修订 v1.35（2026-10-22）：task006补齐恢复动作/details矩阵、字段边界、技术重试组合、HTTP/Task/SSE载体和错误契约漂移回归；31项契约测试及结构检查通过。机器契约及业务源码未改，历史兼容门禁仍退出1（83项），人工接受、真实鉴权/脱敏/事务及端到端验收仍未完成，见[覆盖报告](workorders/task006_coverage_closure_2026-10-22.md)。
+ 
+ 本次修订 v1.35（2026-10-22）：按用户要求将下一步拆分追加到已存在的task007，保留原修复历史；限定A05下一阶段计划及后续依赖。本轮仅文档建单，未执行契约或业务实现，不改变人工接受状态。
++
++本次修订 v1.36（2026-10-22）：新增task008条件化计划，承接task007的A05之后的A06内部契约设计；区分规划假设与实际进度，保留task006审核待修记录及既有改动。本轮仅建单。
++
++本次修订（2026-10-22）：按task007完成A05 N01–N04限定设计与机器契约，新增11方法，合并态46项契约测试及结构检查通过（含并行task006 P2修复）；保留入场及历史兼容门禁的非零差异，方向解释见[审核包](workorders/task007_a05_review_2026-10-22.md)。业务运行与人工接受未完成，task008只保留计划。
+--- before/docs/design/03-01_ui_system_pages_appendix.md
++++ after/docs/design/03-01_ui_system_pages_appendix.md
+@@ -1,7 +1,7 @@
+ # UI 系统页面附录
+ 
+-文档版本：v1.0
+-更新日期：2026-10-16
++文档版本：v1.1
++更新日期：2026-10-22
+ 来源：`03_ui_workspace.md` v1.18 第 9 章；保留 P 编号，按模块拆分。
+ 
+ 本附录与 [UI 主文](03_ui_workspace.md) 具有相同 UI 规范效力；需求含义和分期以 [01](01_functional_requirements.md) 为准，状态与不变量以 [02](02_domain_core.md) 及其专题附录为准。详细交互在本附录单点维护，主文只保留跨模块约束与索引。
+@@ -376,3 +376,9 @@
+ | 版本 | 日期 | 变更摘要 |
+ | --- | --- | --- |
+ | v1.0 | 2026-10-16 | 从 UI v1.18 拆分，保留页面标识与交互边界，补充布局组合并清理分期残留 |
++
++## A05 Project资料使用设置
++
++Project内设置区提供“Agent资料使用”入口，调用04-01 §10的MaterialPolicy.Read/Update。显示当前Project及当前用户选择，默认“仅公开资料”；页面重进从服务端读取，不从Workspace恢复授权。切到“允许私人资料”时就地展示可涉及文件、批注、历史/草稿及派生内容、当前已选Provider（无选择明确标出）和相关内容可能发往该Provider的风险，由用户明确同意后保存；这不是新增通用确认预览或Task。关闭可直接保存。保存前保持当前生效值，成功才显示新值，失败保留草稿并标注未生效。
++
++归档时仍读当前选择、禁用保存并说明只读；无权/删除显示安全不可用。冲突、断网及错误按04-01 §10.2，不自动重交；开启不自动重新生成或恢复任务，关闭不声称撤回已发送数据。分类管理入口与设置分开，不用开关代替分类确认。
+--- before/docs/design/03-02_ui_construction_appendix.md
++++ after/docs/design/03-02_ui_construction_appendix.md
+@@ -1,7 +1,7 @@
+ # UI Construction 工作台附录
+ 
+-文档版本：v1.3
+-更新日期：2026-10-16
++文档版本：v1.4
++更新日期：2026-10-22
+ 来源：`03_ui_workspace.md` v1.18 第 9 章；保留 P 编号，按模块拆分。
+ 
+ 本附录与 [UI 主文](03_ui_workspace.md) 具有相同 UI 规范效力；需求含义和分期以 [01](01_functional_requirements.md) 为准，状态与不变量以 [02](02_domain_core.md) 及其专题附录为准。详细交互在本附录单点维护，主文只保留跨模块约束与索引。
+@@ -300,3 +300,11 @@
+ - 同 DOI 重新导入沿用论文身份，当前仍关联时提示先移除；自动检索不恢复人工排除，显式重新纳入需重新确认，不继承旧确认。
+ 
+ 本次修订 v1.3（2026-10-16）：落实 R1-A 至 R4-A 与人工补充裁决：学术引用建议、轻量稿件编辑及下载、风险确认移除、空版本可新建研究、论文及资料入库后只读、筛选等待点追加词。仅设计同步，未实现或运行验收。
++
++## A05 来源分类入口
++
++补充请求/候选的具体文件或内容来源详情展示来源身份、内容修订、当前分类及独立确认状态；服务端提供source_id后调用04-01 §10的ReadClassification。上传默认“私人／未确认”；检索建议公开仍标未确认。静态接收可完成，但模型元数据生成、分析、向量化前必须完成分类确认且符合当前政策；开启私人资料不能跳过确认。
++
++未确认显示“确认分类”，已确认显示“更正当前使用分类”；分别调用ConfirmClassification/CorrectClassification。用户明确选择public/private、填写具体来源依据并提交；更正到公开突出显示Owner放宽及依据，不能用DOI或公开摘要证明整份附件公开。两操作均不替代处理/分析/入库确认，不自动启动流水线。已发布内容详情只有独立的安全分类入口，正文仍只读；知识面板只提供跳转到该来源详情，不直接编辑正文。归档所有分类写按钮禁用。
++
++412保留输入并要求重新阅读当前分类，404不透露来源归属；其余错误遵循04-01 §10.2。分类成功仅说明当前使用限制已保存，不宣称已重建缓存或撤回Provider内容。
+--- before/docs/design/03-04_ui_shared_interactions_appendix.md
++++ after/docs/design/03-04_ui_shared_interactions_appendix.md
+@@ -1,7 +1,7 @@
+ # UI 共用面板与交互附录
+ 
+-文档版本：v1.4
+-更新日期：2026-10-16
++文档版本：v1.5
++更新日期：2026-10-22
+ 来源：`03_ui_workspace.md` v1.18 第 9 章；保留 P 编号，按模块拆分。
+ 
+ 本附录与 [UI 主文](03_ui_workspace.md) 具有相同 UI 规范效力；需求含义和分期以 [01](01_functional_requirements.md) 为准，状态与不变量以 [02](02_domain_core.md) 及其专题附录为准。详细交互在本附录单点维护，主文只保留跨模块约束与索引。
+@@ -236,3 +236,9 @@
+ 论文与 ProjectMaterial 的知识详情均只读；修改引导进入 Construction 的移除—新导入流程，不在只读资产面板直接写入。单条/批量/全部移除的风险确认及冲突构建交接统一由 Construction 承载，旧引用依赖不成为移除否决条件。
+ 
+ 本次修订 v1.4（2026-10-16）：落实 R1-A 至 R4-A 与人工补充裁决：学术引用建议、轻量稿件编辑及下载、风险确认移除、空版本可新建研究、论文及资料入库后只读、筛选等待点追加词。仅设计同步，未实现或运行验收。
++
++## A05 受限资料与历史提示
++
++资料来源面板展示04-01 §10的只读MaterialProvenance，区分本次主动文字、历史自动取用、上传、检索、派生与未知；这些标签不能由用户切换为免检。本次输入例外仅绑定当前提交，历史草稿不能沿用。派生依赖不全、分类未确认或未知来源明确提示，不能以“无引用”显示为公开。
++
++MaterialUseNotice词汇供后续受控读取接口消费：私人来源提示“当前设置不允许使用私人资料”；未确认提示先确认分类；未知/依赖不全提示无法证明可用范围；必须使用受限历史时明确阻断，保留历史而不静默剪消息；允许子集检索标注“当前权限限制了可用范围”，不隐式换KnowledgeVersion、不报告为完整知识库没有资料。可跳转已有设置/分类详情，由用户明确操作后沿原合法入口继续；不新增通用retry/rerun。字段载体在A06/A07收口，本次未实现页面。
+--- before/docs/design/04-01_p0_operation_contracts.md
++++ after/docs/design/04-01_p0_operation_contracts.md
+@@ -1,6 +1,6 @@
+ # API 附录：P0 操作与数据契约
+ 
+-文档版本：v1.7
++文档版本：v1.8
+ 更新日期：2026-10-22
+ 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
+ 适用范围：P0 设计契约；不是实现或验收通过声明。
+@@ -422,3 +422,50 @@
+ 本次修订 v1.5（2026-10-16）：同步 R1-A–R4-A 及人工补充裁决；本轮细则已关闭，实现与运行验收另行跟踪。
+ 
+ 本次修订 v1.6（2026-10-19）：迁移本批具名字段到局部OpenAPI，保留操作/业务规则，明确未迁移范围及机器校验非业务验收。
++
++## 10. A05 资料设置与来源分类
++
++本节只细化[08-01](08-01_agent_data_access_policy.md)已决策略；字段唯一来源为机器schema `MaterialPolicyWrite/View`、`MaterialSourceIdentity`、`MaterialClassificationWrite/View/Fact`、`MaterialProvenance`、`MaterialUseNotice`。所有操作同步返回200及标准data/meta；不创建Task，不调用模型。路径仍按本文P缩写。
++
++| 方法/路径 | 用例 ID / FR | 请求 → 响应 | 前置与失败 |
++| --- | --- | --- | --- |
++| GET `P/material-policy` | `MaterialPolicy.Read` / 008,017 | 无 → MaterialPolicyView | 本人×Project；active/archived可读，缺记录返回public_only及稳定初始修订、空风险时间；不恢复Workspace授权 |
++| PUT `P/material-policy` | `MaterialPolicy.Update` / 008,017 | MaterialPolicyWrite → MaterialPolicyView | active Owner；expected_revision指政策记录；allow_private需已展示风险并明确同意，public_only不要求确认；成功返回新修订 |
++| GET `P/material-sources/{source_id}/classification` | `MaterialSource.ReadClassification` / 008,017 | 无 → MaterialClassificationView | 当前Project具体来源；active/archived可读；不得以DOI或物理哈希跨Project定位授权 |
++| POST `P/material-sources/{source_id}/classification/confirm` | `MaterialSource.ConfirmClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationView | active Owner；仅unconfirmed；明确选择和依据，在首次模型使用前完成 |
++| POST `P/material-sources/{source_id}/classification/correct` | `MaterialSource.CorrectClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationView | active Owner；仅confirmed；public放宽必须Owner明确确认及具体公开依据；不更新正文或引用 |
++
++### 10.1 修订、确认及可信来源
++
++政策revision独立于Project/Workspace修订，分类revision独立于内容修订。每次受理的新写命令（即使选项相同）获得不可复用新修订；打开→关闭→打开不得复用。GET在尚无记录时返回稳定默认投影而非修改Project业务状态；首次PUT可使用该修订。`risk_acknowledged`记录此次界面风险同意，不是通用ConfirmationPreview/token；public_only写入false，开启写入true，服务端记录操作者、时间、当时所展示的当前Provider及风险说明。未选模型时明确显示“未选择”，设置不自动选模型；真正外呼仍需合法模型选择。关闭后保留最近一次风险同意时间供审计，初始为null。服务端不从客户端接收user_id、审计时间或Provider授权。
++
++确认/更正请求的expected_revision针对当前分类；content_revision必须匹配该source_id的不可变具体内容。任一失配为412，缺必需修订为428；其他缺字段/非法组合为422。confirm作用于已确认记录、correct作用于未确认记录均409 STATE_OPERATION_NOT_ALLOWED，不以更换入口覆盖人工事实。同键同参按04重放原执行事实，不再执行、不重新检查旧修订制造冲突；同键异参409。PUT响应丢失先GET核查，不自动换修订提交。可见性及归档写保护优先于重放；来源不存在、其他Project、deleted、管理员但非Owner均安全404。
++
++上传初始private/unconfirmed；检索可建议public但仍unconfirmed，建议不构成授权。无分类历史按private/unconfirmed保守投影，保留原事实，禁止批量public。分类确认不等于分析/处理/入库确认，不自动启动后续流水线。安全接收、隔离暂存与必要静态提取先于分类，分类先于任何模型/嵌入外发；私人模式也不能跳过未确认。用户原有合法查看与静态接收不受该开关阻止。
++
++basis是针对具体实际内容的非空依据说明，不收凭据或正文；公网URL/DOI/公开摘要不足以证明机构全文公开。服务端必须核验依据及Owner身份，字符串合法不等于证据充分；不充分返回422 VALIDATION_FIELD_INVALID（basis）。confirmed_by/time由服务端写入，LLM不可代填。更新只写当前分类及审计，已发布正文、入库时事实、引用和版本成员不改；普通Project/资产metadata PATCH不得接收这些字段。
++
++`MaterialProvenance`为只读可信投影。current_submission仅由接收当前明确提交的应用入口签发submission_scope_id并绑定操作者、Project及本次命令；客户端不能选择该标记，复制ID不构成授权。后续自动取用同一文字必须投影historical_input且scope为null；上传文件不因主动上传而取得文字例外。derived_content的dependency_status由服务端追踪全部实际输入，complete不代表public；混合私人、缺依赖或unknown不能推定公开。unknown的dependency_status必须unknown；current_submission必须complete。其余类型按实际证据标记，不由引用列表或LLM自评。该投影不替代分类，不提供任意来源注册或授权端点；source_id由既有接收/内容生产链创建并通过详情提供，相关完整详情转写留A08。
++
++### 10.2 错误、UI和异步对应
++
++每条操作的精确HTTP/code子集以机器`x-error-codes`及响应schema为准，复用A04而不新增错误码。所有操作：400格式错误、401认证、404安全不可用、422字段问题、429资源保护、500存储失败。写操作另含403 CSRF、409只读/操作不允许、412冲突、428缺修订、413请求过大、415媒体类型不支持；分类POST另含409幂等冲突。不向这些同步路由绑定Provider失败或Task恢复。
++
++| 结果/原因 | UI动作与不可发生事项 |
++| --- | --- |
++| 200 | 展示服务端当前值及新修订；分类重放展示原执行事实后可重新读取当前状态，不回写旧状态 |
++| 401 / 403 CSRF | 重新认证/刷新凭据；不自动重发修改 |
++| 404 | 安全不可用空态；不显示他人Project、存在性、修订或链接 |
++| 409只读/不允许 | 保留当前内容，显示只读/不适用；无强制覆盖或解除归档入口 |
++| 409幂等冲突 | 核查原操作结果；不换键自动执行 |
++| 412 / 428 | 重新读取当前依据并保留用户未提交选择；不拿新revision自动覆盖 |
++| 400 / 422 | 修正字段；不回显任意字段名/原值；依据不足不改变分类 |
++| 429 / 500 / 断网 | 按A04结果未知规则先核查；只有有未受理证据才允许原条件技术重试，不创建业务attempt |
++
++既有异步任务在当前政策下不再能使用必需输入时，仍沿A04 `TaskError`投影STATE_OPERATION_NOT_ALLOWED（安全原因、details/recovery均null、retryable=false），Task GET成功读取仍200；资源可见性丧失先走安全404，不披露诊断。具体attempt终止与提交裁决留A06，不新增业务状态。`MaterialUseNotice`为受控读取/上下文构造的只读提示词汇：private_source、classification_unconfirmed、provenance_unknown、dependencies_incomplete、required_history_restricted、available_subset；没有在本任务绑定新的TaskView字段，完整消费接口尚待A06/A07。
++
++### 10.3 执行交接与验证边界
++
++下一正常受控读取、实际派发和提交均用当前政策/分类修订；受理快照只作审计。扩权不重跑结束任务、恢复终止attempt、追加冻结输入、扩大确认范围或改绑KnowledgeVersion；收紧不删除合法旧成果、不承诺撤回在途字节。缓存与派生数据重验全部依赖，受限必需历史明确阻断，不静默删消息继续；合法检索子集显示范围受限，不能说完整知识库无结果。
++
++A06负责可信scope签发/消费、分类与内容修订核验、全输入依赖、read/dispatch/commit原子裁决和缓存；07的逻辑记录不在本次转成数据库。A07/A08负责完整任务/详情承载。测试见 `scripts/tests/test_material_policy_contracts.py` 和[任务007审核包](../workorders/task007_a05_review_2026-10-22.md)：schema/操作矩阵可测，真实身份、事务、并发、模型发送、版本保护和UI运行效果均未验证。
+--- before/docs/design/04-02_transport_task_file_contracts.md
++++ after/docs/design/04-02_transport_task_file_contracts.md
+@@ -1,6 +1,6 @@
+ # API 附录：异步任务、事件传输与文件
+ 
+-文档版本：v1.6
++文档版本：v1.7
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
+@@ -270,3 +270,7 @@
+ 本次修订 v1.5（2026-10-19）：当时四类事件payload转为机器字段来源，明确完整SSE/任务/错误缺项，不宣称传输运行验收。
+ 
+ A04：`ErrorPayload`通过`TaskError`复用`PublicError`；Task.error也复用该受约束公共对象，成功/无错误时可空。异步已受理失败不允许直接重试请求的提示；200读取失败Task不改成Provider HTTP错误。完整Task/SSE仍未转写。
++
++## A05 分类与传输接缝
++
++安全接收及必要静态提取先于分类确认，模型/嵌入外发必须在确认之后且重验当前政策；资料开关不阻止用户原有合法查看。分类操作、只读来源身份及同步错误矩阵见[04-01 §10](04-01_p0_operation_contracts.md#10-a05-资料设置与来源分类)。它们不返回Task。既有异步执行的必需资料受限复用TaskError/STATE_OPERATION_NOT_ALLOWED，不改变Task GET的200读取成功语义；可见性丧失仍优先安全404。完整TaskView/等待项和来源详情承载未在本次补齐。
+--- before/docs/design/04-03_machine_contract_governance.md
++++ after/docs/design/04-03_machine_contract_governance.md
+@@ -1,6 +1,6 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.2
++文档版本：v1.3
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+@@ -8,7 +8,7 @@
+ 
+ 01/02 决定业务含义、权限和分期；04/04-01/04-02 维护跨字段、执行与传输语义。[OpenAPI 3.1 JSON](../../contracts/p0.openapi.json)只对其实际包含的具名 schema、请求、成功响应和公共错误字段提供机器维护来源；没有 schema 的操作继续由 Markdown 维护，不能据此生成宽松 `object` 代用品。结构与业务规则冲突时停止依赖该冲突的代码生成并修正规范，不修改业务去迎合 schema。
+ 
+-本次机器覆盖为 **42 个操作的请求/成功响应结构、另40个操作的仅请求结构、159 个 schema、5 类 SSE payload**，全部为局部覆盖，**没有任何操作被宣称为完整 HTTP 契约或运行验收通过**。A04公共错误42个变体及details/recovery已转写；每个操作的具体错误响应绑定尚未补齐，不能从公共组件推定所有错误适用于每条路由；SSE 的 payload 验证不等于完整 event/流验证。SDK、服务端模型和路由代码尚未生成。
++task006 P2修复限定快照的机器覆盖为 **42 个操作的请求/成功响应结构、另40个操作的仅请求结构、160 个 schema、5 类 SSE payload**，全部为局部覆盖，**没有任何操作被宣称为完整 HTTP 契约或运行验收通过**。A04公共错误42个变体及details/recovery已转写；A05五个同步操作已绑定适用错误子集，其他操作的具体错误响应绑定尚未补齐，不能从公共组件推定所有错误适用于每条路由；SSE 的 payload 验证不等于完整 event/流验证。SDK、服务端模型和路由代码尚未生成。
+ 
+ [覆盖清单](../../contracts/p0.coverage.json)保留 04-01 所有操作表行及 04-01/04-02 正文具名 HTTP 路由的源签名。一个表行可含多个方法和路径，因此源行数不是端点数。校验器重新抽取源签名并逐项比较，新增、删除或变更操作行后必须显式更新覆盖，不能悄悄遗漏。三份04规范文件另保留完整SHA-256审核摘要（保守地包含历史及元信息）；任意正文变更会要求重新审查并同步摘要。它检测漂移，不证明Markdown和schema语义等价；不得自动刷新摘要后跳过审查。`typed_operations` 列出请求/成功响应局部覆盖，`request_only_operations` 列出只校验请求的操作；后者没有成功响应schema，不能从缺失推断无正文。`row_coverage` 为每条源行分别列出操作覆盖与剩余项。两类清单列出可消费的机器操作；其余源行不等于已经实现或完成转写。
+ 
+@@ -56,3 +56,7 @@
+ 本次修订 v1.1（2026-10-21）：登记精确基线与审查层级，现有JSON和覆盖指纹未修改。
+ 
+ A04验收命令另含 `python -m unittest discover -s scripts/tests -p 'test_public_errors.py' -v`。当前差异及执行结果见[任务006](../../tasks/006-public-error-recovery-contract.md)；兼容门禁的非零结果保留，定向审查不代替人工接受。
++
++2026-10-22 P2修复：回放过期错误要求具名Task状态URL；TaskError排除命令未受理结果；静态检查逐状态核对变体与响应信封成员（含遗漏、额外和重复）。字段仍由JSON单一维护，详见[修复记录](../workorders/task006_p2_fixes_2026-10-22.md)。
++
++A05限定交付见[任务007审核包](../workorders/task007_a05_review_2026-10-22.md)。资料来源投影/提示词汇已具名，但完整来源详情、TaskView承载及可信签发/并发裁决仍待A06–A08；新增字段不构成运行授权。发现模式 `python -m unittest discover -s scripts/tests -p 'test_*.py' -v` 包含全部契约回归。本次兼容对比使用入场实际工作树快照，不称其为人工已接受基线；A04原基线差异仍待人工接受；并行R01–R03修复归属[task006修复包](../workorders/task006_p2_fixes_2026-10-22.md)，本轮合并态回归涵盖其修复，不将其计为A05新增成果。
+--- before/docs/design/09_quality_observability.md
++++ after/docs/design/09_quality_observability.md
+@@ -1,6 +1,6 @@
+ # 核心架构与功能模块测试设计
+ 
+-文档版本：v1.17
++文档版本：v1.18
+ 更新日期：2026-10-22
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -192,3 +192,7 @@
+ 本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
+ 
+ A04公共错误契约的ER-01–08追踪与执行证据见[任务006](../../tasks/006-public-error-recovery-contract.md)。它只验证机器结构、安全样例与兼容差异；ARC-02/03/04/07及SEC-01–05/TTF的授权、事务、并发、内容保护与传输运行断言仍由业务切片执行，不因本次契约测试关闭。
++
++## A05 限定契约验证
++
++任务007 N-T01–08的结构、作用域声明、操作/错误/UI矩阵与负例见[审核包](../workorders/task007_a05_review_2026-10-22.md)及`scripts/tests/test_material_policy_contracts.py`。资料政策唯一依据08-01；来源可信性、权限隔离、实时生效、原子并发、人工保护及版本不变仍需A06和业务实现的真实隔离持久化测试，不能用schema校验或本节关闭DAP运行验收。
+--- before/docs/workorders/task006_p2_fixes_2026-10-22.md
++++ after/docs/workorders/task006_p2_fixes_2026-10-22.md
+@@ -0,0 +1,50 @@
++# Task006 三项P2修复与复审
++
++文档版本：v1.0
++更新日期：2026-10-22
++
++## 结果与边界
++
++[独立审核](task006_independent_review_2026-10-22.md)的R01–R03已修复，新增4个回归方法；修复前4方法产生7个失败，修复后限定快照的35方法和结构检查全部通过。两位subagent完成修复后的安全/恢复与兼容专项复审，均未发现范围内残留问题；人工接受未记录。
++
++共享工作区同时有其他任务写入Material契约、路由、规范及状态。本任务未回滚它们，也未替它们更新覆盖清单。中间检查因操作文档与覆盖清单不同步失败，原日志保留；并行同步后，**当前合并工作区45项契约测试及结构检查通过**，兼容subagent再次复审当前合并版本并跑4个回归通过。不启动其他业务实现。
++
++## 修复与回归追踪
++
++| 审核项/任务要求 | 实际变更 | 回归证据 |
++| --- | --- | --- |
++| R01；ER-01/06/07；04-02 §2.1/3.2 | 新增ErrorTaskStatusURL，仅接受UUID任务状态端点；ErrorTaskDetails使用该类型；回放过期错误details不再可空。锁冲突仍可省略无权披露的任务引用 | `test_r01_replay_requires_task_status_reference`、`test_r01_task_status_url_exact_route`：正确UUID/载体正例；null、缺字段、其他端点、events、query/fragment、尾换行、路径穿越和外链反例 |
++| R02；ER-05/07；04 §5.1 | TaskError排除命令级not_accepted，SSE通过复用继承约束；HTTP公共错误仍允许未受理，Task的unknown与空详情仍合法 | `test_r02_accepted_carriers_reject_not_accepted`：5技术错误×两种建议，另保留unknown/空值正例；并行90组合测试的Task/SSE两条期望收紧 |
++| R03；ER-08；04-03 §3 | 逐HTTP状态比较变体和响应信封的成员多重集合；分组、成员遗漏、额外成员、重复成员均拒绝 | `test_r03_status_and_envelope_membership_drift_rejected`：未变异基线先通过；每种变异精确匹配groups/membership错误，避免无关失败假绿 |
++
++回归文件：[test_public_error_review_regressions.py](../../scripts/tests/test_public_error_review_regressions.py)。并行新增的[test_public_error_requirements.py](../../scripts/tests/test_public_error_requirements.py)完整保留，仅两条Task/SSE期望增加排除not_accepted；[test_public_errors.py](../../scripts/tests/test_public_errors.py)只修正回放错误的合法fixture，不再将本应必填的details为空视作正例。原请求/成功响应及80个最初schema未改，未删除其他断言。
++
++## 兼容定向审查
++
++相对本轮修改前快照，保守兼容门禁退出1，准确报告3个既有schema收紧：ErrorTaskDetails的URL、ErrorStateEventReplayUnavailable的必填details、TaskError的outcome。新增ErrorTaskStatusURL是独立新增类型。三项都是修复既定规范的生产端约束遗漏，会拒绝旧的非法输出；不改请求、成功响应、权限或业务状态。不得把非零门禁改成无差异通过。
++
++相对7ba2a2c638500eaa43f2137d16a6a0686b663630的原始A04基线，仍为83项已审查差异：82操作错误引用+1个SSE映射；本次修复的错误schema在该早期基线中尚不存在，故必须另作上面的修复前比较。两个基线都保留，未将本次JSON冒充批准基线。
++
++## 执行证据和复现
++
++证据目录：[task006_p2_fixes_2026-10-22](evidence/task006_p2_fixes_2026-10-22/scoped-commands.json)。独立Python环境 `/tmp/rpb-a04-contract`；未加载业务数据库、Provider或邮件配置。
++
++| 验证 | 结果与日志 |
++| --- | --- |
++| 修复前新增回归 | [regression-before.log](evidence/task006_p2_fixes_2026-10-22/regression-before.log)：4方法、7失败，覆盖3个缺陷 |
++| 首轮工作区测试 | [tests.log](evidence/task006_p2_fixes_2026-10-22/tests.log)：35方法通过；随后并行写入改变了全局契约，不作为当前合并态通过证据 |
++| 最终限定快照 | [scoped-tests.log](evidence/task006_p2_fixes_2026-10-22/scoped-tests.log)：35方法通过；[scoped-structure.log](evidence/task006_p2_fixes_2026-10-22/scoped-structure.log)：160 schemas/126源行/42+40操作/5类payload通过 |
++| 修复前兼容比较 | [scoped-compatibility-before.log](evidence/task006_p2_fixes_2026-10-22/scoped-compatibility-before.log)：退出1，3个schema收紧，如上定向审查 |
++| 原始基线比较 | [scoped-compatibility-original.log](evidence/task006_p2_fixes_2026-10-22/scoped-compatibility-original.log)：退出1，83项历史差异 |
++| 最终共享工作区 | [live-tests-final.log](evidence/task006_p2_fixes_2026-10-22/live-tests-final.log)：45方法通过（含并行Material的10方法）；[live-structure-final.log](evidence/task006_p2_fixes_2026-10-22/live-structure-final.log)：47+40操作、170 schemas、131源行通过。中间coverage/spec及规范漂移失败保留在structure/intermediate日志 |
++
++限定快照保存在 `evidence/task006_p2_fixes_2026-10-22/verified-scope/`：以本轮before OpenAPI/coverage为底，合入4个修复schema、当前检查器及全部35测试。规范文本从原A04保存的preimage+delivery.patch恢复，SHA-256逐份匹配本轮before coverage中的指纹；没有忽略检查或重写摘要来消除并行错误。首次隔离尝试复制到并行变动中的规范，发生漂移失败，保留intermediate日志及快照；随后改为恢复精确输入并重新执行。
++
++复现限定快照：在上述verified-scope目录运行 `/tmp/rpb-a04-contract/bin/python -m unittest discover -s scripts/tests -v` 和 `/tmp/rpb-a04-contract/bin/python scripts/check_api_contracts.py`。已在项目根运行同样入口确认当前合并态；限定快照只用于独立复现本次修复。最终合并态另执行两个基线比较，live-compatibility-before/original日志仍分别为3项和83项定向审查差异，退出1保留。
++
++## 修复后subagent复审
++
++- `p2_security_recheck`：实际运行R01/R02三个回归及90组合、动作/details和HTTP载体矩阵，共6方法通过；确认无断言删减、未发现R01/R02残留问题。提出R03可能受无关异常掩盖的测试建议，已修正。
++- `p2_compat_recheck`：对正常隔离集合及四种变异执行核验；最终测试先检查正常基线，随后精确匹配每个拒绝原因，通过；确认仅3个既有schema收紧，没有请求/成功响应变更。未发现新的范围内缺陷。并行收口后再次复审当前合并checker与4个回归，全部通过；其新增Material检查块未覆盖P2成员检查或4个修复schema。
++
++复审与最终限定快照绑定的代码/schema摘要见 `reviewed-sha256.json`，完整交付及并行变化记录见 `delivery-sha256.json`、`preservation.json`。它们不替换原审核/覆盖包。自由文本脱敏、真实资源授权、动作资格、事务与端到端验收仍未执行。
+--- before/docs/workorders/task007_a05_review_2026-10-22.md
++++ after/docs/workorders/task007_a05_review_2026-10-22.md
+@@ -0,0 +1,65 @@
++# Task007 A05 资料设置与分类契约审核包
++
++文档版本：v1.0
++更新日期：2026-10-22
++
++## 交付结论与范围
++
++task007第6节N01–N04已按本轮授权执行：新增五个同步操作、十个具名Material schema、逐操作错误子集、UI反馈与来源/修订交接；新增11个测试方法，全量46方法及结构检查通过。设计与机器转写完成，业务路由、页面、数据库、A06原子裁决及端到端未实现/未验证。人工审核者、日期、接受范围及接受基线均待填写。
++
++主要入口：[操作契约§10](../design/04-01_p0_operation_contracts.md#10-a05-资料设置与来源分类)、[机器契约](../../contracts/p0.openapi.json)、[覆盖清单](../../contracts/p0.coverage.json)、[契约测试](../../scripts/tests/test_material_policy_contracts.py)。字段只在JSON维护；Markdown负责政策语义、作用域、错误次序及UI。
++
++## 操作、权限与用户反馈
++
++| 操作 | P0权限/状态与修订 | 成功及关键拒绝 |
++| --- | --- | --- |
++| MaterialPolicy.Read | 当前用户×Project Owner，active/archived | 返回当前选择；无记录public_only及稳定初始修订，不从Workspace恢复 |
++| MaterialPolicy.Update | active Owner，政策expected_revision | 同步新修订；开启需风险同意，关闭直接保存；旧修订412，归档409 |
++| MaterialSource.ReadClassification | Project具体source_id，active/archived Owner | 来源/内容修订、分类及确认事实、可信只读来源投影 |
++| MaterialSource.ConfirmClassification | active Owner，未确认，分类及内容修订 | 显式选择/依据后确认；已有确认409，不能由LLM代替 |
++| MaterialSource.CorrectClassification | active Owner，已确认，分类及内容修订 | 更新当前限制；放宽需依据；正文/入库时事实/KV不改 |
++
++所有接口安全404覆盖不存在、跨Project、无权、deleted；管理员无额外Project访问权。授权先于状态及重放。分类POST要求幂等键，同键同参重放、异参409；PUT响应丢失先读取核实。五接口均200同步，未创建Task。写接口的CSRF、428/412及413/415绑定详见JSON。
++
++UI设置入口在03-01，来源确认/更正在03-02，受限历史/检索范围提示在03-04；04-01 §10.2是HTTP到动作表。成功显示服务端值；冲突保留未提交内容、读取后由人决定；归档只读；404不泄露；断网/未知结果核查而非自动重发。开启不重做，收紧不声称撤回已发送内容。必需受限历史明确阻断、不剪消息；允许子集说明范围限制，不隐式换版。
++
++## 需求—测试—证据
++
++以下方法均在`test_material_policy_contracts.MaterialPolicyContractTests`中，当前执行见[tests-final.txt](evidence/a05_2026-10-22/tests-final.txt)。每个表行区分机器断言和文档审查，后者不是运行证据。
++
++| 场景 | 当前可执行方法/正负例 | 语义核对及运行留项 |
++| --- | --- | --- |
++| N-T01 | `test_nt01_scope_and_risk_combinations`；两模式/风险组合、禁自报主体、风险时间；`test_nt04_nt07_each_operation_permissions_headers_and_sync` | 08-01 §3→04-01 §10.1→03-01：用户×Project默认/读取、Workspace不授权；真实隔离留实现 |
++| N-T02 | `test_nt02_classification_confirmation_is_independent`；public/private×确认状态×事实组合、未知类拒绝 | 上传private/unconfirmed、检索建议非确认、静态接收→人工分类→模型；实际门槛/接收留实现 |
++| N-T03 | `test_nt03_identity_basis_and_no_metadata_bypass`；依据边界、DOI/hash/actor/content/force越权字段；身份格式方法 | 具体来源、Owner放宽依据、当前限制与旧正文分离；真实权限/内容不变留实现 |
++| N-T04 | `test_nt04_nt07_each_operation_permissions_headers_and_sync`、`test_nt07_exact_error_reasons_and_status_envelopes`；五操作安全/状态/错误适用及非适用42错误码逐一校验 | 归档、授权先行、同键重放与冲突规则见§10.1；真实鉴权/幂等提交未验证 |
++| N-T05 | `test_nt05_nonreusable_revisions_and_frozen_scope_contract`；修订长度/类型、三边界声明、冻结范围/版本声明 | 当前政策双向、ABA不可复用、终止attempt不恢复；真实交错/缓存/提交留A06及实现 |
++| N-T06 | `test_nt06_provenance_and_restricted_notice_variants`；6来源×scope×依赖组合、受限提示枚举 | 只读来源由应用签发、历史不能冒充主动输入、complete不等于公开；可信签发/依赖传播及提示载体留A06/A07 |
++| N-T07 | 上述HTTP矩阵、同步200信封、无202/伪Task、TaskError非retryable/不泄露来源 | 必需资料受限复用STATE_OPERATION_NOT_ALLOWED；Task读取200，具体终止状态留A06，不新增恢复命令 |
++| N-T08 | `test_nt08_every_field_missing_null_type_and_unknown`、`test_nt08_identifiers_times_enums_and_text_boundaries`、`test_nt08_error_binding_drift_rejected`、`test_nt08_coverage_and_compatibility_reject_deletion` | 全部新增对象必填/空值/类型/未知字段、端点请求成功引用、身份/时间/枚举、响应错绑/覆盖/删除反例；原断言未削弱 |
++
++结构验证不能证明有效依据、真实Owner、风险UI确实展示、跨Project查找、修订递增、事务原子性或网络派发结果。上述每项禁止副作用均在04-01 §10显式约定；测试只断言字段/语义声明，不冒充执行。DAP-16–18未改变P1规则；当前P0确认事实是人工确认，未提供P1自动分类入口。
++
++## 执行与兼容方向
++
++独立环境`/tmp/rpb-a05-contracts`安装固定`contracts/requirements.txt`；无业务环境、数据库、LLM、论文源或邮件访问。详见[commands.json](evidence/a05_2026-10-22/commands.json)。
++
++| 检查 | 实际结果 |
++| --- | --- |
++| `python scripts/check_api_contracts.py` | 退出0，47请求/成功局部+40仅请求、170 schema、131源行、5/6 SSE payload |
++| `python -m unittest discover -s scripts/tests -p 'test_*.py' -v` | 退出0，46方法全部通过，包含原35和新增11；无跳过 |
++| 对入场`before.openapi.json`兼容检查 | 退出1，3个旧schema收紧，归属并行task006 P2修复 |
++| 对A04原始reviewed-p0基线检查 | 退出1，保留83项历史差异；未抹去非零结果 |
++| 文档/快照检查 | 文件链接、版本日期、新增来源签名/覆盖、逐文件差异及归属见document-check.json/change-inventory.json；完整快照逐字节重构通过 |
++
++[机器差异](evidence/a05_2026-10-22/machine-diff.json)：A05新增5操作和10 schema，没有修改已有请求/成功结构、权限、状态或全局传输。info从1.2.0升到1.3.0，覆盖文件1.2。新增请求只对新增端点约束；新增响应不会改变旧端点消费者。旧节点三项变化为ErrorTaskDetails URL收紧、ErrorStateEventReplayUnavailable非空details、TaskError排除not_accepted；另新增ErrorTaskStatusURL。它们由[task006修复包](task006_p2_fixes_2026-10-22.md)独立审查，拒绝旧非法生产端输出；本轮保留并全量复验，不算A05成果。历史83项为82操作x-errors及SSE映射，沿原A04审核，不推定人工接受。
++
++当前结构/测试通过消除了task006修复包所记“并行操作覆盖漂移”在本次合并快照中的失败；原失败日志不改。合并态不等于人工批准，旧基线也不被重命名为已接受版本。
++
++## 基线、差异与交接
++
++证据根：[a05_2026-10-22](evidence/a05_2026-10-22/commands.json)。入场`before/source.tar.gz`及清单完整保存实际171个源文件（含未跟踪及空文件）；`before.openapi.json`有来源说明与SHA，不是从HEAD推测。最终`delivery/source.tar.gz`及清单保存合并交付源文件。`source-diff.patch`用于阅读，完整恢复以tar及SHA为准。
++
++共享工作区并行新增task008、task006 P2修复文件与状态文字均保留。change-inventory逐项记录当前相对入场的改动；A05归属字段列表与并行变更分开，不把全部diff归为本次实现。原task007第1–5节原样保留；第6节计划原样保留，第7节记录执行。项目状态基于最新文字增量更新。
++
++自审核对04-01/08-01/03附录、05-01/06/07接缝及原公共错误限制：未新增产品决定、权限、P0恢复入口、P1/P2或数据库结构。完整Task/来源详情仍未转写，MaterialUseNotice只是具名词汇，未伪造已有消费字段。A06需按task008核对当前政策/分类修订、可信scope、全输入依赖、read/dispatch/commit裁决；A07/A08补完整承载。运行验收仍由对应实现任务承担。
+--- before/scripts/check_api_contracts.py
++++ after/scripts/check_api_contracts.py
+@@ -81,6 +81,17 @@
+         if path.startswith('/projects/'):
+             assert op['x-authorization'] == ('project-owner-readable' if method == 'get' else 'project-owner-active')
+         assert op['security'] == ([] if path in ['/auth/csrf', '/auth/register', '/auth/login'] else [{'sessionCookie': []}])
++        if 'x-material-policy' in op:
++            assert set(op['responses']) == {'200'} | set(op['x-error-codes']), 'material error status drift'
++            for status, codes in op['x-error-codes'].items():
++                schema = op['responses'][status]['content']['application/json']['schema']
++                expected = [
++                    {'$ref': '#/components/schemas/ErrorEnvelope' + status},
++                    {'properties': {'error': {'properties': {'code': {'enum': codes}}}}},
++                ]
++                assert schema == {'allOf': expected}, 'material error binding drift'
++            assert op['operationId'] in coverage['material_policy']['operations'], 'material coverage drift'
++            assert coverage['operation_coverage'][op['operationId']]['status'] == 'request-success-errors-partial'
+     assert sorted(ids) == sorted(coverage['typed_operations'] + coverage['request_only_operations']), 'coverage/spec operation mismatch'
+     assert len(coverage['row_coverage']) == len(coverage['source_rows'])
+     for index, row in enumerate(coverage['row_coverage']):
+@@ -106,10 +117,20 @@
+     error_refs = spec['components']['schemas']['PublicError']['oneOf']
+     variants = [spec['components']['schemas'][r['$ref'].rsplit('/', 1)[1]] for r in error_refs]
+     assert sorted(v['properties']['code']['const'] for v in variants) == sorted(coverage['public_errors']['variants']), 'public error coverage drift'
+-    for variant in variants:
++    expected_members = {}
++    for reference, variant in zip(error_refs, variants):
+         status = str(variant['x-http-status'])
++        expected_members.setdefault(status, []).append(reference['$ref'])
++    # Compare multisets: omissions, extra members and duplicates must all fail.
++    envelopes = {name.removeprefix('ErrorEnvelope'): schema
++                 for name, schema in spec['components']['schemas'].items()
++                 if re.fullmatch(r'ErrorEnvelope[0-9]{3}', name)}
++    assert set(envelopes) == set(expected_members), 'public error status groups drift'
++    for status, expected in expected_members.items():
+         response = spec['components']['responses']['PublicError' + status]
+         assert response['content']['application/json']['schema']['$ref'] == '#/components/schemas/ErrorEnvelope' + status
++        actual = envelopes[status]['properties']['error']['oneOf']
++        assert sorted(member['$ref'] for member in actual) == sorted(expected), 'public error status membership drift: ' + status
+     assert set(coverage['event_payloads_typed']) == set(spec['x-sse-payloads'])
+ 
+ 
+--- before/scripts/tests/test_material_policy_contracts.py
++++ after/scripts/tests/test_material_policy_contracts.py
+@@ -0,0 +1,204 @@
++"""A05 N-T01–08 producer contracts; no runtime permission/concurrency claim.
++
++Fixtures/expected routes and error reasons come from 08-01 and 04-01 §10.
++"""
++import copy
++import json
++import unittest
++
++from jsonschema import Draft202012Validator, FormatChecker
++from test_api_contracts import SPEC_DATA, SCHEMAS, valid
++from test_public_errors import error
++from check_api_contracts import COVERAGE, check, compatibility
++
++ID = '00000000-0000-4000-8000-000000000001'
++TIME = '2026-10-22T01:00:00Z'
++BASE = '/projects/{project_id}'
++ROUTES = [
++    ('get', BASE + '/material-policy', 'MaterialPolicy.Read', None, 'MaterialPolicyView'),
++    ('put', BASE + '/material-policy', 'MaterialPolicy.Update', 'MaterialPolicyWrite', 'MaterialPolicyView'),
++    ('get', BASE + '/material-sources/{source_id}/classification', 'MaterialSource.ReadClassification', None, 'MaterialClassificationView'),
++    ('post', BASE + '/material-sources/{source_id}/classification/confirm', 'MaterialSource.ConfirmClassification', 'MaterialClassificationWrite', 'MaterialClassificationView'),
++    ('post', BASE + '/material-sources/{source_id}/classification/correct', 'MaterialSource.CorrectClassification', 'MaterialClassificationWrite', 'MaterialClassificationView'),
++]
++POLICY = {'user_id': ID, 'project_id': ID, 'mode': 'public_only', 'revision': 'p1', 'risk_acknowledged_at': None}
++WRITE = {'expected_revision': 'c1', 'content_revision': 'text1', 'classification': 'private', 'basis': 'Owner verified this uploaded source.', 'explicit_confirmation': True}
++PROVENANCE = {'kind': 'uploaded_file', 'submission_scope_id': None, 'dependency_status': 'complete'}
++VIEW = {'source': {'project_id': ID, 'source_id': ID, 'content_revision': 'text1'}, 'classification': 'private', 'confirmation_status': 'unconfirmed', 'revision': 'c1', 'confirmation': None, 'provenance': PROVENANCE}
++FACT = {'basis': 'Owner verified specific content.', 'confirmed_by': ID, 'confirmed_at': TIME}
++FIXTURES = {'MaterialPolicyWrite': {'expected_revision': 'p1', 'mode': 'public_only', 'risk_acknowledged': False}, 'MaterialPolicyView': POLICY, 'MaterialSourceIdentity': VIEW['source'], 'MaterialProvenance': PROVENANCE, 'MaterialClassificationWrite': WRITE, 'MaterialClassificationView': VIEW, 'MaterialClassificationFact': FACT, 'MaterialUseNotice': {'reason': 'required_history_restricted', 'message': 'Required history is restricted.'}}
++
++
++def accepts(schema, value):
++    return Draft202012Validator(schema | {'components': {'schemas': SCHEMAS}}, format_checker=FormatChecker()).is_valid(value)
++
++
++class MaterialPolicyContractTests(unittest.TestCase):
++    def test_nt01_scope_and_risk_combinations(self):
++        for mode, ack, expected in [('public_only', False, True), ('public_only', True, False), ('allow_private', True, True), ('allow_private', False, False), ('all', True, False)]:
++            self.assertEqual(valid('MaterialPolicyWrite', {'expected_revision': 'p1', 'mode': mode, 'risk_acknowledged': ack}), expected)
++        self.assertTrue(valid('MaterialPolicyView', POLICY))
++        self.assertFalse(valid('MaterialPolicyView', POLICY | {'mode': 'allow_private'}))
++        self.assertTrue(valid('MaterialPolicyView', POLICY | {'mode': 'allow_private', 'risk_acknowledged_at': TIME}))
++        for field in ('user_id', 'project_id', 'provider', 'allow', 'confirmation_token'):
++            self.assertFalse(valid('MaterialPolicyWrite', FIXTURES['MaterialPolicyWrite'] | {field: ID}))
++
++    def test_nt02_classification_confirmation_is_independent(self):
++        for classification in ('private', 'public'):
++            for status, fact, expected in [('unconfirmed', None, True), ('unconfirmed', FACT, False), ('confirmed', None, False), ('confirmed', FACT, True)]:
++                self.assertEqual(valid('MaterialClassificationView', VIEW | {'classification': classification, 'confirmation_status': status, 'confirmation': fact}), expected)
++        for value in ('unknown', 'open_source', None):
++            self.assertFalse(valid('MaterialClassificationView', VIEW | {'classification': value}))
++        for classification in ('private', 'public'):
++            self.assertTrue(valid('MaterialClassificationWrite', WRITE | {'classification': classification}))
++        self.assertFalse(valid('MaterialClassificationWrite', WRITE | {'explicit_confirmation': False}))
++
++    def test_nt03_identity_basis_and_no_metadata_bypass(self):
++        for value in ('', ' ', 'a' * 2001, None, 1):
++            self.assertFalse(valid('MaterialClassificationWrite', WRITE | {'basis': value}))
++        for length in (1, 2000):
++            self.assertTrue(valid('MaterialClassificationWrite', WRITE | {'basis': '证' * length}))
++        for field in ('doi', 'content_hash', 'project_id', 'source_id', 'confirmed_by', 'confirmed_at', 'provenance', 'force', 'content', 'knowledge_version_id'):
++            self.assertFalse(valid('MaterialClassificationWrite', WRITE | {field: ID}), field)
++        for field in ('classification', 'mode', 'risk_acknowledged', 'provenance'):
++            self.assertFalse(valid('ProjectPatch', {'expected_revision': 'r1', field: 'public'}))
++            self.assertNotIn(field, SCHEMAS['WorkspaceContextWrite']['properties'])
++
++    def test_nt04_nt07_each_operation_permissions_headers_and_sync(self):
++        for method, path, name, req, res in ROUTES:
++            op = SPEC_DATA['paths'][path][method]
++            with self.subTest(operation=name):
++                self.assertEqual(op['operationId'], name)
++                self.assertEqual(op['security'], [{'sessionCookie': []}])
++                self.assertEqual(op['x-authorization'], 'project-owner-readable' if method == 'get' else 'project-owner-active')
++                self.assertEqual(op['x-phase'], 'P0')
++                self.assertEqual(op['x-version-binding'], 'not-applicable')
++                self.assertEqual(op['x-errors'], '#/components/schemas/PublicError')
++                params = {p['name']: p for p in op['parameters']}
++                self.assertTrue(params['project_id']['required'])
++                if 'source_id' in path:
++                    self.assertTrue(params['source_id']['required'])
++                self.assertEqual('X-CSRF-Token' in params, method != 'get')
++                self.assertEqual('Idempotency-Key' in params, method == 'post')
++                if req:
++                    self.assertTrue(op['requestBody']['required'])
++                    self.assertEqual(op['requestBody']['content']['application/json']['schema']['$ref'], '#/components/schemas/' + req)
++                else:
++                    self.assertNotIn('requestBody', op)
++                success = op['responses']['200']['content']['application/json']['schema']
++                self.assertEqual(success['properties']['data']['$ref'], '#/components/schemas/' + res)
++                fixture = POLICY if res == 'MaterialPolicyView' else VIEW
++                self.assertTrue(accepts(success, {'data': fixture, 'meta': {'request_id': ID}}))
++                self.assertFalse(accepts(success, {'data': fixture}))
++                self.assertFalse(accepts(success, {'data': fixture | {'task': {}}, 'meta': {'request_id': ID}}))
++                self.assertNotIn('202', op['responses'])
++
++    def test_nt05_nonreusable_revisions_and_frozen_scope_contract(self):
++        for name in ('MaterialPolicyWrite', 'MaterialClassificationWrite'):
++            for value in ('', None, 1, 'r' * 129):
++                self.assertFalse(valid(name, FIXTURES[name] | {'expected_revision': value}))
++            for value in ('r', 'r' * 128):
++                self.assertTrue(valid(name, FIXTURES[name] | {'expected_revision': value}))
++        for value in ('', None, 1, 'r' * 129):
++            self.assertFalse(valid('MaterialClassificationWrite', WRITE | {'content_revision': value}))
++        for method, path, *_ in ROUTES:
++            semantic = SPEC_DATA['paths'][path][method]['x-material-policy']
++            self.assertEqual(semantic['revision'], 'non-reusable')
++            self.assertEqual(semantic['current_policy_at'], ['read', 'dispatch', 'commit'])
++            self.assertEqual(semantic['preserves'], ['knowledge_version', 'frozen_inputs', 'confirmation_scope', 'historical_content'])
++            self.assertIs(semantic['task_created'], False)
++            self.assertIs(semantic['synchronous'], True)
++
++    def test_nt06_provenance_and_restricted_notice_variants(self):
++        for kind in ('current_submission', 'historical_input', 'uploaded_file', 'retrieved_content', 'derived_content', 'unknown'):
++            for scope in (None, ID):
++                for status in ('complete', 'incomplete', 'unknown'):
++                    expected = ((scope is not None and status == 'complete') if kind == 'current_submission' else (scope is None and (kind != 'unknown' or status == 'unknown')))
++                    self.assertEqual(valid('MaterialProvenance', {'kind': kind, 'submission_scope_id': scope, 'dependency_status': status}), expected)
++        for reason in ('private_source', 'classification_unconfirmed', 'provenance_unknown', 'dependencies_incomplete', 'required_history_restricted', 'available_subset'):
++            self.assertTrue(valid('MaterialUseNotice', {'reason': reason, 'message': '范围受限'}))
++        for reason in ('public_by_default', 'silently_drop_history', 'rerun'):
++            self.assertFalse(valid('MaterialUseNotice', {'reason': reason, 'message': 'invalid'}))
++        self.assertFalse(valid('MaterialProvenance', PROVENANCE | {'allow': True}))
++
++    def test_nt07_exact_error_reasons_and_status_envelopes(self):
++        by_code = {v['properties']['code']['const']: v for v in SCHEMAS.values() if 'x-http-status' in v}
++        common = {400: ['VALIDATION_BAD_REQUEST'], 401: ['AUTH_REQUIRED', 'AUTH_SESSION_INVALID', 'AUTH_ACCOUNT_DISABLED'], 404: ['PERMISSION_RESOURCE_UNAVAILABLE'], 422: ['VALIDATION_FIELD_INVALID', 'VALIDATION_UNKNOWN_FIELD'], 429: ['STATE_RESOURCE_LIMIT'], 500: ['STORAGE_INTERNAL_FAILURE']}
++        for method, path, name, *_ in ROUTES:
++            expected = copy.deepcopy(common)
++            if method != 'get':
++                expected.update({403: ['PERMISSION_CSRF_REJECTED'], 409: ['STATE_PROJECT_READ_ONLY', 'STATE_OPERATION_NOT_ALLOWED'], 412: ['STATE_REVISION_CONFLICT'], 428: ['STATE_REVISION_REQUIRED'], 413: ['VALIDATION_PAYLOAD_TOO_LARGE'], 415: ['VALIDATION_UNSUPPORTED_FORMAT']})
++                if method == 'post':
++                    expected[409].append('STATE_IDEMPOTENCY_CONFLICT')
++            op = SPEC_DATA['paths'][path][method]
++            self.assertEqual(op['x-error-codes'], {str(k): v for k, v in expected.items()})
++            self.assertEqual(set(op['responses']), {'200'} | {str(k) for k in expected})
++            for status, codes in expected.items():
++                schema = op['responses'][str(status)]['content']['application/json']['schema']
++                for code, variant in by_code.items():
++                    value = error(code, variant['properties']['category']['const'])
++                    self.assertEqual(accepts(schema, {'error': value, 'meta': {'request_id': ID}}), code in codes, (name, status, code))
++            self.assertIn('Retry-After', op['responses']['429']['headers'])
++        restricted = error('STATE_OPERATION_NOT_ALLOWED', 'state')
++        self.assertTrue(valid('TaskError', restricted))
++        self.assertFalse(valid('TaskError', restricted | {'retryable': True}))
++        self.assertFalse(valid('TaskError', restricted | {'details': {'source_id': ID}}))
++
++    def test_nt08_every_field_missing_null_type_and_unknown(self):
++        for schema, fixture in FIXTURES.items():
++            with self.subTest(schema=schema):
++                self.assertTrue(valid(schema, fixture))
++                self.assertFalse(valid(schema, fixture | {'unauthorized': True}))
++                for key, value in fixture.items():
++                    missing = dict(fixture)
++                    del missing[key]
++                    self.assertFalse(valid(schema, missing), (schema, key))
++                    # Null allowed only at the explicit nullable readonly positions.
++                    if value is not None:
++                        self.assertFalse(valid(schema, fixture | {key: None}), (schema, key))
++                    for wrong in ([], 123):
++                        self.assertFalse(valid(schema, fixture | {key: wrong}), (schema, key, wrong))
++
++    def test_nt08_identifiers_times_enums_and_text_boundaries(self):
++        for key in ('user_id', 'project_id'):
++            self.assertFalse(valid('MaterialPolicyView', POLICY | {key: 'not-uuid'}))
++        for key in ('project_id', 'source_id'):
++            self.assertFalse(valid('MaterialSourceIdentity', VIEW['source'] | {key: 'not-uuid'}))
++        for value in ('', '2026-10-22', '2026-10-22T09:00:00+08:00'):
++            self.assertFalse(valid('MaterialClassificationFact', FACT | {'confirmed_at': value}))
++            self.assertFalse(valid('MaterialPolicyView', POLICY | {'risk_acknowledged_at': value}))
++        for key in ('kind', 'dependency_status'):
++            self.assertFalse(valid('MaterialProvenance', PROVENANCE | {key: 'invented'}))
++        for key in ('mode',):
++            self.assertFalse(valid('MaterialPolicyView', POLICY | {key: 'invented'}))
++        self.assertFalse(valid('MaterialClassificationView', VIEW | {'confirmation_status': 'invented'}))
++        for value in ('', ' ', 'a' * 257):
++            self.assertFalse(valid('MaterialUseNotice', FIXTURES['MaterialUseNotice'] | {'message': value}))
++        self.assertTrue(valid('MaterialUseNotice', FIXTURES['MaterialUseNotice'] | {'message': 'a' * 256}))
++
++    def test_nt08_error_binding_drift_rejected(self):
++        coverage = json.loads(COVERAGE.read_text())
++        changed = copy.deepcopy(SPEC_DATA)
++        op = changed['paths'][BASE + '/material-policy']['put']
++        op['responses']['412']['content']['application/json']['schema']['allOf'][0]['$ref'] = '#/components/schemas/ErrorEnvelope428'
++        with self.assertRaisesRegex(AssertionError, 'material error binding drift'):
++            check(changed, coverage)
++        changed = copy.deepcopy(coverage)
++        changed['material_policy']['operations'].remove('MaterialPolicy.Update')
++        with self.assertRaisesRegex(AssertionError, 'material coverage drift'):
++            check(SPEC_DATA, changed)
++
++    def test_nt08_coverage_and_compatibility_reject_deletion(self):
++        coverage = json.loads(COVERAGE.read_text())
++        for method, path, name, *_ in ROUTES:
++            self.assertIn(name, coverage['typed_operations'])
++            changed = copy.deepcopy(SPEC_DATA)
++            del changed['paths'][path][method]
++            with self.assertRaises(AssertionError):
++                check(changed, coverage)
++            self.assertTrue(compatibility(SPEC_DATA, changed))
++        changed = copy.deepcopy(SPEC_DATA)
++        changed['components']['schemas']['MaterialClassificationWrite']['additionalProperties'] = True
++        with self.assertRaises(AssertionError):
++            check(changed, coverage)
++        self.assertTrue(compatibility(SPEC_DATA, changed))
+--- before/scripts/tests/test_public_error_requirements.py
++++ after/scripts/tests/test_public_error_requirements.py
+@@ -148,8 +148,8 @@
+                             else (advice == 'check_result' if outcome == 'unknown' else advice != 'retry_request'))
+                 with self.subTest(code=code, outcome=outcome, retryable=retryable, advice=advice):
+                     self.assertEqual(valid('PublicError', value), expected)
+-                    self.assertEqual(valid('TaskError', value), expected and not retryable)
+-                    self.assertEqual(valid('ErrorPayload', {'error': value}), expected and not retryable)
++                    self.assertEqual(valid('TaskError', value), expected and not retryable and outcome != 'not_accepted')
++                    self.assertEqual(valid('ErrorPayload', {'error': value}), expected and not retryable and outcome != 'not_accepted')
+ 
+     def test_er01_er07_all_http_statuses_and_envelope_boundaries(self):
+         statuses = {status for _, status, _ in CASES}
+--- before/scripts/tests/test_public_error_review_regressions.py
++++ after/scripts/tests/test_public_error_review_regressions.py
+@@ -47,6 +47,8 @@
+             self.assertTrue(valid('TaskError', error(code, category)))
+ 
+     def test_r03_status_and_envelope_membership_drift_rejected(self):
++        coverage = json.loads(COVERAGE.read_text())
++        check(SPEC_DATA, coverage)  # An unrelated broken baseline must not make mutations pass.
+         def metadata(s):
+             s['components']['schemas']['ErrorPermissionResourceUnavailable']['x-http-status'] = 500
+         def removed(s):
+@@ -57,8 +59,12 @@
+         def duplicate(s):
+             members = s['components']['schemas']['ErrorEnvelope404']['properties']['error']['oneOf']
+             members.append(copy.deepcopy(members[0]))
+-        for mutate in (metadata, removed, added, duplicate):
++        for mutate, expected_message in ((metadata, 'public error status groups drift'),
++                                         (removed, 'public error status membership drift'),
++                                         (added, 'public error status membership drift'),
++                                         (duplicate, 'public error status membership drift')):
+             changed = copy.deepcopy(SPEC_DATA)
+             mutate(changed)
+-            with self.subTest(mutation=mutate.__name__), self.assertRaises(AssertionError):
+-                check(changed, json.loads(COVERAGE.read_text()))
++            with self.subTest(mutation=mutate.__name__), self.assertRaisesRegex(
++                    AssertionError, expected_message):
++                check(changed, coverage)
+--- before/scripts/tests/test_public_errors.py
++++ after/scripts/tests/test_public_errors.py
+@@ -22,7 +22,7 @@
+ CASES=[(code,status,category) for status,category,codes in GROUPS for code in codes.split()]
+ RID='00000000-0000-4000-8000-000000000002'
+ def error(code,category):
+- return dict(code=code,category=category,message='资源不可用' if code=='PERMISSION_RESOURCE_UNAVAILABLE' else '操作未完成',retryable=False,details=None,recovery=None)
++ return dict(code=code,category=category,message='资源不可用' if code=='PERMISSION_RESOURCE_UNAVAILABLE' else '操作未完成',retryable=False,details=({'status_url': '/api/v1/tasks/' + RID} if code == 'STATE_EVENT_REPLAY_UNAVAILABLE' else None),recovery=None)
+ def action(name,label): return dict(action=name,label=label)
+ 
+ class PublicErrorTests(unittest.TestCase):
+--- before/tasks/006-public-error-recovery-contract.md
++++ after/tasks/006-public-error-recovery-contract.md
+@@ -1,6 +1,6 @@
+ # Task 006：A04 公共错误与恢复提示契约
+ 
+-文档版本：v1.2
++文档版本：v1.3
+ 更新日期：2026-10-22
+ 
+ ## 1. 目标、授权与下一轮边界
+@@ -134,3 +134,9 @@
+ | ER-08 | `test_er08_error_coverage_and_response_drift_rejected`及原ContractTests/ER-08 | 错误覆盖遗漏、响应错绑拒绝；删除错误/Task约束或429组件触发兼容审查；原请求/成功响应回归保留 |
+ 
+ 以上规范来源沿用第8节逐项映射；枚举、长度、具名结构按04 §5.1指定的机器字段契约写成固定预期，未从schema动态生成期望。新增测试由既有工程入口的unittest discover自动发现。当前执行日志、命令、输入快照和SHA-256见报告；契约测试通过不替代人工接受或端到端验收。
++
++## 10. 独立审核P2修复与复审（2026-10-22）
++
++用户授权修复3项P2、保留并行修改、补回归并复审。R01回放恢复引用、R02已受理Task的outcome、R03状态映射漂移检查均已修复；4个新增回归修复前失败、修复后通过，原31方法保留并按明确规则收紧受影响预期。限定快照共35方法与结构检查通过，两位subagent复审未发现范围内残留缺陷，见[修复审核包](../docs/workorders/task006_p2_fixes_2026-10-22.md)。
++
++共享工作区的并行Material契约/规范更新已同步，最终根目录45项契约测试及结构检查通过（47+40操作、170 schemas、131源行），兼容subagent再次复审当前合并版本及4个回归通过。中间并行漂移失败记录保留，不改写历史证据；本单关闭三项P2修复与复审，不代填人工接受。原第8–9节为历史证据，不覆盖本节限定。API/真实授权/事务/UI与端到端验收继续未完成。
+--- before/tasks/007-skeleton-review-fixes.md
++++ after/tasks/007-skeleton-review-fixes.md
+@@ -1,6 +1,6 @@
+ # Task 007：首批工程骨架审核问题修复
+ 
+-文档版本：v1.1
++文档版本：v1.2
+ 更新日期：2026-10-22
+ 
+ ## 1. 目标与授权
+@@ -132,3 +132,11 @@
+ ### 6.7 本轮建单交付
+ 
+ 本轮只在现有task007追加计划并更新项目状态；第1–5节原记录与历史证据保留。计划拆分已完成；A05设计/机器转写/自动验证均待开始，人工审核未记录。本轮文档引用、版本、日期和一致性检查结果见本次交付回复；未执行业务、数据库或外部服务测试。
++
++## 7. A05执行交付（2026-10-22）
++
++用户本轮“按照task007进行实现”授权执行第6节N01–N04；第1–5节历史原样保留，第6节是入场计划而非当前执行结果。本轮完成五个同步操作、十个资料具名schema、UI/HTTP/Task对应、覆盖清单和11个新增契约测试方法；未实现路由、前端、持久化或A06。
++
++[单一审核包](../docs/workorders/task007_a05_review_2026-10-22.md)记录N-T01–08逐项追踪、实际命令、兼容方向、未验证项和最终快照。入场保存实际工作树，不用HEAD自比。共享工作区期间task006独立修复公共错误R01–R03、task008建单，均保留并单独归属；最终全量验证包含这些回归，但不是代替各任务人工接受。
++
++N01–N04设计/机器转写/自动契约验证已交付；真实权限、并发、即时生效、UI与端到端仍未实现/验证，A06及后续维持待单独授权。人工审核者、日期、接受基线与结论均待填写。A04历史兼容差异保留非零结果；本次没有新增业务决定。
+--- before/tasks/008-material-policy-internal-contracts.md
++++ after/tasks/008-material-policy-internal-contracts.md
+@@ -0,0 +1,100 @@
++# Task 008：A06 资料来源与当前政策的内部契约
++
++文档版本：v1.0
++更新日期：2026-10-22
++
++## 1. 目标、授权与规划假设
++
++用户于2026-10-22要求“按照007完成的基础假设，将下一步的任务分出来作为008”。本轮授权是建立任务计划；以[task007第6节](007-skeleton-review-fixes.md#6-下一阶段计划a05-资料设置与分类操作契约)的A05契约交付完成为规划前提，不把假设登记为实际完成或人工接受，也不启动本单执行。
++
++可观察结果：实现者能沿同一份契约判断某项资料或派生产物是否允许被读取、放入上下文、发送给Provider和提交为业务结果；政策或分类变化时，每个检查点有明确输入、责任方、裁决顺序和安全失败结果，不靠客户端自报或旧授权快照放行。
++
++- 类型：内部契约设计；来源为实施前清单A06，关联TRACK-021的DAP-G02/G03及TRACK-012c/012d设计子范围。
++- 包含：具名内部类型、可信来源与依赖传播、读取/缓存/上下文/派发/提交时序、逻辑持久事实映射、错误交接和需求导向的验收规格。
++- 不包含：业务源码、机器schema/DTO实现、API/前端实现、物理模型或迁移、缓存/队列/Provider适配器、真实并发执行、完整A07/A08、Graph-RAG选型、P1调度/P2协作或生产部署。
++- 不改变：Q1–Q4/G04、Project权限、知识版本绑定、冻结输入、人工确认和写入所有权、业务状态或产品分期。内部契约不新增公开操作或P0恢复入口。
++
++## 2. 依据、实际状态与执行准入
++
++遵循[AGENTS](../AGENTS.md)、[实施入口](../docs/IMPLEMENTATION_ENTRY.md)及[任务模板](example.md)，实际进度只在[PROJECT_STATUS](../docs/PROJECT_STATUS.md)汇总；权威文档入口见[设计索引](../docs/design/README.md)。
++
++| 依据与建单时版本 | 本单采用的规则/责任 |
++| --- | --- |
++| [实施前清单](../docs/workorders/preimplementation_design_tasks_2026-10-21.md) v1.1，A06 | 闭合内部类型与检查时序；物理字段/锁/缓存实现留B02–B04 |
++| [08-01](../docs/design/08-01_agent_data_access_policy.md) v1.2 §3–7、§10–11 | 当前政策双向生效；可信主动输入、全部来源依赖、无ABA、派发和提交裁决；政策唯一来源 |
++| [05](../docs/design/05_application_use_cases.md) v1.11 §3/7/12 | 应用负责受理与结果提交、冻结输入和治理撤权 |
++| [05-01](../docs/design/05-01_internal_module_contracts.md) v1.4 §2–5 | 模块所有权、ActorContext/ReadBinding/ReadContext/ExecutionContext、写入scope、CommitDecision与事件演进 |
++| [06](../docs/design/06_agent_knowledge_services.md) v1.11 §3及Agent执行接缝 | 固定版本读取、候选/补充范围、服务只返回提案；Provider不提交业务事实 |
++| [07](../docs/design/07_data_persistence.md) v1.11 §3–6/9 | 当前限制与不可变内容分离、依赖闭包、短事务和重复提交；逻辑映射不等于物理迁移 |
++| [09](../docs/design/09_quality_observability.md) v1.17，SEC-07及ARC-03/04/06 | DAP场景与受理、撤权、读取保护验收衔接；必须区分设计检查和运行证据 |
++| [task007](007-skeleton-review-fixes.md) A05交付及[task006](006-public-error-recovery-contract.md) A04交付 | 消费已明确的设置/分类修订、可信来源含义及安全错误投影；执行时绑定实际交付版本 |
++
++建单核对：task007第6节仍是待执行计划；当前状态记录A05–A09未启动。task006另有[独立审核3项P2](../docs/workorders/task006_independent_review_2026-10-22.md)待修记录，本轮不判断其已修复。不能由本单的“007完成假设”推导这些问题已经关闭。
++
++执行前须完成以下核对：
++
++1. 读取task007实际交付，定位设置/分类操作、政策与分类修订、可信来源、归档/权限、UI和错误对应；不能把本单预设的类型名当作A05已定义字段。
++2. 核对A04待修项与最新证据，仅暂停受其影响的错误投影；独立来源和时序设计可继续。A05/A06互相核对属于一致性收口，不设置互相要求先全部完成的循环前置。
++3. 保存当前HEAD、Git状态、相关已跟踪/未跟踪文件快照与SHA-256。工作树已有大量修改，不回滚或覆盖；历史证据只读。修改后逐文件绑定新证据，不能只引用HEAD。
++4. 对真正冲突列出具体规则、选项与影响，仅暂停依赖部分。现行政策不重新投票；人工接受状态如实记录。
++
++## 3. 小步骤、文件与完成条件
++
++按C01→C02→C03→C04→C05推进，每步形成可审查的文档差异。字段与语义在负责文件维护，其他文档引用，不建立多份相互漂移的定义。
++
++| 步骤 | 产物与主要修改落点 | 完成条件 |
++| --- | --- | --- |
++| C01 政策、来源与判定类型 | 05-01 §3定义政策/分类依据、实际输入来源与修订、依赖完整性、允许/拒绝结果、安全原因；类型名称由执行时确定 | 每个类型有生产者、可信输入来源、消费者、生命周期、必填/可空语义；主动输入仅限本任务，不接受客户端allow=true；与A05字段逐项对应 |
++| C02 读取、缓存与上下文接入 | 06读取/检索/图谱/补充/候选/生成端口；05-01引用关系 | 逐入口列检查次序与失败处理；top-k前过滤，缓存命中仍重验；历史/工具/摘要/草稿依赖完整，混合必需历史受限明确阻断；不强造Task或已发布版本 |
++| C03 派发与提交裁决 | 05、05-01与06列受理、真实派发、结果提交、撤权的时序和所有者 | 受理修订仅审计；实际派发前重验；区分已不可撤回请求；提交短事务重验当前政策/分类及执行资格，覆盖相反顺序与ABA；不持有跨Provider调用长事务 |
++| C04 逻辑持久事实与依赖传播 | 07 §3–6映射政策/分类修订、输入来源、派生依赖、缓存判定依据、派发/提交审计 | 当前分类不改旧正文/版本；缺依赖不默认public；惰性传播期间不复用旧授权；审计不存正文或凭据；物理表/锁/迁移明确待实现 |
++| C05 验收追踪与交接 | 09必要场景引用、本单、项目状态及单一审核记录 | DAP-05–15逐项有检查边界、正反时序、禁止副作用、未来执行观察点；核对A05和A04投影，列出A07/A08/B类接入前置与未验证范围 |
++
++08-01作为政策只读依据，01/02/03/04作为权限、绑定和公开契约核对来源。本单不顺带修改A05公开接口；若只是引用错误可最小更正并记录，若必须改变已定语义则走第6节决定流程。普通类型命名及文档布局由Codex自主处理。
++
++## 4. 需求—场景追踪与验收规格
++
++以下是本单必须交付的设计验收场景。所有可执行业务测试均尚未建立、尚未运行；C05须给每行填入实际契约段落和文档检查证据。未来实现必须另补真实持久化和确定交错测试，不能把下表或mock状态机当作运行通过。
++
++| 场景/需求依据 | 输入、动作及交错 | 预期与禁止副作用 | 设计观察点及后续运行测试要求 |
++| --- | --- | --- | --- |
++| IC-01 / DAP-05 | 公开正文+私人批注生成摘要、向量、图谱或回复 | 保存全部实际输入依赖；不可分割混合产物整体受限，不凭引用列表或内容缩短变public | C01/C04依赖类型及传播表；未来检查持久依赖和实际发出输入 |
++| IC-02 / DAP-06 | 分类先收紧，后读取旧版本/缓存/图谱；传播尚未完成 | 当前限制立即用于下一操作，旧授权不得放行；旧正文/引用/版本不改写 | C02/C04检查边界；未来在收紧与命中间设屏障，核对读取及外发 |
++| IC-03 / DAP-07 | 排队时放宽→下一操作；执行时收紧→迟到结果 | 当前范围内合法读取可进行；后续受限读/发/新提交拒绝，不自动重做，不删已合法成果 | C03正反序列及资格投影；未来真实提交/撤权交错 |
++| IC-04 / DAP-08 | 公开模式继续含必需私人摘要/历史的会话 | 明确阻断并保留历史，不静默剪掉、先总结再外发、换版或重跑 | C02上下文完整性与安全错误；未来捕获Provider输入，断言未调用及原历史保留 |
++| IC-05 / DAP-09 | 本次主动输入、人工合法查看、安全静态接收，与自动取用对照 | 主动输入按本任务边界使用；Agent开关不阻止合法人工读取/必要静态接收；自动来源不能伪装主动输入 | C01/C02可信生产者与入口矩阵；未来伪造来源反例 |
++| IC-06 / DAP-10 | 历史数据无分类或来源闭包不完整 | 不批量标public，不以模型摘要替代依赖；保留原数据、明确未确认/受限处理 | C04逻辑兼容/缺失分支；实际迁移测试留B02，本单不接触旧库 |
++| IC-07 / DAP-11 | 放宽后下一次正常检索命中旧公开缓存 | 重算或使用匹配缓存；旧结果不冒充新范围完整结果，不重做已结束步骤 | C02缓存有效性与范围投影；未来区分正常新检索和历史步骤 |
++| IC-08 / DAP-12 | 上下文组装→收紧→实际派发；相反顺序先进入不可撤回派发 | 前者拒绝受限发送，后者承认为在途；无覆盖整个外呼的长事务 | C03明确裁决点/队列实际发送边界；未来双向屏障、mock Provider及事务生命周期检查 |
++| IC-09 / DAP-13 | 公开→私人→公开；旧attempt已终止；另有仍有效且全部输入允许的attempt | 不复用旧修订、不恢复终止attempt；有效attempt重验通过后可提交，不因修订变化一律失败 | C01/C03修订与资格分离；未来真实ABA和提交竞争 |
++| IC-10 / DAP-14 | 放宽私人使用但文件不在冻结输入/绑定版本/确认范围 | 仍拒绝越界，不隐式纳入文件、换版或扩大确认；Agent不覆盖人工稿 | C02/C03与ReadBinding、写入scope、提交保护对照；未来状态/内容不变断言 |
++| IC-11 / DAP-15 | 当前明确粘贴文字，随后新任务自动取旧草稿/历史 | 本次用途不等于永久public；再次自动取用按当前来源/政策核验，不信任客户端免检标记 | C01来源作用域、C02重新解析；未来跨任务复用和伪造负例 |
++| IC-12 / DAP-01–04、08-01 §7、05-01 §2–4 | 跨Project同哈希、未确认分类、失权、重复提交/响应丢失 | 原权限与分类门槛仍有效；ServiceProposal不自行提交；提交未知先核验原结果，不重复生成、不新建业务状态 | C01–C04责任与错误表；未来真实去重/提交测试及Project隔离 |
++
++DAP-16–18仅核对不改变P1来源自动分类、内网边界和人工分类保护，不新增无人值守执行范围。图谱/向量要求以抽象端口描述，不需要恢复Graph-RAG选型。缓存、历史、生成与提交的每个入口必须映射上述场景；不能只覆盖文件下载。
++
++## 5. 验证计划与完成门槛
++
++| 检查 | 下一执行轮的验证方式 | 证据与限制 |
++| --- | --- | --- |
++| 类型完整性 | 对C01逐类型核对生产者/消费者、修订/来源/缺失处理；以合法和非法实例审查 | 具名结构与审查表；本单不生成机器类型，不声称schema验证通过 |
++| 时序与责任 | 逐IC场景走查读取、缓存、组装、派发、提交，含相反先后顺序和错误分支 | 顺序图/表和审查结论；不证明真实锁或事务正确 |
++| 全量范围追踪 | IC-01–12映射DAP-05–15及受影响既有约束、契约位置和未实现项 | 不用测试数量或文档存在性代替语义检查 |
++| 文档工程检查 | 校验所改文件本地链接/锚点、版本日期、限定diff和空白 | 实际检查命令、结果与文件摘要记录在审核包；未跟踪新文档也必须检查 |
++| 实现交接 | 为B02–B04列出需要的屏障位置、真实commit、读取/外发/业务结果观察点和清理要求 | 待实现明确登记；不能以本单关闭TRACK-012c/012d运行验收 |
++
++本单为文档设计，不需要运行无关应用测试，不连接数据库或外部服务。后续数据测试必须显式隔离、覆盖服务内部commit并证明清理；Provider/论文源/邮件默认mock。若执行中发现必须增加代码或机器schema才能交付，先列新增范围另行授权，不能用文档任务隐式启动实现。
++
++完成门槛：C01–C05和全部IC场景落到现行文档，类型/时序/所有权无未处理冲突；与task007实际产物一致；适用文档检查通过；明确机器转写及运行验收尚未实施。交付可审查的设计不等于人工接受。
++
++## 6. 决策、审核与后续
++
++当前无新增业务决定。若出现规范不足以确定的分支，提交“问题与证据、选项及影响、推荐、仅受阻工作”；Q1–Q4/G04、固定版本和人工保护不重新开放。A04具体错误缺陷依其修复结果衔接，不由本单改语义绕开。
++
++单一审核包应提供：A05→内部字段对应、C01类型表、C02入口矩阵、C03裁决时序、C04逻辑事实映射、IC追踪、准确diff/快照及文档核验结果。人工重点检查主动输入的可信来源、混合历史、双向立即生效、ABA与失效attempt、冻结版本和原稿保护；审核者/日期/接受基线/结论均待填写。
++
++完成后建议另建A07任务，处理Task等待项、确认预览和事件引用；A08只在其使用的A05/A06/A07契约明确后启动。实际政策裁决、缓存、派发、提交和迁移按B01–B04逐切片实现。A09继续受H01延期约束；本任务不自动授权这些后续工作。
++
++## 7. 本轮建单交付
++
++本轮新增本任务并在PROJECT_STATUS登记条件化的下一步；未修改task007、业务规范、契约JSON或应用代码。计划已编写；A06设计执行、机器转写和运行验证均未开始，人工审核未记录。文档引用、场景完整性、版本日期及差异检查在建单轮执行，结果随交付说明；不将task007完成假设写成实际进度。

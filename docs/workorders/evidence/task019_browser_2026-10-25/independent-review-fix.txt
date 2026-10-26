@@ -1,0 +1,58 @@
+Independent reviewer: /root/project_storage_review
+Date: 2026-10-25 (Asia/Shanghai)
+Status: Final independent review PASSED on s6-fixed; R1/R2, boot-401, both S4 additions, and real demo Ctrl-C cleanup are closed. Earlier pending observations below are retained as history.
+
+Original findings:
+R1 P1: A private draft could be submitted as B after another browser tab changed the shared cookie. Real browser + PG reproduction confirmed ('A PRIVATE DRAFT', 'OtherUser').
+R2 P2: Unknown but committed creation lost its user-scoped key/body after auth expiry and retry; same-user login could not recover the request.
+Original counterexample run: rpb_test_ad204cddd55b425aab6bd85198591587, 2 expected failures; API/browser/PG stopped and temporary root removed.
+
+Original fixed baseline s3-fix manifest SHA256:
+7e5150fcd39179ce0ff35304801c3a22e4d4005dff0a5b51aab04b70eb62f5a4
+Later s6-input manifest SHA256:
+e21b09e21eae32a1201ba75a9f8739fd2366eeda92d0d0a77b3745ade8051440
+Only three Python formatting files changed between them: test_browser_business.py, engineering.py, run_storage_tests.py. Independent ast.dump comparison was identical for every file. No behavioral change or weakened assertion; evidence can be reused across this formatting-only transition.
+
+Independent full run:
+python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
+179 passed, 1 existing Starlette/httpx deprecation warning, 90.70 seconds.
+run_id rpb_test_41e1d845a61746db82b6b73a7e6898d4
+server_stopped=true, root_removed=true; browser/API lifecycle assertions passed.
+Raw output: /tmp/rpb_task019_review_fixed.log (parent should archive alongside final evidence).
+
+R1 resolution: private writes obtain CSRF first, validate /me against the draft owner next, then send the same CSRF. Real cookie-switch tests cover before-CSRF, between-CSRF-and-me, and after-me interleavings. Session rotation rejects the stale CSRF; no old-account draft is committed as the new account.
+R2 resolution: auth loss clears visible private state but preserves hidden user-scoped pending commands; same-user login restores the original key/body for explicit retry. Existing unknown commands are not cleared merely because a later retry is rejected.
+Boot-401 resolution: failure while restoring a selected Project clears already-restored private visible state.
+
+S4 remaining coverage: unknown-command retry rejected with CSRF 403 must retain recovery; stale logout in A tab must not revoke B's current session.
+New independent fact from parent: actual demo Ctrl-C left its temporary root despite stopped HTTP/PG. This is not passed by the mocked-child cleanup tests; real demo cleanup remains a blocker pending repair and reproduction. Earlier claimed demo cleanup success was withdrawn.
+
+S5: preserve the deliberate csrf-before-identity order and distinct explicit-logout/auth-loss paths. No useful simplification identified; combining these branches would weaken isolation/recovery.
+Scope limitation: disposable local /workspace demonstration only. No production migration/deployment, full Account/Project lifecycle, Hub list, knowledge construction, or milestone human acceptance is implied. Reviewer did not edit application/test sources.
+
+
+FINAL FOLLOW-UP — 2026-10-25
+Final reviewed snapshot: s6-fixed, 236 source files.
+Manifest SHA256: f923baf79933e311eef65f670df4acca8fab357dace67a2c86bdf19b9a78e1c7
+No source drift before or after the targeted independent run.
+
+Independent final command:
+PYTEST_ADDOPTS='-k "ui06_demo_terminal or stale_logout or unknown_retry_csrf or ac10"' python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
+Result: 7 passed, 175 deselected, 1 existing Starlette/httpx deprecation warning, 11.22 seconds.
+Run ID: rpb_test_25efff39342741a1aeeb29ea11b91d39
+server_stopped=true, root_removed=true.
+Durable raw evidence: independent-final-targeted.log in this directory.
+These 7 cases are additional/affected-path verification, not a claim of an independent 182-case rerun. The unchanged business/browser behavior retains the independent 179-case full-run evidence above; final source changes were separately reviewed and tested here. Parent reports its final 182-case run passed; final milestone package should link its actual full-run log separately.
+
+S4 closure:
+- Previously unknown committed create survives a real CSRF 403 retry rejection, reauthentication restores its original key/body, and explicit retry leaves exactly one Project and command.
+- Stale A-tab logout after a shared-cookie switch does not revoke B's enabled session; A's visible private context clears.
+- Actual engineering.py demo entry starts its own disposable cluster and HTTP server, serves /workspace with HTTP 200, receives process-group SIGINT (the terminal Ctrl-C equivalent), exits 130 and removes its registered root. The regression is not a mocked child outcome.
+- Both failure/timeout variants of the test and demo child-cleanup harness pass with real temporary PostgreSQL allocation and verified cleanup.
+
+Demo cleanup fix review:
+engineering.py resolves the locked interpreter before os.execv replaces the wrapper chain, avoiding uv's extra interrupt forwarding during cleanup. PostgreSQL control commands start in their own session so the supervisor owns cluster termination. The fixture checks its postmaster.pid, stops a remaining cluster, and refuses directory deletion if stop fails or the PID marker remains. Only the uniquely allocated current-run root is removed. KeyboardInterrupt exits 130 after finally cleanup. The earlier real Ctrl-C failure is superseded only by this repaired baseline and actual regression; it must not be relabeled as an earlier pass.
+
+S5: no further behavior-preserving simplification is warranted. Keep CSRF-before-/me ordering, user-scoped pending recovery, explicit-logout versus auth-loss separation, and verified-stop-before-directory-removal guard distinct.
+
+Final conclusion: independent review PASSED with no remaining blocking issues in this slice. R1/P1 cross-account submission and R2/P2 unknown-result loss are closed, including their rejection/recovery branches. The reviewer changed only this evidence record and temporary /tmp probes, not application/test source. M-P0-01 remains for genuine human acceptance; this report does not accept the milestone or expand the local-demo delivery scope.

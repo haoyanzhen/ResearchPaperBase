@@ -1,0 +1,20 @@
+{
+  "status": "partial",
+  "time": "2026-10-23T09:56:57.971679+08:00",
+  "head": "7ba2a2c638500eaa43f2137d16a6a0686b663630",
+  "reason": "Concurrent source changes need owning-task verification; do not advance successful baseline.",
+  "last_success": "docs/workorders/evidence/nightly_2026-10-23_manual/success.json",
+  "before": "docs/workorders/evidence/nightly_2026-10-23_0954/before",
+  "after": "docs/workorders/evidence/nightly_2026-10-23_0954/after",
+  "parallel_changes": [
+    "backend/src/rpb/bootstrap/api.py",
+    "backend/src/rpb/bootstrap/config.py",
+    "backend/src/rpb/bootstrap/worker.py",
+    "backend/tests/unit/test_startup.py",
+    "frontend/src/App.tsx",
+    "scripts/engineering.py"
+  ],
+  "document_validation": "passed",
+  "before_manifest_sha256": "d813ae5bd792895dbd90316a1320275b2e91bfc2ab252984b72fc008224ce628",
+  "after_manifest_sha256": "15cc376302a6467c3ca014b0a4b707633ece536730266a1b019de495cf3afc5e"
+}

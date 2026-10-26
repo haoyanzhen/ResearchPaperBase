@@ -1,0 +1,301 @@
+--- a/scripts/tests/test_public_error_requirements.py
++++ b/scripts/tests/test_public_error_requirements.py
+@@ -0,0 +1,186 @@
++"""Task006 ER-01–08: independent fixtures from 04 §5/5.1 and A04 field contract.
++
++Expected actions, details and limits are fixed here, never generated from schemas.
++These are producer-contract tests, not runtime authorization/sanitization tests.
++"""
++import copy
++import itertools
++import json
++import unittest
++
++from test_api_contracts import SCHEMAS, SPEC_DATA, valid
++from test_public_errors import CASES, RID, action, error
++from check_api_contracts import COVERAGE, check, compatibility
++
++ACTIONS = {
++    'correct_request': '修正请求', 'reload_page': '重新读取第一页',
++    'reauthenticate': '重新认证', 'refresh_csrf': '刷新请求凭据',
++    'check_result': '核查原操作结果', 'refresh_confirmation': '重新查看确认依据',
++    'reload_task': '重新读取状态', 'reload_resource': '重新读取',
++    'repair_configuration': '检查配置', 'retry_request': '按原请求条件重试',
++}
++# Explicit partition of the 42 public reasons by permitted non-null advice.
++ACTION_GROUPS = {
++    'correct_request': 'VALIDATION_BAD_REQUEST VALIDATION_CURSOR_MISMATCH VALIDATION_PAYLOAD_TOO_LARGE VALIDATION_UNSUPPORTED_FORMAT VALIDATION_FIELD_INVALID VALIDATION_UNKNOWN_FIELD VALIDATION_FILE_UNREADABLE',
++    'reload_page': 'VALIDATION_CURSOR_EXPIRED',
++    'reauthenticate': 'AUTH_REQUIRED AUTH_SESSION_INVALID AUTH_ACCOUNT_DISABLED AUTH_INVALID_CREDENTIALS',
++    'refresh_csrf': 'PERMISSION_CSRF_REJECTED',
++    'check_result': 'STATE_IDEMPOTENCY_CONFLICT STATE_RESOURCE_LIMIT PROVIDER_FAILED PROVIDER_UNAVAILABLE PROVIDER_TIMEOUT STORAGE_INTERNAL_FAILURE',
++    'refresh_confirmation': 'STATE_CONFIRMATION_STALE STATE_CONFIRMATION_REQUIRED',
++    'reload_task': 'LOCK_CONSTRUCTION_OCCUPIED LOCK_RESPONSE_ACTIVE LOCK_CONTENT_BUSY STATE_EVENT_REPLAY_UNAVAILABLE',
++    'reload_resource': 'VERSION_REQUIRED VERSION_BINDING_MISMATCH VERSION_BASELINE_STALE STATE_REVISION_CONFLICT STATE_REVISION_REQUIRED',
++    'repair_configuration': 'CONFIG_MODEL_SELECTION_REQUIRED CONFIG_MISSING CONFIG_SECRET_UNAVAILABLE CONFIG_SOURCE_DISABLED CONFIG_CONNECTION_FAILED',
++    None: 'PERMISSION_ADMIN_REQUIRED PERMISSION_RESOURCE_UNAVAILABLE STATE_OPERATION_NOT_ALLOWED STATE_PROJECT_READ_ONLY STATE_NOT_CANCELLABLE STATE_LAST_ADMIN_REQUIRED STORAGE_FILE_UNAVAILABLE',
++}
++EXPECTED_ACTION = {code: name for name, codes in ACTION_GROUPS.items() for code in codes.split()}
++TECHNICAL = {'STATE_RESOURCE_LIMIT', 'PROVIDER_FAILED', 'PROVIDER_UNAVAILABLE', 'PROVIDER_TIMEOUT', 'STORAGE_INTERNAL_FAILURE'}
++TASK_CODES = set(ACTION_GROUPS['reload_task'].split())
++FIELD_CODES = {'VALIDATION_FIELD_INVALID', 'VALIDATION_UNKNOWN_FIELD', 'VALIDATION_FILE_UNREADABLE'}
++DEPENDENCY_CODES = (TECHNICAL - {'STORAGE_INTERNAL_FAILURE'}) | {'CONFIG_CONNECTION_FAILED'}
++DETAILS = {
++    'fields': {'fields': [{'field': 'model_selection.model_id', 'reason': 'required'}]},
++    'task': {'status_url': '/api/v1/tasks/' + RID},
++    'revision': {'current_revision': 'r2', 'resource_url': '/api/v1/projects/' + RID},
++    'dependency': {'reason': 'network'},
++    'submission': {'outcome': 'not_accepted'},
++}
++DETAIL_CODES = {'fields': FIELD_CODES, 'task': TASK_CODES,
++                'revision': {'STATE_REVISION_CONFLICT'},
++                'dependency': DEPENDENCY_CODES, 'submission': TECHNICAL}
++
++
++class PublicErrorRequirementTests(unittest.TestCase):
++    def test_er01_er04_er06_all_actions_and_details_are_reason_specific(self):
++        self.assertEqual(set(EXPECTED_ACTION), {c for c, _, _ in CASES})
++        for code, _, category in CASES:
++            base = error(code, category)
++            for name, label in ACTIONS.items():
++                with self.subTest(code=code, action=name):
++                    self.assertEqual(valid('PublicError', base | {'recovery': action(name, label)}),
++                                     name == EXPECTED_ACTION[code])
++            for shape, details in DETAILS.items():
++                with self.subTest(code=code, details=shape):
++                    self.assertEqual(valid('PublicError', base | {'details': details}),
++                                     code in DETAIL_CODES[shape])
++            for field in ('code', 'category', 'message', 'retryable'):
++                with self.subTest(code=code, null=field):
++                    self.assertFalse(valid('PublicError', base | {field: None}))
++            if code != 'PERMISSION_RESOURCE_UNAVAILABLE':
++                for length in (1, 256):
++                    self.assertTrue(valid('PublicError', base | {'message': '文' * length}))
++                for length in (0, 257):
++                    self.assertFalse(valid('PublicError', base | {'message': '文' * length}))
++
++    def test_er01_er03_nested_required_types_and_whitelists(self):
++        fixtures = {
++            'ErrorFieldsDetails': DETAILS['fields'], 'ErrorTaskDetails': DETAILS['task'],
++            'ErrorRevisionDetails': DETAILS['revision'], 'ErrorDependencyDetails': DETAILS['dependency'],
++            'ErrorSubmissionDetails': DETAILS['submission'],
++            'ErrorFieldIssue': {'field': 'model_id', 'reason': 'invalid'},
++        }
++        for schema, value in fixtures.items():
++            with self.subTest(schema=schema):
++                self.assertTrue(valid(schema, value))
++                self.assertFalse(valid(schema, value | {'raw_response': 'SYNTHETIC_PRIVATE'}))
++                for key in value:
++                    missing = copy.deepcopy(value)
++                    del missing[key]
++                    self.assertFalse(valid(schema, missing))
++                    for bad in (None, 1, True, {}, []):
++                        self.assertFalse(valid(schema, value | {key: bad}), (schema, key, bad))
++
++    def test_er01_er03_field_paths_enums_and_array_boundaries(self):
++        for field in ('model_id', 'model_selection.model_id', 'items.0.name', 'a' * 128):
++            for reason in ('required', 'invalid', 'unknown', 'unsupported', 'too_large', 'unreadable'):
++                self.assertTrue(valid('ErrorFieldIssue', {'field': field, 'reason': reason}), field)
++        for field in ('', 'a' * 129, 'api-key', 'CamelCase', 'items[0]', 'a..b', '../secret', 'a\\b', 'a\nb'):
++            self.assertFalse(valid('ErrorFieldIssue', {'field': field, 'reason': 'invalid'}), field)
++        self.assertFalse(valid('ErrorFieldIssue', {'field': 'model_id', 'reason': 'secret'}))
++        item = {'field': 'model_id', 'reason': 'invalid'}
++        for count in (1, 100):
++            self.assertTrue(valid('ErrorFieldsDetails', {'fields': [item] * count}))
++        for count in (0, 101):
++            self.assertFalse(valid('ErrorFieldsDetails', {'fields': [item] * count}))
++        for reason in ('format', 'protocol', 'authentication', 'network', 'model', 'rate_limit', 'quota', 'unavailable', 'timeout', 'failed'):
++            self.assertTrue(valid('ErrorDependencyDetails', {'reason': reason}))
++        self.assertFalse(valid('ErrorDependencyDetails', {'reason': 'raw diagnostic'}))
++        for outcome in ('not_accepted', 'unknown'):
++            self.assertTrue(valid('ErrorSubmissionDetails', {'outcome': outcome}))
++        self.assertFalse(valid('ErrorSubmissionDetails', {'outcome': 'accepted'}))
++
++    def test_er03_er04_reference_and_revision_boundaries(self):
++        for url in ('/api/v1/tasks/' + RID, '/api/v1/' + 'a' * 504):
++            self.assertTrue(valid('ErrorResourceURL', url))
++        for url in ('/api/v1/' + 'a' * 505, '/api/v1/', 'https://evil.test/api/v1/x',
++                    '//evil.test/api/v1/x', '/etc/passwd', '/api/v1/../secret',
++                    '/api/v1/x?token=secret', '/api/v1/x#private', '/api/v1/%2e%2e', '/api/v1/a b'):
++            self.assertFalse(valid('ErrorResourceURL', url), url)
++        for revision, expected in [('', False), ('r', True), ('r' * 128, True), ('r' * 129, False)]:
++            self.assertEqual(valid('ErrorRevisionDetails', DETAILS['revision'] | {'current_revision': revision}), expected)
++
++    def test_er02_er06_recovery_labels_and_closed_objects(self):
++        for code, _, category in CASES:
++            name = EXPECTED_ACTION[code]
++            if name is None:
++                continue
++            good = action(name, ACTIONS[name])
++            for bad in ({'action': name}, {'label': ACTIONS[name]}, good | {'label': '执行私有操作'},
++                        good | {'action': None}, good | {'label': None}, good | {'url': '/private'},
++                        good | {'force': True}):
++                with self.subTest(code=code, recovery=bad):
++                    self.assertFalse(valid('PublicError', error(code, category) | {'recovery': bad}))
++        hidden = error('PERMISSION_RESOURCE_UNAVAILABLE', 'permission')
++        for details in DETAILS.values():
++            self.assertFalse(valid('PublicError', hidden | {'details': details}))
++
++    def test_er05_er07_complete_submission_retry_truth_table(self):
++        for code, _, category in CASES:
++            if code not in TECHNICAL:
++                continue
++            for outcome, retryable, advice in itertools.product(
++                    (None, 'not_accepted', 'unknown'), (False, True), (None, 'check_result', 'retry_request')):
++                value = error(code, category) | {
++                    'details': None if outcome is None else {'outcome': outcome},
++                    'retryable': retryable,
++                    'recovery': None if advice is None else action(advice, ACTIONS[advice]),
++                }
++                expected = ((outcome == 'not_accepted' and advice == 'retry_request') if retryable
++                            else (advice == 'check_result' if outcome == 'unknown' else advice != 'retry_request'))
++                with self.subTest(code=code, outcome=outcome, retryable=retryable, advice=advice):
++                    self.assertEqual(valid('PublicError', value), expected)
++                    self.assertEqual(valid('TaskError', value), expected and not retryable)
++                    self.assertEqual(valid('ErrorPayload', {'error': value}), expected and not retryable)
++
++    def test_er01_er07_all_http_statuses_and_envelope_boundaries(self):
++        statuses = {status for _, status, _ in CASES}
++        for code, status, category in CASES:
++            value = error(code, category)
++            envelope = {'error': value, 'meta': {'request_id': RID}}
++            for actual in statuses:
++                with self.subTest(code=code, http=actual):
++                    self.assertEqual(valid('ErrorEnvelope' + str(actual), envelope), actual == status)
++            self.assertTrue(valid('TaskError', value))
++            self.assertTrue(valid('ErrorPayload', {'error': value}))
++            for schema in ('ErrorEnvelope', 'ErrorEnvelope' + str(status)):
++                for bad in ({'error': value}, {'meta': {'request_id': RID}}, envelope | {'private': True},
++                            envelope | {'meta': None}, envelope | {'meta': {'request_id': 'not-uuid'}},
++                            envelope | {'meta': {'request_id': RID, 'stack': 'private'}}):
++                    self.assertFalse(valid(schema, bad))
++        for bad in ({}, {'error': None}, {'error': error('AUTH_REQUIRED', 'auth'), 'private': True}):
++            self.assertFalse(valid('ErrorPayload', bad))
++
++    def test_er08_error_coverage_and_response_drift_rejected(self):
++        coverage = json.loads(COVERAGE.read_text())
++        changed = copy.deepcopy(coverage)
++        changed['public_errors']['variants'].pop()
++        with self.assertRaisesRegex(AssertionError, 'public error coverage drift'):
++            check(SPEC_DATA, changed)
++        changed = copy.deepcopy(SPEC_DATA)
++        changed['components']['responses']['PublicError503']['content']['application/json']['schema']['$ref'] = '#/components/schemas/ErrorEnvelope500'
++        with self.assertRaises(AssertionError):
++            check(changed, coverage)
++        for section, name in [('schemas', 'TaskError'), ('schemas', 'ErrorProviderTimeout'),
++                              ('responses', 'PublicError429')]:
++            changed = copy.deepcopy(SPEC_DATA)
++            del changed['components'][section][name]
++            self.assertTrue(compatibility(SPEC_DATA, changed), (section, name))
+--- a/tasks/006-public-error-recovery-contract.md
++++ b/tasks/006-public-error-recovery-contract.md
+@@ -1,6 +1,6 @@
+ # Task 006：A04 公共错误与恢复提示契约
+ 
+-文档版本：v1.1
++文档版本：v1.2
+ 更新日期：2026-10-22
+ 
+ ## 1. 目标、授权与下一轮边界
+@@ -116,3 +116,21 @@
+ 静态可判定要求已执行通过；运行时授权/脱敏、并发与事务、确认生命周期、UI动作执行均不在本单实现范围。逐端点错误响应绑定、完整Task/SSE/ConfirmationPreview仍由覆盖清单跟踪。无新增人类决策问题；下一步为人工审核本包，不自动开始后续任务。审核者、接受范围及基线仍待人工填写。
+ 
+ 工作区并行变化：最终摘要核对发现README、task005及若干骨架测试/脚本与开始时不同，具体列表见审核包preservation.json；本任务未写入或回滚这些文件，来源待核实，不纳入A04接受基线。契约相关受审文件及执行证据单独绑定摘要。
++
++
++## 9. 需求测试覆盖复核与补齐（2026-10-22）
++
++用户授权检查task006实现范围并补足需求测试。复核结论：原8方法覆盖基本正负例，但未完整验证具名嵌套边界、全部合法动作的跨错误码误用、全部HTTP分组互斥和技术重试组合，因此原覆盖不足。新增[需求测试](../scripts/tests/test_public_error_requirements.py)8方法；保留原23方法和全部既有断言，未改机器契约、检查器、业务源码或业务规则。当前单一复核入口为[覆盖补齐报告](../docs/workorders/task006_coverage_closure_2026-10-22.md)，原第8节审核包作为历史交付证据保留。
++
++| 需求 | 本次补齐的可执行测试（PublicErrorRequirementTests） | 可观察断言与限定 |
++| --- | --- | --- |
++| ER-01 | `test_er01_er04_er06_all_actions_and_details_are_reason_specific`、`test_er01_er03_nested_required_types_and_whitelists`、`test_er01_er03_field_paths_enums_and_array_boundaries`、`test_er01_er07_all_http_statuses_and_envelope_boundaries` | 42变体×10动作、42变体×5非空details；必填/类型/空值/消息长度；字段数组1/100接受、0/101拒绝；每种HTTP分组两两排斥 |
++| ER-02 | `test_er02_er06_recovery_labels_and_closed_objects`及动作矩阵 | 404拒绝所有具名details和非空动作；保留原固定消息反例；无生产映射器，不将合成缺失/越权样例相等当真实防枚举验证 |
++| ER-03 | `test_er01_er03_nested_required_types_and_whitelists`、`test_er01_er03_field_paths_enums_and_array_boundaries`、`test_er03_er04_reference_and_revision_boundaries` | 嵌套对象拒绝诊断字段；原因枚举、字段路径、URL边界；URL语法不证明授权，自由文本脱敏仍未实现 |
++| ER-04 | 动作矩阵及`test_er03_er04_reference_and_revision_boundaries` | 修订/确认/版本错误仅接受各自建议；修订1/128接受、0/129拒绝；运行时确认和人工保护仍待业务切片 |
++| ER-05 | `test_er05_er07_complete_submission_retry_truth_table` | 5技术错误×3结果×2重试标志×3建议=90组合；未知结果只能核查；同组合验证PublicError/TaskError/ErrorPayload |
++| ER-06 | 动作矩阵及`test_er02_er06_recovery_labels_and_closed_objects` | 全部合法建议正例、其他已存在动作反例、固定标签/必填/未知字段；不新增恢复入口 |
++| ER-07 | `test_er01_er07_all_http_statuses_and_envelope_boundaries`及90组合测试 | 42变体跨16状态分组、Task/SSE基本正例与已受理禁重试；信封及request_id边界；不声明完整Task GET/UI运行通过 |
++| ER-08 | `test_er08_error_coverage_and_response_drift_rejected`及原ContractTests/ER-08 | 错误覆盖遗漏、响应错绑拒绝；删除错误/Task约束或429组件触发兼容审查；原请求/成功响应回归保留 |
++
++以上规范来源沿用第8节逐项映射；枚举、长度、具名结构按04 §5.1指定的机器字段契约写成固定预期，未从schema动态生成期望。新增测试由既有工程入口的unittest discover自动发现。当前执行日志、命令、输入快照和SHA-256见报告；契约测试通过不替代人工接受或端到端验收。
+--- a/docs/PROJECT_STATUS.md
++++ b/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.34
++文档版本：v1.35
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+@@ -20,7 +20,7 @@
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+ | 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约及自动验证已交付、待人工审核，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已交付；独立审核发现3项P2待修，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -35,11 +35,11 @@
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
+-面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)已交付设计、机器结构及契约测试；原15项及新8项测试方法通过，兼容门禁83项差异已作定向技术审查，保留退出1，人工接受待记录；不自动启动A05–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
++面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)已交付设计、机器结构及契约测试；本次需求覆盖复核补充8组测试，全部31项契约测试通过，详见[task006覆盖补齐报告](workorders/task006_coverage_closure_2026-10-22.md)；兼容门禁83项差异已作定向技术审查，保留退出1；[独立审核](workorders/task006_independent_review_2026-10-22.md)发现恢复目标、已受理Task的outcome及状态映射漂移检查3项P2待修，人工接受待记录；不自动启动A05–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
+ 
+ | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
+ | --- | --- | --- | --- | --- |
+-| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；逐端点错误响应绑定及其余机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
++| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)待修；逐端点错误响应绑定及其余机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+ | TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | 延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
+ | TRACK-006 | 内部安全参考的版本管理与受控交付（D07） | 延期 | 工作单 D07 | 明确存储、读者和同步机制；不在本表复制内部正文 |
+ | TRACK-007a | Project资产、上下文与版本快照字段映射 | 逻辑映射已细化；物理字段待落实 | [07 §3–4](design/07_data_persistence.md#3-逻辑记录与字段映射) | 本轮定义最小持久事实/归属与约束；新核心建立后逐项落实实际表字段、索引和测试，不能将逻辑表当作已迁移 |
+@@ -116,3 +116,5 @@
+ 本次修订（2026-10-22）：按用户授权修复骨架R01–R04并补回归、独立复核；最终隔离基线58后端/15契约/2前端/2浏览器通过。保留原证据和实时并行修改，范围与摘要见任务007及修复收口。
+ 
+ 本次修订 v1.34（2026-10-22）：task005已识别覆盖缺口补齐并完成统一复验，需求追踪、当前执行证据、源码快照与审核包已更新；保留并复核入场已有R01–R04修复，保留并行契约改动，不将其归为本任务成果。工程范围提交人工审核，业务验收与其他任务状态不由本次测试推定。
++
++本次修订 v1.35（2026-10-22）：task006补齐恢复动作/details矩阵、字段边界、技术重试组合、HTTP/Task/SSE载体和错误契约漂移回归；31项契约测试及结构检查通过。机器契约及业务源码未改，历史兼容门禁仍退出1（83项），人工接受、真实鉴权/脱敏/事务及端到端验收仍未完成，见[覆盖报告](workorders/task006_coverage_closure_2026-10-22.md)。
+--- a/docs/workorders/task006_coverage_closure_2026-10-22.md
++++ b/docs/workorders/task006_coverage_closure_2026-10-22.md
+@@ -0,0 +1,38 @@
++# Task006 需求测试覆盖补齐报告
++
++文档版本：v1.0
++更新日期：2026-10-22
++
++## 结论与变更范围
++
++[task006](../../tasks/006-public-error-recovery-contract.md)原有测试不足以覆盖其全部已实现的静态契约边界。本次补齐已识别缺口，新增[8组需求测试](../../scripts/tests/test_public_error_requirements.py)，原23方法保持不变，全部31方法通过。未发现需要修改现有机器契约的缺陷。测试期望来自04 §5/5.1及其指定的字段契约，动作/原因/长度均为固定测试输入，不从被测schema生成预期。
++
++本次仅新增测试、更新任务单/项目状态及保存证据。未修改contracts、检查器、依赖或backend/frontend；不扩展task006业务范围。人工接受仍待记录。
++
++## 缺口、追踪与结果
++
++逐项规范来源及方法名见[task006 §8–9](../../tasks/006-public-error-recovery-contract.md#9-需求测试覆盖复核与补齐2026-10-22)。
++
++| 缺口 | 补充验证 | 结果 |
++| --- | --- | --- |
++| 原42变体以空details/recovery为主；未验证全部合法建议或其他合法动作误配 | 42×10动作矩阵、42×5具名details矩阵；固定标签/缺字段/非法附加参数 | 通过 |
++| 嵌套类型、长度、枚举及边界覆盖有限 | 6种具名嵌套对象的必填/类型/白名单；字段路径和6个字段原因、10个依赖原因、2个提交结果；数组1/100及0/101；消息、修订、URL上下限和危险URL | 通过 |
++| 只抽取部分技术重试反例和一种Task拒绝 | 5类技术错误的90组合，每组合同时验证公共错误、Task与SSE；未知结果拒绝直接重试 | 通过 |
++| 每变体只抽一个错误HTTP分组 | 42×16 HTTP分组矩阵，信封/meta/request_id及Task/SSE边界 | 通过 |
++| 错误契约新增检查分支缺少专用漂移反例 | 覆盖变体遗漏、503响应错绑拒绝，删除Task/错误schema及429组件触发兼容检查 | 通过 |
++
++ER-02原合成原因映射未执行任何生产投影，本次明确不把样例相等视为防枚举运行证明。实际授权、公开字段来源、自由文本脱敏、恢复动作资格、同键重放/并发/确认生命周期、Task GET 200及UI行为均待相应业务切片，不在task006已实现范围。逐端点响应绑定、完整Task/SSE/ConfirmationPreview仍按原覆盖清单保留缺项。本次不执行数据库或外部服务，也不宣称业务端到端通过。
++
++## 当前执行证据
++
++证据目录：[task006_coverage_2026-10-22](evidence/task006_coverage_2026-10-22/commands.json)。复用独立契约环境 `/tmp/rpb-a04-contract`，已核对jsonschema 4.23.0和openapi-spec-validator 0.7.2与requirements一致，完整版本见[dependencies.log](evidence/task006_coverage_2026-10-22/dependencies.log)。
++
++| 命令（Python前缀为上述环境/bin/python） | 实际结果 | 日志 |
++| --- | --- | --- |
++| `-m unittest discover -s scripts/tests -v` | 退出0，31方法通过；包括原15+原公共错误8+新增8 | [tests.log](evidence/task006_coverage_2026-10-22/tests.log) |
++| `scripts/check_api_contracts.py` | 退出0；159 schemas、126源行、42部分请求/成功操作、40仅请求操作、5/6事件payload | [structure.log](evidence/task006_coverage_2026-10-22/structure.log) |
++| `scripts/check_api_contracts.py --baseline docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json` | 退出1，83项历史差异；本次未改JSON，未出现新兼容差异 | [compatibility.log](evidence/task006_coverage_2026-10-22/compatibility.log) |
++
++83项差异的方向及限定技术审查沿用[原审核包](evidence/a04_2026-10-22/review.md#兼容差异逐类处置)：82操作x-errors及1个SSE映射扩展。非零门禁保留，不能记作兼容无差异或人工批准。
++
++修改前相关文件内容、SHA-256、HEAD和工作树状态保存在证据目录before/及before-sha256.json；本轮差异见[delivery.patch](evidence/task006_coverage_2026-10-22/delivery.patch)，当前输入及交付摘要见[delivery-sha256.json](evidence/task006_coverage_2026-10-22/delivery-sha256.json)。本次摘要不替换原审核包的历史摘要。文档引用、版本、行尾和原契约/测试保留核验见[document-check.json](evidence/task006_coverage_2026-10-22/document-check.json)。工程统一入口已使用全量unittest discover，无需修改以发现新文件。

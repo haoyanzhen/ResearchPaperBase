@@ -1,0 +1,10 @@
+{
+  "scripts/tests/test_public_errors.py": "1bb0ff71040d7da4a6aa424c2b95b01411d7821df38d1a91a1b2d9ad61e04c7a",
+  "scripts/tests/test_public_error_requirements.py": "6cb05e1413189b88428bea470bc30722a3fb0f80cd131d595b39a981b1e42d5c",
+  "scripts/tests/test_public_error_review_regressions.py": "59a9964a6bb11e26e0f73c5a57d77e1ed8dede575a733054aa792fb311dd41de",
+  "scripts/check_api_contracts.py": "8b7b96964e4350b54476f266e7e5408f41a53ebb29d3f6277d36a7c7762d2bc8",
+  "schema:ErrorTaskStatusURL": "e9b0d246ecc4fa35e03932805d5c37df62931a8141a085a87194421e11fdf93e",
+  "schema:ErrorTaskDetails": "e146d46e002bdebbf5ce304c80aa823424f38327b6c069c0b93ac1ff6eabfae0",
+  "schema:ErrorStateEventReplayUnavailable": "462ec6ec3e69ec9e226f523d3a9808703a93f0183c77772cb1089dc050f53509",
+  "schema:TaskError": "c26dc5a2bfe522ee06d6dfa478e28a7516db2b6bddec356e70fe8ac36445a4db"
+}

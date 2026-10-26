@@ -1,0 +1,11 @@
+{
+  "contracts/p0.openapi.json": "57117f10787b72899818cf6829550cc71e77073298ac437fc6d67791cec18dfa",
+  "contracts/p0.coverage.json": "c511066b1994b178ed5c3b434cb791d21e03aa32707e79e408107d89608f2c37",
+  "scripts/check_api_contracts.py": "0cc59918fafe7e8937991d97b7bba48b0e9180dcaa461fd92829764daba60904",
+  "scripts/tests/test_project_create_contract.py": "83ebc898a9787007120e6c7447caf95f2776e4edbd8edac38b53cbd99285f6ce",
+  "scripts/tests/test_public_errors.py": "0c7249ea90f3d3d69d44620e495f334839eabf165576fb6332d5890477ccb29c",
+  "docs/design/04-03_machine_contract_governance.md": "951f2b4ca0bcd1e13a8097ba45d5ad2391731491c73a23dc13abd1d6c1ab2e5b",
+  "docs/PROJECT_STATUS.md": "f0c7530b75ba246879d28bf7ec8970bb0837e156f3499f52a7110ba2e4c92281",
+  "tasks/014-project-create-machine-contract.md": "c47101316a911bfe6bb23b4ac092f7ea531d95ab583c701d6fa8b4afd55a5a2b",
+  "docs/workorders/task014_b01_review_2026-10-24.md": "40ff731d97f83e0b44895e029909d612581e9fb16fc698a61123ba5ed299ec91"
+}

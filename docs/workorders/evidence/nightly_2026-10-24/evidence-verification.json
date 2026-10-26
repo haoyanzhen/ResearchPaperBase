@@ -1,0 +1,112 @@
+{
+  "last_success": {
+    "snapshot": "docs/workorders/evidence/nightly_2026-10-23_manual/after",
+    "verified_files": 183,
+    "current_artifact_drift": [
+      "backend/src/rpb/bootstrap/api.py",
+      "backend/src/rpb/bootstrap/config.py",
+      "backend/src/rpb/bootstrap/worker.py",
+      "backend/tests/unit/test_startup.py",
+      "contracts/p0.coverage.json",
+      "docs/design/00-01_engineering_baseline.md",
+      "docs/design/02-03_construction_assets_appendix.md",
+      "docs/design/03-04_ui_shared_interactions_appendix.md",
+      "docs/design/04-01_p0_operation_contracts.md",
+      "docs/design/04-02_transport_task_file_contracts.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "docs/design/05-01_internal_module_contracts.md",
+      "docs/design/05_application_use_cases.md",
+      "docs/design/06_agent_knowledge_services.md",
+      "docs/design/07_data_persistence.md",
+      "docs/design/09_quality_observability.md",
+      "frontend/src/App.tsx",
+      "scripts/engineering.py"
+    ]
+  },
+  "partial": {
+    "snapshot": "docs/workorders/evidence/nightly_2026-10-23_0954/after",
+    "verified_files": 186,
+    "current_artifact_drift": [
+      "contracts/p0.coverage.json",
+      "docs/design/00-01_engineering_baseline.md",
+      "docs/design/02-03_construction_assets_appendix.md",
+      "docs/design/03-04_ui_shared_interactions_appendix.md",
+      "docs/design/04-01_p0_operation_contracts.md",
+      "docs/design/04-02_transport_task_file_contracts.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "docs/design/05-01_internal_module_contracts.md",
+      "docs/design/05_application_use_cases.md",
+      "docs/design/06_agent_knowledge_services.md",
+      "docs/design/07_data_persistence.md",
+      "docs/design/09_quality_observability.md"
+    ]
+  },
+  "cleanup": {
+    "snapshot": "docs/workorders/evidence/code_cleanup_2026-10-23/after",
+    "verified_files": 187,
+    "current_artifact_drift": [
+      "contracts/p0.coverage.json",
+      "docs/design/00-01_engineering_baseline.md",
+      "docs/design/02-03_construction_assets_appendix.md",
+      "docs/design/03-04_ui_shared_interactions_appendix.md",
+      "docs/design/04-01_p0_operation_contracts.md",
+      "docs/design/04-02_transport_task_file_contracts.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "docs/design/05-01_internal_module_contracts.md",
+      "docs/design/05_application_use_cases.md",
+      "docs/design/06_agent_knowledge_services.md",
+      "docs/design/07_data_persistence.md",
+      "docs/design/09_quality_observability.md"
+    ]
+  },
+  "A06": {
+    "snapshot": "docs/workorders/evidence/task008_2026-10-23/closeout/final",
+    "verified_files": 188,
+    "current_artifact_drift": [
+      "contracts/p0.coverage.json",
+      "docs/design/00-01_engineering_baseline.md",
+      "docs/design/02-03_construction_assets_appendix.md",
+      "docs/design/03-04_ui_shared_interactions_appendix.md",
+      "docs/design/04-01_p0_operation_contracts.md",
+      "docs/design/04-02_transport_task_file_contracts.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "docs/design/05-01_internal_module_contracts.md",
+      "docs/design/05_application_use_cases.md",
+      "docs/design/06_agent_knowledge_services.md",
+      "docs/design/07_data_persistence.md",
+      "docs/design/09_quality_observability.md"
+    ]
+  },
+  "A07": {
+    "snapshot": "docs/workorders/evidence/task010_a07_2026-10-23/closeout/final",
+    "verified_files": 190,
+    "current_artifact_drift": [
+      "contracts/p0.coverage.json",
+      "docs/design/00-01_engineering_baseline.md",
+      "docs/design/02-03_construction_assets_appendix.md",
+      "docs/design/04-01_p0_operation_contracts.md",
+      "docs/design/04-02_transport_task_file_contracts.md",
+      "docs/design/05-01_internal_module_contracts.md",
+      "docs/design/05_application_use_cases.md",
+      "docs/design/06_agent_knowledge_services.md",
+      "docs/design/07_data_persistence.md",
+      "docs/design/09_quality_observability.md"
+    ]
+  },
+  "A08": {
+    "snapshot": "docs/workorders/evidence/task011_a08_2026-10-23/closeout/final",
+    "verified_files": 192,
+    "current_artifact_drift": [
+      "docs/design/00-01_engineering_baseline.md",
+      "docs/design/05-01_internal_module_contracts.md",
+      "docs/design/06_agent_knowledge_services.md",
+      "docs/design/07_data_persistence.md",
+      "docs/design/09_quality_observability.md"
+    ]
+  },
+  "A09": {
+    "snapshot": "docs/workorders/evidence/task012_a09_2026-10-23/delivery",
+    "verified_files": 194,
+    "current_artifact_drift": []
+  }
+}

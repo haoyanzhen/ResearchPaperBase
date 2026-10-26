@@ -1,0 +1,18 @@
+{
+  "reviewed_manifest_sha256": "1ac8a7f7e957acc7a80d9f9b010acbaaf6f5b57ac7b95a3f366e2f719597b53f",
+  "current_drift": [],
+  "changed_or_new_source_files": [
+    "contracts/p0.coverage.json",
+    "docs/PROJECT_STATUS.md",
+    "docs/design/02-03_construction_assets_appendix.md",
+    "docs/design/04-01_p0_operation_contracts.md",
+    "docs/design/04-02_transport_task_file_contracts.md",
+    "docs/design/05-01_internal_module_contracts.md",
+    "docs/design/05_application_use_cases.md",
+    "docs/design/06_agent_knowledge_services.md",
+    "docs/design/09_quality_observability.md",
+    "docs/workorders/task011_a08_review_2026-10-23.md",
+    "tasks/011-supplement-processing-contracts.md"
+  ],
+  "openapi_unchanged": true
+}

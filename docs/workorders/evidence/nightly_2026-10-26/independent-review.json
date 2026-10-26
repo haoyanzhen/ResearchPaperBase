@@ -1,0 +1,14 @@
+{
+  "reviewer": "/root/nightly_review",
+  "scope": [
+    "docs/PROJECT_STATUS.md",
+    "docs/design/README.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "tasks/022-project-maintenance.md"
+  ],
+  "initial_finding": "C01 PM-G02/03 must include cleanup execution-qualification revocation and failure non-restoration",
+  "resolution": "PM-G02 includes cleanup, existing terminal states, Research attempt and Construction slot rules; PM-G03 references PM-G02 and failure non-restoration",
+  "followup": "C01 closed; no remaining blocking findings",
+  "business_tests_run": false,
+  "time": "2026-10-26T02:59:59.411443+08:00"
+}

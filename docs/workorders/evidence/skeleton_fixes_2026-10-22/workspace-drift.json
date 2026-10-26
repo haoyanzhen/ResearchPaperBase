@@ -1,0 +1,69 @@
+{
+  "scope": "Concurrent live workspace differences excluded from isolated R01-R04 acceptance",
+  "files": {
+    "backend/tests/architecture/test_boundaries.py": {
+      "baseline": "2c9793e94a136fcb5928c6db01dd7a2cb0e99f01f0c74abb8204a4ab85b55319",
+      "live": "3f3b3e51a3f8446f3ecbfb9397cbdd647f34ba91abcb138f4382a0a09c9e2960"
+    },
+    "backend/tests/unit/test_startup.py": {
+      "baseline": "5ef6e96156ed7a039d69b96726a6e2d8a92da5410cf5e477ffece8be234be49c",
+      "live": "7e2f4f459e5a0426c00d0875b550d750eab95c172a427fab611f1adcd8efabe9"
+    },
+    "contracts/p0.coverage.json": {
+      "baseline": "ed15d8e12fa284b22d22470bdd9fa502871169dfab879c56a765209cbdfda09c",
+      "live": "172bf78f18cc2e44145eafe44a1bd820ebb2a306e0e2771a3a8b2c66c5d346ba"
+    },
+    "contracts/p0.openapi.json": {
+      "baseline": "507496efe354fc66b40f59cd7fb9131482f6cb50282512cd5eaa3c667acf8110",
+      "live": "2652913408e215e5de7560c1d3e523b403c88c2823a1f7a31eede609aee34acf"
+    },
+    "docs/design/04-01_p0_operation_contracts.md": {
+      "baseline": "2d2f791b647edc7d5affd194b2fd8ba529ca01ee8c47b9e325a79976c9d34429",
+      "live": "3a8634e699e286bc10e3ed04279d5c4f9a4ba723b80c625b8a01a34894399bcb"
+    },
+    "docs/design/04-02_transport_task_file_contracts.md": {
+      "baseline": "dd45e177573c956d29223f2f28b7b1302848e1672c7f699e3db573003f7c61b5",
+      "live": "990407413d42294568f1363504bb02dc617bd104ab79b072fd7dedf009039f7e"
+    },
+    "docs/design/04-03_machine_contract_governance.md": {
+      "baseline": "55e4dc16303eacd689d957776a331d4ed0b44d5e20aa857c07b6830933e3c398",
+      "live": "6a3c61aa9a5524f85b83d3f0c359a1e030754d0bfca75be5b7c45808718c15c9"
+    },
+    "docs/design/04_api_contracts.md": {
+      "baseline": "473a3f0499a3b3bea7e07151b847aa97cb36e5a38f525722baa776c79c809c2a",
+      "live": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4"
+    },
+    "docs/design/08_security_permissions.md": {
+      "baseline": "1ab0e3d38e75e76075f9e0686bda1c049865118eeb4eedbee8fc6b1f0b624f9f",
+      "live": "6e9f265cd97567abc6172285c4bb245651d04640e9affc4cba50cfb96acf289e"
+    },
+    "docs/design/09_quality_observability.md": {
+      "baseline": "b0bc05c891700dc76d73d910cd425ce1145994ca8dc52995bf398ef2743a6a9e",
+      "live": "417605be5415efc13c3c2cc88972ef0c6d409951c338e70fcc77eeaf591265db"
+    },
+    "frontend/e2e/shell.spec.ts": {
+      "baseline": "2198f51843feccea659f31bedd8cac3d9b30b81efb84aafe96646cf04d65259e",
+      "live": "3378d465981660efa26485b977cb32a2a4406ab32d4cc942928b98cad6680d03"
+    },
+    "frontend/src/App.test.tsx": {
+      "baseline": "94f184959d1ac0fafaa154785def1e1628d5e97cb6b708fea38d56f038ab593e",
+      "live": "1cea897093ece1d7686d7545a0d58cf4971daa40624dbdadc9faae44be48f7a5"
+    },
+    "scripts/check_api_contracts.py": {
+      "baseline": "dd3d2cfcc2acd0a4927e82670013787141e3ab35a4c5da862bbec9d602707a5d",
+      "live": "e14b30f1069cd69121a420ce4146dea29bb462d6b961694f188af964980fec1b"
+    },
+    "scripts/delivery_snapshot.py": {
+      "baseline": "6cc932942b8ed69a3916c859ed0d19f21a893f354e1204c6bd2be9226ec81ec3",
+      "live": "56f6b0bcb1dbdd8f436cbaac196e5a8d9365cddd0dab194b2e023a56eedbf8ad"
+    },
+    "scripts/verify_skeleton_delivery.py": {
+      "baseline": "4619a440f4986e221579ebb0ca3354d01c17a9a3812911fc261bddcb5e9cb68e",
+      "live": "479be82cd6e0ea6cf78a6c9b5b969106799901a5da2af4d926885d80a9f0f279"
+    },
+    "tasks/005-engineering-skeleton.md": {
+      "baseline": "61d907751eb59a106585ee21326d65ea599c9b6877395a201cebf36604fa9ef0",
+      "live": "9ef5deead8c2297192dfe5339be2a23eb4ab33cc9321cfb04b670f5d63190183"
+    }
+  }
+}

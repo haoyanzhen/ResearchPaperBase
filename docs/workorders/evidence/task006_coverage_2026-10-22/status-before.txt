@@ -1,0 +1,43 @@
+ M AGENTS.md
+ M README.md
+ M contracts/p0.coverage.json
+ M contracts/p0.openapi.json
+ M docs/PROJECT_STATUS.md
+ M docs/design/00-00_layer_design_file_mapping.md
+ M docs/design/00_layers.md
+ M docs/design/01-01-FR-reference.md
+ M docs/design/02-01-domain-reference.md
+ M docs/design/04-01_p0_operation_contracts.md
+ M docs/design/04-02_transport_task_file_contracts.md
+ M docs/design/04-03_machine_contract_governance.md
+ M docs/design/04_api_contracts.md
+ M docs/design/05-01_internal_module_contracts.md
+ M docs/design/07_data_persistence.md
+ M docs/design/08_security_permissions.md
+ M docs/design/09_quality_observability.md
+ M docs/design/10_operations_deployment.md
+ M docs/design/README.md
+ M docs/file_map.md
+ M docs/proposals/core_rewrite_plan_2026-10-16.md
+ M scripts/check_api_contracts.py
+ M tasks/example.md
+?? backend/
+?? docs/IMPLEMENTATION_ENTRY.md
+?? docs/design/00-01_engineering_baseline.md
+?? docs/workorders/a01_a03_design_closure_2026-10-21.md
+?? docs/workorders/a01_a03_review_2026-10-22.md
+?? docs/workorders/evidence/
+?? docs/workorders/preimplementation_design_tasks_2026-10-21.md
+?? docs/workorders/skeleton_fixes_review_2026-10-22.md
+?? docs/workorders/skeleton_independent_review_2026-10-22.md
+?? docs/workorders/task005_coverage_closure_2026-10-22.md
+?? frontend/
+?? scripts/check_architecture.py
+?? scripts/delivery_snapshot.py
+?? scripts/engineering.py
+?? scripts/tests/test_public_errors.py
+?? scripts/verify_skeleton_delivery.py
+?? tasks/004-project-create-idempotency-example.md
+?? tasks/005-engineering-skeleton.md
+?? tasks/006-public-error-recovery-contract.md
+?? tasks/007-skeleton-review-fixes.md

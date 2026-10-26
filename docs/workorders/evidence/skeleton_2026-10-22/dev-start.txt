@@ -1,0 +1,11 @@
+Development frontend start: HTTP 200 and expected document title.
+
+> rpb-workspace@1.0.0 dev
+> vite --host 127.0.0.1 --port 5178 --strictPort
+
+
+  VITE v8.3.5  ready in 104 ms
+
+  ➜  Local:   http://127.0.0.1:5178/
+
+Development frontend process group stopped.

@@ -1,0 +1,2535 @@
+{
+  "version": "1.0",
+  "date": "2026-10-19",
+  "source_rows": [
+    {
+      "signature": "`CW/search-terms/action-preview`",
+      "use_cases": "`Construction.PreviewTermGeneration` / 017,020"
+    },
+    {
+      "signature": "`CR/screening/action-preview`",
+      "use_cases": "`Construction.PreviewScoring` / 017,022"
+    },
+    {
+      "signature": "`CR/candidates/{candidate_id}/analysis/action-preview`",
+      "use_cases": "`Construction.PreviewAnalysisGeneration` / 017,025"
+    },
+    {
+      "signature": "`RV/outline/action-preview`",
+      "use_cases": "`Review.PreviewOutlineAction` / 017,032"
+    },
+    {
+      "signature": "`RV/chapters/{chapter_id}/action-preview`",
+      "use_cases": "`Review.PreviewChapterAction` / 017,033"
+    },
+    {
+      "signature": "`RV/finals/{final_id}/action-preview`",
+      "use_cases": "`Review.PreviewFinalAction` / 017,034"
+    },
+    {
+      "signature": "GET `/auth/csrf`",
+      "use_cases": "`Account.GetCSRF` / 001"
+    },
+    {
+      "signature": "GET `/capabilities`",
+      "use_cases": "`System.ReadCapabilities` / 002,023"
+    },
+    {
+      "signature": "POST `/auth/register`",
+      "use_cases": "`Account.Register` / 001,005"
+    },
+    {
+      "signature": "POST `/auth/login`",
+      "use_cases": "`Account.Login` / 001"
+    },
+    {
+      "signature": "POST `/auth/logout`",
+      "use_cases": "`Account.Logout` / 001"
+    },
+    {
+      "signature": "GET/PATCH `/me`",
+      "use_cases": "`Account.ReadSelf/UpdateSelf` / 001"
+    },
+    {
+      "signature": "GET/POST `/me/llm-configs`",
+      "use_cases": "`Config.ListLLM/CreateLLM` / 002"
+    },
+    {
+      "signature": "GET/PATCH/DELETE `/me/llm-configs/{config_id}`",
+      "use_cases": "`Config.ReadLLM/UpdateLLM/DeleteLLM` / 002"
+    },
+    {
+      "signature": "POST `/me/llm-configs/{config_id}/test`",
+      "use_cases": "`Config.TestLLM` / 002"
+    },
+    {
+      "signature": "POST `/me/llm-configs/{config_id}/models/refresh`",
+      "use_cases": "`Config.RefreshModels` / 002"
+    },
+    {
+      "signature": "GET `/me/model-options`",
+      "use_cases": "`Config.ListUsableModels` / 002,007"
+    },
+    {
+      "signature": "GET/PUT `/me/model-selection`",
+      "use_cases": "`Config.ReadSelection/SelectModel` / 002,007"
+    },
+    {
+      "signature": "GET/POST `/me/data-source-configs`",
+      "use_cases": "`Config.ListSources/CreateSource` / 003"
+    },
+    {
+      "signature": "GET/PATCH/DELETE `/me/data-source-configs/{config_id}`",
+      "use_cases": "`Config.ReadSource/UpdateSource/DeleteSource` / 003"
+    },
+    {
+      "signature": "POST `/me/data-source-configs/{config_id}/test`",
+      "use_cases": "`Config.TestSource` / 003"
+    },
+    {
+      "signature": "GET `/admin/users`",
+      "use_cases": "`Admin.ListUsers` / 005"
+    },
+    {
+      "signature": "POST `/admin/users/{user_id}/action-preview`",
+      "use_cases": "`Admin.PreviewAccountAction` / 005"
+    },
+    {
+      "signature": "PATCH `/admin/users/{user_id}`",
+      "use_cases": "`Admin.UpdateAccount` / 005"
+    },
+    {
+      "signature": "POST `/admin/users/{user_id}/reset-password`",
+      "use_cases": "`Admin.ResetPassword` / 005"
+    },
+    {
+      "signature": "DELETE `/admin/users/{user_id}`",
+      "use_cases": "`Admin.DeleteUser` / 005"
+    },
+    {
+      "signature": "GET/POST `/admin/llm-configs`；GET/PATCH/DELETE `/admin/llm-configs/{config_id}`",
+      "use_cases": "`Admin.ManageSystemLLM` / 006"
+    },
+    {
+      "signature": "POST `/admin/llm-configs/{config_id}/test`、`/models/refresh`",
+      "use_cases": "`Admin.TestSystemLLM/RefreshSystemModels` / 006"
+    },
+    {
+      "signature": "GET/POST `/admin/data-source-configs`；GET/PATCH/DELETE `/admin/data-source-configs/{config_id}`",
+      "use_cases": "`Admin.ManageSystemSources` / 006"
+    },
+    {
+      "signature": "POST `/admin/data-source-configs/{config_id}/test`",
+      "use_cases": "`Admin.TestSystemSource` / 006"
+    },
+    {
+      "signature": "GET/PUT `/admin/smtp-config`",
+      "use_cases": "`Admin.ReadSMTP/SaveSMTP` / 006"
+    },
+    {
+      "signature": "POST `/admin/smtp-config/test`",
+      "use_cases": "`Admin.TestSMTPConnection` / 006"
+    },
+    {
+      "signature": "GET/PUT `/admin/security-config`",
+      "use_cases": "`Admin.ReadSecurity/SaveSecurity` / 006"
+    },
+    {
+      "signature": "GET/POST `/projects`",
+      "use_cases": "`Project.List/Create` / 008"
+    },
+    {
+      "signature": "GET/PATCH `P`",
+      "use_cases": "`Project.Read/Update` / 008"
+    },
+    {
+      "signature": "POST `P/action-preview`",
+      "use_cases": "`Project.PreviewLifecycle` / 008"
+    },
+    {
+      "signature": "POST `P/archive`",
+      "use_cases": "`Project.Archive` / 008"
+    },
+    {
+      "signature": "DELETE `P`",
+      "use_cases": "`Project.SoftDelete` / 008"
+    },
+    {
+      "signature": "POST `P/cleanup-preview`",
+      "use_cases": "`Project.PreviewCleanup` / 008"
+    },
+    {
+      "signature": "POST `P/cleanup-confirm`",
+      "use_cases": "`Project.Cleanup` / 008"
+    },
+    {
+      "signature": "GET `P/workspace`",
+      "use_cases": "`Workspace.Open` / 011,013"
+    },
+    {
+      "signature": "PUT `P/workspace/context`",
+      "use_cases": "`Workspace.SaveContext` / 013"
+    },
+    {
+      "signature": "GET/PATCH `CW`",
+      "use_cases": "`Construction.ReadWorkspace/SaveConfig` / 020"
+    },
+    {
+      "signature": "GET/POST `CW/search-terms`",
+      "use_cases": "`Construction.ListTerms/AddTerm` / 020"
+    },
+    {
+      "signature": "GET/PATCH/DELETE `CW/search-terms/{term_id}`",
+      "use_cases": "`Construction.ReadTerm/EditTerm/DeleteTerm` / 020"
+    },
+    {
+      "signature": "POST `CW/search-terms/generate`",
+      "use_cases": "`Construction.GenerateTerms` / 020"
+    },
+    {
+      "signature": "POST `CW/search-terms/{term_id}/confirm`",
+      "use_cases": "`Construction.ConfirmTerm` / 020"
+    },
+    {
+      "signature": "GET/POST `CW/supplements`",
+      "use_cases": "`Construction.ListSupplements/SubmitSupplement` / 023"
+    },
+    {
+      "signature": "POST `CW/supplements/upload`",
+      "use_cases": "`Construction.UploadSupplement` / 023,024"
+    },
+    {
+      "signature": "GET/PATCH `CW/supplements/{supplement_id}`",
+      "use_cases": "`Construction.ReadSupplement/CorrectSupplement` / 023"
+    },
+    {
+      "signature": "GET `CW/supplements/{supplement_id}/file-access`",
+      "use_cases": "`Construction.AccessSupplementFile` / 023,024"
+    },
+    {
+      "signature": "GET `CR/candidates/{candidate_id}/file-access`",
+      "use_cases": "`Construction.AccessCandidateFile` / 024"
+    },
+    {
+      "signature": "GET `CW/supplements/{supplement_id}/files/{document_asset_id}/download`、`CR/candidates/{candidate_id}/files/{document_asset_id}/download`",
+      "use_cases": "`Construction.DownloadUnpublishedFile` / 023,024"
+    },
+    {
+      "signature": "POST `CW/supplements/{supplement_id}/confirm`",
+      "use_cases": "`Construction.ConfirmSupplement` / 023"
+    },
+    {
+      "signature": "GET `CW/pending-revisions`",
+      "use_cases": "`Construction.ListPendingRevisions` / 023,026"
+    },
+    {
+      "signature": "POST `CW/association-clear-preview`",
+      "use_cases": "`Construction.PreviewClearAssociations` / 023,026"
+    },
+    {
+      "signature": "POST `CW/association-clear-confirm`",
+      "use_cases": "`Construction.ClearAssociations` / 023,026"
+    },
+    {
+      "signature": "GET/POST `P/construction-runs`",
+      "use_cases": "`Construction.ListRuns/Start` / 014,020–026"
+    },
+    {
+      "signature": "GET `CR`",
+      "use_cases": "`Construction.ReadRun` / 014–016"
+    },
+    {
+      "signature": "GET `CR/input-revisions`",
+      "use_cases": "`Construction.ReadInputRevisions` / 022"
+    },
+    {
+      "signature": "POST `CR/append-search-terms`",
+      "use_cases": "`Construction.AppendSearchTerms` / 022"
+    },
+    {
+      "signature": "POST `CR/candidates/{candidate_id}/replace-source`",
+      "use_cases": "`Construction.ReplaceCandidateSource` / 023–025"
+    },
+    {
+      "signature": "GET `CR/candidates`、`CR/candidates/{candidate_id}`",
+      "use_cases": "`Construction.ReadCandidates` / 022–025"
+    },
+    {
+      "signature": "PATCH `CR/candidates/{candidate_id}`",
+      "use_cases": "`Construction.EditCandidate` / 017,022,025"
+    },
+    {
+      "signature": "POST `CR/candidates/{candidate_id}/deduplication-decision`",
+      "use_cases": "`Construction.CorrectDeduplication` / 022"
+    },
+    {
+      "signature": "POST `CR/screening/score`",
+      "use_cases": "`Construction.ScoreCandidates` / 022"
+    },
+    {
+      "signature": "POST `CR/candidates/{candidate_id}/analysis/generate`",
+      "use_cases": "`Construction.GenerateAnalysis` / 025"
+    },
+    {
+      "signature": "GET `CR/ingestion-preview`",
+      "use_cases": "`Construction.PreviewIngestion` / 026"
+    },
+    {
+      "signature": "POST `CR/waiting-items/{waiting_item_id}/confirm`",
+      "use_cases": "`Construction.ConfirmStep` / 016,022,024–026"
+    },
+    {
+      "signature": "POST `CR/cancel`",
+      "use_cases": "`Construction.Cancel` / 015"
+    },
+    {
+      "signature": "GET `P/knowledge-versions`、`/{version_id}`",
+      "use_cases": "`Knowledge.ListVersions/ReadVersion` / 012,018"
+    },
+    {
+      "signature": "GET `P/knowledge-version-changes`",
+      "use_cases": "`Knowledge.CompareVersions` / 018"
+    },
+    {
+      "signature": "GET `P/papers`、`P/materials`",
+      "use_cases": "`Knowledge.ListPapers/ListMaterials` / 012"
+    },
+    {
+      "signature": "GET `P/papers/{asset_id}`、`P/materials/{asset_id}`",
+      "use_cases": "`Knowledge.ReadAsset` / 012,028,033"
+    },
+    {
+      "signature": "GET `P/graph`",
+      "use_cases": "`Knowledge.ReadGraph` / 012,028,033"
+    },
+    {
+      "signature": "GET `P/evidence/{evidence_id}`",
+      "use_cases": "`Knowledge.ResolveEvidence` / 028,033"
+    },
+    {
+      "signature": "GET `P/papers/{asset_id}/file-access`、`P/materials/{asset_id}/file-access`",
+      "use_cases": "`Knowledge.AccessFile` / 012,028,033"
+    },
+    {
+      "signature": "GET/POST `P/research-sessions`",
+      "use_cases": "`Research.List/Create` / 014,018,028"
+    },
+    {
+      "signature": "GET `RS`",
+      "use_cases": "`Research.Read` / 011,014,028"
+    },
+    {
+      "signature": "GET `RS/turns`",
+      "use_cases": "`Research.ReadTurns` / 028"
+    },
+    {
+      "signature": "POST `RS/messages`",
+      "use_cases": "`Research.SendMessage` / 028"
+    },
+    {
+      "signature": "GET `RS/attempts/{attempt_id}`",
+      "use_cases": "`Research.ReadAttempt` / 015,028"
+    },
+    {
+      "signature": "POST `RS/attempts/{attempt_id}/cancel`",
+      "use_cases": "`Research.CancelResponse` / 015,028"
+    },
+    {
+      "signature": "POST `RS/attempts/{attempt_id}/continue-without-evidence`",
+      "use_cases": "`Research.ContinueWithoutEvidence` / 028"
+    },
+    {
+      "signature": "POST `RS/fix-evidence-range`",
+      "use_cases": "`Research.FixRange` / 018"
+    },
+    {
+      "signature": "POST `RS/adoption-preview`",
+      "use_cases": "`Research.PreviewAdoption` / 018"
+    },
+    {
+      "signature": "POST `RS/adoptions`",
+      "use_cases": "`Research.AdoptVersion` / 018"
+    },
+    {
+      "signature": "GET/POST `P/review-runs`",
+      "use_cases": "`Review.List/Create` / 014,018,032"
+    },
+    {
+      "signature": "GET `RV`",
+      "use_cases": "`Review.Read` / 011,014,032–035"
+    },
+    {
+      "signature": "GET/PATCH `RV/brief`",
+      "use_cases": "`Review.ReadBrief/EditBrief` / 017,032,035"
+    },
+    {
+      "signature": "POST `RV/brief/action-preview`",
+      "use_cases": "`Review.PreviewBriefEdit` / 017,032"
+    },
+    {
+      "signature": "POST `RV/outline/review`",
+      "use_cases": "`Review.ReviewOutline` / 032"
+    },
+    {
+      "signature": "GET/PATCH `RV/outline`",
+      "use_cases": "`Review.ReadOutline/EditOutline` / 017,032,035"
+    },
+    {
+      "signature": "POST `RV/outline/generate`",
+      "use_cases": "`Review.GenerateOutline` / 032"
+    },
+    {
+      "signature": "POST `RV/outline/confirm`",
+      "use_cases": "`Review.ConfirmOutline` / 032"
+    },
+    {
+      "signature": "GET/PATCH `RV/chapters/{chapter_id}`",
+      "use_cases": "`Review.ReadChapter/EditChapter` / 017,033,035"
+    },
+    {
+      "signature": "POST `RV/chapters/{chapter_id}/generate`",
+      "use_cases": "`Review.GenerateChapter` / 033"
+    },
+    {
+      "signature": "POST `RV/chapters/{chapter_id}/review`",
+      "use_cases": "`Review.ReviewChapter` / 033,035"
+    },
+    {
+      "signature": "POST `RV/chapters/{chapter_id}/confirm`",
+      "use_cases": "`Review.ConfirmChapter` / 033"
+    },
+    {
+      "signature": "POST `RV/chapters/{chapter_id}/issues/{issue_id}/resolve`",
+      "use_cases": "`Review.ResolveChapterIssue` / 033,035"
+    },
+    {
+      "signature": "GET `RV/finalization-preview`",
+      "use_cases": "`Review.PreviewFinalization` / 034"
+    },
+    {
+      "signature": "POST `RV/finalize`",
+      "use_cases": "`Review.Finalize` / 034"
+    },
+    {
+      "signature": "POST `RV/finals/{final_id}/review`",
+      "use_cases": "`Review.ReviewFinal` / 034,035"
+    },
+    {
+      "signature": "GET `RV/finals/{final_id}`",
+      "use_cases": "`Review.ReadFinal` / 034,035"
+    },
+    {
+      "signature": "PATCH `RV/finals/{final_id}`",
+      "use_cases": "`Review.EditFinal` / 017,034,035"
+    },
+    {
+      "signature": "POST `RV/finals/{final_id}/generate-components`",
+      "use_cases": "`Review.RegenerateFinalComponents` / 034"
+    },
+    {
+      "signature": "POST `RV/finals/{final_id}/issues/{issue_id}/resolve`",
+      "use_cases": "`Review.ResolveFinalIssue` / 034,035"
+    },
+    {
+      "signature": "POST `RV/finals/{final_id}/reject`",
+      "use_cases": "`Review.RejectFinal` / 034,035"
+    },
+    {
+      "signature": "POST `RV/complete`",
+      "use_cases": "`Review.Complete` / 034"
+    },
+    {
+      "signature": "GET `RV/finals/{final_id}/download`",
+      "use_cases": "`Review.DownloadFinalMarkdown` / 034,035"
+    },
+    {
+      "signature": "POST `RV/tasks/{task_id}/cancel`",
+      "use_cases": "`Review.CancelGeneration` / 015"
+    },
+    {
+      "signature": "POST `RV/fix-evidence-range`",
+      "use_cases": "`Review.FixRange` / 018"
+    },
+    {
+      "signature": "POST `RV/adoption-preview`",
+      "use_cases": "`Review.PreviewAdoption` / 018"
+    },
+    {
+      "signature": "POST `RV/adoptions`",
+      "use_cases": "`Review.AdoptVersion` / 018"
+    },
+    {
+      "signature": "GET /me/model-selection",
+      "use_cases": "04-01_p0_operation_contracts.md"
+    },
+    {
+      "signature": "GET /admin/smtp-config",
+      "use_cases": "04-01_p0_operation_contracts.md"
+    },
+    {
+      "signature": "GET /admin/security-config",
+      "use_cases": "04-01_p0_operation_contracts.md"
+    },
+    {
+      "signature": "GET P/files/{asset_id}/download?knowledge_version_id=...",
+      "use_cases": "04-01_p0_operation_contracts.md"
+    },
+    {
+      "signature": "GET RV/chapters/{chapter_id}/review-history",
+      "use_cases": "04-01_p0_operation_contracts.md"
+    },
+    {
+      "signature": "GET /tasks/{task_id}",
+      "use_cases": "04-02_transport_task_file_contracts.md"
+    },
+    {
+      "signature": "GET /tasks/{task_id}/result",
+      "use_cases": "04-02_transport_task_file_contracts.md"
+    },
+    {
+      "signature": "GET /tasks/{task_id}/output",
+      "use_cases": "04-02_transport_task_file_contracts.md"
+    },
+    {
+      "signature": "GET /tasks/{task_id}/events",
+      "use_cases": "04-02_transport_task_file_contracts.md"
+    },
+    {
+      "signature": "POST /projects/{project_id}/construction-workspace/supplements/upload",
+      "use_cases": "04-02_transport_task_file_contracts.md"
+    },
+    {
+      "signature": "GET /projects/{project_id}/review-runs/{run_id}/finals/{final_id}/download?expected_revision=...",
+      "use_cases": "04-02_transport_task_file_contracts.md"
+    },
+    {
+      "signature": "GET /capabilities",
+      "use_cases": "04-02_transport_task_file_contracts.md"
+    }
+  ],
+  "typed_operations": [
+    "Account.GetCSRF",
+    "Account.Register",
+    "Account.Login",
+    "Account.Logout",
+    "Account.ReadSelf",
+    "Account.UpdateSelf",
+    "Config.ListLLM",
+    "Config.CreateLLM",
+    "Config.ReadLLM",
+    "Config.UpdateLLM",
+    "Config.DeleteLLM",
+    "Config.ListSources",
+    "Config.CreateSource",
+    "Config.ReadSource",
+    "Config.UpdateSource",
+    "Config.DeleteSource",
+    "Config.ListUsableModels",
+    "Config.ReadSelection",
+    "Config.SelectModel",
+    "Admin.ListUsers",
+    "Admin.ReadSecurity",
+    "Admin.SaveSecurity",
+    "Project.List",
+    "Project.Create",
+    "Project.Read",
+    "Project.Update",
+    "Task.ReadConnectionResult",
+    "Admin.ManageSystemLLM.List",
+    "Admin.ManageSystemLLM.Create",
+    "Admin.ManageSystemLLM.Read",
+    "Admin.ManageSystemLLM.Update",
+    "Admin.ManageSystemLLM.Delete",
+    "Admin.ManageSystemSources.List",
+    "Admin.ManageSystemSources.Create",
+    "Admin.ManageSystemSources.Read",
+    "Admin.ManageSystemSources.Update",
+    "Admin.ManageSystemSources.Delete",
+    "Workspace.Open",
+    "Workspace.SaveContext",
+    "Admin.ReadSMTP",
+    "Admin.SaveSMTP",
+    "System.ReadCapabilities"
+  ],
+  "request_only_operations": [
+    "Config.TestLLM",
+    "Config.RefreshModels",
+    "Config.TestSource",
+    "Admin.TestSystemLLM",
+    "Admin.RefreshSystemModels",
+    "Admin.TestSystemSource",
+    "Admin.TestSMTPConnection",
+    "Project.Archive",
+    "Project.Cleanup",
+    "Construction.SaveConfig",
+    "Construction.ConfirmTerm",
+    "Construction.ConfirmSupplement",
+    "Construction.ClearAssociations",
+    "Construction.AppendSearchTerms",
+    "Construction.ReplaceCandidateSource",
+    "Construction.ScoreCandidates",
+    "Construction.GenerateAnalysis",
+    "Construction.ConfirmStep",
+    "Construction.Cancel",
+    "Research.SendMessage",
+    "Research.CancelResponse",
+    "Research.ContinueWithoutEvidence",
+    "Research.FixRange",
+    "Review.Create",
+    "Review.ReviewOutline",
+    "Review.GenerateOutline",
+    "Review.ConfirmOutline",
+    "Review.EditChapter",
+    "Review.GenerateChapter",
+    "Review.ReviewChapter",
+    "Review.ConfirmChapter",
+    "Review.ResolveChapterIssue",
+    "Review.ReviewFinal",
+    "Review.EditFinal",
+    "Review.RegenerateFinalComponents",
+    "Review.ResolveFinalIssue",
+    "Review.RejectFinal",
+    "Review.Complete",
+    "Review.CancelGeneration",
+    "Review.FixRange"
+  ],
+  "event_payloads_typed": [
+    "status",
+    "delta",
+    "warning",
+    "done"
+  ],
+  "coverage_level": "request/success shapes only; not full HTTP or business acceptance",
+  "gaps": [
+    {
+      "id": "GAP-ERROR",
+      "kind": "design-detail-missing",
+      "scope": "all operations; SSE error",
+      "reason": "Safe error details/recovery fields lack a closed vocabulary; no permissive object schema substituted."
+    },
+    {
+      "id": "GAP-TASK",
+      "kind": "design-detail-missing",
+      "scope": "TaskHandle/TaskView, all asynchronous response operations",
+      "reason": "Task target types are examples, not exhaustive; waiting_items reference shape is not closed. No generic object or invented enumeration."
+    },
+    {
+      "id": "GAP-CONFIRM",
+      "kind": "design-detail-missing",
+      "scope": "ConfirmationPreview and operations returning confirmations",
+      "reason": "affected_items/retained_items remain object[] without named fields."
+    },
+    {
+      "id": "GAP-REMAINING",
+      "kind": "not-yet-transcribed",
+      "scope": "all source_rows whose use case is absent from typed_operations",
+      "reason": "Operation inventory is tracked, but remaining request/success DTOs have not been mechanically transcribed. This is not a new business decision or a phase change."
+    },
+    {
+      "id": "GAP-SSE",
+      "kind": "not-yet-transcribed",
+      "scope": "citation payload, complete event envelope, Task output and SSE endpoint",
+      "reason": "EvidenceRef cross-field/locator/target constraints and stream envelope have not been fully transferred. Four payload schemas alone do not validate complete SSE messages."
+    },
+    {
+      "id": "GAP-RUNTIME",
+      "kind": "implementation-verification",
+      "scope": "all operations",
+      "reason": "SMTP auth_type-dependent fields, Workspace draft uniqueness by object/part, authorization, origin/CSRF, error filtering, revisions, idempotency, finite model capability values, atomic snapshots and state transitions require runtime tests; no application exists."
+    }
+  ],
+  "normative_fingerprints": {
+    "04_api_contracts.md": "473a3f0499a3b3bea7e07151b847aa97cb36e5a38f525722baa776c79c809c2a",
+    "04-01_p0_operation_contracts.md": "2d2f791b647edc7d5affd194b2fd8ba529ca01ee8c47b9e325a79976c9d34429",
+    "04-02_transport_task_file_contracts.md": "dd45e177573c956d29223f2f28b7b1302848e1672c7f699e3db573003f7c61b5"
+  },
+  "operation_coverage": {
+    "Account.GetCSRF": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Account.Register": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Account.Login": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Account.Logout": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Account.ReadSelf": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Account.UpdateSelf": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.ListLLM": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.CreateLLM": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.ReadLLM": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.UpdateLLM": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.DeleteLLM": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.ListSources": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.CreateSource": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.ReadSource": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.UpdateSource": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.DeleteSource": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.ListUsableModels": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.ReadSelection": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.SelectModel": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ListUsers": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ReadSecurity": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.SaveSecurity": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Project.List": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Project.Create": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Project.Read": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Project.Update": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Task.ReadConnectionResult": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemLLM.List": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemLLM.Create": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemLLM.Read": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemLLM.Update": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemLLM.Delete": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemSources.List": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemSources.Create": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemSources.Read": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemSources.Update": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ManageSystemSources.Delete": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Workspace.Open": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Workspace.SaveContext": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ReadSMTP": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.SaveSMTP": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "System.ReadCapabilities": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Config.TestLLM": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Config.RefreshModels": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Config.TestSource": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Admin.TestSystemLLM": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Admin.RefreshSystemModels": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Admin.TestSystemSource": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Admin.TestSMTPConnection": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Project.Archive": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Project.Cleanup": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.SaveConfig": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.ConfirmTerm": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.ConfirmSupplement": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.ClearAssociations": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.AppendSearchTerms": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.ReplaceCandidateSource": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.ScoreCandidates": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.GenerateAnalysis": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Construction.ConfirmStep": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Construction.Cancel": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Research.SendMessage": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Research.CancelResponse": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Research.ContinueWithoutEvidence": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Research.FixRange": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.Create": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.ReviewOutline": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.GenerateOutline": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Review.ConfirmOutline": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.EditChapter": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.GenerateChapter": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-TASK"
+      ]
+    },
+    "Review.ReviewChapter": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.ConfirmChapter": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.ResolveChapterIssue": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.ReviewFinal": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.EditFinal": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.RegenerateFinalComponents": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.ResolveFinalIssue": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.RejectFinal": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.Complete": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.CancelGeneration": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    },
+    "Review.FixRange": {
+      "status": "request-only",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME",
+        "GAP-REMAINING"
+      ]
+    }
+  },
+  "row_coverage": [
+    {
+      "source_row_index": 0,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.PreviewTermGeneration",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 1,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.PreviewScoring",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 2,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.PreviewAnalysisGeneration",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 3,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.PreviewOutlineAction",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 4,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.PreviewChapterAction",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 5,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.PreviewFinalAction",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 6,
+      "status": "partial",
+      "typed_operations": {
+        "Account.GetCSRF": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 7,
+      "status": "partial",
+      "typed_operations": {
+        "System.ReadCapabilities": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 8,
+      "status": "partial",
+      "typed_operations": {
+        "Account.Register": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 9,
+      "status": "partial",
+      "typed_operations": {
+        "Account.Login": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 10,
+      "status": "partial",
+      "typed_operations": {
+        "Account.Logout": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 11,
+      "status": "partial",
+      "typed_operations": {
+        "Account.ReadSelf": "request-success-partial",
+        "Account.UpdateSelf": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 12,
+      "status": "partial",
+      "typed_operations": {
+        "Config.ListLLM": "request-success-partial",
+        "Config.CreateLLM": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 13,
+      "status": "partial",
+      "typed_operations": {
+        "Config.ReadLLM": "request-success-partial",
+        "Config.UpdateLLM": "request-success-partial",
+        "Config.DeleteLLM": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 14,
+      "status": "partial",
+      "typed_operations": {
+        "Config.TestLLM": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 15,
+      "status": "partial",
+      "typed_operations": {
+        "Config.RefreshModels": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 16,
+      "status": "partial",
+      "typed_operations": {
+        "Config.ListUsableModels": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 17,
+      "status": "partial",
+      "typed_operations": {
+        "Config.ReadSelection": "request-success-partial",
+        "Config.SelectModel": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 18,
+      "status": "partial",
+      "typed_operations": {
+        "Config.ListSources": "request-success-partial",
+        "Config.CreateSource": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 19,
+      "status": "partial",
+      "typed_operations": {
+        "Config.ReadSource": "request-success-partial",
+        "Config.UpdateSource": "request-success-partial",
+        "Config.DeleteSource": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 20,
+      "status": "partial",
+      "typed_operations": {
+        "Config.TestSource": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 21,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.ListUsers": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 22,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Admin.PreviewAccountAction",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 23,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Admin.UpdateAccount",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 24,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Admin.ResetPassword",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 25,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Admin.DeleteUser",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 26,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.ManageSystemLLM.List": "request-success-partial",
+        "Admin.ManageSystemLLM.Create": "request-success-partial",
+        "Admin.ManageSystemLLM.Read": "request-success-partial",
+        "Admin.ManageSystemLLM.Update": "request-success-partial",
+        "Admin.ManageSystemLLM.Delete": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 27,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.TestSystemLLM": "request-only",
+        "Admin.RefreshSystemModels": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 28,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.ManageSystemSources.List": "request-success-partial",
+        "Admin.ManageSystemSources.Create": "request-success-partial",
+        "Admin.ManageSystemSources.Read": "request-success-partial",
+        "Admin.ManageSystemSources.Update": "request-success-partial",
+        "Admin.ManageSystemSources.Delete": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 29,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.TestSystemSource": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 30,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.ReadSMTP": "request-success-partial",
+        "Admin.SaveSMTP": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 31,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.TestSMTPConnection": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 32,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.ReadSecurity": "request-success-partial",
+        "Admin.SaveSecurity": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 33,
+      "status": "partial",
+      "typed_operations": {
+        "Project.List": "request-success-partial",
+        "Project.Create": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 34,
+      "status": "partial",
+      "typed_operations": {
+        "Project.Read": "request-success-partial",
+        "Project.Update": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 35,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Project.PreviewLifecycle",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 36,
+      "status": "partial",
+      "typed_operations": {
+        "Project.Archive": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 37,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Project.SoftDelete",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 38,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Project.PreviewCleanup",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 39,
+      "status": "partial",
+      "typed_operations": {
+        "Project.Cleanup": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 40,
+      "status": "partial",
+      "typed_operations": {
+        "Workspace.Open": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 41,
+      "status": "partial",
+      "typed_operations": {
+        "Workspace.SaveContext": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 42,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.SaveConfig": "request-only"
+      },
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ReadWorkspace",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 43,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ListTerms",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Construction.AddTerm",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 44,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ReadTerm",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Construction.EditTerm",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Construction.DeleteTerm",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 45,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.GenerateTerms",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 46,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ConfirmTerm": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 47,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ListSupplements",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Construction.SubmitSupplement",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 48,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.UploadSupplement",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 49,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ReadSupplement",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Construction.CorrectSupplement",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 50,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.AccessSupplementFile",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 51,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.AccessCandidateFile",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 52,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.DownloadUnpublishedFile",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 53,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ConfirmSupplement": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 54,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ListPendingRevisions",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 55,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.PreviewClearAssociations",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 56,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ClearAssociations": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 57,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ListRuns",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Construction.Start",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 58,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ReadRun",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 59,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ReadInputRevisions",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 60,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.AppendSearchTerms": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 61,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ReplaceCandidateSource": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 62,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ReadCandidates",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 63,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.EditCandidate",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 64,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.CorrectDeduplication",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 65,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ScoreCandidates": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 66,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.GenerateAnalysis": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 67,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.PreviewIngestion",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 68,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ConfirmStep": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 69,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.Cancel": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 70,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Knowledge.ListVersions",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Knowledge.ReadVersion",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 71,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Knowledge.CompareVersions",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 72,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Knowledge.ListPapers",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Knowledge.ListMaterials",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 73,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Knowledge.ReadAsset",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 74,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Knowledge.ReadGraph",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 75,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Knowledge.ResolveEvidence",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 76,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Knowledge.AccessFile",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 77,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Research.List",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Research.Create",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 78,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Research.Read",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 79,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Research.ReadTurns",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 80,
+      "status": "partial",
+      "typed_operations": {
+        "Research.SendMessage": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 81,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Research.ReadAttempt",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 82,
+      "status": "partial",
+      "typed_operations": {
+        "Research.CancelResponse": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 83,
+      "status": "partial",
+      "typed_operations": {
+        "Research.ContinueWithoutEvidence": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 84,
+      "status": "partial",
+      "typed_operations": {
+        "Research.FixRange": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 85,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Research.PreviewAdoption",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 86,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Research.AdoptVersion",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 87,
+      "status": "partial",
+      "typed_operations": {
+        "Review.Create": "request-only"
+      },
+      "remaining": [
+        {
+          "use_case_or_route": "Review.List",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 88,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.Read",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 89,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.ReadBrief",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Review.EditBrief",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 90,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.PreviewBriefEdit",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 91,
+      "status": "partial",
+      "typed_operations": {
+        "Review.ReviewOutline": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 92,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.ReadOutline",
+          "gap": "GAP-REMAINING"
+        },
+        {
+          "use_case_or_route": "Review.EditOutline",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 93,
+      "status": "partial",
+      "typed_operations": {
+        "Review.GenerateOutline": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 94,
+      "status": "partial",
+      "typed_operations": {
+        "Review.ConfirmOutline": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 95,
+      "status": "partial",
+      "typed_operations": {
+        "Review.EditChapter": "request-only"
+      },
+      "remaining": [
+        {
+          "use_case_or_route": "Review.ReadChapter",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 96,
+      "status": "partial",
+      "typed_operations": {
+        "Review.GenerateChapter": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 97,
+      "status": "partial",
+      "typed_operations": {
+        "Review.ReviewChapter": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 98,
+      "status": "partial",
+      "typed_operations": {
+        "Review.ConfirmChapter": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 99,
+      "status": "partial",
+      "typed_operations": {
+        "Review.ResolveChapterIssue": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 100,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.PreviewFinalization",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 101,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.Finalize",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 102,
+      "status": "partial",
+      "typed_operations": {
+        "Review.ReviewFinal": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 103,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.ReadFinal",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 104,
+      "status": "partial",
+      "typed_operations": {
+        "Review.EditFinal": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 105,
+      "status": "partial",
+      "typed_operations": {
+        "Review.RegenerateFinalComponents": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 106,
+      "status": "partial",
+      "typed_operations": {
+        "Review.ResolveFinalIssue": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 107,
+      "status": "partial",
+      "typed_operations": {
+        "Review.RejectFinal": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 108,
+      "status": "partial",
+      "typed_operations": {
+        "Review.Complete": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 109,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.DownloadFinalMarkdown",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 110,
+      "status": "partial",
+      "typed_operations": {
+        "Review.CancelGeneration": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 111,
+      "status": "partial",
+      "typed_operations": {
+        "Review.FixRange": "request-only"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 112,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.PreviewAdoption",
+          "gap": "GAP-CONFIRM"
+        }
+      ]
+    },
+    {
+      "source_row_index": 113,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "Review.AdoptVersion",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 114,
+      "status": "partial",
+      "typed_operations": {
+        "Config.ReadSelection": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 115,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.ReadSMTP": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 116,
+      "status": "partial",
+      "typed_operations": {
+        "Admin.ReadSecurity": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 117,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "GET P/files/{asset_id}/download?knowledge_version_id=...",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 118,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "GET RV/chapters/{chapter_id}/review-history",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 119,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "GET /tasks/{task_id}",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 120,
+      "status": "partial",
+      "typed_operations": {
+        "Task.ReadConnectionResult": "request-success-partial"
+      },
+      "remaining": []
+    },
+    {
+      "source_row_index": 121,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "GET /tasks/{task_id}/output",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 122,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "GET /tasks/{task_id}/events",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 123,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "POST /projects/{project_id}/construction-workspace/supplements/upload",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 124,
+      "status": "not-typed",
+      "typed_operations": {},
+      "remaining": [
+        {
+          "use_case_or_route": "GET /projects/{project_id}/review-runs/{run_id}/finals/{final_id}/download?expected_revision=...",
+          "gap": "GAP-REMAINING"
+        }
+      ]
+    },
+    {
+      "source_row_index": 125,
+      "status": "partial",
+      "typed_operations": {
+        "System.ReadCapabilities": "request-success-partial"
+      },
+      "remaining": []
+    }
+  ]
+}

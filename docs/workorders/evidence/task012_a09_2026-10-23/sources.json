@@ -1,0 +1,38 @@
+{
+  "checked_on": "2026-10-23",
+  "method": "web read-only official documentation/model card; no installation, dataset upload or model inference",
+  "sources": [
+    {
+      "url": "https://github.com/pgvector/pgvector",
+      "basis": "exact/cosine support; ANN filtering after scan warning; no project correctness guarantee"
+    },
+    {
+      "url": "https://www.postgresql.org/docs/17/queries-with.html",
+      "basis": "materialized CTE and recursive query mechanisms"
+    },
+    {
+      "url": "https://huggingface.co/intfloat/multilingual-e5-base",
+      "basis": "768 dimensions,512 tokenizer example,query/passage prefixes,pooling/normalization,MIT; project quality untested"
+    },
+    {
+      "url": "https://github.com/HKUDS/LightRAG",
+      "basis": "graph/text retrieval and storage adapters; workspace isolation alone insufficient for project immutable versions"
+    },
+    {
+      "url": "https://microsoft.github.io/graphrag/query/overview/",
+      "basis": "local graph+text and global community reports"
+    },
+    {
+      "url": "https://microsoft.github.io/graphrag/index/default_dataflow/",
+      "basis": "text units,graph extraction,communities and embedding stages"
+    },
+    {
+      "url": "https://qdrant.tech/documentation/search/filtering/",
+      "basis": "payload filtering,not proof of project snapshot semantics"
+    },
+    {
+      "url": "https://neo4j.com/docs/cypher-manual/current/queries/",
+      "basis": "graph query language,not proof of project authorization"
+    }
+  ]
+}

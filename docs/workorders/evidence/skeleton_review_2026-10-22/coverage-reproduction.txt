@@ -1,0 +1,13 @@
+LIVE_STATUS_201_MUTANT exit: 0
+.                                                                        [100%]
+=============================== warnings summary ===============================
+../../../../../../../Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1 passed, 1 warning in 0.18s
+
+
+WORKER_STUCK: external 4s deadline hit; pytest is blocked before communicate(timeout=10).
+Isolated pytest/worker process group killed; temporary files removed on exit.

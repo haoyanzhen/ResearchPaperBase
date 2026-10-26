@@ -1,0 +1,17 @@
+{
+  "task": "task015",
+  "stage": "S7 engineering complete; M-B02-01 pending human acceptance",
+  "delivery_manifest_sha256": "e6ce09609b86c046b5bee32a6f0dc26e6888ff610ba9013e25f91e9b6037205e",
+  "review_manifest_sha256": "bee6a8d5d3d88917387509631463e85bc7d351431386b94ef781d4a1a8f6ab01",
+  "verification": {
+    "postgres": "17.11",
+    "storage_cases": 27,
+    "backend_cases": 82,
+    "contract_cases": 66,
+    "frontend_cases": 3,
+    "build": 0,
+    "clean_install": 0,
+    "independent_review": "R01/R02 closed"
+  },
+  "files": 209
+}

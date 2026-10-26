@@ -1,0 +1,37 @@
+[
+  {
+    "mutation": "request loses revision requirement",
+    "detected": true,
+    "assertion_failures": 2
+  },
+  {
+    "mutation": "CSRF marked optional",
+    "detected": true,
+    "assertion_failures": 1
+  },
+  {
+    "mutation": "scope expands across projects",
+    "detected": true,
+    "assertion_failures": 1
+  },
+  {
+    "mutation": "success permits missing source",
+    "detected": true,
+    "assertion_failures": 3
+  },
+  {
+    "mutation": "readonly content revision unbounded",
+    "detected": true,
+    "assertion_failures": 6
+  },
+  {
+    "mutation": "provenance loses trusted scope restrictions",
+    "detected": true,
+    "assertion_failures": 66
+  },
+  {
+    "mutation": "error response loses no-store",
+    "detected": true,
+    "assertion_failures": 1
+  }
+]

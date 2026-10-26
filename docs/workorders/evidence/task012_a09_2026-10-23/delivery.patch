@@ -1,0 +1,444 @@
+--- before/docs/design/00-01_engineering_baseline.md
++++ after/docs/design/00-01_engineering_baseline.md
+@@ -1,7 +1,7 @@
+ # 新核心最小工程基线
+ 
+-文档版本：v1.1
+-更新日期：2026-10-22
++文档版本：v1.2
++更新日期：2026-10-23
+ 依据：[00](00_layers.md)、[05-01](05-01_internal_module_contracts.md)、[07](07_data_persistence.md)、[08](08_security_permissions.md)、[10](10_operations_deployment.md)
+ 
+ ## 1. 决策范围
+@@ -21,7 +21,7 @@
+ | 数据访问 | 应用UoW封装同步SQLAlchemy事务；API阻塞数据库调用在受控线程执行 | 单事务独立Session，不跨线程/请求共享；SSE等待不占数据库事务/连接，外部调用不在事务内 |
+ | 文件与凭据 | FileStore使用本地持久目录、不可变对象key和独立临时目录；SecretStore使用关系库密文记录、部署外置本地加密主密钥 | 下载经应用鉴权；主密钥不入源码/数据库/日志；不维护历史Provider key；成熟加密库及恢复验证随适配器任务落实，不新增用户密钥管理功能 |
+ | 执行与流 | PostgreSQL命令/Task/outbox及持久事件，Worker轮询领取；SSE读取持久投影 | 进程内队列不是唯一任务记录；P0不依赖Scheduler/邮件推送；轮询/租约参数随实现验证 |
+-| 向量与图谱 | Knowledge拥有VectorStore/GraphStore端口，具体产品/索引算法留A09 | 不采纳pgvector、独立图数据库或013候选；未配置能力时相关操作安全拒绝，不用空结果/JSON占位伪装可用 |
++| 向量与图谱 | Knowledge拥有VectorStore/GraphStore端口，首版方案见[06 A09](06_agent_knowledge_services.md#a09-首版知识构建与graph-rag方案)及07映射 | 本轮仅设计；能力未实现仍安全拒绝，不用空结果/JSON占位伪装可用；Memory未采纳 |
+ | 验证 | pytest、Ruff及Python类型检查；TypeScript、Vitest/Testing Library；Playwright浏览器链路 | 工具补丁及插件随锁文件验证；单元、真实存储集成、端到端分开报告，不按数量替代验收 |
+ 
+ 本表固定技术方向与运行时版本线，不把尚未安装的依赖组合称为可运行基线。首次交付记录Python/Node/npm/uv/PostgreSQL和直接依赖准确版本、锁文件摘要及干净安装结果。安全补丁和常规兼容修复可在授权工程任务内处理；更换框架/数据库更新本决策及验证，不默认升级为产品决策。
+@@ -110,7 +110,7 @@
+ - 暂不引入独立队列/Redis：先验证现有关系库原子受理；以后替换适配器保持相同契约。
+ - 不引入SSR或按层拆服务：现行同源工作台无此新增运行需求。
+ - 不用SQLite、内存任务或可变Project索引代替真实持久/隔离验收。
+-- Graph/向量产品留A09/H01；若影响本基线，记录工程差异，不静默替换。
++- Graph/向量首版方案由A09维护；本轮H01限定恢复见task012，独立受控嵌入进程不改变API/Worker版本；推理环境兼容仍待实施验证。
+ - 旧数据保留留H02：未知时不接触旧环境，新隔离设计可继续；不决定删除/迁移。
+ - 保留期限、备份周期、RPO/RTO和容量留H03/10 §9，不设默认数字；它们阻塞相关自动清理和生产承诺，不阻塞本地设计。
+ 
+--- before/docs/design/05-01_internal_module_contracts.md
++++ after/docs/design/05-01_internal_module_contracts.md
+@@ -1,6 +1,6 @@
+ # 内部模块与执行契约
+ 
+-文档版本：v1.7
++文档版本：v1.8
+ 更新日期：2026-10-23
+ 依据文档：[00](00_layers.md)、[02](02_domain_core.md)、[04](04_api_contracts.md)、[05](05_application_use_cases.md)、[06](06_agent_knowledge_services.md)
+ 
+@@ -194,3 +194,8 @@
+ 
+ 应用核验实际scope类别、对象/Project/输入与当前资格，再允许提交；两个WriteScope即便文件相同也不能互换。补充纳入必须另建候选范围与固定来源映射，不能把解析器成功当纳入或确认。重试沿06 A08.4有限预算，当前policy/静态处理分流沿A06；补充详情及Task事件沿A07，不新增运行状态。
+ 
++
++## A09 知识构建与读取接缝
++
++[06 A09](06_agent_knowledge_services.md#a09-首版知识构建与graph-rag方案)维护KnowledgeBuildInput/BuildProfile、ChunkRecord、GraphAssertion、KnowledgeReadyProof、KnowledgeQuery及EvidencePack具名结构；PrepareCandidate返回隔离产物，ValidateCandidate读回生成就绪证明，CompleteConstruction仍是唯一发布入口。Retrieve/TraverseGraph只接收固定ReadContext，不使用SupplementWriteScope，不接受模型自报的版本/授权。Graph路径需返回原文支持，同版empty与Err分型；模型dispatch前及新结果提交继续沿A06核验，A09不绕过04公共错误和A07任务边界。
++
+--- before/docs/design/06_agent_knowledge_services.md
++++ after/docs/design/06_agent_knowledge_services.md
+@@ -1,6 +1,6 @@
+ # Agent & Knowledge Services 设计
+ 
+-文档版本：v1.13
++文档版本：v1.14
+ 更新日期：2026-10-23
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -265,3 +265,82 @@
+ 
+ 技术重试由单一应用策略控制：同一task/attempt与不变输入/配置/资格，adapter不得嵌套无限重试。`PreparationRetryBudget={max_retries:integer,timeout_ms:integer}`由服务端部署配置冻结；max_retries有限且≥0、timeout_ms>0，具体值在实现/容量验证时登记，不设产品新门槛。仅确认可安全重试的瞬时获取/解析基础设施故障可用剩余预算；内容损坏/加密/无文本、格式不支持、缺解析器、模型结构无效、政策/权限/修订变化不能用原请求盲重试。外部结果或业务提交未知先核查持久结果，重复结果幂等提交；重试耗尽留安全诊断和失败，不新建用户恢复入口。每次尝试重验当前授权/资料使用，静态处理与模型使用按A06分流。
+ 
++
++## A09 首版知识构建与Graph-RAG方案
++
++本节是task012首版方案的维护位置，待人工审核，未实现/安装或性能验收。沿用A01/A02单部署、A06当前资料策略、A08最终文本与定位；H01由2026-10-23用户明确推进A09的指令恢复，仅P0知识构建/检索/存储选型。013为历史候选参考，不采纳其MemoryRetriever/user_memory，不引入跨Project知识或新的后台自动任务。
++
++### A09.1 选择与兼容性
++
++首版采用PostgreSQL 17 + pgvector 0.8维护线的精确余弦检索，图谱采用同库不可变节点/断言/证据关联表和有界邻接查询，原始文件与文本仍用A02本地FileStore。不直接嵌入第三方GraphRAG运行框架，不新建图数据库或远程向量服务。具体补丁、驱动、模型权重/运行库在实施锁定并做干净安装；本轮不下载模型、不连接业务库、不发真实推理请求。
++
++| 候选 | 官方可核对能力 | 本项目适配判断与决定 |
++| --- | --- | --- |
++| PostgreSQL + pgvector + 关系图谱 | pgvector支持精确/近似距离检索；PostgreSQL支持递归查询/物化CTE | 采用。复用既有部署和事务，Project/视图约束可共同核验；图遍历需自建有界查询，精确扫描成本随允许集增长，容量待实测 |
++| Qdrant + 独立图存储 | Qdrant提供payload过滤；向量过滤不自动提供图谱/业务事务 | 保留替换路径。本轮不增加服务；需额外证明不可变视图、读屏障、政策过滤与跨存储失败恢复 |
++| Neo4j + 向量存储 | Cypher可表达图查询 | 保留替换路径。图语言不能代替项目版本/依赖规则，额外部署/权限/回收成本暂不引入 |
++| LightRAG框架 | 双层图/文本检索与可替换存储 | 借鉴混合召回思路，不直接采纳其可变workspace生命周期；必须另证版本固定、受控写入及当前政策，框架workspace隔离不等于KnowledgeVersion隔离 |
++| Microsoft GraphRAG | local结合实体图与原文，global使用社区报告 | 不作为首版执行框架。首版无全库社区报告预计算；广泛综述仍按已有Review流程多次同版检索，不把局部结果说成全库穷尽 |
++
++查证于2026-10-23：[pgvector官方](https://github.com/pgvector/pgvector)、[PostgreSQL 17 CTE](https://www.postgresql.org/docs/17/queries-with.html)、[Qdrant filtering](https://qdrant.tech/documentation/search/filtering/)、[Neo4j Cypher](https://neo4j.com/docs/cypher-manual/current/queries/)、[LightRAG官方](https://github.com/HKUDS/LightRAG)、[GraphRAG查询](https://microsoft.github.io/graphrag/query/overview/)、[GraphRAG构建](https://microsoft.github.io/graphrag/index/default_dataflow/)。上述为能力依据，不是项目兼容/质量结论；表中采用判断为本项目工程推断。
++
++嵌入初始profile选择本地`intfloat/multilingual-e5-base`：768维、query/passage前缀分别编码、平均池化及L2归一化；实现时严格使用`query: `和`passage: `，单输入含前缀/特殊token不得超过512。依据[作者模型卡](https://huggingface.co/intfloat/multilingual-e5-base)；多语种支持不证明本项目中英论文质量。模型MIT许可需随权重保留，下载/许可/准确revision及摘要由实施记录。本地EmbeddingProvider为独立受控进程端口，可使用单独锁定的推理环境，避免假定PyTorch等已兼容应用CPython 3.14；API/Worker仍保持A02环境。IPC只限本部署，启动检查实际模型/维度/摘要；不开放第三方托管推理、不自动回落到付费端点。它仍是Agent资料使用，每次嵌入/查询均按A06校验；本轮不分配GPU或承诺容量。
++
++`EmbeddingProfile={profile_id,model_id,weights_revision,weights_digest,tokenizer_revision,dimension,normalization,distance,query_prefix,passage_prefix,runtime_digest}`，全必填；初值dimension=768、normalization=l2、distance=cosine。profile_id为全配置不可变摘要身份；零向量/NaN/维度错误拒绝。旧版本查询必须用原向量profile，权重不可用报依赖不可用，不用新模型查询旧向量。更换模型/分块/抽取规则只能创建新的构建产物和版本；保留旧读取依赖。该profile是部署能力而非新增用户模型选择字段，构建LLM抽取继续使用Run冻结的既有配置与当前凭据。
++
++### A09.2 输入、分块与可定位证据
++
++构建只消费本次允许纳入且按既定规则确认的paper/material最终文本、元数据及确认分析；输入分别沿CandidateWriteScope和受保护基线ReadContext，不把独立SupplementWriteScope当索引资格。失败/排除文本、版本外candidate_sources、会话偏好/草稿/Memory不进入知识索引。分析用于辅助抽取时记录实际依赖，但事实支持必须回到最终文本/具名元数据；不能把生成分析当来源事实。
++
++`BuildProfile={embedding_profile_id,chunker_revision,extractor_schema_revision,extractor_prompt_revision,extractor_config_digest,graph_rules_revision,lexical_revision}`；`KnowledgeBuildInput={execution,scope,candidate_manifest_digest,input_revision,base_version_id:null|ID,build_profile,confirmed_inputs:BuildAssetInput[]}`。`BuildAssetInput={asset_kind:paper|material,asset_id,asset_revision,processing_revision,processing_confirmation_revision,text:PreparedTextRef,analysis_basis:AnalysisBasis|null,metadata_revision}`。BuildProfile身份为全部字段的规范化摘要；extractor_config_digest覆盖Run冻结的解析模型ID/可取得的模型修订、Provider配置修订及影响输出的参数，不含凭据；无法证明相同模型/config时禁止按旧profile复用。凭据轮换继续按08重解析，不把密钥持久化。字段全部必填，ID/Revision沿04；实际输入还含A06完整InputDependencySet，由应用核验，不信任模型宣称的输入集合。入库确认/合法纯移除路径沿原用例，不为被排除资产强造文本或分析。
++
++首版chunker采用固定E5 tokenizer：按段落/句子边界优先，正文目标最多384 token，长段以token边界拆，前片尾最多64 token重叠；每次至少向前推进，空白不建片段。实际编码前再次计含前缀token，超过512拒绝/重分块，不静默截断。跨页可切分或分列原定位，不合并不同text_revision/asset；摘要始终标abstract_fallback。文本使用A08规范文本原样切片，不为了检索归一化改写引用文本；token偏移映射回Unicode码点，组合字符、中文、emoji必须测试。
++
++`ChunkRecord={chunk_id,project_id,asset_kind,asset_id,asset_revision,text_revision_id,start_offset,end_offset,text_digest,source_kind,locator_segments:PreparedTextSegment[],dependency_set,chunker_revision}`；内容为规范文本[start,end)，start<end，所有locator须同文本且覆盖所用片段。应用分配ID，语义去重键为Project/资产修订/文本修订/范围/chunker，重复投递复用；重叠片段可分别保存但包装上下文时去重。来自同一字节的跨Project资产不能复用访问身份。已发布引用通过04-01 EvidenceRef分配版本专属身份，不能把chunk_id当通用公开证据ID。
++
++### A09.3 最小图谱与来源
++
++所有节点和边均属于Project及不可变graph_view；不能指向全局可变“最新图”。最小节点kind：paper、material、chunk、author、concept、method、dataset、keyword。paper关联全局PaperIdentity仅作身份辅助，访问仍限Project成员；作者按有依据标识或本来源名称区分，不因同名合并人物。无资料作者时不制造author。
++
++边为类型化断言：chunk→paper/material的belongs_to；paper→author的authored_by；paper→paper的cites（目标必须也在当前清单，外部参考仅作来源文字）；paper/material/chunk→concept/keyword的mentions；paper/material→method的uses_method和→dataset的uses_dataset；concept/method/dataset之间related_to仅表示有原文支持的关联，不推断因果/支持结论。相似向量只用于排序，不能生成无依据related_to；结构归属边不是语义事实。
++
++`GraphNodeRecord={node_id,project_id,graph_view_id,kind,identity_key,label_variants:GraphLabel[]}`；`GraphLabel={label,source:GraphSupport,dependency_set}`。`GraphAssertion={edge_id,project_id,graph_view_id,source_node_id,target_node_id,predicate,supports:GraphSupport[],confidence:number|null,extractor_revision,dependency_set}`。`GraphSupport`为`{kind:text,chunk_id,text_revision_id,start_offset,end_offset}`或`{kind:metadata,asset_id,asset_revision,metadata_revision,field}`。只支持上述闭合节点/谓词；每个语义断言至少一个实际支持，文字支持必须校验原文范围，元数据支持只允许authored_by、身份/已核验引用等可由对应字段直接得出的事实。confidence是抽取估计不等于事实可信或发布质量门槛；无法落地支持的提案拒绝，不补造引文。
++
++LLM用固定schema从已允许chunk抽取实体/关系，输入限制每次单chunk及明确的本资产元数据，返回端点候选、谓词、原文span和估计值；应用校验span、类型和支持，保存抽取依赖。注入文字被当数据，不能执行SQL/工具、发布或指示访问其他来源。无实体/关系是合法空抽取，记录已执行且校验通过；错误/超时/无效结构是失败，不能拿空图冒充成功。结构节点/归属边始终由确定性映射产生。
++
++身份按kind分别定义：paper/material使用Project内asset_id+asset_revision，不能按同标题合并；chunk使用chunk_id；author只在有同一已核验外部作者标识时合并，否则使用来源asset_revision+作者序号，两个同名作者保持独立。concept/method/dataset/keyword可按同Project+kind+规范化标签精确聚合（Unicode NFKC、casefold、压缩空白），这里只表示同标签召回分组，不是同名实体真实同一的断言；原文限定/来源保留，不能据此自动推理等价或因果。别名/同义词不由模糊LLM自动合并，保留多标签或独立节点及证据供后续评估。字典identity_key仅索引身份，标签及关系保留各来源断言，不存混合来源的无依赖总摘要。读取时先过滤每条label/assertion的完整依赖，再构造允许图；同节点的私人标签不使公共标签泄漏，也不能以一条公共支持洗白混合生成断言。一个断言由多个输入共同推导则按全输入依赖判定，只有分别生成的独立断言才可分别授权。无允许标签/支持的节点不可作为扩展桥梁或排名信号。
++
++### A09.4 检索、图扩展与证据包
++
++`KnowledgeQuery={read_context,query_text,query_profile_id,filters,context_budget}`。filters只收原操作允许的资产范围，不能自行指定另版/候选。先核验ReadContext/读取保护及当前资料政策，形成允许集A（清单成员+文本/标签/边完整依赖），之后再召回、排序和图遍历；政策拒绝必需历史与允许子集检索分别按A06处理。不能先全局top-k后过滤，不能通过受限节点度数/标签或边影响公共结果。每次真正读取/交付模型前按A06重验；若允许集变化，重新计算当前请求，有限重算耗尽安全失败，不能在旧top-k删掉几项当完整结果。
++
++首版查询profile初值（工程参数，可版本化调优，不是产品质量门槛）：向量top40、词法top40、种子实体最多20、图深度最多2、总扩展边200、每节点最多20边、最终片段最多12。所有值必须有硬上限和诊断；环通过visited(node,depth/path)去重，排序稳定以ID作平局键。向量分支只对A内768维profile兼容行精确余弦排序；SQL先物化允许集合再ORDER/LIMIT，首版不建HNSW/IVFFlat近似索引。官方明确近似扫描后过滤可能不足额；以后ANN若引入需隔离分区与运行计划/召回对照，不能只加WHERE就宣称满足约束。
++
++词法初值使用本地确定性规范化词项：Unicode字母数字词、汉字相邻二元组及单字，保留原chunk引用；按允许集中的词频/逆文档频率排序，不以全库私有统计影响分值。空词项分支返回空而非故障。向量与词法结果按RRF合并，rank从1起，score=sum(1/(60+rank))，稳定平局按chunk_id；种子实体来自前20命中chunk的允许mentions/uses等断言及查询词与允许标签精确匹配。
++
++对这些种子在允许图上有界BFS；导航可沿允许谓词的入边/出边两个方向（含asset→method的反向邻接），方向只用于寻路，不把uses_method逆向解释成事实谓词。每条路径按实际访问顺序保存node_ids，edge_ids始终引用原有向断言，必须逐项校验相邻节点与原边端点，不要求原边方向与访问方向一致；禁止生成反向虚构断言。由共享方法可到达另一资产，再回取该资产的允许文本。回取每条路径关联的支持chunk，以及可用的邻居资产chunks；不以图摘要代替原文。元数据支持边可用于上述内部导航（同样核验字段与依赖），但首版不将这类路径作为模型可见关系证据；回取的文本项仍标graph通道，graph_paths可为空。仅当整条路径的所有边都有实际原文支持且其支持摘录均进入pack时才输出GraphPath。metadata不伪造chunk/excerpt或文字证据，内部诊断保留导航依据，公开资产信息沿原AssetView。每条路径的每一步及端点标签都须允许，同一版本/graph_view；不能穿过受限中间节点再返回公共尾端。图候选按最短跳数、种子rank、ID排序，作为第三路RRF合并；同资产/重叠范围按文本修订合并去重，保留所有实际路径来源。首版不依赖额外付费reranker；第三路无命中是合法，存储异常则整体retrieval=failed，不静默退为向量成功。可记录普通向量对照用于评测，但不以它冒充Graph-RAG运行完成。
++
++`EvidencePack={project_id,knowledge_version_id,manifest_digest,query_profile_id,embedding_profile_id,outcome:found|empty,items:EvidenceItem[],material_use_notices:MaterialUseNotice[],trace:RetrievalTrace}`。失败返回既有Outcome Err<ApplicationError>而非empty包。`EvidenceItem={evidence:EvidenceRef,excerpt:string,source_kind,chunk_id,score:number,channels:(vector|lexical|graph)[],graph_paths:GraphPath[]}`；`GraphPath={graph_view_id,node_ids:ID[],edge_ids:ID[],support_evidence_ids:ID[]}`。所有支持证据必须是同版、当前允许且可解析的EvidenceRef；内部trace记录路径指向未入最终pack的支持时，交给模型的路径不得保留无正文依据的关系。EvidenceRef创建/保存由Research/Review应用经Knowledge校验，查询本身不写知识库。graph_paths是召回解释，不等于论断支持度认证；语义建议沿FR-033。
++
++`RetrievalTrace={profile_id,vector_count,lexical_count,graph_seed_count,graph_edge_count,graph_chunk_count,selected_count,scope_limited:boolean,budget_limited:boolean,graph_status:completed,diagnostic_ref:ID|null}`，成功的计数均非负且只计允许范围；安全UI只投影必要提示，不公开受限来源数量、原query或内部诊断；运行耗时/模型token另记最小诊断。graph_status=completed包括合法零扩展，不包括异常跳过。
++
++空清单：验证合法绑定/完整空视图后不必调用嵌入/LLM，返回empty；非空集允许子集为零时返回empty并MaterialUseNotice，不声称整个库无资料。真实检索失败不得进入Research无证据继续分支；Review低支撑/空结果不新增创建门槛，原流程不变。用户主动无证据继续只沿原确认入口。
++
++### A09.5 上下文与失败边界
++
++B=min(调用者明确预算,目标生成模型实际context_limit-output_reserve-system_and_required_history_tokens-current_query_and_tool_wrapper_tokens-safety_margin)，不得用字符数假装token数。current_query_and_tool_wrapper_tokens包括本轮完整问题、固定工具/消息模板；每项excerpt、引用标记和路径包装另外计入证据项成本，不能漏算或重复减。B≤0安全预算失败，不发超限请求。必需历史先按A06核验并计入，禁止静默裁剪受限历史；历史太长或无法证明模型/tokenizer能力时安全拒绝当前生成，沿已有错误/编辑入口，不自动总结或开Memory。embedding-query超512时按相同tokenizer分成连续窗口（每窗含prefix≤512），对归一化向量平均后再归一化，零结果拒绝；整条用户query保持原样计入生成预算，无偷偷截断。初始窗口上限16并随query_profile冻结，超限沿已有输入/配置错误，不裁掉后半问题。
++
++按最终排序将完整证据项放入B，优先原文而非关系描述；一条图路径须连同所有实际支持摘录、引文元信息整体计费，装不下则丢整条路径并记录budget_limited，不能保留无支持图结论。对重叠片段合并后重新生成准确excerpt范围及EvidenceRef；不能继续用旧范围冒充裁切后的引用。B不足以容纳任何已召回证据时返回明确预算失败，不伪装empty；空库真正empty仍走原无证据规则。查询预算只限制本轮证据范围，不删知识资产，不是发布阈值。
++
++缺模型/维度不符、向量或图不可用、引用校验失败、pin失效、输入依赖不完整分别记录内部错误并按A04已有安全语义映射；不新增公共码或自动恢复端点，不换最新版本，不以缓存掩盖损坏。新默认发布不影响本查询绑定；本次查询/派发必须可复现原profile及实际允许范围摘要。缓存键至少Project/版本清单/query摘要/两个profile/过滤/预算/当前政策和依赖判定身份，命中仍校验A06；扩权后旧子集缓存不能冒充完整范围。
++
++### A09.6 构建、增量与完整就绪
++
++CandidateWriteScope下先冻结BuildProfile，构建清单为完整目标集合。incremental复用仅限同Project、同不可变资产/文本/输入依赖、chunker/embedding/extractor配置完全相同且当前允许的产物；新增/删除后重建完整视图成员及图支持关联，删除最后支持的断言/标签从新视图消失，旧视图不变。rebuild对当前确认集合重新构建，不读写旧图，不解释为P0失败重跑。多来源混合派生物只有全部实际依赖和配置匹配才可复用；资料政策变化引起的限制不授权静默少建确认目标，必要输入受限则失败或走既有人工修订/排除路径。
++
++空的目标集合必须仍有明确空manifest/vector_view/graph_view以及零计数证明；有意全移除发布空版，不能记no_change。非空文本没有抽取到语义边可成功，但要证明每个目标chunk的抽取任务成功且零结果已校验；模型失败不能伪造此状态。无变化必须完成全量清单、来源修订和配置/产物等价核验且有既有版；profile或可读产物变化不满足no_change。只零新增或查询失败不是无变化。
++
++`KnowledgeReadyProof={project_id,run_id,attempt_id,candidate_revision,manifest_digest,build_profile_id,vector_view_id,graph_view_id,object_digests,counts,validated_at,read_barrier_id,dependency_set_digest}`。counts逐类包括清单资产/可用文本/chunk/vector/节点/断言/支持及成功抽取chunk，要求所有需嵌入chunk一对一向量、每个支持可解析、图端点及视图完整；不要求造非零语义边。object_digests与计数来自实际读回/校验而非Worker自报。就绪proof绑定完整文件/文本/向量/图及配置，不能只一个synced布尔；提交还需07原子重验，不是永久写授权。
++
++发布流程：应用保存隔离产物→封存不可变视图→读回核验/保护→短事务重验Project/槽/attempt/当前政策/候选/确认/基线→原子登记版本、清单、默认指针、Run结果和outbox。不能在事务内LLM推理。取消/治理/编辑先提交则proof失效；响应丢失先查唯一发布决定；发布后依赖故障报同版不可用，不回退/拼接。具体首版存储约束见07 A09，实施测试见09 A09。
++
+--- before/docs/design/07_data_persistence.md
++++ after/docs/design/07_data_persistence.md
+@@ -1,12 +1,12 @@
+ # Data Persistence 设计
+ 
+-文档版本：v1.12
++文档版本：v1.13
+ 更新日期：2026-10-23
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+ ## 1. 设计目标
+ 
+-本文定义可实施的逻辑记录、约束、短事务和故障处理，承接 02 的业务规则及 [05-01 内部契约](05-01_internal_module_contracts.md)。它不重新定义权限、状态或 P0/P1/P2，不选定数据库/向量/图谱产品。
++本文定义可实施的逻辑记录、约束、短事务和故障处理，承接 02 的业务规则及 [05-01 内部契约](05-01_internal_module_contracts.md)。它不重新定义权限、状态或 P0/P1/P2；首版知识存储选择及映射见末尾A09，其他历史方案保留原范围。
+ 
+ 旧 `07_data_schema.sql` 已按用户授权删除，不再作为建库或迁移参考入口。下述记录名是迁移实现的逻辑映射，不要求一记录一张表；物理拆分必须满足相同条件更新和隔离约束。真正可执行的表结构以后仅由版本化迁移维护，不再平行手写第二份 SQL 草案。本轮是设计细化，未建库、未运行并发或恢复测试。
+ 
+@@ -259,3 +259,29 @@
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
+ 
+ 本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
++
++## A09 首版向量与图谱持久方案
++
++技术选择及具名结构唯一见[06 A09](06_agent_knowledge_services.md#a09-首版知识构建与graph-rag方案)。本节把§5/6既有不可变/发布/回收规则映射到PostgreSQL 17、pgvector精确检索和关系图谱，不创建实际表或迁移。
++
++| 逻辑记录 | 首版约束/索引与不可变边界 |
++| --- | --- |
++| BuildProfile / EmbeddingProfile | profile_id唯一且内容不可改；权重/配置摘要保持，模型凭据不保存；旧版本依赖原profile |
++| ChunkRevision / EmbeddingObject | Project、文本/范围/chunker唯一语义键；embedding另按chunk/profile唯一；维度768及有限非零值，原始向量与归一化校验；不建ANN索引 |
++| VectorView / VectorViewMember | (Project,view,chunk,profile)唯一，所有成员profile与视图相同；完整membership摘要/计数；不以可变Project集合替代 |
++| GraphView / Node / Label / Assertion / Support | 所有外键带Project及view；节点身份与各来源标签/断言分离；端点存在，support指同清单资产/文本/范围；不能无依据并入其他Project或最新版 |
++| CandidateManifest / KnowledgeReadyProof | proof绑定candidate_revision、attempt、所有profile、摘要、视图和读屏障；变化则失效，不能复用旧synced标志 |
++| PublishedManifest / Version / Dependency | 版本绑定封存视图及全部依赖；只由Construction短事务登记发布，空视图是显式对象；旧绑定不更新 |
++
++准入、写入、封存都核验attempt写资格，数据表权限只给受控适配器；已封存视图禁止追加/更新/删除成员，修订产生新view_id。共享不可变embedding/chunk可引用，图视图首版复制完整membership以避免可变增量叠加读取。封存事实为内部存储状态，不新增业务Run状态。发布前视图只能经构建scope访问，正式Reader必须从已发布manifest解析view；ID存在不授权读取。业务图表不开放任意SQL/LLM Cypher。
++
++精确检索先在同一查询快照按Project、view、profile及A06当前允许集物化行集合，然后计算距离/词法排名并LIMIT；禁止先对全局vector索引取邻居。图每一步都只查同view且已允许的节点标签、断言及其支持；允许集合以本次政策判定身份绑定，多语句查询须检测修订漂移并按06重算或失败。查询过程中不持有跨模型/网络的长事务；取得/续持pin不冻结权限，实际读取/派发/提交仍按§6.4串行边界。
++
++精确性验收必须在真实PostgreSQL检查EXPLAIN计划及结果：大量近距离但无权/别版向量不能挤掉允许集top-k；以后加ANN索引必须另审该路径，不能仅依赖禁用planner某开关。不返回私有行计数或影响分值的全局统计。
++
++本地FileStore先持久写入不可变对象并校验摘要；关系库视图封存后由独立连接读回全量成员/向量/支持闭包及就绪摘要，不能用同事务未提交对象证明可读。发布短事务按既有账号→Project→槽/Run→候选→依赖顺序，重验proof与保护后一次写入。全在PostgreSQL的向量/图事实可以参与同库提交，但文件仍无跨介质ACID；完整可见仍依赖先准备、不可变与保护。崩溃留下未发布孤立物不向查询公开。
++
++同一发布身份重试读原决定；清理仍按持久引用/pin互斥核验，不能由向量/图适配器自行级联删共享资产。新版本移除节点不删历史图；运行失败只清理允许清理的所属候选。H03保留期未定，不新增按天自动删除；H02旧数据迁入未授权，不接触旧业务库。
++
++本节选定首版存储方向，精确扫描容量、推理环境兼容、物理迁移、索引计划和故障恢复未实测；需要A10/B02–B05/B07独立实施证据，不称已部署或就绪。
++
+--- before/docs/design/09_quality_observability.md
++++ after/docs/design/09_quality_observability.md
+@@ -1,6 +1,6 @@
+ # 核心架构与功能模块测试设计
+ 
+-文档版本：v1.21
++文档版本：v1.22
+ 更新日期：2026-10-23
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -248,3 +248,37 @@
+ | SP-14/15 | 固定版本读取与UI：失败/歧义/降级/待确认/未纳入/已发布分开，基于指定版恢复依据；检查不会越权或把Task成功当业务完成 |
+ 
+ 所有上述新增运行测试当前未建立，入口待对应B01/B03/B05/B06实现；使用显式隔离数据库与文件根，覆盖服务内部commit并清理测试残留。schema测试只能验证结构，mock模型不能证明真实分析质量，单个解析器通过不能代表P0全格式验收。未选库/未验证能力保持TRACK-008a/008c/004开放，不通过删格式或跳过样本获得“通过”。
++
++## A09 Graph-RAG验收与评测样本
++
++[task012](../../tasks/012-graph-rag-technical-design.md)维护KG-01–18的规范、反例与禁止副作用；[06 A09](06_agent_knowledge_services.md#a09-首版知识构建与graph-rag方案)及07 A09为设计依据。当前没有运行Graph-RAG、真实嵌入、SQL或模型质量测试；以下是可执行验收规格与样本设计，不是评测结果。
++
++### A09.1 固定最小语料与数值反例
++
++实施时建立隔离Project P/Q，各有固定版本V1/V2，所有内容为自编合成资料并保存UTF-8文件、摘要、处理定位与人工标注，不下载论文或上传真实用户资料。至少包含：P/V1公共论文A的原文“方法M在数据集D用于任务T”；公共资料B“数据集D的限制是噪声N”；公共论文C“方法M不使用数据集E”；私人批注X含一个更近向量及“方法M使用E”的矛盾；Q含同名方法M；P/V2新增D2或移除B。摘要降级文件F无PDF但有实际摘要，扫描无文本G不得混进有效文本。人工预期：问D的限制需B；问M是否用E须保留否定和来源矛盾，不盲信私人X或Graph路径；问V1不得引用D2。
++
++两跳Graph示例：向量/词法种子只命中A，图A→method M←B的uses_method关系由各自原文支持（此场景另给B原文“方法M在噪声N下失效”）；应扩展召回B及其支持片段。此例和上一段D限制是独立夹具修订，不能让同一B无修改记录地换正文。图消融只启用向量/词法时缺B，混合链有B，才能证明图通道确实工作；真模型可能也直接召回B，故确定性端口夹具用于路径正确性，真实模型质量另评。
++
++过滤反例固定距离：禁用X=.01、Q=.02、V2-only=.03，合法A=.20、B=.30，k=2必须得到A/B；全局top2再过滤为空应失败。同概念公共label+私人label只返回允许label；若A到B唯一桥的任一支持私人，则图不得走该桥，即使B正文公开。RRF独立数值例：rank1+rank2=1/61+1/62，缺分支贡献0，平局按ID。
++
++预算例给生成模型context=4096、reserve=512、system+必需history=1024、本轮query+固定包装=256、margin=128、调用预算3000，则B=2176 token；证据路径本体+全部支持+引文成本超过B必须整体排除。有检索命中但没有一个完整项能装入时不是检索empty。另将本轮问题增加到2600 token，应预算失败而不是遗漏问题长度继续组包。emoji及中英混合span按Unicode码点验证，token长度按实际固定tokenizer单独验证，不互相替代。
++
++### A09.2 工程验收分层
++
++| 场景 | 必需执行入口与观察 |
++| --- | --- |
++| KG-01/02/03/10 | schema/端口及真实tokenizer/嵌入环境：正负类型、span定位、模型权重/profile/维度、合法空抽取和失败；模型默认mock验证契约，另行实测真实抽取质量 |
++| KG-04/05/06/07 | 同名作者/同标题资产不得合并；共享方法入边导航保留原方向；metadata边只内部导航不造chunk。隔离PostgreSQL17+pgvector与真实关系图：检查EXPLAIN、命中ID/顺序、同名隔离、逐来源依赖图、环/出度预算；实际图扩展不能mock替代整体验收 |
++| KG-08/09/15/16 | 同版读取/上下文集成：空/失败、缓存收紧放宽、预算及引用解析；受控本地模型接收端观察实际交付字节，不发真实外部Provider |
++| KG-11/12/13/14 | 真实commit、文件和确定性屏障：封存/读回/发布前后崩溃、取消/治理/编辑/回收两序、重复响应丢失；断言默认指针、版本/事件计数及旧内容摘要 |
++| KG-17/18 | 适配器符合性与质量评测：逐项证明版本隔离/不可变/先过滤/读屏障/恢复，无实现保持未验证；框架能力声明不能替代结果 |
++
++必须显式独立测试库/角色/文件根/推理进程，覆盖服务内部commit；结束核对行、对象、进程清理。无需接入旧业务数据；H02/H03未授权事项不随A09开启。运行命令在B01–B05建立入口后记录，不写虚假的现成CLI。
++
++### A09.3 质量样本与比较
++
++固定开发集与隔离留出集，至少按单跳事实、跨文献两跳、同名实体、否定/矛盾、广泛综述、中文问英文资料、英文问中文资料、摘要降级、空答案、资料限制、超长上下文、恶意指令12类各设计明确题目与可接受证据集合；合成集验证正确性后，真实论文集须另行明确合法数据来源并人工标注。每个样本保存question_id、语料/版本摘要、预期span/路径、禁止引用集合、可接受回答要点、资料政策及预算，重复测量使用相同快照。
++
++比较三个配置：vector-only、vector+lexical、vector+lexical+graph，除通道外保持相同输入/profile/预算。记录允许范围的Recall@k/MRR、两跳证据是否齐全、引用定位有效率、无依据/矛盾论断、空答案误报、隐私/版本违规次数、检索p50/p95、候选规模、峰值内存及实际LLM/token成本；图扩展耗时和增益分开。正确性要求如零越权、无错版、唯一发布来自既有规范；召回/延迟/答案质量报告分布与失败样本，不擅设新产品通过阈值，也不按结果删难例。
++
++人工标注原文/预期支持与盲审答案，模型评审仅辅助并单列；抽取模型/权重、提示词、tokenizer、查询配置、适配器补丁、硬件、随机种子/重复次数随结果保存。未实际执行不得填分数或宣称某模型/框架优于另一方案。原论文报告或mock输出不证明本项目Graph-RAG验收。
+--- before/docs/workorders/preimplementation_design_tasks_2026-10-21.md
++++ after/docs/workorders/preimplementation_design_tasks_2026-10-21.md
+@@ -1,6 +1,6 @@
+ # Codex编码与人工审核的设计补齐任务清单
+ 
+-文档版本：v1.3
++文档版本：v1.4
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 
+@@ -197,7 +197,7 @@
+ | [task008](../../tasks/008-material-policy-internal-contracts.md) | A06，C01–C05/IC-01–12内部契约 | 分类响应/去重字段消费核对A05修复；可信来源、缓存、派发、提交及逻辑事实；不改公开操作、不写机器类型/业务实现 |
+ | A07 | Task等待项、确认预览、事件引用 | 仅消费已定A04及所需资料变体；不吞并A06政策裁决 |
+ | A08 | 补充解析类型、处理状态与错误去向 | 使用适用A05–A07；真实格式适配器由B05切片承接 |
+-| A09/H01 | 知识构建与Graph-RAG选型 | 延期，需明确恢复范围；Memory不顺带引入 |
++| A09/H01 | 知识构建与Graph-RAG选型 | 2026-10-23用户授权task012限定恢复P0方案；Memory继续延期，当前状态见PROJECT_STATUS |
+ | A10及B01–B08实例 | 每个业务行为单独列规范、测试及交接 | 通用类别不是业务切片；完整实现任务仍须按下表细拆，建单不授权执行 |
+ 
+ ### 10.1 FR全量规划归属与待细拆项
+@@ -226,7 +226,7 @@
+ | TRACK | 主责与范围/缺口 |
+ | --- | --- |
+ | TRACK-004 | A04/A05/A07、B01；逐端点绑定与应用协议验收待实例化 |
+-| TRACK-005 | A09/H01；选型维持延期 |
++| TRACK-005 | A09/H01；task012限定恢复P0方案，Memory及扩展范围仍延期 |
+ | TRACK-006 | B08交付类型；内部安全参考受控交付专单延期，不复制内部正文 |
+ | TRACK-007a、TRACK-007b、TRACK-007c | A02、B02/B08；按聚合建模/迁移/隔离恢复分别实例化；旧数据接入依H02 |
+ | TRACK-008a、TRACK-008b、TRACK-008c | A06/A08、B01/B02/B03/B05；类型、发布持久化、各解析适配器分开 |
+@@ -254,3 +254,7 @@
+ ### 10.4 本轮细拆交接
+ 
+ FR-013唯一主规划责任由“Project与工作区”索引下的[task009](../../tasks/009-workspace-context-plan.md)承接：WC-01最近对象与基础面板、WC-02三类草稿、WC-03共用安全降级验收为P0，WC-04精细位置为P1。WC-03约束必须随WC-01/02交付，不作为可延后的安全补丁；不依赖A09/H01选型，也不授权实现。所有者、输入输出、正向/拒绝/失败及权限交错场景已列；具体文件/端口、冲突细则核对及可执行测试仍开放。其余FR的具体子条目、非功能/领域不变量/安全/运维逐条实例矩阵仍缺，主责与缺失字段沿用10.1–10.3；TRACK-012a不关闭。A/B/H和开放TRACK归属保持，A05新增覆盖证据不关闭运行验收。
++
++## A09 授权衔接（2026-10-23）
++
++用户明确要求“推进A09，完成首版知识构建与Graph-RAG技术方案设计、自验及独立审查”，按H01选项A恢复现行P0构建/检索/存储技术方案；见[task012](../../tasks/012-graph-rag-technical-design.md)。H01不再阻塞本单设计，前文历史延期/未回答记录保留原时点；Memory、旧数据接入、生产保留策略及业务实现均未因此授权。方案是否接受仍待S4，阶段状态见PROJECT_STATUS。
+--- before/tasks/012-graph-rag-technical-design.md
++++ after/tasks/012-graph-rag-technical-design.md
+@@ -0,0 +1,74 @@
++# Task012：A09 首版知识构建与Graph-RAG技术方案
++
++文档版本：v1.0
++更新日期：2026-10-23
++
++## 1. 目标与授权
++
++用户原文：“继续按 project-delivery 流程推进 A09，建立任务单，完成首版知识构建与 Graph-RAG 技术方案设计、自验及独立审查，再提交我审核。”本次明确恢复H01选项A的P0构建/检索/存储方案范围，Memory仍延期；依据[实施前A09/H01](../docs/workorders/preimplementation_design_tasks_2026-10-21.md#a09-确定首版知识构建与graph-rag技术方案)，不是要求用户选择框架。唯一队列task012；按[skill](../.agents/skills/project-delivery/SKILL.md)完成S1–S3后提交S4，不启动工程实现或A10/B类。
++
++可观察结果：固定版本输入可通过有来源图构建、先授权召回、图扩展和原文回取形成可定位EvidencePack，具备完整发布/故障边界及质量样本规格。包含技术对照、分块/嵌入/图谱/查询/上下文/就绪设计、自验和独立审查；不下载模型、不部署/连接业务库、不迁移旧数据、不引入付费/外部资料目标，不宣称Graph-RAG运行成功。关联TRACK-005限定恢复、018/019及004/012运行缺口。
++
++## 2. 依据与基线
++
++已读AGENTS、[状态](../docs/PROJECT_STATUS.md)、[设计索引](../docs/design/README.md)、[实施入口](../docs/IMPLEMENTATION_ENTRY.md)。A01/A02已有工程方向，A06/A07/A08已限定接受并收口；A05修复复审已完成但接受待记录。013仅候选参考，Memory建议不采纳。
++
++| 规范 | 采用边界/所有者 |
++| --- | --- |
++| 01 FR-018/024/026/028/031/032/033；02-02 §2.5–2.7/3 | 固定版本、完整发布、图证据/引用、不新增质量硬门槛 |
++| 00-01/A02 | PostgreSQL17、API/Worker CPython3.14、同部署与本地不可变文件 |
++| 05/05-01及06 §3、A06/A08 | Construction唯一写者、范围分型、当前政策及最终文本/定位、提案提交 |
++| 07 §5–6；08-01 | 就绪/发布/回收、当前授权、派发/提交与完整依赖闭包 |
++| 04/04-01/04-02及09 | 现有安全错误/引用/任务载体；空检索与失败分开、需求验收 |
++
++[入场清单](../docs/workorders/evidence/task012_a09_2026-10-23/before/source-manifest.json)含192文件及同目录tar；[entry](../docs/workorders/evidence/task012_a09_2026-10-23/entry.json)保存原始授权/H01范围、HEAD及工作区。保留原未提交/未跟踪内容，OpenAPI/覆盖JSON与业务源码不改。
++
++## 3. 修改落点与选择
++
++| 步骤 | 文件 | 产物与边界 |
++| --- | --- | --- |
++| GR01 | 06 A09.1/2 | 官方能力对照、本地嵌入profile、分块/文本定位；仅设计未安装 |
++| GR02 | 06 A09.3/4/5 | 最小图和逐来源支持、三路召回/有界扩展、预算/失败；无Memory |
++| GR03 | 06 A09.6、07 A09 | 复用/重建、完整就绪与同库视图映射；不创建SQL迁移 |
++| GR04 | 00-01/05-01引用、09、实施前清单/状态/本单/审核包 | H01范围衔接、18场景与评测规格、基线证据；不关闭运行TRACK |
++
++## 4. 需求验收规格
++
++以下是逐需求设计核验与后续可执行测试规格，不是业务通过。并发项以后使用真实隔离commit/确定屏障，模型默认mock；实际图/向量/解析定位必须真实适配器验证，09给分层与样本。
++
++| 场景/规范 | 前置、动作或交错 | 预期及禁止副作用 |
++| --- | --- | --- |
++| KG-01 / FR-026；06 A09.2/6 | 首次构建、增量/rebuild、无Run补充误传 | 只处理有效确认/固定输入；SupplementWriteScope拒绝索引写；首次无版不能no_change |
++| KG-02 / FR-024/031；A08；06 A09.2 | 中英文、emoji、跨页/长段/摘要，384+64重叠 | chunk/token/Unicode定位一致；摘要不冒充全文，不静默截断/跨文本拼接 |
++| KG-03 / FR-026/031；06 A09.3 | 实体/关系抽取、同名作者/同标题资产、空实体、无来源关系、提示注入 | 真实支持及端点校验，空抽取与失败分开，无模型工具/发布权限 |
++| KG-04 / FR-018；07 A09 | V1运行时建V2，重用对象/改变抽取配置digest、嵌入模型或分块 | 完整不可变view；新profile不污染旧版，旧权重缺失明确失败 |
++| KG-05 / A06 DAP07；06 A09.4 | 大量近距离私有/别Project/别版向量，允许项排全局top-k之外 | 先允许集合后精确top-k；受限统计不影响排名，无泄漏 |
++| KG-06 / A06 DAP05/07；06 A09.3/4 | 同实体公共/私人label，公共A→私人桥→公共B，多输入断言 | 逐来源安全图；禁用桥不能影响路径/分值，公共支持不洗白混合依赖 |
++| KG-07 / FR-028；06 A09.4 | 只有反向邻接图扩展能找到第二文献，元数据边、环/高出度图 | 真实图路径带原文支持，有界遍历可诊断；纯向量对照不得标Graph-RAG通过 |
++| KG-08 / FR-018/028；06 A09.4/5 | 空版本、零允许资料、无命中、图存储故障 | 前三者有准确空/范围提示；故障Err不empty、不偷偷换版或退为向量 |
++| KG-09 / A06；06 A09.5 | 完整问题+工具包装及证据超预算/单条装不下/必需历史受限或过长 | 不静默裁剪历史；整路径支持一起计费；有命中但装不下为预算失败而非empty |
++| KG-10 / A06；06 A09.1/4/5 | 模型维度/NaN/零向量/查询超512，CPU推理不可用 | 模型profile严格匹配，窗口计数可追溯；无未授权外发或自动新模型回落 |
++| KG-11 / KV-I05；07 §5/A09 | 少一向量/悬空边/缺文件、读屏障前查询、发布失败 | 不出完整proof，不暴露半版本；旧默认和人工内容不变 |
++| KG-12 / ARC-04/KV-I05；07 A09 | 发布与取消/编辑/撤权相反顺序，响应丢失重复提交 | 单一持久裁决；迟到proof拒绝、已提交查原结果，不重复版本/事件 |
++| KG-13 / KV-I06/07；07 A09 | pin续期失败/回收竞争/发布后文件损坏 | 同版安全失败，保护与清理互斥，不能回退/混版或删共享依赖 |
++| KG-14 / FR-026；06 A09.6 | 全移除、零新增但profile变化、真正无变化 | 全移除发布显式空版；变profile不是no_change；无变化需完整核验 |
++| KG-15 / A06 IC02/07/08；06 A09.4/5 | 缓存后收紧/放宽、读取后派发前撤权 | 命中重验；放宽不复用窄范围为完整结果；交接前失权不外发 |
++| KG-16 / FR-031/033；06 A09.4/5 | 图支持未入预算、别版引用、生成无支持论断 | 路径不得脱离支持摘录；按版EvidenceRef解析；语义质量单列不设strict硬阈值 |
++| KG-17 / A09/H01；00/06 A09.1 | 换Qdrant/Neo4j/框架、未配置Graph、历史013 Memory建议 | 未满足版本/过滤/就绪契约拒绝启用；不引入Memory/付费目标或伪可用 |
++| KG-18 / 09质量；06 A09 | 单跳/两跳/矛盾/否定/跨语种/长文本固定题集，向量基线消融 | 同时记录召回/路径/引文/错误/时延成本，人工标注和模型评价分开；无结果不声称质量通过 |
++
++## 5. 验证与限制
++
++本轮检查本地引用/锚点、版本/日期、18场景追踪、官方资料来源、数值例算式、差异及范围保护；既有机器契约结构/入场兼容及快照复验。无新增机器schema，运行测试全部未建立/执行；tokenizer/推理兼容、真实SQL计划/事务/图扩展、容量和质量基准均未实测。命令/结果统一写审核包，不以关键词存在证明语义正确，独立审查须读规范和反例。
++
++## 6. 人工审核
++
++H01由本轮显式推进A09授权落实为限定恢复，无其他产品决定。审核重点：首版工程选择、图来源/公共私人混合、固定版本和先过滤、预算故障行为、就绪与回收、真实评测交接。建议接受设计后进入S5–S7；若要求修订则返回S2并复审。人工接受尚未发生，代码/运行/模型质量未交付。
++
++## 7. 单一交付报告
++
++[task012审核包](../docs/workorders/task012_a09_review_2026-10-23.md)维护技术证据、问题修复、受审/交付快照及验证限制；项目状态只做摘要。
++
++## 8. 顺序交付检查点
++
++S1–S3已完成：9份文档自验通过，18个场景具备设计追踪；独立审查五项P2已修复并复审通过。当前S4等待用户对本审核包的真实决定，S5–S7未开始。受审快照为s3-input（194文件，manifest SHA256 `20426cc77965a9762d96fdab9fd147046d079ec490926a8e7f4332d5b033b5a9`）；最终delivery仅更新任务单、审核包和项目状态的交接记录，具体完整性及差异证据见审核包。下一步在用户接受后执行S5–S7；要求修订则回S2。队列仅task012；其余backlog/Memory/H02/H03未获新增授权。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.53
++文档版本：v1.54
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 
+@@ -23,7 +23,7 @@
+ | --- | --- | --- |
+ | 项目级顺序交付 skill | 已完成；2026-10-23获用户限定人工接受 | [project-delivery](../.agents/skills/project-delivery/SKILL.md)、实施入口和任务模板支持授权队列、恢复检查点及人工节点；[本轮记录](workorders/project_delivery_skill_2026-10-23.md)。已核对三个流程文件与交付快照一致；接受仅限skill及配套文档，跨会话运行未验收，不启动task008或其他未授权业务任务 |
+ | 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计于2026-10-23获用户限定接受，task011已完成S5–S7收口；A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计于2026-10-23获用户限定接受，task011已完成S5–S7收口；A09限定方案设计、自验及独立复审通过，task012当前S4待人工审核；业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -57,7 +57,7 @@
+ | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
+ | --- | --- | --- | --- | --- |
+ | TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | A04已人工接受；其余机器契约/应用验收待完成 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证并获2026-10-23用户限定接受，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)已限定修复并复审；[合并态验证](workorders/task006_p2_fixes_2026-10-22.md)45项契约测试及结构检查通过；A05五个同步操作的错误子集已绑定；其余逐端点错误响应绑定及机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+-| TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | 延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
++| TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | A09首版P0方案已限定恢复；Memory仍延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
+ | TRACK-006 | 内部安全参考的版本管理与受控交付（D07） | 延期 | 工作单 D07 | 明确存储、读者和同步机制；不在本表复制内部正文 |
+ | TRACK-007a | Project资产、上下文与版本快照字段映射 | 逻辑映射已细化；物理字段待落实 | [07 §3–4](design/07_data_persistence.md#3-逻辑记录与字段映射) | 本轮定义最小持久事实/归属与约束；新核心建立后逐项落实实际表字段、索引和测试，不能将逻辑表当作已迁移 |
+ | TRACK-007b | 版本化迁移与约束实现（替代SQL草案修补） | 待开始；逻辑约束已细化 | 07 §3–6；[SQL删除记录](archive/design_retirement_2026-10-19/README.md#3-sql-草案删除记录) | 以单一版本化迁移落实字段、Project复合归属、占槽/提交唯一性及检索词默认；不恢复旧SQL草案 |
+@@ -161,3 +161,5 @@
+ 本次修订 v1.52（2026-10-23）：用户另行授权[task011 A08](../tasks/011-supplement-processing-contracts.md)补充/解析/分析契约设计、自验及独立审查后提交审核。设计/文档自验通过，独立审查两项P2及C01已修复复审闭合，当前S4等待人工审核；[单一审核包](workorders/task011_a08_review_2026-10-23.md)。机器转写、解析器能力、业务实现仍未完成，TRACK-008a/008c/004保持开放；不启动A09。
+ 
+ 本次修订 v1.53（2026-10-23）：记录task011 A08限定接受及S5–S7设计收口，仅更新任务/报告/项目状态，原设计与机器文件不变；后续执行须另行授权。
++
++本次修订 v1.54（2026-10-23）：用户显式授权[task012 A09](../tasks/012-graph-rag-technical-design.md)，H01按仅P0构建/检索/存储方案恢复；设计/文档自验通过，独立审查五项P2已修复并复审闭合；当前S4等待人工接受，S5–S7未开始。[审核包](workorders/task012_a09_review_2026-10-23.md)。Memory/H02/H03不扩展，真实Graph-RAG/存储/模型与运行验收未完成。
+--- before/docs/workorders/task012_a09_review_2026-10-23.md
++++ after/docs/workorders/task012_a09_review_2026-10-23.md
+@@ -0,0 +1,57 @@
++# Task012 A09 技术方案审核包
++
++文档版本：v1.0
++更新日期：2026-10-23
++
++## 授权与方案
++
++原始授权、H01限定恢复、18场景和检查点见[任务单](../../tasks/012-graph-rag-technical-design.md)。首版选择现有PostgreSQL17+pgvector精确检索+同库关系图谱，本地multilingual-e5-base初始profile，应用自有Graph-RAG编排；完整对照与官方链接在[06 A09.1](../design/06_agent_knowledge_services.md#a091-选择与兼容性)，查证记录见[sources](evidence/task012_a09_2026-10-23/sources.json)。选择是本项目工程判断，未安装或实测。Memory继续延期，不改变H02/H03或授权业务实现。
++
++[06 A09](../design/06_agent_knowledge_services.md#a09-首版知识构建与graph-rag方案)定义分块定位、最小图/来源断言、先授权三路召回及图扩展、证据包/预算、完整就绪；[07 A09](../design/07_data_persistence.md#a09-首版向量与图谱持久方案)映射视图/事务/读屏障/回收；00-01/05-01只衔接边界；[09 A09](../design/09_quality_observability.md#a09-graph-rag验收与评测样本)提供固定样本、数值反例、消融与隔离测试分层。013历史建议未改，不作为实施授权。
++
++当前S1–S3完成，S4等待人工审核，S5–S7未开始。机器schema、实际代码、SQL迁移、模型推理和质量评测均未交付。
++
++## S2 场景核验
++
++| 场景 | 设计检查依据及预期 |
++| --- | --- |
++| KG-01 | FR-026；06 A09.2/6；只处理有效确认/固定输入；SupplementWriteScope拒绝索引写；首次无版不能no_change |
++| KG-02 | FR-024/031；A08；06 A09.2；chunk/token/Unicode定位一致；摘要不冒充全文，不静默截断/跨文本拼接 |
++| KG-03 | FR-026/031；06 A09.3；真实支持及端点校验，空抽取与失败分开，无模型工具/发布权限 |
++| KG-04 | FR-018；07 A09；完整不可变view；新profile不污染旧版，旧权重缺失明确失败 |
++| KG-05 | A06 DAP07；06 A09.4；先允许集合后精确top-k；受限统计不影响排名，无泄漏 |
++| KG-06 | A06 DAP05/07；06 A09.3/4；逐来源安全图；禁用桥不能影响路径/分值，公共支持不洗白混合依赖 |
++| KG-07 | FR-028；06 A09.4；真实图路径带原文支持，有界遍历可诊断；纯向量对照不得标Graph-RAG通过 |
++| KG-08 | FR-018/028；06 A09.4/5；前三者有准确空/范围提示；故障Err不empty、不偷偷换版或退为向量 |
++| KG-09 | A06；06 A09.5；不静默裁剪历史；整路径支持一起计费；有命中但装不下为预算失败而非empty |
++| KG-10 | A06；06 A09.1/4/5；模型profile严格匹配，窗口计数可追溯；无未授权外发或自动新模型回落 |
++| KG-11 | KV-I05；07 §5/A09；不出完整proof，不暴露半版本；旧默认和人工内容不变 |
++| KG-12 | ARC-04/KV-I05；07 A09；单一持久裁决；迟到proof拒绝、已提交查原结果，不重复版本/事件 |
++| KG-13 | KV-I06/07；07 A09；同版安全失败，保护与清理互斥，不能回退/混版或删共享依赖 |
++| KG-14 | FR-026；06 A09.6；全移除发布显式空版；变profile不是no_change；无变化需完整核验 |
++| KG-15 | A06 IC02/07/08；06 A09.4/5；命中重验；放宽不复用窄范围为完整结果；交接前失权不外发 |
++| KG-16 | FR-031/033；06 A09.4/5；路径不得脱离支持摘录；按版EvidenceRef解析；语义质量单列不设strict硬阈值 |
++| KG-17 | A09/H01；00/06 A09.1；未满足版本/过滤/就绪契约拒绝启用；不引入Memory/付费目标或伪可用 |
++| KG-18 | 09质量；06 A09；同时记录召回/路径/引文/错误/时延成本，人工标注和模型评价分开；无结果不声称质量通过 |
++
++以上逐项为语义设计核验，不是运行测试。身份/配置/方向/预算/元数据路径反例另见S3修复及任务单KG-03/04/07/09/16；强制正确性来自已有需求，不新设召回率/延迟产品硬门槛。
++
++## S3 独立审查
++
++只读subagent task012_review独立读取FR/领域/政策与实际文档，初审五项P2：R01通用标签合并会误并作者/资产；R02图BFS缺反向邻接说明；R03BuildProfile缺抽取配置摘要；R04预算公式漏当前问题/工具包装；R05元数据支持与文本EvidenceItem路径不闭合。已按kind明确身份、保持原边方向的双向导航、补extractor_config_digest、完整预算公式、元数据路径仅内部导航不伪造chunk；09/任务场景同步。修复复审通过，五项P2全部闭合，无剩余阻塞项。独立审查者逐项读取修订与反例、核对194文件快照及当前工作区无漂移，结论见[独立复审记录](evidence/task012_a09_2026-10-23/independent-review.txt)。
++
++## 自验与证据边界
++
++本轮检查引用/锚点、版本/日期、18场景追踪、实际差异范围及OpenAPI/覆盖JSON字节保护；机器结构/入场兼容及完整快照。具体输出保存在[evidence](evidence/task012_a09_2026-10-23/)。数值预算与RRF是设计示例算术，不是检索实现或模型质量测试。OpenAPI与覆盖JSON未改，既有47请求成功局部+40仅请求、172schema、131源行、5/6 SSE payload的结构检查不验证新增方案。
++
++未执行：模型下载/许可打包、推理环境安装兼容、tokenizer与真实embedding、PostgreSQL/pgvector计划与事务、图遍历、文件故障/回收、网络/浏览器、质量/容量评测。后续须在显式隔离环境实现KG用例，不能以mock或普通向量RAG替代。保留TRACK-018/019/012运行范围；TRACK-005仅H01首版设计恢复，Memory仍延期。A05接受不被本轮代填。
++
++## 人工审核
++
++建议接受GR01–GR04及KG-01–18所限定首版方案后继续S5–S7；也可指出具体修订返回S2复审。重点审核技术选择与取舍、图证据/身份/权限、版本就绪/不可变、预算失败与真实评测交接。人工接受尚未发生；设计接受不等于部署或真实Graph-RAG验收。
++
++## 交接基线与复验
++
++受审[s3-input清单](evidence/task012_a09_2026-10-23/s3-input/source-manifest.json)为194文件，manifest SHA256 `20426cc77965a9762d96fdab9fd147046d079ec490926a8e7f4332d5b033b5a9`。最终[delivery清单](evidence/task012_a09_2026-10-23/delivery/source-manifest.json)仅追加任务单、本报告和项目状态的S4交接记录，方案与受审内容相同；[最终检查](evidence/task012_a09_2026-10-23/final-checks.json)保存清单摘要、差异范围及实际命令/输出。
++
++[S2检查](evidence/task012_a09_2026-10-23/s2-checks.json)和[受审范围检查](evidence/task012_a09_2026-10-23/s3-scope-check.json)保留修复后证据。最终复验使用 `python3 docs/workorders/evidence/task012_a09_2026-10-23/check_docs.py`、`/tmp/rpb-contract-check/bin/python scripts/check_api_contracts.py --baseline docs/workorders/evidence/task012_a09_2026-10-23/before-openapi.json`、`python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/task012_a09_2026-10-23/delivery`；临时Python环境是本次实际验证环境，后续恢复须重新准备依赖，不能假定它永久存在。

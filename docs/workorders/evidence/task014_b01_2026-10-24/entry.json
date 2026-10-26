@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-24",
+  "authorization": "继续按 project-delivery 流程推进 B01，核对已有任务单和契约覆盖，确定首个机器契约转写切片，完成本轮交付、自验及独立审查，再提交我审核。",
+  "head": "7ba2a2c638500eaa43f2137d16a6a0686b663630",
+  "scope": "task014 POST /projects Project.Create wire request/success/errors only",
+  "baseline": "b621fa8dec595e265121f143a940544d907d2177431e643d1f0f6d820588e500"
+}

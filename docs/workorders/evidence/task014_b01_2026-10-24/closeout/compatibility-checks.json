@@ -1,0 +1,28 @@
+[
+  {
+    "name": "accepted",
+    "command": [
+      "contracts/.venv/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/task014_b01_2026-10-24/closeout/accepted.openapi.json"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "stdout": "PASS: 47 request/success partial + 40 request-only operations; 173 schemas; 131 inventoried source rows; 5/6 SSE payload types\nNOT VERIFIED: runtime authorization/state/transactions, runtime error sanitization/action eligibility, TaskView/output and uncovered operations; see coverage.\n",
+    "stderr": ""
+  },
+  {
+    "name": "original",
+    "command": [
+      "contracts/.venv/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/task014_b01_2026-10-24/before.openapi.json"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "",
+    "stderr": "operation changed/removed: POST /projects\n"
+  }
+]

@@ -1,0 +1,69 @@
+LIVE_STATUS_201_MUTANT exit: 1
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________________ test_probes_and_no_business_routes ______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be6a8b0>
+
+    def test_probes_and_no_business_routes(monkeypatch):
+        for key in os.environ:
+            if key.startswith("RPB_"):
+                monkeypatch.delenv(key)
+        with TestClient(create_app()) as client:
+            live = client.get("/health/live")
+>           assert live.status_code == 200
+E           assert 201 == 200
+E            +  where 201 = <Response [201 Created]>.status_code
+
+/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-review-coverage-q62_vt1z/test_startup.py:56: AssertionError
+=============================== warnings summary ===============================
+../../../../../../../Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ../../../../../../../var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-review-coverage-q62_vt1z/test_startup.py::test_probes_and_no_business_routes
+1 failed, 1 warning in 0.20s
+
+
+WORKER_STUCK: bounded failure 1 F                                                                        [100%]
+=================================== FAILURES ===================================
+__________________________ test_worker_idle_lifecycle __________________________
+
+    def test_worker_idle_lifecycle():
+        with managed_process(
+            [sys.executable, "-m", "rpb.bootstrap.worker", "--idle"], env=clean_env()
+        ) as process:
+>           wait_for_line(process, "task execution disabled; not ready")
+
+/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-review-coverage-q62_vt1z/test_startup.py:94: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+process = <Popen: returncode: -9 args: ['/Users/qingyue/projects/ResearchPaperBase_cod...>
+expected = 'task execution disabled; not ready', timeout = 10
+
+    def wait_for_line(process, expected, timeout=10):
+        """Read complete lines under one deadline; partial output cannot extend it."""
+        deadline = time.monotonic() + timeout
+        pending = b""
+        with selectors.DefaultSelector() as selector:
+            selector.register(process.stdout, selectors.EVENT_READ)
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0 or not selector.select(remaining):
+>                   raise TimeoutError("Process startup handshake timed out")
+E                   TimeoutError: Process startup handshake timed out
+
+/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-review-coverage-q62_vt1z/process_support.py:32: TimeoutError
+=============================== warnings summary ===============================
+../../../../../../../Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ../../../../../../../var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-review-coverage-q62_vt1z/test_startup.py::test_worker_idle_lifecycle
+1 failed, 1 warning in 10.21s
+
+Silent worker correctly rejected within external 15s limit; test cleanup completed.

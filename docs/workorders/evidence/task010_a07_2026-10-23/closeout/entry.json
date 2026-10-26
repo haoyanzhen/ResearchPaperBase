@@ -1,0 +1,21 @@
+{
+  "authorization": "接受 task010 本轮 A07 契约设计交付，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。",
+  "accepted_manifest_sha256": "a3bd32a750ef3e2268c063b7a1213d36ec920cb46af0179970529ce8442cbeef",
+  "current_changes": [],
+  "prior_evidence_sha256": {
+    "entry.json": "79753e3673f2119cb41bc363a3aaeccc5ea0760c0cac027410d22df51ffa4ebd",
+    "check_docs.py": "453ae492fad3a6ab45f3c6274a0996c6422a10a9c25432b1ae27016ab128256e",
+    "delivery.patch": "022085af1a698d5155fa2a8ce29fb5f35bd1ef5304b2dd0d1dc09fb582d90730",
+    "s2-checks.json": "1fc842d637416f8d0e3a80d846588276197a6b49d78005c048505ca6bb9ae451",
+    "before-openapi.json": "f3669641c55b3f328496f484af90c339a289382093b0ef851f5f7727d8fdd079",
+    "reviewed-sha256.json": "eab43d63fe019a3dbfe2ea75a9ba3ea00f6aab4f3eff34253c80209b0be94719",
+    "independent-review.txt": "3a8c8a7901224df49343032d90c3ce9cb534f8171bd6a0dd4d5e11de636e0c1c",
+    "final-checks.json": "87c475ac4bb356b423fd20fba88fd9411517d710ff6882188d71ea18646d1273",
+    "before/source-manifest.json": "6e6a46389494b40bfdb0cf22d78d50f2bdb2a016e048b3445fef72f1b50c153e",
+    "before/source.tar.gz": "73aa09189e867d3457efc0bd1abcd27d04246a1ab3984b90fed762549c65dcf4",
+    "delivery/source-manifest.json": "a3bd32a750ef3e2268c063b7a1213d36ec920cb46af0179970529ce8442cbeef",
+    "delivery/source.tar.gz": "75c3336b0c0103a74f18c029586ebde1f0f3bb7df0c8df72d005024b7679af57",
+    "s3-input/source-manifest.json": "a96703b3d2be612e9798090c626151009ba26a1b19fac92d244dc342a3e3af20",
+    "s3-input/source.tar.gz": "2aa6996813fa29fc56b68f08742f2efa95f41963e912de460111835ed19ec68e"
+  }
+}

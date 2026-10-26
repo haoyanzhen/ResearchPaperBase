@@ -1,0 +1,15 @@
+{
+  "changed_files": [
+    "contracts/p0.coverage.json",
+    "contracts/p0.openapi.json",
+    "docs/PROJECT_STATUS.md",
+    "docs/design/04-03_machine_contract_governance.md",
+    "docs/workorders/task014_b01_review_2026-10-24.md",
+    "scripts/check_api_contracts.py",
+    "scripts/tests/test_project_create_contract.py",
+    "scripts/tests/test_public_errors.py",
+    "tasks/014-project-create-machine-contract.md"
+  ],
+  "current_drift": [],
+  "manifest_sha256": "253209a5bd6cc6a526dff1da228f64e638f1879c25daa59ed5ede0acc1eb43b4"
+}

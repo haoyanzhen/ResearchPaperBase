@@ -1,0 +1,46 @@
+[
+  {
+    "name": "check",
+    "command": [
+      "python3",
+      "scripts/engineering.py",
+      "check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build",
+    "command": [
+      "python3",
+      "scripts/engineering.py",
+      "build"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "e2e",
+    "command": [
+      "python3",
+      "scripts/engineering.py",
+      "e2e"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "clean-delivery",
+    "command": [
+      "python3",
+      "scripts/verify_skeleton_delivery.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "migration-history",
+    "command": [
+      "python3",
+      "scripts/engineering.py",
+      "migration-history"
+    ],
+    "exit_code": 0
+  }
+]

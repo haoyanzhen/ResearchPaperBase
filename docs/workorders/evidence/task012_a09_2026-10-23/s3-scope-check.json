@@ -1,0 +1,17 @@
+{
+  "drift": [],
+  "changed_or_new_files": [
+    "docs/PROJECT_STATUS.md",
+    "docs/design/00-01_engineering_baseline.md",
+    "docs/design/05-01_internal_module_contracts.md",
+    "docs/design/06_agent_knowledge_services.md",
+    "docs/design/07_data_persistence.md",
+    "docs/design/09_quality_observability.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "docs/workorders/task012_a09_review_2026-10-23.md",
+    "tasks/012-graph-rag-technical-design.md"
+  ],
+  "table_shape_errors": [],
+  "openapi_unchanged": true,
+  "coverage_json_unchanged": true
+}

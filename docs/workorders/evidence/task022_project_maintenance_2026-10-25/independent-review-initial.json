@@ -1,0 +1,35 @@
+{
+  "stage": "S3 initial independent review",
+  "conclusion": "two P2 UI recovery defects pending root repair and follow-up",
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P2",
+      "file": "frontend/src/BusinessApp.tsx",
+      "location": "ProjectMaintenance.run fallback and save disabled predicate",
+      "requirement": "PM07 and 04 §5.1 distinguish known field rejection from unknown result",
+      "reproduction": "Edit project name to whitespace, save gets real422, correct name; Save stays disabled and only reload discards draft.",
+      "evidence": "independent-validation-counterexample.log: core422/error/disabled assertions passed; final nonessential locator assertion failed despite aria snapshot showing description. Not counted as full test pass."
+    },
+    {
+      "id": "R2",
+      "priority": "P2",
+      "file": "frontend/src/BusinessApp.tsx",
+      "location": "ProjectMaintenance.run 404 branch",
+      "requirement": "PM07 deleted resource safe empty state and unknown result readback",
+      "reproduction": "DELETE commits, response lost; loadCurrent GET404 retains old parent project and confirmation UI.",
+      "evidence": "static dataflow:404 branch only error/uncertain, no onChange/onDeleted clearing callback. Root accepted and plans real-browser regression."
+    }
+  ],
+  "verification": {
+    "independent_pinned_batch": "26 passed, 1 failed, 211 deselected, 60.67s",
+    "failure": "Shared-cookie test preparation attempts register_ui while second tab inherits logged-in A session; not product authorization failure.",
+    "run_id": "rpb_test_4aa32b51bd1e44499b84f62e65ff20f8",
+    "cleanup": true
+  },
+  "limitations": [
+    "Sources are evolving during S4; final rerun/hash binding required.",
+    "No Run/Task/asset lifecycle exists in this slice; no claim of cancellation/physical cleanup verified.",
+    "No production or real external services tested."
+  ]
+}

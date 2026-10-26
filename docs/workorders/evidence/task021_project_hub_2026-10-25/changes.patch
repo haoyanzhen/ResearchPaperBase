@@ -1,0 +1,875 @@
+--- a/README.md
++++ b/README.md
+@@ -1,6 +1,6 @@
+ # Research Paper Base
+ 
+-文档版本：v1.10
++文档版本：v1.11
+ 更新日期：2026-10-25
+ 
+ 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
+@@ -102,7 +102,7 @@
+ 验证检查归档文件集合和每份内容摘要；修改源码后须生成新基线，旧交付记录保留。创建命令中的路径是新基线示例；本次实际基线位置见任务007。
+ 
+ 
+-## M-P0-01 本地业务闭环
++## 本地业务闭环与 Project Hub
+ 
+ 需先按以上命令安装锁定依赖、构建前端。真实浏览器验证使用Python Playwright（dev依赖）：
+ 
+@@ -116,4 +116,6 @@
+ 
+ 演示步骤：注册（含确认密码）→用用户名或邮箱登录→创建Project→按项目链接刷新读取→退出。第二账号打开第一账号的项目链接应显示“资源不可用”。创建响应丢失时，刷新可恢复按用户隔离的待确认请求，只在点击“用原请求重试”后重放原键，不自动提交。显式退出清除本地待确认输入；会话失效时隐藏但保留原请求，同一账号重新登录后可用原键核查结果，不自动改键重发。密码不进入浏览器存储。
+ 
+-当前界面未提供Project列表、配置、治理、Project修改/归档/删除、知识构建等后续功能。默认根路径工程预览不等于业务入口；本片以/workspace和显式demo为验收对象。完整范围、测试证据及人工验收状态见[单一里程碑包](tasks/019-browser-milestone.md)。
++登录后可在“我的项目”查看本人项目（默认每页20项），点击名称进入，返回列表或退出重登后重新找回；归档项目标为只读，已删除项目不显示，管理员也不列出他人项目。列表失败可重试，游标失效可回第一页。
++
++当前未提供配置、治理、Project修改/归档/删除操作、知识构建等后续功能。默认根路径工程预览不等于业务入口；以/workspace和显式demo为验收对象。原认证/创建闭环已获限定接受，见[task019](tasks/019-browser-milestone.md)；Project Hub新增范围、验证和M-P0-02验收包见[task021](tasks/021-project-hub.md)。
+--- a/backend/src/rpb/adapters/project_commands.py
++++ b/backend/src/rpb/adapters/project_commands.py
+@@ -9,7 +9,7 @@
+ 
+ import sqlalchemy as sa
+ from sqlalchemy.dialects.postgresql import JSONB
+-from sqlalchemy.engine import Connection
++from sqlalchemy.engine import Connection, RowMapping
+ 
+ from rpb.adapters.auth import AccountStore
+ from rpb.adapters.auth import metadata as metadata
+@@ -102,6 +102,24 @@
+         )
+         if not row or row["status"] == "deleted":
+             raise AccountError("PERMISSION_RESOURCE_UNAVAILABLE", 404)
++        return self.project_view(row)
++
++    def list_projects(
++        self, limit: int, boundary: tuple[datetime, UUID] | None
++    ) -> list[dict[str, Any]]:
++        query = sa.select(projects).where(
++            projects.c.owner_id == self.actor_id, projects.c.status != "deleted"
++        )
++        if boundary is not None:
++            query = query.where(
++                sa.tuple_(projects.c.created_at, projects.c.id)
++                < sa.tuple_(sa.literal(boundary[0]), sa.literal(boundary[1]))
++            )
++        query = query.order_by(projects.c.created_at.desc(), projects.c.id.desc()).limit(limit)
++        return [self.project_view(row) for row in self.conn.execute(query).mappings()]
++
++    @staticmethod
++    def project_view(row: RowMapping) -> dict[str, Any]:
+         result = {
+             n: row[n]
+             for n in (
+--- a/backend/src/rpb/api/projects.py
++++ b/backend/src/rpb/api/projects.py
+@@ -4,7 +4,7 @@
+ from typing import Annotated, Any
+ from uuid import UUID
+ 
+-from fastapi import APIRouter, Header, Request, Response
++from fastapi import APIRouter, Header, Query, Request, Response
+ from fastapi.encoders import jsonable_encoder
+ from pydantic import BaseModel, ConfigDict, Field, field_validator
+ 
+@@ -75,6 +75,27 @@
+             },
+         }
+ 
++    @router.get("")
++    def list_projects(
++        request: Request,
++        page_size: Annotated[int, Query(ge=1, le=100)] = 20,
++        cursor: Annotated[str | None, Query(max_length=2048)] = None,
++        x_expected_actor: Annotated[UUID | None, Header()] = None,
++    ) -> dict[str, Any]:
++        if set(request.query_params) - {"page_size", "cursor"}:
++            raise AccountError("VALIDATION_BAD_REQUEST", 400)
++        items, next_cursor = service.list_projects(
++            token(request), page_size, cursor, x_expected_actor
++        )
++        return {
++            "data": {"items": wire(items)},
++            "meta": {
++                "request_id": request.state.request_id,
++                "next_cursor": next_cursor,
++                "has_more": next_cursor is not None,
++            },
++        }
++
+     @router.get("/{project_id}")
+     def read(project_id: UUID, request: Request) -> dict[str, Any]:
+         return {
+--- a/backend/src/rpb/modules/project/application/ports.py
++++ b/backend/src/rpb/modules/project/application/ports.py
+@@ -13,6 +13,9 @@
+ 
+     def find_command(self, key: str) -> dict[str, Any] | None: ...
+     def insert_project(self, identity: UUID, workspace: UUID, data: dict[str, str]) -> None: ...
++    def list_projects(
++        self, limit: int, boundary: tuple[datetime, UUID] | None
++    ) -> list[dict[str, Any]]: ...
+     def read_project(self, identity: UUID) -> dict[str, Any]: ...
+     def save_command(
+         self,
+--- a/backend/src/rpb/modules/project/application/service.py
++++ b/backend/src/rpb/modules/project/application/service.py
+@@ -1,7 +1,11 @@
+ """Coordinate Project creation, Construction initialization and durable replay."""
+ 
++import base64
++import binascii
+ import hashlib
++import hmac
+ import json
++import secrets
+ from collections.abc import Callable
+ from contextlib import AbstractContextManager
+ from datetime import UTC, datetime, timedelta
+@@ -19,6 +23,7 @@
+         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+     ) -> None:
+         self.uow, self.clock = uow, clock
++        self._cursor_key = secrets.token_bytes(32)
+ 
+     def create(
+         self, token: str, csrf: str, key: str, data: dict[str, str]
+@@ -47,3 +52,54 @@
+     def read(self, token: str, identity: UUID) -> dict[str, Any]:
+         with self.uow(token, None) as tx:
+             return tx.read_project(identity)
++
++    def list_projects(
++        self, token: str, page_size: int, cursor: str | None, expected_actor: UUID | None = None
++    ) -> tuple[list[dict[str, Any]], str | None]:
++        with self.uow(token, None) as tx:
++            if expected_actor is not None and expected_actor != tx.actor_id:
++                raise AccountError("AUTH_SESSION_INVALID", 401)
++            boundary = None
++            expires = int(self.clock().timestamp()) + 1800
++            if cursor is not None:
++                try:
++                    payload, signature = cursor.split(".")
++                    expected = hmac.new(self._cursor_key, payload.encode(), "sha256").hexdigest()
++                    if not hmac.compare_digest(signature, expected):
++                        raise ValueError("signature")
++                    decoded = json.loads(base64.urlsafe_b64decode(payload))
++                    if decoded[
++                        "scope"
++                    ] != "Project.List:nondeleted:created_at,id:desc:v1" or decoded["actor"] != str(
++                        tx.actor_id
++                    ):
++                        raise ValueError("scope")
++                    expires = decoded["expires"]
++                    at = datetime.fromisoformat(decoded["at"])
++                    if at.tzinfo is None:
++                        raise ValueError("timezone")
++                    boundary = (at, UUID(decoded["id"]))
++                except ValueError, KeyError, TypeError, binascii.Error, UnicodeError:
++                    raise AccountError("VALIDATION_CURSOR_MISMATCH", 400) from None
++                if expires <= self.clock().timestamp():
++                    raise AccountError("VALIDATION_CURSOR_EXPIRED", 400)
++            rows = tx.list_projects(page_size + 1, boundary)
++            items = rows[:page_size]
++            next_cursor = None
++            if len(rows) > page_size:
++                last = items[-1]
++                payload = base64.urlsafe_b64encode(
++                    json.dumps(
++                        {
++                            "scope": "Project.List:nondeleted:created_at,id:desc:v1",
++                            "actor": str(tx.actor_id),
++                            "expires": expires,
++                            "at": last["created_at"].isoformat(),
++                            "id": str(last["id"]),
++                        },
++                        separators=(",", ":"),
++                    ).encode()
++                ).decode()
++                signature = hmac.new(self._cursor_key, payload.encode(), "sha256").hexdigest()
++                next_cursor = payload + "." + signature
++            return items, next_cursor
+--- a/backend/tests/integration/test_project_hub_browser.py
++++ b/backend/tests/integration/test_project_hub_browser.py
+@@ -0,0 +1,174 @@
++"""PH05: discover owned projects using the real browser and API."""
++
++from pathlib import Path
++
++from playwright.sync_api import expect
++from test_browser_business import PASSWORD, login_ui, register_ui
++from test_browser_business import browser_app as browser_app
++
++from rpb.adapters.account import accounts
++from rpb.adapters.project import projects
++
++
++def seed_browser(page, base, count):
++    csrf = page.request.get(base + "/api/v1/auth/csrf").json()["data"]["csrf_token"]
++    headers = {"Origin": base, "X-CSRF-Token": csrf}
++    for i in range(count):
++        result = page.request.post(
++            base + "/api/v1/projects",
++            headers=headers | {"Idempotency-Key": f"hub-project-{i:08}"},
++            data={"name": f"Hub {i:03}", "description": "<script>literal only</script>"},
++        )
++        assert result.status == 201
++
++
++def test_ph05_hub_empty_paging_enter_return_mobile(browser_app):
++    browser, base, engine, run_id = browser_app
++    page = browser.new_page(viewport={"width": 390, "height": 844})
++    register_ui(page, base)
++    login_ui(page)
++    hub = page.get_by_role("region", name="我的项目")
++    expect(hub.get_by_text("还没有可显示的项目，可在下方创建。")).to_be_visible()
++    seed_browser(page, base, 21)
++    with engine.begin() as conn:
++        conn.execute(
++            projects.update().where(projects.c.name == "Hub 020").values(status="archived")
++        )
++    page.get_by_role("button", name="刷新列表").click()
++    expect(hub.get_by_role("link")).to_have_count(20)
++    expect(hub.get_by_text("已归档 · 只读", exact=True)).to_be_visible()
++    page.get_by_role("button", name="下一页").click()
++    expect(hub.get_by_role("link")).to_have_count(1)
++    expect(hub.get_by_role("link", name="Hub 000", exact=True)).to_be_visible()
++    expect(page.get_by_role("button", name="下一页")).to_have_count(0)
++    page.get_by_role("button", name="返回第一页").click()
++    expect(hub.get_by_role("link")).to_have_count(20)
++    hub.get_by_role("link", name="Hub 020", exact=True).click()
++    expect(page.get_by_role("heading", name="Hub 020", exact=True)).to_be_visible()
++    expect(page.get_by_text("已归档 · 只读", exact=True)).to_be_visible()
++    page.get_by_role("link", name="我的项目", exact=True).click()
++    expect(page.get_by_role("region", name="我的项目").get_by_role("link")).to_have_count(20)
++    page.wait_for_load_state("networkidle")
++    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
++    evidence = (
++        Path(__file__).resolve().parents[3]
++        / "docs/workorders/evidence/task021_project_hub_2026-10-25"
++    )
++    evidence.mkdir(parents=True, exist_ok=True)
++    page.screenshot(path=str(evidence / f"hub-mobile-{run_id}.png"), full_page=True)
++    page.set_viewport_size({"width": 1280, "height": 900})
++    page.screenshot(path=str(evidence / f"hub-desktop-{run_id}.png"), full_page=True)
++    page.get_by_role("button", name="退出登录").click()
++    expect(page.get_by_role("region", name="我的项目")).to_have_count(0)
++    login_ui(page)
++    expect(page.get_by_role("region", name="我的项目").get_by_role("link")).to_have_count(20)
++    page.close()
++
++
++def test_ph05_hub_network_failure_retry_and_expired_cursor(browser_app):
++    browser, base, _, _ = browser_app
++    page = browser.new_page()
++    register_ui(page, base)
++    login_ui(page)
++    seed_browser(page, base, 21)
++    page.route("**/api/v1/projects?*", lambda route: route.abort())
++    page.get_by_role("button", name="刷新列表").click()
++    expect(page.get_by_role("alert")).to_have_text("项目列表读取失败，请重试。")
++    page.unroute("**/api/v1/projects?*")
++    page.get_by_role("button", name="重试列表").click()
++    expect(page.get_by_role("region", name="我的项目").get_by_role("link")).to_have_count(20)
++
++    # Tamper only the request cursor: rejection comes from the real service.
++    def invalid_cursor(route):
++        route.continue_(url=base + "/api/v1/projects?page_size=20&cursor=invalid")
++
++    page.route("**/api/v1/projects?*cursor=*", invalid_cursor)
++    page.get_by_role("button", name="下一页").click()
++    expect(page.get_by_role("alert")).to_have_text("列表位置已失效，请返回第一页。")
++    page.get_by_role("button", name="返回第一页").click()
++    expect(page.get_by_role("region", name="我的项目").get_by_role("link")).to_have_count(20)
++    page.close()
++
++
++def test_ph05_hub_actor_switch_before_read_and_disabled(browser_app):
++    browser, base, engine, _ = browser_app
++    context = browser.new_context()
++    page = context.new_page()
++    register_ui(page, base)
++    login_ui(page)
++    seed_browser(page, base, 1)
++    other = browser.new_page()
++    register_ui(other, base, "Other", "other@example.invalid")
++    login_ui(other, "Other")
++    seed_browser(other, base, 1)
++    other.close()
++
++    def switch(route):
++        csrf = page.request.get(base + "/api/v1/auth/csrf").json()["data"]["csrf_token"]
++        response = page.request.post(
++            base + "/api/v1/auth/login",
++            headers={"Origin": base, "X-CSRF-Token": csrf},
++            data={"identifier": "Other", "password": PASSWORD},
++        )
++        assert response.status == 200
++        route.continue_()
++
++    page.route("**/api/v1/projects?*", switch)
++    page.get_by_role("button", name="刷新列表").click()
++    expect(page.get_by_role("heading", name="欢迎回来")).to_be_visible()
++    expect(page.get_by_role("region", name="我的项目")).to_have_count(0)
++    page.unroute("**/api/v1/projects?*")
++    login_ui(page, "Other")
++    expect(page.get_by_role("region", name="我的项目").get_by_role("link")).to_have_count(1)
++    with engine.begin() as conn:
++        conn.execute(
++            accounts.update().where(accounts.c.username_key == "other").values(enabled=False)
++        )
++    page.get_by_role("button", name="刷新列表").click()
++    expect(page.get_by_role("alert")).to_have_text("账号已禁用，请联系管理员。")
++    expect(page.get_by_role("region", name="我的项目")).to_have_count(0)
++    context.close()
++
++
++def test_ph05_delayed_list_cannot_restore_previous_account(browser_app):
++    browser, base, _, _ = browser_app
++    page = browser.new_page()
++    register_ui(page, base)
++    login_ui(page)
++    seed_browser(page, base, 1)
++    other = browser.new_page()
++    register_ui(other, base, "EmptyOther", "empty-other@example.invalid")
++    other.close()
++    # Hold delivery of a REAL response after fetch completes. Ignore abort solely
++    # in this test to exercise the alive guard against already queued completion.
++    page.evaluate("""() => {
++      const original = window.fetch;
++      window.hubHeld = false;
++      let holdNext = true;
++      window.fetch = async (url, init) => {
++        if (holdNext && String(url).startsWith('/api/v1/projects?')) {
++          holdNext = false;
++          const response = await original(url, {...init, signal: undefined});
++          return new Promise(resolve => {
++            window.hubRelease = () => resolve(response);
++            window.hubHeld = true;
++          });
++        }
++        return original(url, init);
++      };
++    }""")
++    page.get_by_role("button", name="刷新列表").click()
++    page.wait_for_function("window.hubHeld === true")
++    expect(page.get_by_text("正在读取项目…", exact=True)).to_be_visible()
++    expect(page.get_by_role("button", name="刷新列表")).to_be_disabled()
++    page.get_by_role("button", name="退出登录").click()
++    expect(page.get_by_role("heading", name="欢迎回来")).to_be_visible()
++    login_ui(page, "EmptyOther")
++    expect(page.get_by_text("还没有可显示的项目，可在下方创建。")).to_be_visible()
++    page.evaluate("""async () => {
++      window.hubRelease();
++      await new Promise(resolve => setTimeout(resolve, 0));
++    }""")
++    expect(page.get_by_role("region", name="我的项目").get_by_role("link")).to_have_count(0)
++    expect(page.get_by_text("Hub 000", exact=True)).to_have_count(0)
++    page.close()
+--- a/backend/tests/integration/test_project_list.py
++++ b/backend/tests/integration/test_project_list.py
+@@ -0,0 +1,158 @@
++"""PH01–04: owned, bounded, current-authority project discovery on real PG."""
++
++from datetime import UTC, datetime, timedelta
++from uuid import UUID
++
++import pytest
++import sqlalchemy as sa
++from test_account_auth import client
++from test_project_commands import counts, create, service_subject, signed_in
++
++from rpb.adapters.account import accounts
++from rpb.adapters.project import projects
++from rpb.modules.account_config.application.ports import AccountError
++
++
++def seed(c, h, count):
++    return [
++        create(c, h, {"name": f"Project {i:03}"}, f"list-project-{i:08}").json()["data"]
++        for i in range(count)
++    ]
++
++
++def test_ph01_empty_owned_status_projection_and_no_writes(db):
++    engine, _ = db
++    admin, ah = signed_in(engine, "Admin")
++    assert admin.get("/api/v1/projects").json()["data"] == {"items": []}
++    other, oh = signed_in(engine, "Other")
++    owned = seed(other, oh, 3)
++    create(admin, ah, {"name": "Private admin"})
++    with engine.begin() as conn:
++        conn.execute(
++            projects.update().where(projects.c.id == UUID(owned[0]["id"])).values(status="archived")
++        )
++        conn.execute(
++            projects.update().where(projects.c.id == UUID(owned[1]["id"])).values(status="deleted")
++        )
++    before = counts(engine)
++    writes = []
++
++    def observe(conn, cursor, statement, parameters, context, executemany):
++        if statement.lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE")):
++            writes.append(statement)
++
++    sa.event.listen(engine, "before_cursor_execute", observe)
++    try:
++        r = other.get("/api/v1/projects")
++        assert r.status_code == 200
++        items = r.json()["data"]["items"]
++        assert {x["id"] for x in items} == {owned[0]["id"], owned[2]["id"]}
++        for item in items:
++            assert item == other.get("/api/v1/projects/" + item["id"]).json()["data"]
++        assert [x["name"] for x in admin.get("/api/v1/projects").json()["data"]["items"]] == [
++            "Private admin"
++        ]
++    finally:
++        sa.event.remove(engine, "before_cursor_execute", observe)
++    assert not writes and counts(engine) == before
++    assert r.json()["meta"]["next_cursor"] is None and not r.json()["meta"]["has_more"]
++
++
++def test_ph02_default_bounds_ties_insert_and_terminal(db):
++    engine, _ = db
++    c, h = signed_in(engine)
++    rows = seed(c, h, 23)
++    instant = datetime(2026, 1, 1, tzinfo=UTC)
++    with engine.begin() as conn:
++        conn.execute(projects.update().values(created_at=instant))
++    expected = sorted((x["id"] for x in rows), reverse=True)
++    first = c.get("/api/v1/projects").json()
++    assert [x["id"] for x in first["data"]["items"]] == expected[:20]
++    assert first["meta"]["has_more"]
++    create(c, h, {"name": "Inserted after first page"}, "inserted-after-page-0001")
++    second = c.get("/api/v1/projects", params={"cursor": first["meta"]["next_cursor"]}).json()
++    assert [x["id"] for x in second["data"]["items"]] == expected[20:]
++    assert second["meta"]["next_cursor"] is None and not second["meta"]["has_more"]
++    assert len(c.get("/api/v1/projects?page_size=100").json()["data"]["items"]) == 24
++    assert len(c.get("/api/v1/projects?page_size=1").json()["data"]["items"]) == 1
++
++
++@pytest.mark.parametrize(
++    "query",
++    ["page_size=0", "page_size=101", "page_size=x", "page_size=1.5", "cursor=" + "x" * 2049],
++)
++def test_ph02_invalid_page_inputs(db, query):
++    c, _ = signed_in(db[0])
++    assert c.get("/api/v1/projects?" + query).status_code == 422
++
++
++@pytest.mark.parametrize(
++    "query", ["sort=name", "owner_id=someone", "status=deleted", "cursor=garbage", "cursor="]
++)
++def test_ph03_unknown_query_and_malformed_cursor(db, query):
++    c, _ = signed_in(db[0])
++    assert c.get("/api/v1/projects?" + query).status_code == 400
++
++
++def test_ph03_tamper_actor_and_current_authorization(db):
++    engine, _ = db
++    a, h = signed_in(engine)
++    seed(a, h, 2)
++    cursor = a.get("/api/v1/projects?page_size=1").json()["meta"]["next_cursor"]
++    actor = a.get("/api/v1/me").json()["data"]["id"]
++    b, _ = signed_in(engine, "Bob")
++    for c, value in [(a, cursor + "0"), (b, cursor)]:
++        r = c.get("/api/v1/projects", params={"cursor": value})
++        assert r.status_code == 400 and r.json()["error"]["code"] == "VALIDATION_CURSOR_MISMATCH"
++    assert b.get("/api/v1/projects", headers={"X-Expected-Actor": actor}).status_code == 401
++    assert a.get("/api/v1/projects", headers={"X-Expected-Actor": actor}).status_code == 200
++    assert client(engine).get("/api/v1/projects").status_code == 401
++    with engine.begin() as conn:
++        conn.execute(accounts.update().where(accounts.c.id == UUID(actor)).values(enabled=False))
++    r = a.get("/api/v1/projects", params={"cursor": cursor})
++    assert r.status_code == 401 and r.json()["error"]["code"] == "AUTH_ACCOUNT_DISABLED"
++
++
++def test_ph03_expiry_and_process_restart(db):
++    service, token, csrf = service_subject(db[0])
++    now = datetime.now(UTC)
++    service.clock = lambda: now
++    for i in range(2):
++        service.create(
++            token,
++            csrf,
++            f"expiry-command-{i:08}",
++            {"name": str(i), "description": "", "research_scope": ""},
++        )
++    _, cursor = service.list_projects(token, 1, None)
++    service.clock = lambda: now + timedelta(minutes=30)
++    with pytest.raises(AccountError) as exc:
++        service.list_projects(token, 1, cursor)
++    assert exc.value.code == "VALIDATION_CURSOR_EXPIRED" and exc.value.status == 400
++    assert service.list_projects(token, 1, None)[0]
++    from rpb.modules.project.application.service import ProjectService
++
++    restarted = ProjectService(service.uow)
++    with pytest.raises(AccountError) as exc:
++        restarted.list_projects(token, 1, cursor)
++    assert exc.value.code == "VALIDATION_CURSOR_MISMATCH"
++
++
++def test_ph04_failure_safe_retry(db):
++    engine, _ = db
++    c, h = signed_in(engine)
++    seed(c, h, 1)
++    before = counts(engine)
++
++    def fail(conn, cursor, statement, parameters, context, executemany):
++        if "FROM projects" in statement:
++            raise RuntimeError("PRIVATE database exception")
++
++    sa.event.listen(engine, "before_cursor_execute", fail)
++    try:
++        r = c.get("/api/v1/projects")
++        assert r.status_code == 500 and "PRIVATE" not in r.text
++    finally:
++        sa.event.remove(engine, "before_cursor_execute", fail)
++    assert len(c.get("/api/v1/projects").json()["data"]["items"]) == 1
++    assert counts(engine) == before
+--- a/contracts/p0.coverage.json
++++ b/contracts/p0.coverage.json
+@@ -1,6 +1,6 @@
+ {
+-  "version": "1.6",
+-  "date": "2026-10-24",
++  "version": "1.7",
++  "date": "2026-10-25",
+   "source_rows": [
+     {
+       "signature": "`CW/search-terms/action-preview`",
+@@ -666,7 +666,7 @@
+   ],
+   "normative_fingerprints": {
+     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
+-    "04-01_p0_operation_contracts.md": "d7563787508e297bcab467b8c425dc8e2a21299cedd43612c83d87393267d43c",
++    "04-01_p0_operation_contracts.md": "1da4fc2cef5008addd86c3226f9b3bf608d4d27ea4eba9f2f114980588de85c8",
+     "04-02_transport_task_file_contracts.md": "728862966bf2f797bab15a8de3ee0a4cc2bec9291e0fdb262eda65252a0da738"
+   },
+   "operation_coverage": {
+--- a/contracts/p0.openapi.json
++++ b/contracts/p0.openapi.json
+@@ -2,7 +2,7 @@
+   "openapi": "3.1.0",
+   "info": {
+     "title": "Research Paper Base P0 typed contract subset",
+-    "version": "1.6.0",
++    "version": "1.7.0",
+     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+   },
+   "servers": [
+@@ -1598,7 +1598,18 @@
+             "in": "query",
+             "required": false,
+             "schema": {
+-              "type": "string"
++              "type": "string",
++              "maxLength": 2048
++            }
++          },
++          {
++            "name": "X-Expected-Actor",
++            "in": "header",
++            "required": false,
++            "description": "Optional UI identity guard. Reject with AUTH_SESSION_INVALID when the authenticated account differs; never grants access.",
++            "schema": {
++              "type": "string",
++              "format": "uuid"
+             }
+           }
+         ],
+--- a/docs/PROJECT_STATUS.md
++++ b/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.67
++文档版本：v1.68
+ 更新日期：2026-10-25
+ 适用项目大版本：v1
+ 
+@@ -37,6 +37,8 @@
+ 本轮现有实现审计与精简已完成代码及自动验证：集中CLI配置拒绝处理、复用检查文件清单、删除等价UI分支；82后端/58契约/3前端/2浏览器、构建及干净安装wheel验证通过。详见[审计记录](workorders/code_cleanup_2026-10-23.md)；保留已有和并行工作区变更，本轮精简代码现已由task005 A10在2026-10-24按SK-01–09独立审查及重新验证，见下述审核包；本轮SK-01–09已获2026-10-24用户限定接受，其他范围不扩大，不代表业务核心验收。
+ 
+ ## 3. 待完成项
++
++2026-10-25最新决定：用户接受最新task019验收包（含task020修复及delivery基线），M-P0-01已限定人工接受，接受摘要及无漂移核验见[task019第9节](../tasks/019-browser-milestone.md#9-最新基线人工接受2026-10-25)。下列待验收/暂停描述为历史交付状态。按本轮继续下一阶段授权，[task021 Project Hub](../tasks/021-project-hub.md)已完成S1–S7工程收口：本人项目分页列表、浏览器找回/进入/返回、失败恢复和身份隔离；19项新增与原192项合计211项真实PG/HTTP/浏览器通过，87后端/66契约/3前端、构建通过。独立20项（含19项新增）和8项契约测试通过，C01/C02闭合。M-P0-02已到，提交单一验收包，等待人工接受；未实现完整Project生命周期、配置/构建，不恢复延期项。
+ 
+ 2026-10-25按用户要求完成[task020当前闭环操作模拟](../tasks/020-closed-loop-operation-simulation.md)：新增10个场景，发现并修复Project三字段未先去首尾空白再校验长度的缺陷；最终192项真实PG/HTTP/浏览器通过（含17个浏览器参数场景），87后端/66契约/3前端及最终构建通过，独立新增10项通过并复审闭合。原task019历史证据保留，当前验收内容基线见task020；M-P0-01仍待人工验收，不扩展配置/构建业务。
+ 
+--- a/docs/design/04-01_p0_operation_contracts.md
++++ b/docs/design/04-01_p0_operation_contracts.md
+@@ -1,7 +1,7 @@
+ # API 附录：P0 操作与数据契约
+ 
+-文档版本：v1.11
+-更新日期：2026-10-23
++文档版本：v1.12
++更新日期：2026-10-25
+ 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
+ 适用范围：P0 设计契约；不是实现或验收通过声明。
+ 
+@@ -162,6 +162,8 @@
+ | POST `P/cleanup-confirm` | `Project.Cleanup` / 008 | RevCommand+Confirmation → CommandResult | 重新检查影响范围及当前写资格，撤销后续写入或安全终止；不可清理不假装成功 |
+ | GET `P/workspace` | `Workspace.Open` / 011,013 | 无 → WorkspaceView | 无效记录安全回退并给原因；不恢复为写权限 |
+ | PUT `P/workspace/context` | `Workspace.SaveContext` / 013 | WorkspaceContextWrite → `{revision,saved_at}` | 用户+Project 隔离；active 可保存，archived 只读取服务端上下文，未提交输入可本地保留 |
++
++Project.List可携带可选`X-Expected-Actor` UUID请求头，作为浏览器当前显示账号的一致性断言；与已认证主体不符返回401 `AUTH_SESSION_INVALID`，不能凭该头选择Owner或获得权限。列表当前仅支持page_size/cursor；固定非deleted范围与created_at/id降序，不接受未声明筛选或排序。
+ 
+ Workspace 草稿保存不是章节/检索词内容保存；业务写入必须调用所属对象命令。恢复旧草稿时保留 base_revision，保存时重新做并发校验。
+ 
+--- a/docs/file_map.md
++++ b/docs/file_map.md
+@@ -1,6 +1,6 @@
+ # 项目文件功能目录
+ 
+-**文档版本**：v1.18 · 2026-10-21（A01–A03工程与审核准备）
++**文档版本**：v1.19 · 2026-10-25（Project Hub入口登记）
+ **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
+ 
+ ## 当前目录
+@@ -11,10 +11,10 @@
+ - `docs/archive/design_retirement_2026-10-19/`：12历史原文、当前去向及SQL删除记录。
+ - `contracts/`、`scripts/check_api_contracts.py`：局部机器契约与独立静态验证，不是应用实现。
+ - `archive/maybe_useful/`：唯一留存的代码候选与离线测试；没有应用入口。
+-- `tasks/`、`docs/VibeCodingRecord/`、本地 `auto-check/`：历史任务/学习资料。
++- `tasks/`：当前及历史任务；`docs/VibeCodingRecord/`、本地 `auto-check/`：学习与历史资料。
+ - `AGENTS.md`、`LICENSE`：项目约束与许可。
+ 
+-旧 `backend/`、`frontend/`、`e2e/` 及本地依赖环境已删除。未启动新核心实现。
++旧 `backend/`、`frontend/`、`e2e/` 及旧依赖环境已删除；当前同名backend/frontend为重建的新核心。实现与验证状态以[PROJECT_STATUS](PROJECT_STATUS.md)为准。
+ 
+ ## docs/ — 契约文档
+ 
+@@ -148,3 +148,6 @@
+ 本次修订 v1.17（2026-10-21）：登记实施前设计任务清单入口，不改变现行规范或已有执行状态。
+ 
+ 本次修订 v1.18（2026-10-21）：登记实施入口、工程基线、A01–A03证据；任务模板见[tasks/example.md](../tasks/example.md)，示例见[tasks/004](../tasks/004-project-create-idempotency-example.md)，基线证据见[证据目录](workorders/evidence/a01_a03_2026-10-21/README.md)。
++
++
++本次修订 v1.19（2026-10-25）：登记本轮新增[task021](../tasks/021-project-hub.md)、`backend/tests/integration/test_project_list.py`（本人分页/权限/失败）与`backend/tests/integration/test_project_hub_browser.py`（真实浏览器列表/恢复/身份时序）。运行代码为`backend/src/rpb/`与`frontend/src/`，业务演示由`scripts/run_business_demo.py`装配；工程命令见[README](../README.md)。纠正顶部退役后“未启动实现”的过期描述，不改写历史证据。
+--- a/frontend/src/BusinessApp.tsx
++++ b/frontend/src/BusinessApp.tsx
+@@ -1,7 +1,7 @@
+-import { useEffect, useState, type FormEvent } from 'react';
++import { useEffect, useRef, useState, type FormEvent } from 'react';
+ 
+ type User = { id: string; username: string; is_admin: boolean };
+-type Project = { id: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null };
++type Project = { id: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null; last_construction_at: string | null; last_activity_at: string | null };
+ type ProjectInput = { name: string; description: string; research_scope: string };
+ class ApiError extends Error {
+   constructor(public status: number, public code: string, message: string) { super(message); }
+@@ -15,11 +15,14 @@
+   STATE_OPERATION_NOT_ALLOWED: '用户名或邮箱已被使用。',
+   PERMISSION_CSRF_REJECTED: '会话校验失败，请刷新后重试。',
+ };
+-async function json<T>(url: string, init?: RequestInit): Promise<T> {
++async function envelope<T>(url: string, init?: RequestInit): Promise<{ data: T; meta: { next_cursor: string | null; has_more: boolean } }> {
+   const response = await fetch(url, { credentials: 'same-origin', ...init });
+   const value = await response.json();
+   if (!response.ok) throw new ApiError(response.status, value.error?.code ?? 'UNKNOWN', value.error?.message ?? '请求未完成。');
+-  return value.data as T;
++  return value;
++}
++async function json<T>(url: string, init?: RequestInit): Promise<T> {
++  return (await envelope<T>(url, init)).data;
+ }
+ async function post<T>(path: string, body: unknown, key?: string, expectedActor?: string): Promise<T> {
+   const csrf = await json<{ csrf_token: string }>('/api/v1/auth/csrf');
+@@ -30,6 +33,42 @@
+     if (current.id !== expectedActor) throw new ApiError(401, 'AUTH_SESSION_INVALID', '登录账号已变化，请重新确认。');
+   }
+   return json<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: JSON.stringify(body) });
++}
++
++function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (error: unknown) => void }) {
++  const [cursor, setCursor] = useState<string | null>(null);
++  const [reload, setReload] = useState(0);
++  const [items, setItems] = useState<Project[]>([]);
++  const [next, setNext] = useState<string | null>(null);
++  const [loading, setLoading] = useState(true);
++  const [failure, setFailure] = useState('');
++  const onFailure = useRef(onAuthFailure);
++  onFailure.current = onAuthFailure;
++  useEffect(() => {
++    let alive = true;
++    const controller = new AbortController();
++    setLoading(true); setItems([]); setNext(null); setFailure('');
++    const query = new URLSearchParams({ page_size: '20' });
++    if (cursor) query.set('cursor', cursor);
++    void envelope<{ items: Project[] }>(`/api/v1/projects?${query}`, {
++      signal: controller.signal, headers: { 'X-Expected-Actor': actor },
++    }).then(result => {
++      if (alive) { setItems(result.data.items); setNext(result.meta.next_cursor); }
++    }).catch(reason => {
++      if (!alive) return;
++      if (reason instanceof ApiError && reason.status === 401) onFailure.current(reason);
++      else setFailure(reason instanceof ApiError && reason.code.startsWith('VALIDATION_CURSOR_')
++        ? '列表位置已失效，请返回第一页。' : '项目列表读取失败，请重试。');
++    }).finally(() => { if (alive) setLoading(false); });
++    return () => { alive = false; controller.abort(); };
++  }, [actor, cursor, reload]);
++  return <section className="form-card project-list" aria-label="我的项目" aria-busy={loading}>
++    <div className="project-heading"><h2>我的项目</h2><button disabled={loading} onClick={() => { setCursor(null); setReload(n => n + 1); }}>刷新列表</button></div>
++    {loading ? <p>正在读取项目…</p> : failure ? <div><p role="alert">{failure}</p><button onClick={() => setReload(n => n + 1)}>重试列表</button></div> : items.length === 0 ? <p className="hint">还没有可显示的项目，可在下方创建。</p> : <ul>
++      {items.map(item => <li key={item.id}><a href={`/workspace?project=${encodeURIComponent(item.id)}`}>{item.name}</a><span className="badge">{item.status === 'active' ? '进行中' : '已归档 · 只读'}</span><p className="preserve">{item.description || '未填写描述'}</p><p className="hint">{item.default_knowledge_version_id ? '已有知识版本' : '尚无知识版本'} · 最近构建：{item.last_construction_at ?? '暂无'} · 最近活动：{item.last_activity_at ?? '暂无'}</p></li>)}
++    </ul>}
++    <div className="list-pages">{cursor && <button disabled={loading} onClick={() => setCursor(null)}>返回第一页</button>}{next && <button disabled={loading} onClick={() => setCursor(next)}>下一页</button>}</div>
++  </section>;
+ }
+ 
+ export function BusinessApp() {
+@@ -145,6 +184,7 @@
+       <h1>{user ? '研究项目' : mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
+       {notice && <p className="notice" role="status">{notice}</p>}
+       {error && <p className="error" role="alert">{error}</p>}
++      {user && !project && !busy && <ProjectList key={user.id} actor={user.id} onAuthFailure={explain} />}
+       {!user ? <section className="form-card auth-card" aria-label="账号认证">
+         <div className="auth-tabs"><button disabled={busy} aria-pressed={mode === 'login'} onClick={() => { setMode('login'); setError(''); setConfirmation(''); }}>登录</button><button disabled={busy} aria-pressed={mode === 'register'} onClick={() => { setMode('register'); setError(''); setPassword(''); }}>注册</button></div>
+         <form onSubmit={event => void authenticate(event)}>
+@@ -157,7 +197,7 @@
+           <button className="primary" disabled={busy} type="submit">{busy ? '处理中…' : mode === 'register' ? '创建账号' : '登录账号'}</button>
+         </form>
+       </section> : project ? <section className="form-card project-card" aria-label="当前项目">
+-        <div className="project-heading"><span className="badge">{project.status === 'active' ? '进行中' : '已归档 · 只读'}</span><a href="/workspace">新建项目</a></div>
++        <div className="project-heading"><span className="badge">{project.status === 'active' ? '进行中' : '已归档 · 只读'}</span><a href="/workspace">我的项目</a><a href="/workspace">新建项目</a></div>
+         <h2>{project.name}</h2>
+         <h3>研究描述</h3><p className="preserve">{project.description || '未填写'}</p>
+         <h3>研究范围</h3><p className="preserve">{project.research_scope || '未填写'}</p>
+--- a/frontend/src/style.css
++++ b/frontend/src/style.css
+@@ -1,3 +1,5 @@
+ :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#24332e;background:#f5f7f4;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit}header{height:76px;padding:0 5vw;display:flex;align-items:center;gap:20px;background:white;border-bottom:1px solid #dce3dc}.brand{font-size:19px;font-weight:650;text-decoration:none;color:#233e31}.badge{font-size:12px;border:1px solid #cddace;padding:5px 10px;border-radius:20px;color:#516e59}nav{padding:22px 5vw;display:flex;gap:12px}nav button{background:transparent;border:0;padding:10px 20px;border-radius:8px;color:#52645a;cursor:pointer}nav button[aria-current]{background:#dfeae0;color:#254e39;font-weight:600}main{max-width:1000px;margin:34px auto;padding:0 30px}.eyebrow{font-size:12px;letter-spacing:.15em;color:#64816d}h1{font-size:40px;font-weight:600;letter-spacing:-.04em;margin:12px 0}.intro{color:#64736a;font-size:17px}.empty{margin-top:40px;background:#fff;border:1px solid #dce4dc;border-radius:16px;text-align:center;padding:64px 24px}.symbol{font-size:38px;color:#64816d}.empty h2{font-size:20px;font-weight:500}.empty p{font-size:14px;color:#68766d}.empty button{margin-top:18px;padding:12px 22px;border:1px solid #dce4dc;border-radius:8px;background:#edf1ed;color:#718076;cursor:not-allowed}footer{margin:28px 0;color:#738377;font-size:12px;text-align:center}.skip{position:absolute;left:-9999px}.skip:focus{left:10px;top:5px;background:white;padding:8px}button:focus-visible,a:focus-visible{outline:3px solid #5f8f74;outline-offset:3px}@media(max-width:600px){header{padding:0 20px;gap:10px}.brand{font-size:16px}main{padding:0 20px;margin-top:20px}h1{font-size:32px}.empty{padding:40px 16px}nav{padding:18px 20px}}
+ 
+ .business main{max-width:820px;margin:48px auto}.business header{justify-content:space-between}.account-bar{display:flex;align-items:center;gap:16px;font-size:14px}.account-bar span{max-width:220px;overflow-wrap:anywhere}.business button{cursor:pointer;border:1px solid #c8d7cb;background:white;color:#304e3c;border-radius:8px;padding:10px 16px}.business button:disabled{cursor:wait;opacity:.6}.form-card{background:white;border:1px solid #dce4dc;border-radius:16px;padding:30px;margin-top:24px}.auth-card{max-width:480px}.auth-tabs{display:flex;gap:10px;margin-bottom:24px}.auth-tabs button[aria-pressed=true]{background:#e5eee5;border-color:#5f8067}.business form{display:grid;gap:20px}.business label{display:grid;gap:8px;font-size:14px;font-weight:600}.business input,.business textarea{font:inherit;color:#24332e;width:100%;border:1px solid #becdc0;border-radius:8px;padding:12px;background:#fcfdfb}.business input:focus,.business textarea:focus{outline:2px solid #789c80;outline-offset:2px}.business textarea{min-height:92px;resize:vertical}.business .checkbox{display:flex;align-items:center;font-weight:400}.checkbox input{width:auto}.business .primary{background:#2f5c43;color:white;border:0;font-weight:600;padding:14px 22px;justify-self:start}.hint{font-size:14px;line-height:1.7;color:#66796b;margin:0}.notice,.error{padding:12px 16px;border-radius:8px;line-height:1.6}.notice{background:#e4efe5;color:#2f613d}.error{background:#fff0eb;color:#8b422f}.project-heading{display:flex;justify-content:space-between;gap:16px;align-items:center}.business a{color:#315f43}.project-card h2{font-size:28px;overflow-wrap:anywhere}.project-card h3{font-size:14px;color:#687d6b;margin-top:28px}.preserve{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8}.knowledge-state{margin-top:30px;padding:18px;border-radius:8px;background:#f3f6ef;color:#637b61}.business h2{margin-top:0}.project-card h2{margin-top:24px}@media(max-width:600px){.business main{margin:28px auto}.form-card{padding:22px}.account-bar{gap:8px}.account-bar span{max-width:100px}.business header{height:auto;min-height:76px;flex-wrap:wrap;padding-top:16px;padding-bottom:16px}.business .primary{width:100%}.project-heading{flex-wrap:wrap}}
++
++.project-list ul{list-style:none;padding:0;margin:20px 0}.project-list li{padding:18px 0;border-top:1px solid #dce4dc;overflow-wrap:anywhere}.project-list li>a{font-weight:600;margin-right:16px}.project-list li .badge{display:inline-block}.project-list .preserve{margin-bottom:0;max-height:7em;overflow:auto}.list-pages{display:flex;gap:12px;flex-wrap:wrap}
+--- a/scripts/tests/test_public_errors.py
++++ b/scripts/tests/test_public_errors.py
+@@ -123,6 +123,15 @@
+      success=updated['responses']['201']
+      del success['headers']['Cache-Control']['required']; del success['headers']['Location']['required']
+      success['content']['application/json']['schema']['properties']['meta']={'$ref':'#/components/schemas/IdempotentMeta'}
++    if (path, method) == ('/projects', 'get'):
++     # task021 owns the bounded cursor and optional actor consistency guard.
++     # Assert the precise additions before normalizing for the historical check.
++     guard=next(p for p in updated['parameters'] if p['name']=='X-Expected-Actor')
++     self.assertEqual(guard['in'],'header'); self.assertFalse(guard['required'])
++     self.assertEqual(guard['schema'],{'type':'string','format':'uuid'})
++     updated['parameters'].remove(guard)
++     cursor=next(p for p in updated['parameters'] if p['name']=='cursor')
++     self.assertEqual(cursor['schema'].pop('maxLength'),2048)
+     self.assertEqual(op,updated)
+   self.assertEqual(SPEC_DATA['components']['responses']['PublicError429']['headers']['Retry-After']['required'],True)
+ 
+--- a/tasks/019-browser-milestone.md
++++ b/tasks/019-browser-milestone.md
+@@ -1,6 +1,6 @@
+ # Task019：注册登录与Project创建浏览器闭环
+ 
+-文档版本：v1.2
++文档版本：v1.3
+ 更新日期：2026-10-25
+ 
+ ## 1. 授权与里程碑
+@@ -70,3 +70,10 @@
+ ## 8. 检查点
+ 
+ 流程v1.7：S1范围授权、S2实现与自验、S3独立审查及缺陷修复、S4逐UI覆盖补测、S5保持行为无需重构、S6最终复验/复审、S7基线与证据交接完成。用户身份规则A已决，无悬而未决的同项业务问题。M-P0-01状态为等待人工；批次按原始“下一里程碑停下”指令停止推进后续业务。恢复时先核验delivery基线、人工答复及后续授权，不把本里程碑工程通过当成接受。
++
++
++## 9. 最新基线人工接受（2026-10-25）
++
++用户明确回复：“ok，接受最新的task019 验收包，继续推进下一阶段的任务”。M-P0-01现已获得限定人工接受，包含第6节引用的task020操作模拟及Project文本归一修复；旧节中的等待表述保留为当时历史状态，以本节为最新结论。
++
++接受基线：`docs/workorders/evidence/closure_simulation_2026-10-25/delivery/source-manifest.json`，SHA-256 `e1d5b2f8e378ffc322a6d41410a592f820f91bddf63126f79f5c761cb7d70640`。恢复时逐文件核对无漂移。接受只覆盖本地认证、本人Project创建/读取和拒绝恢复，不扩展为完整FR或生产验收。后续授权已恢复，下一片见[task021](021-project-hub.md)。
+--- a/tasks/020-closed-loop-operation-simulation.md
++++ b/tasks/020-closed-loop-operation-simulation.md
+@@ -1,6 +1,6 @@
+ # Task020：当前闭环全流程操作模拟
+ 
+-文档版本：v1.0
++文档版本：v1.1
+ 更新日期：2026-10-25
+ 
+ ## 1. 目标、授权与边界
+@@ -64,3 +64,6 @@
+ ## 8. 检查点
+ 
+ S1限定授权/快照、S2实现与自验、S3独立审查修复、S4覆盖补测、S5保持最小实现、S6最终复验/独立复审、S7文档与快照交接均完成。M-P0-01保持待人工验收；用户未授权越过里程碑推进后续业务。
++
++
++2026-10-25后续决定：用户明确接受最新task019验收包，包含本单delivery基线。M-P0-01已限定接受，原“待验收”描述为本次测试交付时状态；接受来源及精确摘要见[task019第9节](019-browser-milestone.md#9-最新基线人工接受2026-10-25)。后续进入[task021](021-project-hub.md)。
+--- a/tasks/021-project-hub.md
++++ b/tasks/021-project-hub.md
+@@ -0,0 +1,69 @@
++# Task021：Project Hub 本人项目找回闭环
++
++文档版本：v1.0
++更新日期：2026-10-25
++
++## 1. 目标与授权
++
++用户于2026-10-25接受最新task019并要求“继续推进下一阶段的任务”。先完成本人已有项目找回：登录后列表、分页、进入持久链接、空/失败恢复。按既定P0切片，沿用Owner权限，不实现编辑/归档/删除、配置、构建或延期项。M-P0-02在该可操作闭环工程收口后提交验收，不将局部Hub称为完整FR008。
++
++## 2. 依据与基线
++
++01 FR008、02 Project Owner/状态、03-01 P02a、04 §3分页、04-01 §1/3及机器Project.List、05应用边界、07存储、08授权。task020最终237文件基线逐文件无漂移；原工作区全部保留，入场快照见`docs/workorders/evidence/task021_project_hub_2026-10-25/before/`。M-P0-01接受记录见task019第9节。
++
++## 3. 修改落点
++
++Project application端口/服务、project_commands适配器、projects路由、BusinessApp及样式、PG/HTTP/浏览器测试。分页按created_at DESC,id DESC执行keyset查询，默认20、1–100；游标绑定Owner、固定筛选/排序/资源范围，无知识版本范围，HMAC防篡改并限时30分钟。进程重启后游标失效，用户回第一页；不为临时游标引入持久化迁移。只读不增加Task/Run/回执或改写Project/CW。
++
++## 4. 需求与验证追踪
++
++- PH01：本人列表；管理员无他人项目特权；active/archived可见，deleted不可见；空列表成功。
++- PH02：默认/边界页大小，稳定复合排序，同时间不漏不重，插入新项目不扰动后续页；终页标记。
++- PH03：游标篡改、跨账号、过期拒绝；每次请求重新鉴权；不接受未声明筛选/排序。
++- PH04：列表与详情投影一致，no-store；读取不写Project/CW/命令或创建运行对象；故障返回安全错误且可重试。
++- PH05：浏览器登录后找回项目、进入/返回、分页/刷新、空/加载/失败；退出或身份切换不展示另一账号列表，迟到响应不得覆盖新页面；窄屏可用。
++
++可执行用例：`backend/tests/integration/test_project_list.py`含15项参数化HTTP/真实PG场景；`test_project_hub_browser.py`含4项真实浏览器场景。逐项对应如下：
++
++| 要求 | 用例与观察 |
++| --- | --- |
++| PH01 | `test_ph01_empty_owned_status_projection_and_no_writes`：空、他人/管理员、归档/删除、详情一致 |
++| PH02 | `test_ph02_default_bounds_ties_insert_and_terminal`、`test_ph02_invalid_page_inputs`：默认20、1/100边界、非法类型/范围、同时间id排序、插入后翻页、终页 |
++| PH03 | `test_ph03_unknown_query_and_malformed_cursor`、`test_ph03_tamper_actor_and_current_authorization`、`test_ph03_expiry_and_process_restart`：固定筛选/排序、篡改/跨Owner/过期/重启、未认证/禁用、页面账号断言 |
++| PH04 | PH01记录SQL无写入且三表计数保持；`test_ph04_failure_safe_retry`注入真实查询故障并验证脱敏及恢复；ContractClient逐响应校验OpenAPI与no-store |
++| PH05 | `test_ph05_hub_empty_paging_enter_return_mobile`：空/分页/归档进入/返回/退出重登/390px；`test_ph05_hub_network_failure_retry_and_expired_cursor`：网络失败恢复与真实游标拒绝；`test_ph05_hub_actor_switch_before_read_and_disabled`：请求前共享cookie切换及禁用；`test_ph05_delayed_list_cannot_restore_previous_account`：真实响应保留在Promise屏障，观察加载/禁用，退出重登后释放不显示旧账号项目 |
++
++最后一个用例仅在测试中忽略AbortSignal，以独立验证已排队响应的alive防护，不伪造API成功数据。游标过期时间由应用服务注入时钟确定；浏览器游标用例改请求参数触发真实拒绝，不冒充等待30分钟。数据库全部使用隔离临时PG17，真实HTTP/Chromium；无LLM、邮件、Provider调用。
++
++## 5. 执行证据
++
++证据根：[task021_project_hub_2026-10-25](../docs/workorders/evidence/task021_project_hub_2026-10-25/)。
++
++- 首轮`integration.log`：210项通过，143.59秒，run `rpb_test_7aba576960014cd9b03c5e7940c48f00`，API/PG/临时根清理成功。期间适配器类型标注和SQL literal写法按mypy修正，不能用首轮代替最终复验。
++- `check-s4.log`：87后端/66契约/3前端、ruff格式/静态、mypy43源文件、TypeScript通过。先前失败日志保留：首次类型检查失败、随后规范指纹未同步、旧A04完整操作比较检测到新头/长度约束；已分别修正。旧断言现在先精确验证这两个增量，再对其余历史操作全等检查，不删除或降低原保证。
++- `build-final.log`：后端wheel及前端构建通过。依赖锁、安装和数据库迁移未改变；未重新做干净安装，未声称本轮执行。
++- 独立审查`/root/hub_review`发现C01必需迟到响应/加载用例缺失与C02机器游标边界缺失，均已补齐。`independent-review-final.json`：20项独立集成通过（19项本片新增＋1项既有认证），191项未选择，26.58秒；run `rpb_test_e04ae16326e34a7cab6d25892b0b2603`清理成功。受影响8项契约测试独立通过，执行前后受审文件无漂移。未声称独立重跑全套。
++- `compatibility.log`：对入场机器契约的兼容门禁退出1，仅`GET /projects`变化；已逐项审查为可选账号一致性头和游标长度约束，未绕过门禁或声称零变化。新接口尚无此前运行消费者；其他操作/响应/权限绑定保持。
++- 桌面与390px完整截图已目视核验，无横向溢出；不可信HTML显示为文字。截图包含20个测试项目，属于真实列表与滚动页面。
++- `integration-final.log`：最终211项通过，144.10秒；run `rpb_test_3b619a77ab7e42158de1e1122cec6b0d`，API/PG停止及临时根删除成功。包括19项本片新增与原192项回归。既有Starlette TestClient弃用警告保留；无真实外部服务调用。
++
++## 6. 决策与里程碑
++
++无新增业务决定。M-P0-01已接受；M-P0-02为本片Hub找回闭环，工程已收口，现提交人工验收。后续配置/构建不由本片自动宣称完成。
++
++## 7. 交付报告
++
++当前完成本人项目发现接口与浏览器入口，完整Project编辑/生命周期、搜索/筛选、设置与构建仍未交付，FR008整体不关闭。无数据库结构变化，复用已有owner/created_at/id索引。列表游标仅适合本地单进程演示，重启使旧游标拒绝并可回第一页，多进程共享签名密钥/生产部署未验证。演示仍为临时库，关闭后删除数据。
++
++M-P0-02验收路径：按README安装并build后，运行`python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@17/bin`，打开`http://127.0.0.1:8765/workspace`；注册登录→创建多个项目→“我的项目”返回列表→从名称进入→退出重登仍能从列表找回；第二账号不见前账号项目。超过20项出现下一页。自动场景覆盖手工不便复现的故障、禁用、共享cookie和迟到响应。测试使用独立临时PG17，无生产写入。
++
++本片补充了已接受M-P0-01的首页展示，原认证/创建/读取及恢复全套回归随最终验证运行；旧人工接受只绑定原基线。本次Hub行为由M-P0-02单独验收。
++
++## 8. 检查点
++
++流程v1.7。S1范围/基线、S2实现自验、S3独立审查、S4逐PH复核与补测已完成。S5抽取列表/详情共用投影、沿用现有UoW/索引、独立列表组件生命周期，无必要额外抽象。S6最终211项、check/build及独立复审通过；S7最终基线和状态已收口。授权来自本轮消息，依赖task019/020最新基线接受。无待决业务事项，M-P0-02已到并等待人工验收，暂停后续依赖本闭环的业务推进。
++
++
++最终内容基线：证据根`delivery/source-manifest.json`及`source.tar.gz`；完整性和摘要见`receipt.json`。受审代码/测试/机器契约与独立执行摘要一致；S6后仅追加README、文件导航、任务和状态交接，未改变运行规则。文档引用/版本/差异核验见`documentation-check.json`。未提交、未跟踪文件均包含，保留全部既有工作区修改。
++
++交付状态：本片设计/代码/自动验证/工程收口完成；M-P0-01原范围已接受，M-P0-02待接受；完整FR008、配置/构建、生产部署仍未完成。

@@ -1,0 +1,43 @@
+[
+  {
+    "name": "tests",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-v"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "structure",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "compatibility",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "dependencies",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "-m",
+      "pip",
+      "freeze"
+    ],
+    "exit_code": 0
+  }
+]

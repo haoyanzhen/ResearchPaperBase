@@ -1,0 +1,4 @@
+Passed: 164 local link targets; changed document versions/dates; git diff --check.
+Original files preserved: 106; permitted documentation changes: 7.
+Unchanged original files retain exact initial SHA-256. All original content is in initial-files.tar.gz.
+Static anchors were not renamed in this delivery.

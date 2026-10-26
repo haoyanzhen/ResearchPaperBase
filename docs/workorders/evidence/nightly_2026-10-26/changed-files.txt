@@ -1,0 +1,4 @@
+docs/PROJECT_STATUS.md
+docs/design/README.md
+docs/workorders/preimplementation_design_tasks_2026-10-21.md
+tasks/022-project-maintenance.md

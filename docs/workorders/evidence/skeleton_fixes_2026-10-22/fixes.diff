@@ -1,0 +1,911 @@
+--- initial/.gitignore
++++ reviewed/.gitignore
+@@ -0,0 +1,180 @@
++# self defined
++TODO.md
++.gitignore
++docs/design/11_malicious_attack_defense.md
++# learn
++auto-check
++# docs/VibeCodingRecord
++
++# test old files
++old_files
++
++# codearts
++.arts
++.codeartsdoer
++
++# mac file
++*.DS_Store
++
++# Byte-compiled / optimized / DLL files
++__pycache__/
++*.py[cod]
++*$py.class
++
++# C extensions
++*.so
++
++# Distribution / packaging
++.Python
++build/
++develop-eggs/
++dist/
++downloads/
++eggs/
++.eggs/
++lib/
++lib64/
++parts/
++sdist/
++var/
++wheels/
++share/python-wheels/
++*.egg-info/
++.installed.cfg
++*.egg
++MANIFEST
++node_modules/
++*.tsbuildinfo
++
++# PyInstaller
++#  Usually these files are written by a python script from a template
++#  before PyInstaller builds the exe, so as to inject date/other infos into it.
++*.manifest
++*.spec
++
++# Installer logs
++pip-log.txt
++pip-delete-this-directory.txt
++
++# Unit test / coverage reports
++htmlcov/
++.tox/
++.nox/
++.coverage
++.coverage.*
++.cache
++nosetests.xml
++coverage.xml
++*.cover
++*.py,cover
++.hypothesis/
++.pytest_cache/
++cover/
++
++# Translations
++*.mo
++*.pot
++
++# Django stuff:
++*.log
++local_settings.py
++db.sqlite3
++db.sqlite3-journal
++
++# Flask stuff:
++instance/
++.webassets-cache
++
++# Scrapy stuff:
++.scrapy
++
++# Sphinx documentation
++docs/_build/
++
++# PyBuilder
++.pybuilder/
++target/
++
++# Jupyter Notebook
++.ipynb_checkpoints
++
++# IPython
++profile_default/
++ipython_config.py
++
++# pyenv
++#   For a library or package, you might want to ignore these files since the code is
++#   intended to run in multiple environments; otherwise, check them in:
++# .python-version
++
++# pipenv
++#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
++#   However, in case of collaboration, if having platform-specific dependencies or dependencies
++#   having no cross-platform support, pipenv may install dependencies that don't work, or not
++#   install all needed dependencies.
++#Pipfile.lock
++
++# poetry
++#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
++#   This is especially recommended for binary packages to ensure reproducibility, and is more
++#   commonly ignored for libraries.
++#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
++#poetry.lock
++
++# pdm
++#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
++#pdm.lock
++#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
++#   in version control.
++#   https://pdm.fming.dev/#use-with-ide
++.pdm.toml
++
++# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
++__pypackages__/
++
++# Celery stuff
++celerybeat-schedule
++celerybeat.pid
++
++# SageMath parsed files
++*.sage.py
++
++# Environments
++.env
++.venv
++env/
++venv/
++ENV/
++env.bak/
++venv.bak/
++
++# Spyder project settings
++.spyderproject
++.spyproject
++
++# Rope project settings
++.ropeproject
++
++# mkdocs documentation
++/site
++
++# mypy
++.mypy_cache/
++.dmypy.json
++dmypy.json
++
++# Pyre type checker
++.pyre/
++
++# pytype static type analyzer
++.pytype/
++
++# Cython debug symbols
++cython_debug/
++
++# PyCharm
++#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
++#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
++#  and can be added to the global gitignore or merged into this file.  For a more nuclear
++#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
++#.idea/
+--- initial/README.md
++++ reviewed/README.md
+@@ -1,6 +1,6 @@
+ # Research Paper Base
+ 
+-文档版本：v1.5
++文档版本：v1.6
+ 更新日期：2026-10-22
+ 
+ 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
+@@ -81,3 +81,15 @@
+ `python3 scripts/engineering.py migration-history` 可查看空迁移链。`integration` 和 `alembic upgrade head` 当前明确失败，不连接任何数据库；真实PostgreSQL 17、隔离夹具及第一份业务迁移须随后续存储切片交付。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
+ 
+ 本次修订（2026-10-22）：增加首批工程安装、启停、检查和构建入口；审核结论由人工记录。
++
++
++## 工程交付快照
++
++审核R01–R04修复见[任务007](tasks/007-skeleton-review-fixes.md)。完整源码快照包含空文件、二进制和当前未提交源码；不依赖文本diff恢复文件集合，不包含证据目录以避免递归。只接受新输出目录，不覆盖历史基线：
++
++```sh
++python3 scripts/delivery_snapshot.py create --directory docs/workorders/evidence/new-delivery-baseline
++python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/new-delivery-baseline
++```
++
++验证检查归档文件集合和每份内容摘要；修改源码后须生成新基线，旧交付记录保留。创建命令中的路径是新基线示例；本次实际基线位置见任务007。
+--- initial/backend/.gitignore
++++ reviewed/backend/.gitignore
+@@ -0,0 +1 @@
++.ruff_cache/
+--- initial/backend/tests/architecture/test_boundaries.py
++++ reviewed/backend/tests/architecture/test_boundaries.py
+@@ -47,3 +47,47 @@
+ 
+ def test_actual_import_graph():
+     checker.main()
++
++
++@pytest.mark.parametrize("target", ["rpb.adapters", "rpb.bootstrap"])
++@pytest.mark.parametrize(
++    "form", ["import {target}", "from {parent} import {leaf}", "from {target} import service"]
++)
++def test_application_rejects_package_and_member_imports(target, form):
++    parent, leaf = target.rsplit(".", 1)
++    source = form.format(target=target, parent=parent, leaf=leaf)
++    assert checker.violations("rpb/modules/project/application/use_case.py", source)
++
++
++@pytest.mark.parametrize("target", ["rpb.agents", "rpb.modules", "rpb.api"])
++@pytest.mark.parametrize(
++    "form", ["import {target}", "from {parent} import {leaf}", "from {target} import service"]
++)
++def test_knowledge_rejects_reverse_package_imports(target, form):
++    parent, leaf = target.rsplit(".", 1)
++    assert checker.violations(
++        "rpb/knowledge/read.py", form.format(target=target, parent=parent, leaf=leaf)
++    )
++
++
++@pytest.mark.parametrize(
++    "source",
++    [
++        "import rpb.modules.review.application.ports",
++        "from rpb.modules.review.application import ports",
++        "from rpb.modules.review.application.ports import ReadReview",
++    ],
++)
++def test_public_port_package_and_members_allowed(source):
++    assert not checker.violations("rpb/modules/project/application/use_case.py", source)
++
++
++@pytest.mark.parametrize(
++    "source",
++    [
++        "from rpb.modules.review.application import ports_private",
++        "import rpb.modules.review.application.ports_private",
++    ],
++)
++def test_similarly_named_private_packages_still_rejected(source):
++    assert checker.violations("rpb/modules/project/application/use_case.py", source)
+--- initial/backend/tests/unit/process_support.py
++++ reviewed/backend/tests/unit/process_support.py
+@@ -0,0 +1,40 @@
++"""Bounded POSIX process handshakes for local API/worker tests."""
++
++import os
++import selectors
++import subprocess
++import time
++from contextlib import contextmanager
++
++
++@contextmanager
++def managed_process(args, env=None):
++    process = subprocess.Popen(args, env=env, stdout=subprocess.PIPE, text=True)
++    try:
++        yield process
++    finally:
++        if process.poll() is None:
++            process.kill()
++        process.wait(timeout=10)
++        if process.stdout:
++            process.stdout.close()
++
++
++def wait_for_line(process, expected, timeout=10):
++    """Read complete lines under one deadline; partial output cannot extend it."""
++    deadline = time.monotonic() + timeout
++    pending = b""
++    with selectors.DefaultSelector() as selector:
++        selector.register(process.stdout, selectors.EVENT_READ)
++        while True:
++            remaining = deadline - time.monotonic()
++            if remaining <= 0 or not selector.select(remaining):
++                raise TimeoutError("Process startup handshake timed out")
++            chunk = os.read(process.stdout.fileno(), 4096)
++            if not chunk:
++                raise RuntimeError("Process exited before startup handshake")
++            pending += chunk
++            while b"\n" in pending:
++                line, pending = pending.split(b"\n", 1)
++                if expected in line.decode():
++                    return
+--- initial/backend/tests/unit/test_delivery_snapshot.py
++++ reviewed/backend/tests/unit/test_delivery_snapshot.py
+@@ -0,0 +1,52 @@
++import difflib
++import importlib.util
++import json
++import tarfile
++from pathlib import Path
++
++import pytest
++
++ROOT = Path(__file__).resolve().parents[3]
++spec = importlib.util.spec_from_file_location("snapshot", ROOT / "scripts/delivery_snapshot.py")
++assert spec and spec.loader
++snapshot = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(snapshot)
++
++
++def test_snapshot_reconstructs_empty_binary_and_text_files(tmp_path):
++    root = tmp_path / "source"
++    root.mkdir()
++    files = {"versions/.gitkeep": b"", "data.bin": b"\x00\xff", "plain.txt": b"no newline"}
++    for name, data in files.items():
++        path = root / name
++        path.parent.mkdir(parents=True, exist_ok=True)
++        path.write_bytes(data)
++    # Reproduce why the original text-only delivery patch lost the empty addition.
++    assert "".join(difflib.unified_diff([], "".splitlines(True))) == ""
++    output = tmp_path / "baseline"
++    expected = snapshot.create_snapshot(root, list(files), output)
++    with tarfile.open(output / "source.tar.gz") as archive:
++        archive.extractall(tmp_path / "restored", filter="data")
++    restored = tmp_path / "restored"
++    assert {
++        str(p.relative_to(restored)): p.read_bytes() for p in restored.rglob("*") if p.is_file()
++    } == files
++    assert snapshot.verify_snapshot(output) == expected
++    with pytest.raises(FileExistsError):
++        snapshot.create_snapshot(root, list(files), output)
++
++
++@pytest.mark.parametrize("mutation", ["missing", "tampered", "extra"])
++def test_snapshot_rejects_incomplete_or_inconsistent_manifest(tmp_path, mutation):
++    (tmp_path / "empty").touch()
++    output = tmp_path / "baseline"
++    data = snapshot.create_snapshot(tmp_path, ["empty"], output)
++    if mutation == "missing":
++        del data["empty"]
++    elif mutation == "tampered":
++        data["empty"] = "wrong-hash"
++    else:
++        data["not-in-archive"] = snapshot.digest(b"")
++    (output / "source-manifest.json").write_text(json.dumps(data))
++    with pytest.raises(ValueError, match="file set or SHA-256"):
++        snapshot.verify_snapshot(output)
+--- initial/backend/tests/unit/test_review_regressions.py
++++ reviewed/backend/tests/unit/test_review_regressions.py
+@@ -0,0 +1,57 @@
++import importlib.util
++import json
++import threading
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++from pathlib import Path
++
++import pytest
++from fastapi import FastAPI
++from test_startup import test_probes_and_no_business_routes as assert_probe_contract
++
++from rpb.api.health import live, ready
++
++ROOT = Path(__file__).resolve().parents[3]
++spec = importlib.util.spec_from_file_location(
++    "delivery", ROOT / "scripts/verify_skeleton_delivery.py"
++)
++assert spec and spec.loader
++delivery = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(delivery)
++
++
++def test_live_201_mutation_fails_application_contract(monkeypatch):
++    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
++    app.add_api_route("/health/live", live, status_code=201)
++    app.add_api_route("/health/ready", ready)
++    monkeypatch.setattr("test_startup.create_app", lambda: app)
++    with pytest.raises(AssertionError):
++        assert_probe_contract(monkeypatch)
++
++
++@pytest.mark.parametrize("status", [200, 201])
++def test_wheel_network_probe_requires_exact_200(status):
++    class Handler(BaseHTTPRequestHandler):
++        def do_GET(self):
++            body = json.dumps({"status": "alive"}).encode()
++            self.send_response(status)
++            self.send_header("Content-Length", str(len(body)))
++            self.end_headers()
++            self.wfile.write(body)
++
++        def log_message(self, *args):
++            pass
++
++    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
++        thread = threading.Thread(target=server.serve_forever)
++        thread.start()
++        try:
++            url = f"http://127.0.0.1:{server.server_port}/health/live"
++            if status == 200:
++                assert delivery.probe_live(url) == 200
++            else:
++                with pytest.raises(AssertionError, match="Expected live HTTP 200, got 201"):
++                    delivery.probe_live(url)
++        finally:
++            server.shutdown()
++            thread.join(timeout=5)
++            assert not thread.is_alive()
+--- initial/backend/tests/unit/test_startup.py
++++ reviewed/backend/tests/unit/test_startup.py
+@@ -6,6 +6,7 @@
+ 
+ import pytest
+ from fastapi.testclient import TestClient
++from process_support import managed_process, wait_for_line
+ from pydantic import ValidationError
+ 
+ from rpb.bootstrap.api import create_app
+@@ -29,6 +30,7 @@
+     "values",
+     [
+         {"RPB_PORT": "0"},
++        {"RPB_PORT": "1023"},
+         {"RPB_PORT": "65536"},
+         {"RPB_PORT": "bad"},
+         {"RPB_HOST": "0.0.0.0"},
+@@ -51,7 +53,9 @@
+         if key.startswith("RPB_"):
+             monkeypatch.delenv(key)
+     with TestClient(create_app()) as client:
+-        assert client.get("/health/live").json() == {"status": "alive"}
++        live = client.get("/health/live")
++        assert live.status_code == 200
++        assert live.json() == {"status": "alive"}
+         ready = client.get("/health/ready")
+         assert ready.status_code == 503
+         assert ready.json() == {"status": "not_ready"}
+@@ -60,16 +64,17 @@
+         assert client.post("/api/projects", json={"name": "must not exist"}).status_code == 404
+ 
+ 
+-def test_api_rejects_configuration_without_leaking_values():
++@pytest.mark.parametrize("module", ["api", "worker"])
++def test_process_rejects_configuration_without_leaking_values(module):
+     result = subprocess.run(
+-        [sys.executable, "-m", "rpb.bootstrap.api"],
++        [sys.executable, "-m", f"rpb.bootstrap.{module}"],
+         env=clean_env() | {"RPB_PORT": "private-marker"},
+         capture_output=True,
+         text=True,
+         timeout=10,
+     )
+     assert result.returncode == 2
+-    assert "private-marker" not in result.stderr
++    assert "private-marker" not in result.stdout + result.stderr
+ 
+ 
+ def test_worker_refuses_task_execution():
+@@ -85,23 +90,14 @@
+ 
+ 
+ def test_worker_idle_lifecycle():
+-    process = subprocess.Popen(
+-        [sys.executable, "-m", "rpb.bootstrap.worker", "--idle"],
+-        env=clean_env(),
+-        stdout=subprocess.PIPE,
+-        text=True,
+-    )
+-    try:
+-        assert process.stdout
+-        assert "task execution disabled; not ready" in process.stdout.readline()
++    with managed_process(
++        [sys.executable, "-m", "rpb.bootstrap.worker", "--idle"], env=clean_env()
++    ) as process:
++        wait_for_line(process, "task execution disabled; not ready")
+         process.send_signal(signal.SIGTERM)
+         output, _ = process.communicate(timeout=10)
+         assert process.returncode == 0
+         assert "stopped" in output
+-    finally:
+-        if process.poll() is None:
+-            process.kill()
+-            process.wait()
+ 
+ 
+ def test_migration_refuses_even_with_business_configuration():
+@@ -115,4 +111,27 @@
+     )
+     assert result.returncode != 0
+     assert "Migration execution unavailable" in result.stderr
+-    assert "private-marker" not in result.stderr
++    assert "private-marker" not in result.stdout + result.stderr
++
++
++@pytest.mark.parametrize(
++    "prefix", ["", "import sys; sys.stdout.write('partial'); sys.stdout.flush(); "]
++)
++def test_worker_missing_startup_signal_times_out_and_is_reaped(prefix):
++    import time
++
++    started = time.monotonic()
++    with pytest.raises(TimeoutError, match="handshake timed out"):
++        with managed_process(
++            [sys.executable, "-c", prefix + "import time; time.sleep(30)"]
++        ) as process:
++            wait_for_line(process, "ready", timeout=0.2)
++    assert process.poll() is not None
++    assert time.monotonic() - started < 5
++
++
++def test_worker_exit_before_handshake_is_reaped():
++    with pytest.raises(RuntimeError, match="exited before"):
++        with managed_process([sys.executable, "-c", "pass"]) as process:
++            wait_for_line(process, "ready", timeout=2)
++    assert process.poll() is not None
+--- initial/docs/PROJECT_STATUS.md
++++ reviewed/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.32
++文档版本：v1.33
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+@@ -19,7 +19,7 @@
+ 
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+-| 应用实现基础 | 第一批工程骨架已实现；独立审核发现待修问题 | [任务005](../tasks/005-engineering-skeleton.md)：独立API/空闲Worker、前端预览、模块边界、锁文件及检查/构建入口；业务路由、数据库迁移、持久任务、Graph-RAG和生产部署未实现；验证明细见审核单；[独立审核](workorders/skeleton_independent_review_2026-10-22.md)确认2项P2/2项P3待修，未修改实现、未记人工接受 |
++| 应用实现基础 | 第一批工程骨架审核问题已修复；待人工接受 | [任务005](../tasks/005-engineering-skeleton.md)：独立API/空闲Worker、前端预览、模块边界、锁文件及检查/构建入口；业务路由、数据库迁移、持久任务、Graph-RAG和生产部署未实现；验证明细见审核单；[独立审核](workorders/skeleton_independent_review_2026-10-22.md)原2项P2/2项P3已在[修复收口](workorders/skeleton_fixes_review_2026-10-22.md)闭合，含回归、独立复核及隔离交付基线；实时工作区并行改动不混入本轮验收，未记人工接受 |
+ | 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04已限定下一轮范围、尚未执行，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+@@ -112,3 +112,5 @@
+ 本次修订 v1.32（2026-10-22）：按用户要求安排三位subagent独立审核首批工程骨架；登记架构门禁、Worker测试等待、HTTP状态断言和空文件补丁四项问题。源码与产物摘要入场核验一致，check重跑通过；本轮仅审核与状态登记，未修复实现。
+ 
+ 本次修订 v1.32（2026-10-22）：按用户要求建立任务006，限定下一轮A04设计、机器契约、测试与必要文档同步；本轮仅建单，不启动A04执行、业务编码或延期Graph-RAG选型，不代填既有交付的人工接受。
++
++本次修订（2026-10-22）：按用户授权修复骨架R01–R04并补回归、独立复核；最终隔离基线58后端/15契约/2前端/2浏览器通过。保留原证据和实时并行修改，范围与摘要见任务007及修复收口。
+--- initial/docs/workorders/skeleton_fixes_review_2026-10-22.md
++++ reviewed/docs/workorders/skeleton_fixes_review_2026-10-22.md
+@@ -0,0 +1,61 @@
++# 工程骨架R01–R04修复与复核收口
++
++文档版本：v1.0
++更新日期：2026-10-22
++
++## 1. 交付结论
++
++[原独立审核](skeleton_independent_review_2026-10-22.md)的R01–R04已修复并补回归。代码复核与证据复核subagent均未发现修复引入的阻断问题；人工接受仍待记录。[任务007](../../tasks/007-skeleton-review-fixes.md)列出授权、修改及需求追踪。本轮不改变业务规则、不实现业务数据库或持久Worker、不启动任务006。
++
++本轮工作区存在并行变更，因此最终验收基线是**起始工作区加R01–R04修复的隔离源码快照**，不是未经区分的整个实时工作区。所有外部修改原样保留；独立基线与实时工作区的差异逐文件登记，不通过回退来制造一致性。
++
++## 2. 问题闭合
++
++| 问题 | 修改与回归证据 | 独立复核 |
++| --- | --- | --- |
++| R01 / P2 | 按包名相等或点分子成员匹配；禁止包根/成员正确拒绝，公开ports正确允许，近似私有名称仍拒绝；新增回归在原检查器12失败，新版本通过 | fix_code_review确认边界和三种导入形式；无新增阻断 |
++| R02 / P2 | 统一monotonic截止时间，非阻塞字节读取完整启动行；无输出/半行超时、提前退出、正常退出及清理均验证；真实Worker移除启动日志后10秒明确失败 | subagent独立变异复现，确认失败并回收Worker |
++| R03 / P3 | 应用测试和wheel HTTP探针精确断言200，日志来自实际响应；201变异拒绝，本机真实200/201正负检查 | subagent复跑201变异，确认在状态码断言处失败 |
++| R04 / P3 | 完整源码tar和文件集合/SHA清单；含空文件、二进制与无换行文本；拒绝覆盖旧基线，拒绝缺失/篡改/额外清单 | candidate安全还原163/163及空.gitkeep验证通过；最终baseline再次核验，结果见final-review.txt |
++
++旧文本patch不覆盖、不修写，作为历史缺陷证据保留。新交付以完整源码快照为准，修复差异仅帮助阅读，不再声称仅用文本diff即可还原文件集合。
++
++## 3. 验证结果与基线对应
++
++证据目录：[skeleton_fixes_2026-10-22](evidence/skeleton_fixes_2026-10-22)。原始check.txt记录早期56后端/15契约/2前端通过；随后发现并行改动，旧日志不宣称对应后续整个实时工作区。
++
++最终隔离范围使用initial-files.tar.gz的非证据文件，加候选中本轮所属源码/测试（具体overlay见isolated-input.json），再同步本轮审核文档。重新安装运行，结果如下：
++
++| 检查 | 结果 | 证据 |
++| --- | --- | --- |
++| 干净安装 | 通过，锁文件未改 | isolated-install.txt |
++| 统一检查 | Ruff/格式/Mypy通过；58后端、15契约、2前端通过 | isolated-check.txt |
++| 构建 | 后端sdist/wheel及前端静态产物通过 | isolated-build.txt |
++| 浏览器预览 | 2项通过 | isolated-e2e.txt |
++| 干净副本/安装wheel网络验证 | 安装构建、锁缺失/漂移拒绝、live实际200/ready实际503和进程关闭通过 | isolated-clean-delivery.txt |
++| 缺陷变异 | 原R01回归12失败；201和静默Worker变异被修复测试拒绝 | r01-before.txt、regression-mutations.txt |
++| 完整源码还原 | 文件集合及SHA逐项一致，空.gitkeep存在 | baseline/source-manifest.json、final-review.txt |
++
++隔离目录中较早期56项多出的两项位于R03相关测试，已包含在候选快照和最终58项结果；不将不同时点计数混用。全部新证据保存在新目录，未覆盖原交付和原审核证据。
++
++并行工作区的check也曾重跑成功（73后端、23契约、3前端，workspace-check-after-external.txt），仅说明该时点结果；契约公共错误及其他新增覆盖不属于本轮需求验收或业务审核。后续实时修改不由本轮自动背书。
++
++## 4. 原工作保护与并行变更
++
++initial.json与initial-files.tar.gz捕获起始191个文件；任务006及用户已有内容保留。旧交付16份、旧审核10份证据经subagent核验逐字不变。旧6份构建产物在original-artifacts备份并与原final摘要核对，最终新产物保存在validated-artifacts。
++
++复核中发现并行写入contracts两个JSON、契约检查器、部分架构/前端测试和格式内容；未由本轮回退、删除或归入R01–R04修改。最终快照与实时工作区的明确差异见workspace-drift.json。快照是可复现且有范围的接受对象；如需接受并行新增功能，须看对应任务的证据和审核。
++
++新基线[source.tar.gz](evidence/skeleton_fixes_2026-10-22/baseline/source.tar.gz)与[source-manifest.json](evidence/skeleton_fixes_2026-10-22/baseline/source-manifest.json)包含完整源码；[final.json](evidence/skeleton_fixes_2026-10-22/final.json)关联源码、产物和本轮证据摘要。原final.json保持历史原义，不刷新它来覆盖本轮修改。
++
++## 5. 复现与人工审核
++
++将最终source.tar.gz解压到新的空目录，在该目录使用README指定的Python3.14/Node24运行install、check、build及e2e；不连接旧数据。快照校验可运行：
++
++```sh
++python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/skeleton_fixes_2026-10-22/baseline
++```
++
++这是在当前仓库检验本轮归档的命令；归档内不递归包含证据目录。需要重新生成源码快照时，在有Git索引的仓库调用create并指定全新目录。
++
++人工重点核对四项原反例的拒绝结果、子进程清理、空文件还原以及基线范围。上游Starlette/httpx弃用警告保留；真实PostgreSQL、业务权限/版本绑定、外部Provider、业务端到端和生产部署仍未验收。工程修复、自动验证与subagent复核完成不等同人工批准。
+--- initial/frontend/.gitignore
++++ reviewed/frontend/.gitignore
+@@ -0,0 +1,2 @@
++test-results/
++playwright-report/
+--- initial/scripts/check_architecture.py
++++ reviewed/scripts/check_architecture.py
+@@ -3,6 +3,10 @@
+ import ast
+ import sys
+ from pathlib import Path
++
++
++def in_package(target: str, package: str) -> bool:
++    return target == package or target.startswith(package + ".")
+ 
+ 
+ def violations(path: str, source: str) -> list[str]:
+@@ -32,20 +36,22 @@
+             denied = root == "archive"
+             if ".domain." in module:
+                 own = module.split(".domain.")[0] + ".domain"
+-                denied |= root not in sys.stdlib_module_names and not target.startswith(own + ".")
++                denied |= root not in sys.stdlib_module_names and not in_package(target, own)
+             if not module.startswith(("rpb.bootstrap.", "rpb.adapters.")):
+-                denied |= target.startswith(("rpb.adapters.", "rpb.bootstrap."))
++                denied |= any(in_package(target, p) for p in ("rpb.adapters", "rpb.bootstrap"))
+             if ".application." in module:
+                 denied |= root in {"fastapi", "sqlalchemy", "psycopg", "uvicorn"}
+-                denied |= target.startswith("rpb.api.")
++                denied |= in_package(target, "rpb.api")
+                 if target.startswith("rpb.modules."):
+                     owner = module.split(".")[2]
+                     other = target.split(".")[2]
+-                    denied |= (
+-                        owner != other and f"rpb.modules.{other}.application.ports." not in target
++                    denied |= owner != other and not in_package(
++                        target, f"rpb.modules.{other}.application.ports"
+                     )
+             if module.startswith("rpb.knowledge."):
+-                denied |= target.startswith(("rpb.agents.", "rpb.modules.", "rpb.api."))
++                denied |= any(
++                    in_package(target, p) for p in ("rpb.agents", "rpb.modules", "rpb.api")
++                )
+             if module.startswith("rpb.api.") and target.startswith("rpb.modules."):
+                 denied |= ".application." not in target
+             if denied:
+--- initial/scripts/delivery_snapshot.py
++++ reviewed/scripts/delivery_snapshot.py
+@@ -0,0 +1,91 @@
++"""Create and verify a complete source snapshot, including empty and binary files."""
++
++import argparse
++import hashlib
++import json
++import subprocess
++import tarfile
++from pathlib import Path, PurePosixPath
++
++
++def digest(data: bytes) -> str:
++    return hashlib.sha256(data).hexdigest()
++
++
++def source_paths(root: Path) -> list[str]:
++    paths = (
++        subprocess.check_output(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=root)
++        .decode()
++        .split("\0")
++    )
++    # The existing repository ignores .gitignore files themselves.
++    paths += [
++        str(p.relative_to(root))
++        for p in [root / ".gitignore", root / "backend/.gitignore", root / "frontend/.gitignore"]
++        if p.is_file()
++    ]
++    return sorted(
++        {
++            p
++            for p in paths
++            if p and (root / p).is_file() and not p.startswith("docs/workorders/evidence/")
++        }
++    )
++
++
++def safe_path(name: str) -> None:
++    path = PurePosixPath(name)
++    if path.is_absolute() or ".." in path.parts or str(path) != name or not path.parts:
++        raise ValueError(f"Unsafe snapshot path: {name}")
++
++
++def create_snapshot(root: Path, paths: list[str], output: Path) -> dict[str, str]:
++    # A new directory is mandatory: never overwrite a previously reviewed baseline.
++    output.mkdir(parents=True, exist_ok=False)
++    hashes = {}
++    with tarfile.open(output / "source.tar.gz", "w:gz") as archive:
++        for name in sorted(set(paths)):
++            safe_path(name)
++            path = root / name
++            if path.is_symlink() or not path.is_file():
++                raise ValueError(f"Expected regular source file: {name}")
++            hashes[name] = digest(path.read_bytes())
++            archive.add(path, arcname=name, recursive=False)
++    (output / "source-manifest.json").write_text(json.dumps(hashes, indent=2) + "\n")
++    verify_snapshot(output)
++    return hashes
++
++
++def verify_snapshot(output: Path) -> dict[str, str]:
++    """Check complete reconstructed file bytes without unsafe filesystem extraction."""
++    expected = json.loads((output / "source-manifest.json").read_text())
++    actual = {}
++    with tarfile.open(output / "source.tar.gz", "r:gz") as archive:
++        for member in archive:
++            safe_path(member.name)
++            if not member.isfile() or member.name in actual:
++                raise ValueError("Non-regular or duplicate snapshot member")
++            content = archive.extractfile(member)
++            if content is None:
++                raise ValueError("Missing snapshot member bytes")
++            actual[member.name] = digest(content.read())
++    if actual != expected:
++        raise ValueError("Reconstructed file set or SHA-256 differs from manifest")
++    return actual
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("action", choices=["create", "verify"])
++    parser.add_argument("--directory", required=True, type=Path)
++    args = parser.parse_args()
++    if args.action == "create":
++        root = Path(__file__).resolve().parents[1]
++        result = create_snapshot(root, source_paths(root), args.directory)
++    else:
++        result = verify_snapshot(args.directory)
++    print(f"Verified complete snapshot: {len(result)} files, including empty files.")
++
++
++if __name__ == "__main__":
++    main()
+--- initial/scripts/engineering.py
++++ reviewed/scripts/engineering.py
+@@ -71,6 +71,7 @@
+             "../scripts/check_architecture.py",
+             "../scripts/engineering.py",
+             "../scripts/verify_skeleton_delivery.py",
++            "../scripts/delivery_snapshot.py",
+         )
+         backend(
+             "ruff",
+@@ -81,6 +82,7 @@
+             "../scripts/check_architecture.py",
+             "../scripts/engineering.py",
+             "../scripts/verify_skeleton_delivery.py",
++            "../scripts/delivery_snapshot.py",
+         )
+         backend("mypy", "src")
+         backend("pytest", "-q")
+--- initial/scripts/verify_skeleton_delivery.py
++++ reviewed/scripts/verify_skeleton_delivery.py
+@@ -21,6 +21,14 @@
+     print(result.stdout, result.stderr, flush=True)
+     assert (result.returncode == 0) == success, result.returncode
+     return result
++
++
++def probe_live(url):
++    with urllib.request.urlopen(url, timeout=1) as response:
++        status = response.status
++        assert status == 200, f"Expected live HTTP 200, got {status}"
++        assert json.load(response) == {"status": "alive"}
++        return status
+ 
+ 
+ def main():
+@@ -49,11 +57,14 @@
+         }
+         run(["python3", "scripts/engineering.py", "install"], root, env)
+         run(["python3", "scripts/engineering.py", "build"], root, env)
++        lock_paths = [root / "backend/uv.lock", root / "frontend/package-lock.json"]
++        lock_bytes = {p: p.read_bytes() for p in lock_paths}
+         pyproject = root / "backend/pyproject.toml"
+         original = pyproject.read_text()
+         pyproject.write_text(original.replace('version = "1.0.0"', 'version = "1.0.1"'))
+         result = run(["uv", "sync", "--locked", "--offline"], root / "backend", env, success=False)
+         assert "lockfile" in result.stderr.lower()
++        assert all(p.read_bytes() == content for p, content in lock_bytes.items())
+         pyproject.write_text(original)
+         package = root / "frontend/package.json"
+         original = package.read_text()
+@@ -62,13 +73,16 @@
+         package.write_text(json.dumps(data))
+         result = run(["npm", "ci", "--ignore-scripts"], root / "frontend", env, success=False)
+         assert "lock" in result.stderr.lower()
++        assert all(p.read_bytes() == content for p, content in lock_bytes.items())
+         package.write_text(original)
+-        lock = root / "backend/uv.lock"
+-        lock_content = lock.read_bytes()
+-        lock.unlink()
+-        result = run(["python3", "scripts/engineering.py", "install"], root, env, success=False)
+-        assert "lock missing" in result.stderr
+-        lock.write_bytes(lock_content)
++        for lock in lock_paths:
++            lock.unlink()
++            result = run(["python3", "scripts/engineering.py", "install"], root, env, success=False)
++            assert "lock missing" in result.stderr
++            assert not lock.exists(), "Missing lock must not be generated"
++            assert all(p.read_bytes() == content for p, content in lock_bytes.items() if p != lock)
++            lock.write_bytes(lock_bytes[lock])
++        assert all(p.read_bytes() == content for p, content in lock_bytes.items())
+         result = run(
+             ["python3", "scripts/engineering.py", "integration"],
+             root,
+@@ -111,10 +125,7 @@
+                 for _ in range(100):
+                     assert api.poll() is None, "API exited before live probe"
+                     try:
+-                        with urllib.request.urlopen(
+-                            f"http://127.0.0.1:{port}/health/live", timeout=1
+-                        ) as response:
+-                            assert json.load(response) == {"status": "alive"}
++                        live_status = probe_live(f"http://127.0.0.1:{port}/health/live")
+                         break
+                     except urllib.error.URLError:
+                         time.sleep(0.1)
+@@ -124,9 +135,13 @@
+                     urllib.request.urlopen(f"http://127.0.0.1:{port}/health/ready", timeout=2)
+                     raise AssertionError("Skeleton must not claim readiness")
+                 except urllib.error.HTTPError as error:
+-                    assert error.code == 503
++                    error_status = error.code
++                    assert error_status == 503
+                     assert json.load(error) == {"status": "not_ready"}
+-                print("Installed wheel: live=200, ready=503; no business services enabled.")
++                print(
++                    f"Installed wheel: live={live_status}, ready={error_status}; "
++                    "no business services enabled."
++                )
+             finally:
+                 api.send_signal(signal.SIGTERM)
+                 try:
+--- initial/tasks/007-skeleton-review-fixes.md
++++ reviewed/tasks/007-skeleton-review-fixes.md
+@@ -0,0 +1,49 @@
++# Task 007：首批工程骨架审核问题修复
++
++文档版本：v1.0
++更新日期：2026-10-22
++
++## 1. 目标与授权
++
++用户授权修复[独立审核R01–R04](../docs/workorders/skeleton_independent_review_2026-10-22.md)，补回归、重跑验证、保留现有工作与原证据，生成新交付基线并安排subagent复核。目标是让门禁正确判断包导入、启动失败有限时返回、探针精确校验200、完整恢复含空文件的交付源码。
++
++只改工程检查、测试、证据工具和必要文档；不启动任务006、业务实现、数据库、外部Provider或部署。不改变业务语义、权限与分期。沿用任务005的SK-01–09范围，关联ARC-01/02/09及OPS-01/03的工程子集。
++
++## 2. 基线与保留
++
++修复前状态含新增的任务006及对应项目状态文字，已读取并保留。修复前所有191个已跟踪/未跟踪文件的内容与摘要保存在[initial.json](../docs/workorders/evidence/skeleton_fixes_2026-10-22/initial.json)及[initial-files.tar.gz](../docs/workorders/evidence/skeleton_fixes_2026-10-22/initial-files.tar.gz)。原交付/原审核证据不覆盖；原6个构建产物复制到本轮original-artifacts，随后新构建产物另记录摘要。
++
++依据：AGENTS v1.1、00-01工程基线v1.1、任务005 v1.0及独立审核v1.0；本轮不修订这些历史交付文件。新基线用完整源码快照作为重定位依据，差异文件仅辅助阅读。
++
++## 3. 修复与需求—测试追踪
++
++| 问题/需求 | 修复 | 需求导向的回归及反例 |
++| --- | --- | --- |
++| R01 / SK-02 | scripts/check_architecture.py统一按包名相等或点分子成员判断边界 | test_boundaries.py新增20项：Application具体适配器/装配包、Knowledge反向依赖的3种导入写法；合法ports包/成员允许，ports_private仍拒绝；原检查器实际12失败/21通过，新版本全部通过 |
++| R02 / SK-05 | tests/unit/process_support.py以单一monotonic截止时间和非阻塞字节读取等待完整启动行；上下文统一清理进程与管道 | 正常Worker启停保留；无输出、仅半行均0.2秒期限失败并reap；提前退出报错并reap；临时真实Worker移除启动日志，原生命周期用例在10秒期限内失败，不再无限等待 |
++| R03 / SK-04 | test_startup显式断言200；wheel smoke的probe_live显式校验实际HTTP200，日志用实际live/ready状态 | 临时路由201导致原应用测试失败；网络探针实际本机HTTP服务器分别返回200/201，正例通过、反例拒绝 |
++| R04 / SK-09 | scripts/delivery_snapshot.py新增完整源码tar+SHA清单；输出目录必须新建，验证文件集合与内容完整一致，不修改旧补丁 | 重构空.gitkeep、二进制、无末尾换行文本；缺少/篡改/多余清单均拒绝；已有基线拒绝覆盖。新交付全部源文件逐一重构核验 |
++
++范围外的数据库事务/权限/人工内容/固定版本及业务端到端保持未验证，不用工程测试替代。
++
++## 4. 验证与证据
++
++证据统一在[skeleton_fixes_2026-10-22](../docs/workorders/evidence/skeleton_fixes_2026-10-22)，新日志不覆盖旧文件。
++
++| 命令/检查 | 结果 |
++| --- | --- |
++| 新R01用例运行原检查器 | 12失败、21通过，确认回归能复现缺陷；r01-before.txt |
++| python3 scripts/engineering.py check | Ruff/格式/Mypy通过；早期56后端、15契约、2前端通过；check.txt；最终隔离基线58后端/15契约/2前端见isolated-check.txt |
++| python3 scripts/verify_skeleton_delivery.py | 干净环境安装构建、锁漂移/缺锁拒绝、wheel真实网络探针和SIGTERM完成；clean-delivery.txt |
++| python3 scripts/engineering.py build | 后端sdist/wheel与前端静态构建通过；build.txt |
++| python3 scripts/engineering.py e2e | 2项浏览器预览用例通过；e2e.txt |
++| python3 docs/workorders/evidence/skeleton_fixes_2026-10-22/regression-mutations.py | 临时副本变异反例，结果见regression-mutations.txt；不修改业务源码 |
++| python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/skeleton_fixes_2026-10-22/baseline | 新完整源码基线校验；并行变更的隔离方式、全量结果与subagent复核见收口记录 |
++
++Node24/npm11沿用此前独立临时工具环境；依赖锁未修改。重建仅用于本批交付验证，无真实模型、邮件、论文源或数据库访问。保留上游Starlette/httpx弃用警告。
++
++## 5. 自审、subagent复核与人工接受
++
++源码快照生成器纳入统一Ruff检查及后端回归；旧证据内容的保留和全量重构由独立subagent再次核验。源码快照不包含证据目录以避免递归；完整证据由另一个清单关联。
++
++独立复核及最终基线见[修复收口记录](../docs/workorders/skeleton_fixes_review_2026-10-22.md)。设计依据未变；本批修复和自动验证不代表完整业务验收，人工接受仍待明确记录。无新的业务决定问题。

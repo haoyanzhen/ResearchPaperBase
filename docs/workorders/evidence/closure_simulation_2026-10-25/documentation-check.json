@@ -1,0 +1,18 @@
+{
+  "changed_existing_files": [
+    "backend/src/rpb/api/projects.py",
+    "backend/tests/integration/test_browser_business.py",
+    "backend/tests/integration/test_project_commands.py",
+    "docs/PROJECT_STATUS.md",
+    "tasks/019-browser-milestone.md"
+  ],
+  "new_task": "tasks/020-closed-loop-operation-simulation.md",
+  "local_links": "passed",
+  "changed_lines_whitespace": "passed",
+  "existing_global_whitespace_findings": "6 design files unchanged from before",
+  "versions": [
+    "PROJECT_STATUS v1.67",
+    "task019 v1.2",
+    "task020 v1.0"
+  ]
+}

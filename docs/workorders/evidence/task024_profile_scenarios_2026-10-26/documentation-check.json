@@ -1,0 +1,18 @@
+{
+  "documents_checked": [
+    "tasks/024-profile-user-scenarios.md",
+    "tasks/023-account-profile.md",
+    "docs/PROJECT_STATUS.md",
+    "docs/file_map.md"
+  ],
+  "links": "passed",
+  "source_drift": [],
+  "documentation_changes_since_final_input": [
+    "docs/PROJECT_STATUS.md",
+    "docs/file_map.md",
+    "tasks/023-account-profile.md",
+    "tasks/024-profile-user-scenarios.md"
+  ],
+  "snapshot_files": 252,
+  "manifest_sha256": "5a5281c06429c599f155d7d4606aeefa3bc010c51016e43c4efe938be24e0c12"
+}

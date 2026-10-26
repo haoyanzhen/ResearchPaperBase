@@ -1,0 +1,22 @@
+[
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a05_2026-10-22/before.openapi.json"
+    ],
+    "exit_code": 1,
+    "reported_lines": 3
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json"
+    ],
+    "exit_code": 1,
+    "reported_lines": 83
+  }
+]

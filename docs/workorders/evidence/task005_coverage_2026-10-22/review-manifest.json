@@ -1,0 +1,35 @@
+{
+  "source_manifest_sha256": "e02d476178c66328ce2f5f1c858c9536e4d6bfd45328da57b8fd409caed16e7a",
+  "wheel_source_files_verified": 30,
+  "artifacts": {
+    "backend/dist/research_paper_base-1.0.0-py3-none-any.whl": "8362debe4d275e44604938ce1912a1a2b9f94b24e29763f1b16e35370c76d0b6",
+    "backend/dist/.gitignore": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1",
+    "backend/dist/research_paper_base-1.0.0.tar.gz": "8b7a3a841fe28481250aa17676e55959d9465df5ecc1d936241aa9a39d0dc802",
+    "frontend/dist/index.html": "c25958184ad84959a7dc161bd12231cfd8b06dbc8429ec4fd4e9f990d26508e0",
+    "frontend/dist/assets/index-CynehX3L.css": "330faaa21136babd6a40116046a54b99a4b819a9fa20eb35c2a6ef451a4cd7ae",
+    "frontend/dist/assets/index-fAwn9xep.js": "49cfee653a30197454bba909c3b807e920cbce0f3503bc4cfb5915729edd21eb"
+  },
+  "evidence": {
+    "docs/workorders/evidence/task005_coverage_2026-10-22/delivery.patch": "5d10e952421d567fb492415084d2e3eaec3f33130389ad9805f16cea26480287",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/shell-1280-settings.png": "90fb138b00239e7a717aff9fb04a6a82a5a341fd37d1c7c7d7414f459a3efb64",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/shell-1280-projects.png": "b57c4f5ff153d106008ce21822014f33f1b6e2de152b1c2e3cc1d25f8583a545",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/snapshot-verification.txt": "0ad615f882aa1942e06af3f768f31225cab6f54b80415baf54573f1ff94cd839",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/check.txt": "ac467d41a1727f6152c21c571f65224eba072a218515b200475fe030f8b91262",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/scope.json": "a4f09a92cfbb0040f69846e811f87647bd7f8f2eba7ee77753b016b9cb247e31",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/clean-delivery.txt": "29cb273f140dbb8b219733172d9f6b8459ebaf27670fc352d89b4935b4ea78d3",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/verify-inputs.py": "ef025efb25fd3e04d9d2a188dbb4585b817c0cd366825a9372cef10d82e914a7",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/e2e.txt": "f49edbf705fa9a5da87eec67816719ba174b2c0524b66b8c577a97fe82b496e0",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/migration-history.txt": "7c4dd4eda16642428b0fa6105ecfc80346d4c79679cc1639a280eff6e3b35a2e",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/verification-inputs.json": "e6f32b8b9b0b3caeef1602fc8cf245ba9a0cdd035a740c9a8b8ea09437b92b2d",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/documentation.txt": "1577db102b9476e933d21dc45a89c01272a3b784a5169226acb81da6ccfa3a6f",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/build.txt": "816ba9ca8a3f6104e4017da4bef9369a38bfc140590a2b66963a994915271ad2",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/run-verification.py": "89ec4daa51893974615e6737a0a8f4bb886b5c87fed569a3bfed652bbc0ae30b",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/package-review.py": "2efba5f2c6bde252d2ba7c2e7333aaa9bbdcd42d51b3d32bdff0e15684aa7cb5",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/shell-390-settings.png": "416901152ea674eed25ef853804a46c00734300c4ff39ccee0b7b9a73bf59476",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/shell-390-projects.png": "47e1761cf1adeb21f2d40145cba9781892226e1cf9b4a400189959bb673bcac6",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/initial/source-manifest.json": "d266aa26eb53e235a32c43dc87b276746851f8bcc7a96162a41a427f216fbfbf",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/initial/source.tar.gz": "7c8a839ed1fe5a256c970165b0154e85cde3c04f99a55766d31a380d1708800b",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/baseline/source-manifest.json": "e02d476178c66328ce2f5f1c858c9536e4d6bfd45328da57b8fd409caed16e7a",
+    "docs/workorders/evidence/task005_coverage_2026-10-22/baseline/source.tar.gz": "1f06bea9b6015ee69448078684aae2d41c13bb5e25c99f901a985f9aa55bd4f9"
+  }
+}

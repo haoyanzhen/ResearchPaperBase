@@ -1,0 +1,10 @@
+{
+  "accepted_manifest_sha256": "e6ce09609b86c046b5bee32a6f0dc26e6888ff610ba9013e25f91e9b6037205e",
+  "drift": [
+    "docs/PROJECT_STATUS.md",
+    "docs/design/README.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "tasks/013-human-content-protection-plan.md"
+  ],
+  "code_drift": []
+}

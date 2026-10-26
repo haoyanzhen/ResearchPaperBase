@@ -1,0 +1,53 @@
+{
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "docs/workorders/evidence/task014_b01_2026-10-24/closeout/check_docs.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"errors\": [],\n  \"preexisting_link_findings\": [],\n  \"checked_files\": 3,\n  \"trace_rows\": 8,\n  \"outside_scope_changes\": [],\n  \"level\": \"documentation only; no business execution\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/delivery_snapshot.py",
+        "verify",
+        "--directory",
+        "docs/workorders/evidence/task014_b01_2026-10-24/delivery"
+      ],
+      "exit_code": 0,
+      "stdout": "Verified complete snapshot: 200 files, including empty files.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/delivery_snapshot.py",
+        "verify",
+        "--directory",
+        "docs/workorders/evidence/task014_b01_2026-10-24/closeout/final"
+      ],
+      "exit_code": 0,
+      "stdout": "Verified complete snapshot: 200 files, including empty files.\n",
+      "stderr": ""
+    }
+  ],
+  "accepted_to_final_changes": [
+    "docs/PROJECT_STATUS.md",
+    "docs/workorders/task014_b01_review_2026-10-24.md",
+    "tasks/014-project-create-machine-contract.md"
+  ],
+  "current_drift": [],
+  "file_count": 200,
+  "manifest_sha256": "81b8e2ded65d2f9af7975b7fff7907b61fd4400a0c98809cb5edd4f68b44d4d6",
+  "reused_evidence_sha256": {
+    "all-contracts-fixed.log": "a04d5511f46238cae4202a33fe3d3fc391697c4c1dec3e04605c00519e3e95ac",
+    "green-fixed.log": "a3de6cf90fc506df9bfe9b0cc6409dd92801ca7894ae6440d17e37801b623819",
+    "independent-review.txt": "7b28d9512abf9552766acf1cc9089446a00615697d19e9ee4c615d3425a92ea6",
+    "s2-checks.json": "31c8092e31a34c4fceb9bbc069bc408aa0404085ca7f18757f8442f477ba356e"
+  },
+  "full_test_rerun": false,
+  "reason": "Only three acceptance/status records changed; accepted implementation, schemas and tests unchanged."
+}

@@ -1,0 +1,9 @@
+test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) ... ok
+test_r01_r02_nested_fact_and_envelope_protection_preserved (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_r02_nested_fact_and_envelope_protection_preserved) ... ok
+test_r01_r02_read_and_policy_response_scope_preserved (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_r02_read_and_policy_response_scope_preserved) ... ok
+test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.019s
+
+OK

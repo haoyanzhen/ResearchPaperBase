@@ -1,0 +1,204 @@
+.............FFFF..FFFFFF...FF...                                        [100%]
+=================================== FAILURES ===================================
+_ test_application_rejects_package_and_member_imports[import {target}-rpb.adapters] _
+
+target = 'rpb.adapters', form = 'import {target}'
+
+    @pytest.mark.parametrize('target', ['rpb.adapters', 'rpb.bootstrap'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_application_rejects_package_and_member_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+        source = form.format(target=target, parent=parent, leaf=leaf)
+>       assert checker.violations('rpb/modules/project/application/use_case.py', source)
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/modules/project/application/use_case.py', 'import rpb.adapters')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+
+backend/tests/architecture/test_boundaries.py:57: AssertionError
+_ test_application_rejects_package_and_member_imports[import {target}-rpb.bootstrap] _
+
+target = 'rpb.bootstrap', form = 'import {target}'
+
+    @pytest.mark.parametrize('target', ['rpb.adapters', 'rpb.bootstrap'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_application_rejects_package_and_member_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+        source = form.format(target=target, parent=parent, leaf=leaf)
+>       assert checker.violations('rpb/modules/project/application/use_case.py', source)
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/modules/project/application/use_case.py', 'import rpb.bootstrap')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+
+backend/tests/architecture/test_boundaries.py:57: AssertionError
+_ test_application_rejects_package_and_member_imports[from {parent} import {leaf}-rpb.adapters] _
+
+target = 'rpb.adapters', form = 'from {parent} import {leaf}'
+
+    @pytest.mark.parametrize('target', ['rpb.adapters', 'rpb.bootstrap'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_application_rejects_package_and_member_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+        source = form.format(target=target, parent=parent, leaf=leaf)
+>       assert checker.violations('rpb/modules/project/application/use_case.py', source)
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/modules/project/application/use_case.py', 'from rpb import adapters')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+
+backend/tests/architecture/test_boundaries.py:57: AssertionError
+_ test_application_rejects_package_and_member_imports[from {parent} import {leaf}-rpb.bootstrap] _
+
+target = 'rpb.bootstrap', form = 'from {parent} import {leaf}'
+
+    @pytest.mark.parametrize('target', ['rpb.adapters', 'rpb.bootstrap'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_application_rejects_package_and_member_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+        source = form.format(target=target, parent=parent, leaf=leaf)
+>       assert checker.violations('rpb/modules/project/application/use_case.py', source)
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/modules/project/application/use_case.py', 'from rpb import bootstrap')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+
+backend/tests/architecture/test_boundaries.py:57: AssertionError
+__ test_knowledge_rejects_reverse_package_imports[import {target}-rpb.agents] __
+
+target = 'rpb.agents', form = 'import {target}'
+
+    @pytest.mark.parametrize('target', ['rpb.agents', 'rpb.modules', 'rpb.api'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_knowledge_rejects_reverse_package_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+>       assert checker.violations('rpb/knowledge/read.py', form.format(target=target, parent=parent, leaf=leaf))
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/knowledge/read.py', 'import rpb.agents')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+E        +    and   'import rpb.agents' = <built-in method format of str object at 0x10745f530>(target='rpb.agents', parent='rpb', leaf='agents')
+E        +      where <built-in method format of str object at 0x10745f530> = 'import {target}'.format
+
+backend/tests/architecture/test_boundaries.py:64: AssertionError
+_ test_knowledge_rejects_reverse_package_imports[import {target}-rpb.modules] __
+
+target = 'rpb.modules', form = 'import {target}'
+
+    @pytest.mark.parametrize('target', ['rpb.agents', 'rpb.modules', 'rpb.api'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_knowledge_rejects_reverse_package_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+>       assert checker.violations('rpb/knowledge/read.py', form.format(target=target, parent=parent, leaf=leaf))
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/knowledge/read.py', 'import rpb.modules')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+E        +    and   'import rpb.modules' = <built-in method format of str object at 0x10745f530>(target='rpb.modules', parent='rpb', leaf='modules')
+E        +      where <built-in method format of str object at 0x10745f530> = 'import {target}'.format
+
+backend/tests/architecture/test_boundaries.py:64: AssertionError
+___ test_knowledge_rejects_reverse_package_imports[import {target}-rpb.api] ____
+
+target = 'rpb.api', form = 'import {target}'
+
+    @pytest.mark.parametrize('target', ['rpb.agents', 'rpb.modules', 'rpb.api'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_knowledge_rejects_reverse_package_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+>       assert checker.violations('rpb/knowledge/read.py', form.format(target=target, parent=parent, leaf=leaf))
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/knowledge/read.py', 'import rpb.api')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+E        +    and   'import rpb.api' = <built-in method format of str object at 0x10745f530>(target='rpb.api', parent='rpb', leaf='api')
+E        +      where <built-in method format of str object at 0x10745f530> = 'import {target}'.format
+
+backend/tests/architecture/test_boundaries.py:64: AssertionError
+_ test_knowledge_rejects_reverse_package_imports[from {parent} import {leaf}-rpb.agents] _
+
+target = 'rpb.agents', form = 'from {parent} import {leaf}'
+
+    @pytest.mark.parametrize('target', ['rpb.agents', 'rpb.modules', 'rpb.api'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_knowledge_rejects_reverse_package_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+>       assert checker.violations('rpb/knowledge/read.py', form.format(target=target, parent=parent, leaf=leaf))
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/knowledge/read.py', 'from rpb import agents')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+E        +    and   'from rpb import agents' = <built-in method format of str object at 0x1074553e0>(target='rpb.agents', parent='rpb', leaf='agents')
+E        +      where <built-in method format of str object at 0x1074553e0> = 'from {parent} import {leaf}'.format
+
+backend/tests/architecture/test_boundaries.py:64: AssertionError
+_ test_knowledge_rejects_reverse_package_imports[from {parent} import {leaf}-rpb.modules] _
+
+target = 'rpb.modules', form = 'from {parent} import {leaf}'
+
+    @pytest.mark.parametrize('target', ['rpb.agents', 'rpb.modules', 'rpb.api'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_knowledge_rejects_reverse_package_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+>       assert checker.violations('rpb/knowledge/read.py', form.format(target=target, parent=parent, leaf=leaf))
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/knowledge/read.py', 'from rpb import modules')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+E        +    and   'from rpb import modules' = <built-in method format of str object at 0x1074553e0>(target='rpb.modules', parent='rpb', leaf='modules')
+E        +      where <built-in method format of str object at 0x1074553e0> = 'from {parent} import {leaf}'.format
+
+backend/tests/architecture/test_boundaries.py:64: AssertionError
+_ test_knowledge_rejects_reverse_package_imports[from {parent} import {leaf}-rpb.api] _
+
+target = 'rpb.api', form = 'from {parent} import {leaf}'
+
+    @pytest.mark.parametrize('target', ['rpb.agents', 'rpb.modules', 'rpb.api'])
+    @pytest.mark.parametrize('form', ['import {target}', 'from {parent} import {leaf}', 'from {target} import service'])
+    def test_knowledge_rejects_reverse_package_imports(target, form):
+        parent, leaf = target.rsplit('.', 1)
+>       assert checker.violations('rpb/knowledge/read.py', form.format(target=target, parent=parent, leaf=leaf))
+E       AssertionError: assert []
+E        +  where [] = <function violations at 0x10743fcc0>('rpb/knowledge/read.py', 'from rpb import api')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+E        +    and   'from rpb import api' = <built-in method format of str object at 0x1074553e0>(target='rpb.api', parent='rpb', leaf='api')
+E        +      where <built-in method format of str object at 0x1074553e0> = 'from {parent} import {leaf}'.format
+
+backend/tests/architecture/test_boundaries.py:64: AssertionError
+_ test_public_port_package_and_members_allowed[import rpb.modules.review.application.ports] _
+
+source = 'import rpb.modules.review.application.ports'
+
+    @pytest.mark.parametrize('source', [
+        'import rpb.modules.review.application.ports',
+        'from rpb.modules.review.application import ports',
+        'from rpb.modules.review.application.ports import ReadReview',
+    ])
+    def test_public_port_package_and_members_allowed(source):
+>       assert not checker.violations('rpb/modules/project/application/use_case.py', source)
+E       AssertionError: assert not ['rpb/modules/project/application/use_case.py:1: forbidden import rpb.modules.review.application.ports']
+E        +  where ['rpb/modules/project/application/use_case.py:1: forbidden import rpb.modules.review.application.ports'] = <function violations at 0x10743fcc0>('rpb/modules/project/application/use_case.py', 'import rpb.modules.review.application.ports')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+
+backend/tests/architecture/test_boundaries.py:73: AssertionError
+_ test_public_port_package_and_members_allowed[from rpb.modules.review.application import ports] _
+
+source = 'from rpb.modules.review.application import ports'
+
+    @pytest.mark.parametrize('source', [
+        'import rpb.modules.review.application.ports',
+        'from rpb.modules.review.application import ports',
+        'from rpb.modules.review.application.ports import ReadReview',
+    ])
+    def test_public_port_package_and_members_allowed(source):
+>       assert not checker.violations('rpb/modules/project/application/use_case.py', source)
+E       AssertionError: assert not ['rpb/modules/project/application/use_case.py:1: forbidden import rpb.modules.review.application.ports']
+E        +  where ['rpb/modules/project/application/use_case.py:1: forbidden import rpb.modules.review.application.ports'] = <function violations at 0x10743fcc0>('rpb/modules/project/application/use_case.py', 'from rpb.modules.review.application import ports')
+E        +    where <function violations at 0x10743fcc0> = checker.violations
+
+backend/tests/architecture/test_boundaries.py:73: AssertionError
+=========================== short test summary info ============================
+FAILED backend/tests/architecture/test_boundaries.py::test_application_rejects_package_and_member_imports[import {target}-rpb.adapters]
+FAILED backend/tests/architecture/test_boundaries.py::test_application_rejects_package_and_member_imports[import {target}-rpb.bootstrap]
+FAILED backend/tests/architecture/test_boundaries.py::test_application_rejects_package_and_member_imports[from {parent} import {leaf}-rpb.adapters]
+FAILED backend/tests/architecture/test_boundaries.py::test_application_rejects_package_and_member_imports[from {parent} import {leaf}-rpb.bootstrap]
+FAILED backend/tests/architecture/test_boundaries.py::test_knowledge_rejects_reverse_package_imports[import {target}-rpb.agents]
+FAILED backend/tests/architecture/test_boundaries.py::test_knowledge_rejects_reverse_package_imports[import {target}-rpb.modules]
+FAILED backend/tests/architecture/test_boundaries.py::test_knowledge_rejects_reverse_package_imports[import {target}-rpb.api]
+FAILED backend/tests/architecture/test_boundaries.py::test_knowledge_rejects_reverse_package_imports[from {parent} import {leaf}-rpb.agents]
+FAILED backend/tests/architecture/test_boundaries.py::test_knowledge_rejects_reverse_package_imports[from {parent} import {leaf}-rpb.modules]
+FAILED backend/tests/architecture/test_boundaries.py::test_knowledge_rejects_reverse_package_imports[from {parent} import {leaf}-rpb.api]
+FAILED backend/tests/architecture/test_boundaries.py::test_public_port_package_and_members_allowed[import rpb.modules.review.application.ports]
+FAILED backend/tests/architecture/test_boundaries.py::test_public_port_package_and_members_allowed[from rpb.modules.review.application import ports]
+12 failed, 21 passed in 0.05s

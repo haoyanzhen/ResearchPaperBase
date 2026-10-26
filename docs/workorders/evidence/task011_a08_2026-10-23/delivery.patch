@@ -1,0 +1,426 @@
+--- before/docs/design/02-03_construction_assets_appendix.md
++++ after/docs/design/02-03_construction_assets_appendix.md
+@@ -1,7 +1,7 @@
+ # Domain 附录：Construction 资产入库
+ 
+-文档版本：v1.2
+-更新日期：2026-10-16  
++文档版本：v1.3
++更新日期：2026-10-23
+ 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
+ 用途：定义 Construction 的检索词、候选论文与资料、去重筛选、手动补充、文本处理和分析确认的业务对象与不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
+ 
+@@ -143,3 +143,8 @@
+ 本次修订 v1.1（2026-10-16）：关联已批准的构建模式和输入修订边界，避免另设发布规则。
+ 
+ 本次修订 v1.2（2026-10-16）：落实人工采纳 R1–R4 及补充决定：学术引用与简化终稿、关联移除发布、空版本消费、确认后锁定及论文/资料重新导入边界；仅设计同步。
++
++## A08 类型映射索引
++
++本附录的业务状态及不变量不变。[06 A08](06_agent_knowledge_services.md#a08-补充处理与分析具名服务载荷)具名化补充准备、论文/资料处理和分析提案；[04-01 A08](04-01_p0_operation_contracts.md#a08-补充详情与处理依据投影)定义读取依据。元数据解析、内容处理、人工确认、候选纳入和成功发布是独立事实；补充可无Run，静态结果可复用但确认不继承。输入/文件/最终文本/处理/分析修订必须可追溯，解析器不决定业务确认。工程映射不改变人工保护、P0格式、两个写范围或既有恢复分期。
++
+--- before/docs/design/04-01_p0_operation_contracts.md
++++ after/docs/design/04-01_p0_operation_contracts.md
+@@ -1,6 +1,6 @@
+ # API 附录：P0 操作与数据契约
+ 
+-文档版本：v1.10
++文档版本：v1.11
+ 更新日期：2026-10-23
+ 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
+ 适用范围：P0 设计契约；不是实现或验收通过声明。
+@@ -173,7 +173,7 @@
+ - `SearchTermWrite={query:string!,keywords?:string[],synonyms?:string[],exclusions?:string[],rationale?:string,coverage?:string,source_policy?:SourcePolicy,auto_update_enabled?:boolean}`；字符串数组每项1–200、最多100项；缺省数组空，理由/覆盖空串，source_policy 默认 all_resolvable，auto_update_enabled 默认 true。
+ - `SearchTermView=Resource+SearchTermWrite+{content_state:string,confirmed_revision:Revision|null,confirmed_at:Time|null}`；不存在独立 enabled 字段。
+ - `ConstructionWorkspaceView=Resource+{auto_update_enabled:boolean,scheduler_available:boolean,occupying_run_id:ID|null,pending_supplement_count:integer,pending_revision_count:integer}`；P0 scheduler_available=false。
+-- `SupplementCreate={kind:paper|material!,source:{type:doi|arxiv_id|url!,value:string!},title?:string}`；paper 可 DOI/arXiv/URL，material 只 URL；单文件使用下表 upload。`SupplementView=Resource+{kind,source,title:string|null,content_format:string|null,metadata_candidates:MetadataCandidate[],resolution_status:pending|resolved|ambiguous|failed,confirmation_status:unconfirmed|confirmed,inclusion_status:pending|processing|published,assigned_run_id:ID|null,published_version_id:ID|null,error:object|null}`；未解析不伪造 title/format，ambiguous 必须用户选择。
++- `SupplementCreate={kind:paper|material!,source:{type:doi|arxiv_id|url!,value:string!},title?:string}`；paper 可 DOI/arXiv/URL，material 只 URL；单文件使用下表 upload。`SupplementView=Resource+{kind,source,title:string|null,content_format:string|null,metadata_candidates:MetadataCandidate[],resolution_status:pending|resolved|ambiguous|failed,confirmation_status:unconfirmed|confirmed,inclusion_status:pending|processing|published,assigned_run_id:ID|null,published_version_id:ID|null,error:TaskError|null}`；未解析不伪造 title/format，ambiguous 必须用户选择。
+ - `SupplementPatch={expected_revision!,title?:string,selected_candidate_id?:ID,source_note?:string,metadata?:{doi?:string|null,arxiv_id?:string|null,title?:string,authors?:string[],year?:integer|null}}`；metadata 仅 paper；source_note为1–10000字符的人工来源说明，供关键元数据不足时确认依据；资料不强制作者/年份/语言/provider。
+ - `PendingRevisionCreate` 不再是公开写 DTO。已发布 paper/material 只读；移除必须走 association-clear-preview/confirm，由服务端生成仅 operation=exclude、changes={} 的 PendingRevisionView 并直接关联移除构建；不得借 pending revision 修改已发布内容。
+ - `RetrievalConstructionStart={mode?:retrieval,selected_terms:{term_id:ID,confirmed_revision:Revision}[]!,supplement_ids?:ID[],retrieval_range:{published_from:Time|null,published_until:Time|null}!,result_limit_per_source:integer!,model_selection:ModelSelection!,graph_mode?:incremental|rebuild}`；默认空补充范围、incremental；检索时间为左闭右开，null 表示该端无界，两端同时非空时from<until；result_limit_per_source为1–1000，每个解析后数据源按全部选中检索词累计返回上限，服务端能力上限更低时明确拒绝而不静默截断；去重后数量可更少。首次构建实际创建图谱。selected_terms 必须非空，表示常规检索构建；ConstructionStart 的另一分支见下文。
+@@ -517,3 +517,24 @@
+ 下一正常受控读取、实际派发和提交均用当前政策/分类修订；受理快照只作审计。扩权不重跑结束任务、恢复终止attempt、追加冻结输入、扩大确认范围或改绑KnowledgeVersion；收紧不删除合法旧成果、不承诺撤回在途字节。缓存与派生数据重验全部依赖，受限必需历史明确阻断，不静默删消息继续；合法检索子集显示范围受限，不能说完整知识库无结果。
+ 
+ A06负责可信scope签发/消费、分类与内容修订核验、全输入依赖、read/dispatch/commit原子裁决和缓存；07的逻辑记录不在本次转成数据库。A07/A08负责完整任务/详情承载。测试见 `scripts/tests/test_material_policy_contracts.py` 和[任务007审核包](../workorders/task007_a05_review_2026-10-22.md)：schema/操作矩阵可测，真实身份、事务、并发、模型发送、版本保护和UI运行效果均未验证。
++
++## A08 补充详情与处理依据投影
++
++新增具名字段仍待机器转写；既有PaperAnalysis/MaterialAnalysis、MetadataCandidate、ProcessingView以本文原定义为唯一来源。SupplementView.error由object收紧为`TaskError|null`（A04机器schema），仅反映对应准备任务的安全失败；元数据缺项/歧义使用下述诊断，不伪造终态TaskError。
++
++SupplementView增加必填`input_revision:Revision,selected_candidate_id:ID|null,processing:ProcessingView,processing_basis:ProcessingBasis|null,preparation_notices:PreparationNotice[],duplicate:SupplementDuplicateView`。
++
++`PreparationNotice={reason:PreparationReason,message:string}`，reason复用06 A08.1词汇，message仅安全摘要，不返回内部诊断ID/来源依赖；权限错误仍防枚举。`SupplementDuplicateView={decision:not_checked|distinct|duplicate|suspected,matched_project_asset:{kind:paper|material,id:ID}|null,reason:string|null}`；匹配只限当前Project可见成员，未检查不得返回distinct；它是已有去重决策投影，不自动合并、覆盖或确认。
++
++`ProcessingBasis={processing_revision:Revision,input_revision:Revision,text_revision_id:ID|null,document_asset_id:ID|null,file_revision:Revision|null,confirmed_revision:Revision|null}`。所有字段必填；file_revision与document_asset_id同空/同有，text_revision_id仅实际可用文本非空。confirmed_revision指当前有效处理确认；独立补充无Run处理确认故为null，元数据确认不填这里。processing_revision为已持久处理结果身份，pending且无结果时整个basis=null。内部文件摘要、依赖闭包不公开。
++
++CandidateView和AssetView增加必填`processing_basis:ProcessingBasis|null,analysis_basis:AnalysisBasis|null`，AnalysisBasis字段唯一见06 A08.3。无分析/无有效结果时null；失效旧结果不作为当前有效analysis/basis，人工旧稿按现有保护保留而不混入有效投影。正式AssetView只取指定版本固化依据，不能用当前候选修订补齐；引用字段存在不授权其他Project或未发布数据读取。
++
++ProcessingView原status/text_source_kind/failure_reason/participates_in_knowledge按06 A08.2映射。pending/processing无最终文本，failed/unsupported无文本且参与=false；available/degraded仅表示文本能力，不自动参与知识构建，仍须有效性、确认、纳入和发布规则，排除项参与=false。paper degraded仅abstract_fallback，material没有摘要降级。成功读取含失败状态仍HTTP200，不重放生成命令；Task等待和文件读取保持A07/04-02规则。
++
++选择MetadataCandidate必须属于当前补充input_revision；CorrectSupplement的expected_revision绑定当前详情，旧候选选择返回既有修订/状态错误。选择/修正后重新核验关键元数据与冲突，确认时再次检查；不能以选过一个ID绕过缺标题。确认仅使其待纳入，不表示已有全文、处理确认或分析确认。
++
++
++MetadataCandidate增加必填`assessment:MetadataDraftAssessment`：`{confidence:number|null,missing_fields:string[],evidence:MetadataDraftEvidence[]}`。LLM草稿confidence必为0–1的估计值（不是已校准质量或自动确认门槛），其他提取无估计可null；missing_fields是该kind允许元数据字段名的去重集合，必须与实际缺项一致，不要求资料具备作者/年份。LLM字段缺省拒绝结构化结果，不能以默认1或空数组掩盖缺项。
++
++`MetadataDraftEvidence={field:string,source:SourceRef,document_asset_id:ID|null,file_revision:Revision|null,text_revision_id:ID|null,locator:EvidenceLocator|null}`；field只能是该kind元数据字段，文档身份与file_revision同空/同有；text/locator若存在须对应已保存输入文本和同一文件修订，可通过原授权文件入口定位，未具定位不能伪造。证据为当前补充实际使用的输入来源，不是正式EvidenceRef；provider元数据可无文件/文本定位，但必须指实际解析的SourceRef。无依据字段不编造证据，明确列入缺项或冲突供人工修正；所有引用限当前Project授权，不输出内部路径/依赖闭包。公开投影不能安全提供必要证据时不称已核验，保留安全缺项说明。
+--- before/docs/design/04-02_transport_task_file_contracts.md
++++ after/docs/design/04-02_transport_task_file_contracts.md
+@@ -1,6 +1,6 @@
+ # API 附录：异步任务、事件传输与文件
+ 
+-文档版本：v1.9
++文档版本：v1.10
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
+@@ -358,3 +358,10 @@
+ ## A05 分类与传输接缝
+ 
+ 文件及检索/历史来源的安全接收及必要静态提取先于分类确认，其模型/嵌入外发必须在确认之后且重验当前政策；可信本次主动文字在绑定的本次命令内无需额外分类确认，例外不延伸至历史自动取用或上传文件，详见04-01 §10.1；资料开关不阻止用户原有合法查看。分类操作、只读来源身份及同步错误矩阵见[04-01 §10](04-01_p0_operation_contracts.md#10-a05-资料设置与来源分类)。它们不返回Task。既有异步执行的必需资料受限复用TaskError/STATE_OPERATION_NOT_ALLOWED，不改变Task GET的200读取成功语义；可见性丧失仍优先安全404。完整TaskView/等待项和来源详情承载未在本次补齐。
++
++## A08 解析能力与安全失败交接
++
++4.2格式白名单及6节限额保持不变，逐格式能力/失败样本由[06 A08.4](06_agent_knowledge_services.md#a084-解析能力与有限技术重试)维护；接口capabilities只能列实际实现格式。P0基础格式未实现即记录缺口，不能以unsupported结果声称整个白名单通过。
++
++接收前失败沿原HTTP错误；持久受理后的深度失败沿TaskError及SupplementView安全诊断，不把失败任务改成未受理重试。元数据歧义/缺标题可形成成功准备结果但不可自动确认；状态的两个轴及Task终态映射见06 A08.2。解析失败不必然禁止安全原文件读取，未发布文件入口始终重新检查归属、安全接收与当前权限。解析结果仅暂存/候选材料，不能产生正式EvidenceRef。
++
+--- before/docs/design/05_application_use_cases.md
++++ after/docs/design/05_application_use_cases.md
+@@ -1,6 +1,6 @@
+ # Application Use Cases 设计
+ 
+-文档版本：v1.12
++文档版本：v1.13
+ 更新日期：2026-10-23
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -207,3 +207,10 @@
+ 本次修订 v1.10（2026-10-16）：落实 R1–R4 人工决定、空版可创建研究/综述、资料统一只读及窄范围返回检索；仅设计同步，未实施。
+ 
+ 本次修订 v1.11（2026-10-19）：新增内部模块与执行契约入口，统一 Worker、Agent 提案和应用提交责任；未实现代码。
++
++## A08 补充与处理提交衔接
++
++类型与状态矩阵唯一见[06 A08](06_agent_knowledge_services.md#a08-补充处理与分析具名服务载荷)。Construction应用在补充受理事务中保存输入修订、任务与文件归属；准备结果按SupplementWriteScope提交元数据候选、处理结果及安全诊断。已确认补充在Run冻结时记录确切确认/输入/文件/文本修订并签发CandidateWriteScope，复用静态结果不继承处理/分析确认。
++
++处理结果、处理确认及分析依据相互绑定；编辑/撤权/锁定与迟到Worker提交按现有同一裁决边界处理，重复提交返回原结果，不制造第二份处理修订或事件。仅被本次成功发布实际纳入的补充标published；failed/unsupported、重复或未纳入不得借Task成功设置published。失败任务仍可通过已有详情看诊断及合法原文件，P0不新增补充重试或原Run恢复。
++
+--- before/docs/design/05-01_internal_module_contracts.md
++++ after/docs/design/05-01_internal_module_contracts.md
+@@ -1,6 +1,6 @@
+ # 内部模块与执行契约
+ 
+-文档版本：v1.6
++文档版本：v1.7
+ 更新日期：2026-10-23
+ 依据文档：[00](00_layers.md)、[02](02_domain_core.md)、[04](04_api_contracts.md)、[05](05_application_use_cases.md)、[06](06_agent_knowledge_services.md)
+ 
+@@ -187,3 +187,10 @@
+ 内部事件event_id与公开事件event_id不假定一对一：一个提交可投影多个公开事件。持久记录公开事件身份及每attempt顺序，重投同一投影复用身份；内部schema_version不冒充公开信封版本。重新读取/订阅是纯查询，不领取执行资格、不派发Provider、不新建attempt。若投影异步实现，必须返回同一已投影提交的完整快照，不能让新游标越过未投影正文；具体存储方案留工程任务。
+ 
+ 本次v1.6仅完成接缝设计。所有权、原子性、撤权、重复和迟到提交仍需隔离持久化测试，见09的A07验收交接。
++
++## A08 具名服务接口落点
++
++PrepareSupplement精化为`PrepareSupplementInput → Outcome<ServiceProposal<SupplementPreparation>>`；GenerateCandidateAnalysis精化为`CandidateAnalysisInput → Outcome<ServiceProposal<CandidateAnalysisProposal>>`。全部具名结构由[06 A08](06_agent_knowledge_services.md#a08-补充处理与分析具名服务载荷)维护，不再由调用方自行补object。ProcessingResult的paper/material分支分别落DocumentProcessingState/MaterialProcessingState；公开读取按04-01的ProcessingBasis/AnalysisBasis投影，不直接序列化内部输入依赖或文件摘要。
++
++应用核验实际scope类别、对象/Project/输入与当前资格，再允许提交；两个WriteScope即便文件相同也不能互换。补充纳入必须另建候选范围与固定来源映射，不能把解析器成功当纳入或确认。重试沿06 A08.4有限预算，当前policy/静态处理分流沿A06；补充详情及Task事件沿A07，不新增运行状态。
++
+--- before/docs/design/06_agent_knowledge_services.md
++++ after/docs/design/06_agent_knowledge_services.md
+@@ -1,6 +1,6 @@
+ # Agent & Knowledge Services 设计
+ 
+-文档版本：v1.12
++文档版本：v1.13
+ 更新日期：2026-10-23
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -185,3 +185,83 @@
+ 本次修订（2026-10-20）：登记08-01资料策略接缝和08已确认的Provider/凭据规则，不复制未决细节。
+ 
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
++
++## A08 补充、处理与分析具名服务载荷
++
++本节为尚未机器转写的内部类型唯一来源，公开投影见04-01的A08节；ID/Revision/Time沿04-01。字段均必填，只有明确null可空；联合只允许自身分支字段，空数组显式[]。引用不是外部可写对象或任意存储路径；ServiceProposal和执行上下文沿05-01，全部产物由Construction应用提交。
++
++### A08.1 不可变输入与结果
++
++`ScopedFileRef={project_id:ID,document_asset_id:ID,file_revision:Revision,content_digest:string}`，摘要由受控存储计算并校验实际字节，不接受客户端宣称；存储key/凭据不进入此投影。必须实际归属SupplementWriteScope或CandidateWriteScope，跨Project同哈希不能授权复用。
++
++`PreparedTextRef={project_id:ID,text_revision_id:ID,content_digest:string,text_length_chars:integer,source_kind:full_text|abstract_fallback|user_text|material_text,document:ScopedFileRef|null,source:SourceRef,dependency_set:InputDependencySet,locations:PreparedTextLocations}`。文本长度按Unicode码点且>0；空白/无可用文本不能构造本类型；原文不内联。全文/资料文件提取必须有document；真实元数据摘要和已有合法人工替代文字允许null，均须可追溯来源及不可变内容修订。SourceRef来自04-01，依赖来自A06；引用不等于正式EvidenceRef、不绕过当前政策。user_text只消费既有受控输入能力，不新增上传文字端点。
++
++`PreparedTextLocations={text_revision_id:ID,mapping_revision:Revision,segments:PreparedTextSegment[]}`；`PreparedTextSegment={segment_id:ID,start_offset:integer,end_offset:integer,source_locator:EvidenceLocator|null}`。segments非空、按start排序且不重叠，0≤start<end≤text_length_chars，offset均为当前文本Unicode码点；text_revision_id与正文引用一致，mapping_revision绑定文件/文本修订。source_locator复用04-01的已知联合，存在时必须可校验到同一document/来源；无法提供原页/段落时null，仍以规范文本范围定位，不虚构页码。至少覆盖全部将供后续切片/引用使用的可用文字；无对应映射的片段不得标为已验证定位。映射仅内部处理产物，正式EvidenceRef仍须发布版核验，不把暂存定位作为研究证据。
++
++`SupplementInput`是封闭联合：`{kind:paper|material,channel:upload,file:ScopedFileRef}`或`{kind:paper|material,channel:identifier,source:NormalizedSupplementSource}`。`NormalizedSupplementSource={type:doi|arxiv_id|url,value:string}`，规则沿SupplementCreate（material仅url），服务端归一化但保存原提交值用于审计；归一化不证明来源可访问。接收阶段与准备阶段分别执行对应权限/安全核验。
++
++`PrepareSupplementInput={execution:ExecutionContext,scope:SupplementWriteScope,input_revision:Revision,input:SupplementInput}`。execution、scope、实际请求及文件/来源修订必须一致；不含Run/KV前提。输入的kind与请求不一致拒绝；模型配置只在实际模型使用前校验，必要静态提取无需模型。
++
++`SupplementPreparation={supplement_id:ID,input_revision:Revision,metadata_candidates:MetadataCandidate[],resolution_status:pending|resolved|ambiguous|failed,processing:ProcessingResult,diagnostics:PreparationDiagnostic[]}`。MetadataCandidate复用04-01，候选ID在同一请求/提取修订内稳定，重新提取不能把旧选择套到另一候选。结果不携带confirmation_status或可执行确认token。返回`Outcome<ServiceProposal<SupplementPreparation>>`：可诊断的解析失败可作为持久结果提案，授权/资格失效或不能可信提交则Err<ApplicationError>；应用据下表决定Task终态，不能仅以Outcome成功推断解析成功。
++
++`ProcessingResult`为以下封闭联合（kind必须与输入一致）：
++
++- `kind=paper`：`processing_revision:Revision,input_revision:Revision,document:ScopedFileRef|null,status:available|degraded|failed|unsupported,text:PreparedTextRef|null,diagnostics:PreparationDiagnostic[]`。
++- `kind=material`：同名字段；status仅available|failed|unsupported，不允许degraded/abstract_fallback，available时text.source_kind=material_text。
++
++available/degraded必须text非null；failed/unsupported必须text=null。result.document与text.document在有text时必须完全相等，所有project_id、文件修订及输入归属与scope/input_revision一致；摘要源内容修订也纳入冻结依赖。
++
++processing_revision由应用为本次受控处理结果分配并持久绑定，服务端提案使用待提交修订，不能由模型/客户端选择或复用；相同持久结果重放复用该修订。paper available只对应full_text或既有合法user_text；degraded仅真实非空abstract_fallback，且诊断必须解释全文缺失/失败。failed/unsupported必须text=null，不能携带旧成功文本冒充本次结果。document可在失败时保留安全已收文件；其存在不表示文本可用。此结果只表达最终处理，pending/processing由应用基于受理/执行事实投影，不由解析器伪造。
++
++`PreparationDiagnostic={category:acquisition|format|parse|metadata|analysis|integrity|policy,reason:PreparationReason,message:string,source:SourceRef|null,diagnostic_ref:ID|null}`，message为脱敏摘要；内部诊断ID不赋予公开读取权。PreparationReason闭合为source_unavailable、transient_failure、unsupported_format、parser_unavailable、corrupt_content、encrypted_content、safety_limit、no_usable_text、missing_title、ambiguous_metadata、metadata_conflict、invalid_analysis、input_changed、scope_invalid、dependency_invalid、material_restricted。category按实际阶段选择，reason保持精确；这不是新增PublicError码。
++
++### A08.2 确定映射与提交
++
++| 输入/事实 | 补充与处理投影 | 下一步及禁止副作用 |
++| --- | --- | --- |
++| 基础大小/格式/内容识别/安全接收失败 | 沿04-02的413/415/422；无成功受理句柄 | 无已确认资产、无业务解析链；临时字节按接收流程清理 |
++| 已受理但尚未完成准备 | resolution=pending、processing=pending/processing | Task queued/running；不提前可确认/可检索 |
++| 元数据唯一且足够、文本可用 | resolution=resolved；处理available或论文degraded | 准备Task可succeeded，但补充unconfirmed/pending；待原确认入口 |
++| 多候选或关键元数据冲突 | resolution=ambiguous，候选及冲突具名 | 准备Task可succeeded但结果需人选/修正，不自动确认；旧选择修订拒绝 |
++| 缺资料标题/论文关键元数据 | 保留草稿，resolution=ambiguous；无候选可保留[] | 原CorrectSupplement补足/选择后重新校验；缺标题不得confirm；LLM草稿仍未确认 |
++| 深度获取/解析失败或资料无文本 | processing=failed、text=null；解析诊断持久保留；metadata能独立解决时resolution仍可resolved，否则failed | 准备Task=failed（若无其他致命失败，纯元数据歧义不计失败）；安全原文件仍可读，不能以resolution推导处理可用 |
++| 论文PDF不可得/解析失败但有真实摘要 | processing=degraded、abstract_fallback及诊断；resolution独立判定 | Task可succeeded并展示降级；不生成摘要冒充来源，进入Run后仍须处理确认 |
++| P0格式解析器未就绪 | processing=unsupported、reason=parser_unavailable；resolution独立判定 | Task=failed；记录P0实现缺口，不自动把doc/ppt移到P1、不伪造成功 |
++| 已有Project成员重复/疑似重复 | 元数据解析结果不等于纳入决定；应用去重并形成既有决策 | 确认不创建重复活动成员，命中已发布成员只记备选来源/提示先移除；不改旧文件、分析或人工决定 |
++| 已确认补充被Run选中并冻结 | inclusion processing，固定supplement确认修订及文件/文本/元数据修订；签发新CandidateWriteScope | 复用经验证不可变提取结果但不继承处理/分析确认；新补充默认下轮 |
++| Run失败/取消，或补充被编辑/撤权 | 不将inclusion改为published；保留可追溯assigned_run及独立补充记录 | 迟到结果不得提交；不凭Task状态重新排队或删除独立补充，后续纳入遵循既有构建入口 |
++| 正式发布 | 本次实际纳入成员才标published并记录version；重复/未纳入者不假报published | 只有Construction成功发布切换知识状态，解析服务无发布资格 |
++
++PDF-only准备顺序沿FR-023与04-02 §4.2：先本地提取，有DOI/arXiv/可信标题等查询锚点才调用可用外部数据源；关键元数据仍不足时可在A06政策允许且配置可用后使用LLM草稿，Assessment见04-01。无锚点不盲发文件给外部源；无LLM资格仍可沿人工修正，不提升草稿为确认。
++
++resolution与processing是两个轴：元数据resolved并不保证可用文本，failed解析也不抹除合法元数据。当前修正能解决的元数据缺口沿既有edit/confirm处理；需重新下载/解析的失败不新增P0专用重试入口。用户可沿既有SubmitSupplement/UploadSupplement重新上传或改用标识，形成独立新请求（新命令幂等身份），保留旧失败记录；同键重放旧请求不得伪造新尝试。应用TaskError按A04映射实际失败，公开失败data和安全诊断由04-01定义；不从内部reason拼HTTP错误码。
++
++候选处理的DocumentProcessingState/MaterialProcessingState由应用保存ProcessingResult和输入/确认关系。手动Run先确认筛选，再核验或准备文本，确认包括失败/降级/不参与项的处理摘要，才允许可用文本候选进入分析；无文本候选可列不参与，但不得生成分析或进入向量/图谱。无检索revision_only按原依赖链不伪造筛选结果。独立补充的预提取不是Run处理确认，复用必须重验本次依赖。
++
++### A08.3 分析输入、结构与修订
++
++`CandidateAnalysisInput={execution:ExecutionContext,scope:CandidateWriteScope,candidate_id:ID,candidate_revision:Revision,kind:paper|material,processing_revision:Revision,processing_confirmation_revision:Revision,text:PreparedTextRef}`。所有引用匹配当前候选、冻结输入和有效处理确认；任务已锁定、文本来源/修订过时、无可用文本、资料范围不可用均不得派发模型。paper degraded可分析但始终保留摘要来源标记。
++
++`CandidateAnalysisProposal={candidate_id:ID,candidate_revision:Revision,kind:paper|material,processing_revision:Revision,processing_confirmation_revision:Revision,text_revision_id:ID,analysis:PaperAnalysis|MaterialAnalysis,dependency_set:InputDependencySet}`，kind选择唯一analysis结构，字段/长度沿04-01。ServiceProposal包裹后由应用核验全部实际模型输入依赖；结构错误、跨kind字段、伪空成功和旧依据拒绝提交，不清除旧人工稿。PaperAnalysis和MaterialAnalysis各自全部字段必填；数组可为空但不能靠空数组/固定套话谎称提取到证据；没有依据的信息按现行内容要求明确说明，不编造方法/创新。模型不返回确认、发布或内容锁状态。
++
++`AnalysisBasis={analysis_revision:Revision,processing_revision:Revision,processing_confirmation_revision:Revision,text_revision_id:ID,candidate_revision:Revision}`由应用在成功提交时登记；analysis_revision指本次分析内容修订，candidate_revision指该分析依据的候选修订，不能循环引用提交后的新候选修订。人工编辑形成新的分析修订并保留该处理依据；确认只接受当前有效分析。输入/处理变更使依赖结果和确认失效，保存旧稿用于原有诊断/保护不等于仍可用；入库确认受理后锁定。该结构不承诺P2完整历史版本功能。
++
++### A08.4 解析能力与有限技术重试
++
++格式清单唯一在04-02 §4.2；每一格式必须以真实解析样本验收，下面为适配器能力要求，不代表已经实现或选定库。
++
++| P0格式组 | 静态提取与定位最低要求 | 必须验证的失败/安全样本 |
++| --- | --- | --- |
++| pdf | 论文/资料分型，提取实际文字、页或文本范围；保留文件修订 | 损坏/加密/扫描无文本；论文可真实摘要降级，资料无摘要分支；不以OCR已实现为前提 |
++| doc/docx | 文档段落/表内可提取文字和稳定文本定位；旧二进制doc也必须验证 | 不可用转换器、损坏/加密；不执行宏/嵌入对象，不漏报P0能力缺口 |
++| ppt/pptx | 幻灯片可提取文字按稳定顺序转换文本，并保存定位对应 | 无文本/损坏/加密、旧ppt能力；不播放或执行嵌入内容 |
++| html/htm | 提取静态可见文本，保留原来源与文本范围 | 不运行脚本、不跟随页面嵌入资源或表单；无正文不能成功 |
++| md/txt/rst | 按确定编码解码，保留段落/文本范围 | 解码失败、空白、恶意链接；不执行指令或抓外链 |
++| yaml/yml/json/toml | 静态键值文本及稳定范围，保留实际内容 | 畸形结构、超限/别名膨胀；安全解析，不构造任意对象 |
++| ipynb | 按cell顺序静态读取文本，明确代码/markdown/已保存输出来源 | 不运行cell；不把已保存输出当本次执行证据；忽略非文本并说明范围 |
++| py及明确登记的其他代码 | 静态源文本和稳定范围 | 不执行/import代码、不安装依赖；二进制/解码失败拒绝 |
++
++解析定位统一产出文本修订及已有EvidenceLocator可表达的page/paragraph/text_range，不借A08增加公开slide/cell locator枚举；原slide/cell到文本映射保留内部诊断，未来引用须经发布版转换。capabilities只报告实际实现，缺少任何基础P0格式仍是开放验收缺口。P1表格文件、P2多媒体不提前纳入。
++
++技术重试由单一应用策略控制：同一task/attempt与不变输入/配置/资格，adapter不得嵌套无限重试。`PreparationRetryBudget={max_retries:integer,timeout_ms:integer}`由服务端部署配置冻结；max_retries有限且≥0、timeout_ms>0，具体值在实现/容量验证时登记，不设产品新门槛。仅确认可安全重试的瞬时获取/解析基础设施故障可用剩余预算；内容损坏/加密/无文本、格式不支持、缺解析器、模型结构无效、政策/权限/修订变化不能用原请求盲重试。外部结果或业务提交未知先核查持久结果，重复结果幂等提交；重试耗尽留安全诊断和失败，不新建用户恢复入口。每次尝试重验当前授权/资料使用，静态处理与模型使用按A06分流。
++
+--- before/docs/design/09_quality_observability.md
++++ after/docs/design/09_quality_observability.md
+@@ -1,6 +1,6 @@
+ # 核心架构与功能模块测试设计
+ 
+-文档版本：v1.20
++文档版本：v1.21
+ 更新日期：2026-10-23
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -234,3 +234,17 @@
+ | TC-10/12 | A05/A06回归与业务集成：必需历史拒绝/允许子集/主动文字例外、终态与业务状态分离；失败不覆盖内容、不改变版本、不增加P0恢复 |
+ 
+ 运行任务应使用显式隔离测试库、真实commit及确定性屏障制造交错，默认mock Provider/邮箱；同时检查持久副作用、HTTP/流载荷及UI。转写时先建立各联合变体、必填/null、跨变体字段拒绝和枚举正负例；schema不能代替上述权限/并发/重连断言。所有这些新增可执行测试当前未建立、未运行；TRACK运行项保持开放。
++
++## A08 设计验收与运行交接
++
++[task011](../../tasks/011-supplement-processing-contracts.md)列出SP-01–15输入、预期与禁止副作用。类型规范在06 A08、公开依据在04-01 A08，继承A04–A07当前错误/资料/任务边界；本轮仅文档检查，不代表解析能力已实现。
++
++| 场景 | 后续可执行验证及观察 |
++| --- | --- |
++| SP-01/02/03 | API+隔离持久化：无Run受理、重复/歧义/人工修正、去重；断言请求/身份/确认/资产数及原稿无变化 |
++| SP-04/05/06/07/08 | 真实格式解析器样本：逐扩展名可用/损坏/空白/加密/限额；本地受控获取端模拟断开/重定向，不访问真实外部目标；检查实际输出来源/修订、降级与安全诊断 |
++| SP-09/10/12 | 真实commit与确定性屏障：冻结前后新增补充、清理和纳入、两种scope/失权、处理确认与人工编辑；断言迟到提交为零及依赖/人工稿保留；模型默认mock |
++| SP-11/13 | schema正负例及应用集成：分型、长度、缺字段、重复提交、预算耗尽、未知结果；断言唯一持久结果/事件，无自动业务重跑 |
++| SP-14/15 | 固定版本读取与UI：失败/歧义/降级/待确认/未纳入/已发布分开，基于指定版恢复依据；检查不会越权或把Task成功当业务完成 |
++
++所有上述新增运行测试当前未建立，入口待对应B01/B03/B05/B06实现；使用显式隔离数据库与文件根，覆盖服务内部commit并清理测试残留。schema测试只能验证结构，mock模型不能证明真实分析质量，单个解析器通过不能代表P0全格式验收。未选库/未验证能力保持TRACK-008a/008c/004开放，不通过删格式或跳过样本获得“通过”。
+--- before/tasks/011-supplement-processing-contracts.md
++++ after/tasks/011-supplement-processing-contracts.md
+@@ -0,0 +1,71 @@
++# Task011：A08 补充、解析与候选分析契约
++
++文档版本：v1.0
++更新日期：2026-10-23
++
++## 1. 目标与授权
++
++用户2026-10-23原文：“继续按 project-delivery 流程推进 A08，建立任务单，完成契约设计、自验及独立审查，再提交我审核。”唯一授权队列为本任务；按[project-delivery](../.agents/skills/project-delivery/SKILL.md)执行至S4，S5–S7等待真实接受。
++
++可观察结果：实现者能明确从无Run补充的接收/准备到候选处理与分析的具名输入、输出、失败去向和修订依据，不把解析成功当确认/发布。范围承接[实施前A08](../docs/workorders/preimplementation_design_tasks_2026-10-21.md#a08-闭合补充与解析服务的类型和状态映射)，关联TRACK-008a/008c/004。纯设计，不转写OpenAPI、实现解析库/DTO/路由/存储/UI，不启动A09或改变P0格式/业务恢复。
++
++## 2. 依据与基线
++
++已读AGENTS、[项目状态](../docs/PROJECT_STATUS.md)、[设计索引](../docs/design/README.md)、[实施入口](../docs/IMPLEMENTATION_ENTRY.md)。A04已限定接受、A06/A07已限定接受并S7收口；A05已修复复审但人工接受待记录，仅消费其实际契约不代填接受。
++
++| 规范 | 本轮采用规则/所有者 |
++| --- | --- |
++| 01 FR-022/023/024/025/026；02-03 §4–6 | 去重、补充确认、最终文本与分析、已发布只读；Construction应用拥有提交 |
++| 02-02 §3.2/3.3；04-01 §4/5 | 冻结/入库锁定、纯补充构建、具名元数据/分析与读取投影 |
++| 04-02 §4/5/6；A04/A07 | 安全接收、P0格式与能力、文件可读范围、Task/错误独立于业务状态 |
++| 05 §3/7；05-01 §3/4；06 §3.4/4 | 两写范围、提案提交、迟到结果拒绝、处理及分析确认 |
++| 08-01与A06；09 | 静态与模型分流、来源依赖、隔离验证要求 |
++
++[before完整快照](../docs/workorders/evidence/task011_a08_2026-10-23/before/source-manifest.json)含190文件；[entry](../docs/workorders/evidence/task011_a08_2026-10-23/entry.json)保存HEAD、工作区和授权。保留既有未提交/未跟踪文件，当前仅补契约未实现能力；不以旧状态声明代替执行证据。
++
++## 3. 修改落点
++
++| 步骤 | 文件 | 职责及边界 |
++| --- | --- | --- |
++| SC01 | 06 A08、05-01 | PrepareSupplement/ProcessingResult/Analysis输入结果与绑定，应用提交，两scope不互换 |
++| SC02 | 04-01、05、02-03 | 公开依据、各状态轴及候选纳入映射，既有规则不变 |
++| SC03 | 06 A08.4、04-02 | 逐P0格式静态能力及失败类别，有限技术重试不增加业务恢复 |
++| SC04 | 09、任务/报告/项目状态、覆盖指纹 | 逐场景与运行缺口交接；OpenAPI不变，文档源变更需重新核验指纹 |
++
++## 4. 验收规格与追踪
++
++以下逐项为文档语义核验；运行用例未建立，统一按09 A08交接，不计为运行通过。并发场景后续用真实隔离commit和确定屏障，Provider默认mock。
++
++| 场景/规范 | 前置、动作或交错 | 预期及禁止副作用 |
++| --- | --- | --- |
++| SP-01 / FR-023；06 A08.1/2 | 无Run上传/URL补充，静态提取，重复同键/异参 | 合法准备不需KV/模型/构建槽；同键不重复请求或解析，接收不是确认/发布 |
++| SP-02 / FR-023；04-01 A08 | 缺标题、多候选、冲突；LLM置信度/缺项/证据；修正后确认；旧候选ID | 草稿assessment完整且证据不伪造；保留草稿并沿原入口修正；过时选择拒绝，不自动确认 |
++| SP-03 / FR-022/026；02-03 §4/5 | 已发布论文/资料重复，疑似重复，跨Project同哈希 | 当前成员只记备选来源/提示移除；无重复成员、越权或旧内容覆盖 |
++| SP-04 / FR-024；04-02 §4/6 | 超大/伪装/压缩炸弹/远程重定向非法目标 | 受理前安全拒绝；无成功Task或已确认资产，无任意网络代理 |
++| SP-05 / FR-024；06 A08.2 | 受理后损坏/加密/获取失败；已有可读原文件 | 失败有TaskError和诊断，保留请求/合法文件；可沿原入口新请求重传/改标识，不伪成功或自动重生成 |
++| SP-06 / FR-024；06 A08.1/2 | 论文全文失败，有/无真实摘要；空摘要 | 仅真实非空摘要可degraded，保留来源/修订/文本定位映射；无映射不得虚构定位，不得生成摘要替代原文 |
++| SP-07 / FR-024；06 A08.1/4 | 资料无文本/仅扫描PDF或损坏；metadata已resolved | processing失败、无参与知识文本；元数据不被抹除，不套论文降级 |
++| SP-08 / FR-023/024；06 A08.4 | 每个P0格式正例/损坏/空白；doc/ppt解析器缺失 | 逐格式明确能力；不执行宏/脚本/cell，缺能力仍P0缺口；P1/P2不提前 |
++| SP-09 / FR-014/023；05/06 A08 | 已确认补充冻结进入Run；新补充并发；清理竞争 | 固定来源修订且另签CandidateWriteScope；不继承处理确认/不改冻结范围，不删除活跃依赖 |
++| SP-10 / FR-017/024；06 A08.3 | 处理确认后文本变更/人工编辑/入库锁定与迟到分析 | 旧依据拒绝，人工稿保留，锁定不绕过；无文本不派发模型 |
++| SP-11 / FR-025；04-01/06 A08.3 | 两类分析正例、缺字段/跨kind/超长、重复提交 | 严格分型/约束，绑定处理确认与最终文本；无伪成功、不重复修订事件 |
++| SP-12 / A06 IC05/06/12；05-01 A08 | 静态提取未分类文件；LLM辅助标题/分析受限；scope错用 | 静态按原权限可保存受限来源；模型使用重查政策/闭包；两写范围不可互换 |
++| SP-13 / A04/A07；06 A08.4 | 瞬时失败/耗尽/未知提交/撤权与重试交错 | 有限同输入尝试，未知先查；不新建P0重试端点或业务attempt |
++| SP-14 / FR-018/024/025；04-01 A08 | 候选成功但尚未发布、排除项、指定历史版读取 | 仅成功发布实际成员标published；正式处理/分析依据固定，不以当前候选补历史 |
++| SP-15 / A07；06 A08.2 | metadata resolved+processing failed；Task成功但需人工修正 | 不同轴准确投影，HTTP读取失败Task仍200；不把诊断当执行授权 |
++
++## 5. 验证与限制
++
++必需自验：文档引用/锚点/版本/日期、实际diff和范围保护、15场景追踪与语义核对；覆盖源指纹、既有OpenAPI结构及入场字节兼容；独立subagent审查后修复复验。证据统一见审核包。纯设计无需数据库或真实外部服务，运行测试命令待工程入口建立。格式能力未验证，分析模型质量、事务/并发/网络/浏览器均未执行；不以静态检查替代。
++
++## 6. 人工决定与审核
++
++无新增业务决定。审核重点：独立补充和候选范围分离、元数据/处理/Task状态映射、真实摘要降级与资料无文本、处理/分析修订绑定、格式不降期。人工接受尚未发生；接受仅限本轮设计，机器转写和业务实现另行授权。
++
++## 7. 单一交付报告
++
++[task011审核包](../docs/workorders/task011_a08_review_2026-10-23.md)集中记录命令、问题、修复、受审/交付基线和未覆盖事项。设计、自验、独立审查和人工接受分列。
++
++## 8. 顺序交付检查点
++
++S1/S2/S3已完成；文档自验、15场景追踪、结构/兼容检查及快照校验通过，独立审查R01/R02两项P2与C01已修复并复审闭合。当前S4等待人工审核，S5–S7未开始。受审快照s3-input清单SHA256为`1ac8a7f7e957acc7a80d9f9b010acbaaf6f5b57ac7b95a3f366e2f719597b53f`；交付delivery仅更新本单/报告/状态交接文字，设计和覆盖JSON不变。完整证据见审核包。下一步：真实接受后进入S5–S7；要求修改则回S2并复审。队列仅task011，A09及其他backlog未获授权。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.51
++文档版本：v1.52
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 
+@@ -23,7 +23,7 @@
+ | --- | --- | --- |
+ | 项目级顺序交付 skill | 已完成；2026-10-23获用户限定人工接受 | [project-delivery](../.agents/skills/project-delivery/SKILL.md)、实施入口和任务模板支持授权队列、恢复检查点及人工节点；[本轮记录](workorders/project_delivery_skill_2026-10-23.md)。已核对三个流程文件与交付快照一致；接受仅限skill及配套文档，跨会话运行未验收，不启动task008或其他未授权业务任务 |
+ | 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08/A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计自验及独立复审通过，task011处于S4待人工审核；A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -155,3 +155,5 @@
+ 本次修订 v1.50（2026-10-23）：[task010 A07](../tasks/010-task-confirmation-event-contracts.md)补齐Task目标/等待引用、确认预览影响/保留及事件关联设计，文档自验通过，独立审查三项P2及C01已修复并复审闭合，当前S4等待人工审核；[单一审核包](workorders/task010_a07_review_2026-10-23.md)记录当前证据与检查点。机器转写与运行验收未完成，人工接受未记录；A08/A09及业务实现未启动。
+ 
+ 本次修订 v1.51（2026-10-23）：记录task010 A07限定设计接受及S5–S7收口，仅更新任务/报告/状态，原设计与机器文件不变；后续执行须另行授权。
++
++本次修订 v1.52（2026-10-23）：用户另行授权[task011 A08](../tasks/011-supplement-processing-contracts.md)补充/解析/分析契约设计、自验及独立审查后提交审核。设计/文档自验通过，独立审查两项P2及C01已修复复审闭合，当前S4等待人工审核；[单一审核包](workorders/task011_a08_review_2026-10-23.md)。机器转写、解析器能力、业务实现仍未完成，TRACK-008a/008c/004保持开放；不启动A09。
+--- before/docs/workorders/task011_a08_review_2026-10-23.md
++++ after/docs/workorders/task011_a08_review_2026-10-23.md
+@@ -0,0 +1,54 @@
++# Task011 A08 契约设计审核包
++
++文档版本：v1.0
++更新日期：2026-10-23
++
++## 范围与结果
++
++授权、规范与SP-01–15验收规格见[任务单](../../tasks/011-supplement-processing-contracts.md)。本轮SC01–SC04设计，不改变OpenAPI、实现解析器或启动A09；P0格式无缩减。S1/S2/S3完成，当前S4等待人工审核；人工接受及S5–S7未发生。
++
++[06 A08](../design/06_agent_knowledge_services.md#a08-补充处理与分析具名服务载荷)定义补充输入/结果、文件/文本/定位引用、处理结果分型、分析输入/提案/依据、状态映射和逐格式能力及重试约束。[04-01 A08](../design/04-01_p0_operation_contracts.md#a08-补充详情与处理依据投影)定义安全公开诊断、重复决策、处理/分析依据和元数据草稿assessment。[02-03](../design/02-03_construction_assets_appendix.md)、[05](../design/05_application_use_cases.md)、[05-01](../design/05-01_internal_module_contracts.md)补生产消费与领域边界引用；[04-02](../design/04-02_transport_task_file_contracts.md)连接既有格式/文件/Task规则，[09](../design/09_quality_observability.md)列后续测试层。覆盖JSON仅版本/文档指纹更新，局部机器覆盖未增加。
++
++## S2 需求自验
++
++下列是按规范进行的设计核验；可执行运行测试均未建立，不能把文字检查称为业务通过。
++
++| 场景 | 设计核验结论与依据 |
++| --- | --- |
++| SP-01 | FR-023；06 A08.1/2；合法准备不需KV/模型/构建槽；同键不重复请求或解析，接收不是确认/发布 |
++| SP-02 | FR-023；04-01 A08；保留草稿并沿原入口修正；过时选择拒绝，不自动确认 |
++| SP-03 | FR-022/026；02-03 §4/5；当前成员只记备选来源/提示移除；无重复成员、越权或旧内容覆盖 |
++| SP-04 | FR-024；04-02 §4/6；受理前安全拒绝；无成功Task或已确认资产，无任意网络代理 |
++| SP-05 | FR-024；06 A08.2；失败有TaskError和诊断，保留请求/合法文件；不伪成功或自动重生成 |
++| SP-06 | FR-024；06 A08.1/2；仅真实非空摘要可degraded，保留来源/修订；不得生成摘要替代原文 |
++| SP-07 | FR-024；06 A08.1/4；processing失败、无参与知识文本；元数据不被抹除，不套论文降级 |
++| SP-08 | FR-023/024；06 A08.4；逐格式明确能力；不执行宏/脚本/cell，缺能力仍P0缺口；P1/P2不提前 |
++| SP-09 | FR-014/023；05/06 A08；固定来源修订且另签CandidateWriteScope；不继承处理确认/不改冻结范围，不删除活跃依赖 |
++| SP-10 | FR-017/024；06 A08.3；旧依据拒绝，人工稿保留，锁定不绕过；无文本不派发模型 |
++| SP-11 | FR-025；04-01/06 A08.3；严格分型/约束，绑定处理确认与最终文本；无伪成功、不重复修订事件 |
++| SP-12 | A06 IC05/06/12；05-01 A08；静态按原权限可保存受限来源；模型使用重查政策/闭包；两写范围不可互换 |
++| SP-13 | A04/A07；06 A08.4；有限同输入尝试，未知先查；不新建P0重试端点或业务attempt |
++| SP-14 | FR-018/024/025；04-01 A08；仅成功发布实际成员标published；正式处理/分析依据固定，不以当前候选补历史 |
++| SP-15 | A07；06 A08.2；不同轴准确投影，HTTP读取失败Task仍200；不把诊断当执行授权 |
++
++SP-02另核验LLM草稿置信度/缺字段/证据来源，SP-05核验原上传/标识入口的新请求与原失败记录分离，SP-06核验文本定位映射。所有载荷在所属文档单点定义，其他层引用；审查diff不涉及业务源码、数据库或旧证据。
++
++## S3 独立审查与修复
++
++只读subagent task011_review自行读取FR-023/024/025、领域与原契约，初审R01/P2：元数据草稿缺置信度/缺项/证据具名字段；R02/P2：解析结果缺可传递定位。已补MetadataDraftAssessment/MetadataDraftEvidence及PreparedTextLocations/Segment。C01明确available/degraded非空text、文件/Project/输入一致；C02明确沿已有入口新请求重传/改标识。独立修复复审通过，无剩余阻断项，原发现及闭合记录见[独立审查](evidence/task011_a08_2026-10-23/independent-review.txt)。
++
++## 验证证据与限制
++
++[S2检查输出](evidence/task011_a08_2026-10-23/s2-checks.json)及[最终检查](evidence/task011_a08_2026-10-23/final-checks.json)保存实际命令与结果，均通过。文档引用/锚点、版本/日期、15场景追踪及范围保护；OpenAPI结构/源行/指纹和入场字节兼容；完整快照包含未提交/未跟踪文件。机器验证仅覆盖既有47个请求成功局部、40个仅请求、172schema、131源行和5/6 SSE payload；不覆盖新增A08类型。
++
++解析库未选/未实现，逐格式能力、真实事务/并发/权限/解析/模型质量、浏览器及端到端未验证；后续必须依据09完成隔离验证，不用mock模型或单个格式证明全格式能力。A05人工接受仍待记录，本轮不代填。TRACK-008a/008c/004运行/转写缺口保持开放。
++
++## 人工审核
++
++请审核是否接受SC01–SC04及SP-01–15所限定的设计：无Run准备与两个scope边界；失败/歧义/降级的状态映射；元数据草稿和处理/分析的修订/定位依据；P0格式及有限技术重试。建议接受本轮设计后继续S5–S7；如需修订则返回S2并复审。没有新增产品裁决，人工接受尚未发生。
++
++## 精确内容基线与复验
++
++[受审清单](evidence/task011_a08_2026-10-23/s3-input/source-manifest.json)192文件，SHA256为`1ac8a7f7e957acc7a80d9f9b010acbaaf6f5b57ac7b95a3f366e2f719597b53f`。[交付清单](evidence/task011_a08_2026-10-23/delivery/source-manifest.json)保持相同设计及覆盖JSON，仅任务/报告/状态更新S4交接记录。[完整差异](evidence/task011_a08_2026-10-23/delivery.patch)相对入场工作区，保留所有原有修改。
++
++复验命令：`python3 docs/workorders/evidence/task011_a08_2026-10-23/check_docs.py`（只写本任务检查证据）；`/tmp/rpb-contract-check/bin/python scripts/check_api_contracts.py --baseline docs/workorders/evidence/task011_a08_2026-10-23/before-openapi.json`；`python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/task011_a08_2026-10-23/delivery`。文档检查10文件、15场景追踪及范围保护通过；没有数据库/Provider副作用。结构检查不能验证新设计或解析能力。
+--- before/contracts/p0.coverage.json
++++ after/contracts/p0.coverage.json
+@@ -1,5 +1,5 @@
+ {
+-  "version": "1.4",
++  "version": "1.5",
+   "date": "2026-10-23",
+   "source_rows": [
+     {
+@@ -666,8 +666,8 @@
+   ],
+   "normative_fingerprints": {
+     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
+-    "04-01_p0_operation_contracts.md": "700d8fdc7f30d7bf07704ad89959f57f2e329515ea66635f00e0314876bf405e",
+-    "04-02_transport_task_file_contracts.md": "42ebe0e6f73529c7dbb361037a7a744c47664fadfa06a05ec2f67ab4939c66da"
++    "04-01_p0_operation_contracts.md": "d7563787508e297bcab467b8c425dc8e2a21299cedd43612c83d87393267d43c",
++    "04-02_transport_task_file_contracts.md": "728862966bf2f797bab15a8de3ee0a4cc2bec9291e0fdb262eda65252a0da738"
+   },
+   "operation_coverage": {
+     "Account.GetCSRF": {

@@ -1,0 +1,546 @@
+--- before/docs/design/04-01_p0_operation_contracts.md
++++ after/docs/design/04-01_p0_operation_contracts.md
+@@ -1,6 +1,6 @@
+ # API 附录：P0 操作与数据契约
+ 
+-文档版本：v1.9
++文档版本：v1.10
+ 更新日期：2026-10-23
+ 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
+ 适用范围：P0 设计契约；不是实现或验收通过声明。
+@@ -24,7 +24,7 @@
+ | `Content` | `content:string,revision:Revision,content_state:agent_draft\|manual_confirm\|manual_edit,last_modified_by:ID\|null,last_modified_at:Time,source_action:string`；Agent 作者可空，不冒充人工 |
+ | `TaskRef` | 04-02 `TaskHandle` 的完整别名，字段及 `execution_status` 不在此重复定义；不得缩减必需字段 |
+ | `CommandResult` | `resource_id:ID,revision:Revision,task:TaskRef\|null`；有异步执行返回 202，否则 200；创建已持久化对象可为 201 |
+-| `ConfirmationPreview` | 完整包含04主文确认对象字段，另加 `affected_items:object[],retained_items:object[],blocked_reasons:string[]`；使用 `subject_revision`，预览不执行业务动作 |
++| `ConfirmationPreview` | §1.1定义完整具名影响/保留结构；使用subject_revision，预览不执行业务动作 |
+ | `Trace` | `actor_id:ID\|null,at:Time,source_action:string,content_revision:Revision`；只保存必要追溯，不代表 P2 历史版本功能 |
+ 
+ 仅承担确认凭据读取的详情返回 `confirmations:ConfirmationPreview[]`：检索词、补充请求、候选（含分析）、大纲、章节、Research attempt 和终稿详情；当前无合法确认动作时为空数组。WaitingItem、IngestionPreview 与 FinalizationPreview 保留各自已定义确认字段。PendingRevisionView 的 confirmations 沿用其显式结构，无适用动作时为空。其他普通详情、列表和 Workspace 显示上下文不要求附带 confirmations，也不为读取计算全部动作的影响范围。阶段确认、无证据继续、人工内容覆盖、治理、删除清理和版本采用的既有确认要求不变；普通保存只按所属操作表要求，不增加确认步骤。
+@@ -43,6 +43,52 @@
+ proposed_changes 仅允许该 action 对应操作表已有可写字段，不是任意命令分发入口。DELETE 确认同时传 confirmation_token、expected_revision，风险 ID 以重复 query 参数 `acknowledged_risk_ids=x&acknowledged_risk_ids=y` 编码；仅 DELETE 可省略风险参数代表空数组，存在风险必须逐项提交。
+ 
+ 所有 Project 资源及嵌套 ID 均校验所属 Project。P0 只有有效 Owner 可使用自己的 Project；管理员身份不提供 Project 内容访问权。可读须非 deleted，可写须 active。返回旧版本不等于错误；候选与正式已发布版本禁止互相补齐。
++
++### 1.1 ConfirmationPreview具名影响与保留项（A07设计）
++
++以下新增字段仍由本文维护，尚未机器转写；公共确认字段语义服从04 §6。ConfirmationPreview完整必填：confirmation_id:ID、action:string、target:{type,id}、subject_revision:Revision、impact_revision:Revision、knowledge_version_id:ID|null、candidate_revision:Revision|null、risks:{id:string,message:string}[]、expires_at:Time、confirmation_token:string、affected_items:PreviewAffectedItem[]、retained_items:PreviewRetainedItem[]、blocked_reasons:string[]。无适用版本/候选时显式null，其余不能省略；无风险/影响/保留/阻断分别[]。风险id在本预览内唯一，token非空且不透明，不记录到普通日志/SSE。
++
++subject_revision标识该动作直接依据，expected_revision按第7节取目标/等待项修订，两者不强求相同；impact_revision绑定全部影响对象修订、选定范围及动作参数的服务端摘要身份。列表按语义身份去重、必须完整，不能静默截断后照常签发覆盖“大概范围”的token；无法形成完整预览则安全失败。blocked_reasons非空的预览仅解释不可执行原因，所含token不得用于执行；条件改变后重新预览，不能把旧阻断token自动解锁。风险提示不创建新同意制度。
++
++`PreviewObjectRef={type,id,project_id,revision,read_url}`：全部必填；type取下表实际对象类别，id为ID，project_id为ID|null，revision为Revision|null，read_url为同源既有读取入口|null。可变被影响对象必须有准确revision，不可变knowledge_version/shared_identity依其不可变id定位可为null；按当前权限决定能否展示对象及链接。父Run/Session等定位由既有读取入口包含，不能只核验孤立id。管理员无权的私人对象不得用这个结构列出，使用治理摘要变体。
++
++| PreviewAffectedItem.kind | 该变体其他必需字段（不接受其他变体字段） | 所属语义与边界 |
++| --- | --- | --- |
++| content_change | object:PreviewObjectRef、operation:replace\|edit\|reject、content_state:agent_draft\|manual_confirm\|manual_edit、content_scope:string[]、reason:string | object.type为search_term/construction_workspace/construction_candidate/review_brief/review_outline/review_chapter/review_final；只表示已授权具体内容范围，不作为PATCH载荷 |
++| confirmation_invalidation | object:PreviewObjectRef、confirmation_revision:Revision、reason:string | 已确认内容或候选的依据失效；标明受影响旧确认，保留原稿，不等于删除历史 |
++| execution_revocation | object:PreviewObjectRef、attempt_id:ID\|null、reason:string | object.type为construction_run/research_response_attempt/review_run/task；未分配attempt时可null；只有原治理/关联移除用例允许的执行才可列为本次终止范围 |
++| association_removal | object:PreviewObjectRef、asset_kind:paper\|material、asset_revision:Revision、base_knowledge_version_id:ID | object.type与asset_kind一致，移除Project关联，不删旧版本/共享身份；与AssociationRemovalPreview.targets逐项相等 |
++| private_cleanup | object:PreviewObjectRef、artifact_kind:document\|text\|vector\|graph\|private_record、reason:string | object.type为document_asset/project_record/vector_view/graph_view；由当前Project治理授权枚举实际私有对象，不暴露物理路径/桶key；共享依赖校验后才清理 |
++| account_governance | account_id:ID、account_revision:Revision、operation:change_email\|enable\|disable\|grant_admin\|revoke_admin\|reset_password\|delete、summary:string | 仅已授权账号治理事实；具体邮箱参数绑定token而非从summary反解析；不得附私人Project/文件/标题/URL；摘要不是可扩大执行范围的选择器 |
++| version_adoption | source:PreviewObjectRef、target_knowledge_version_id:ID、source_content_revisions:PreviewContentRevision[]、regeneration_scope:string[] | source.type为research_session/review_run；仅复制已选稳定背景或明确人工参考，绑定目标版，不能原地迁移 |
++
++content_change.content_scope为非空、去重的封闭语义范围，按原动作裁剪：检索词生成用search_terms（列明每个受保护词对象，尚无词时用workspace）；评分用screening；候选分析用analysis；大纲用outline；章节用chapter；简报用brief；终稿允许body、abstract、references。generate_components严格等于原请求components选集（abstract/references）；终稿人工编辑只列实际改动字段，重汇总及reject列实际完整终稿范围。不得将选定摘要扩大成body或把候选分析扩大为processing；不支持的操作/范围组合拒绝。每项object.revision绑定该范围所依附的当前内容修订，服务端token同时绑定请求参数及全部范围；UI按此回显，不从reason解析。范围列表不是新增可写字段或任意JSON路径。
++
++`PreviewContentRevision={type:research_message|review_brief|review_outline|review_chapter|review_final,id:ID,revision:Revision}`，全部必填；review_brief/outline单例id为Run ID，必须以type区分；禁止流式未采纳片段，跨Project/Run/Session引用拒绝。AdoptionPreview的source_content_revisions原object[]具体改为此数组，与version_adoption项同一集合；Research只使用稳定message，Review只使用选定参考及主题/简报，不继承确认。regeneration_scope仅既有Research背景继承/Review从头生成的安全说明，不是可执行指令。
++
++PreviewRetainedItem为以下封闭联合：
++
++- `kind=object`：必填object:PreviewObjectRef、reason:string。type为knowledge_version、research_session、research_message、review_run、review_outline、review_chapter、review_final、shared_identity、export_file；表示本次保持的具体对象，不获得新读取权，也不提前实现P1导出。
++- `kind=protected_scope`：必填scope:shared_identity|other_projects|historical_evidence|completed_exports|existing_content、reason:string。只描述既有保留规则，不附无权ID、数量、路径或正文；用于账号治理及无法安全逐项公开的保留范围，不替代服务端真实依赖核验。不能用此摘要代替必须明示授权的覆盖/终止对象清单。
++
++### 1.2 预览变体与既有操作、等待实体对应
++
++| 既有入口/动作族 | 允许影响变体 | 保留与精确依据 |
++| --- | --- | --- |
++| 检索词生成、评分、候选分析及Review内容覆盖预览 | content_change、confirmation_invalidation | 原内容修订/内容状态、具体替换参数与下游确认；保留独立原成果；不豁免执行锁 |
++| 阶段等待确认、检索词/补充/大纲/章节确认 | 仅实际发生的confirmation_invalidation；通常affected_items=[] | 确认对象/步骤与候选/KV依据，未确认不虚构旧确认；不能为了显示影响创造覆盖动作 |
++| Admin.PreviewAccountAction | account_governance | 所属治理范围和安全protected_scope保留说明；管理员无权读私人Project内容，不枚举私人ID来“证明完整” |
++| Project.PreviewLifecycle / PreviewCleanup | execution_revocation；cleanup另用private_cleanup | 现有Project状态/治理修订与固定影响范围；保留共享身份/他人数据/受保护旧依赖与默认保留导出；archive不物理删除 |
++| Construction.PreviewClearAssociations | association_removal、execution_revocation | targets/asset_revision/基线/conflicting_runs固定；retained_items解释旧版引用与共享身份保留；新冲突须刷新，不扩大取消 |
++| Research/Review.PreviewAdoption | version_adoption | 原绑定、目标KV、稳定继承内容修订；retained_items列原对象/原稿；出现新版不换目标 |
++| Review.PreviewFinalization | 重新覆盖时content_change及实际失效项；首次无受保护稿confirmations=[] | source_revisions完整绑定大纲与必需章节，不给首次汇总增加token；可选缺失不阻断 |
++| Review.RejectFinal | content_change(operation=reject)，只指目标final | 既有拒绝与文件清理范围；保留其他accepted成果、历史诊断；不承诺撤回下载副本 |
++
++本表不取代每条操作的权限/确认条件，也不把所有动作都改成异步。`WaitingItem`保留id/kind/revision/confirmation/allowed_actions；confirmation为公共确认对象，subject_revision指该步骤确认快照，candidate_revision在该阶段没有候选时null，已有候选则必须匹配。ConfirmStep请求的candidate_revision按已存在机器schema允许值执行；无候选的检索词确认走原检索词入口，不伪造候选修订让请求过关。六种kind仅标识原业务等待阶段，不能由客户端新建；当前操作仅按原路由开放。
++
++TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的subject_revision是被审快照依据，两者通过具名字段区分。Research空证据确认从attempt详情confirmations读取，不能把retrieval_status=failed转为empty；补充缺标题/多候选先沿详情edit/confirm合法流程，深度结果形状留A08。A05风险同意与来源分类写入仍使用自身字段，不套通用ConfirmationPreview，也不新增“分类waiting_item”。
++
++合法实例：关联移除预览固定paper A/r3、基线V12和冲突Run R/r5；affected_items列A的association_removal与R的execution_revocation，retained_items列V12旧引用保留；执行前出现R2则旧token不授权终止R2。非法实例：以protected_scope=existing_content替代具体人工覆盖对象、把未知revision写null、预览V13后执行偷偷改V14、管理员预览列他人文件URL，均拒绝而非补默认。
+ 
+ ## 2. 账号、配置与模型选择
+ 
+@@ -189,7 +235,7 @@
+ | POST `CR/candidates/{candidate_id}/analysis/generate` | `Construction.GenerateAnalysis` / 025 | `{expected_revision!,confirmation_token?:string,acknowledged_risk_ids:string[]!}` → TaskRef | 使用本Run冻结模型配置和已确认处理文本，禁止变更model_selection；P0阶段重生成，不是P1通用重跑 |
+ | GET `CR/ingestion-preview` | `Construction.PreviewIngestion` / 026 | 无 → IngestionPreview | 明列失败/降级等；失败或零结果不得伪造可发布，有意移除全部按统一确认及空版本发布规则 |
+ | POST `CR/waiting-items/{waiting_item_id}/confirm` | `Construction.ConfirmStep` / 016,022,024–026 | `{expected_revision!,subject_revision!,candidate_revision!,confirmation_token!,acknowledged_risk_ids:string[]!}` → CommandResult | token绑定具体等待项、步骤及快照；风险未确认/候选已改拒绝 |
+-| POST `CR/cancel` | `Construction.Cancel` / 015 | `{expected_revision!,attempt_id:ID|null!}` → CommandResult | 无已分配执行身份时 attempt_id 才可为空，按 Run ID 和修订取消；与 published/no_change 完成排他裁决；旧 Worker 写资格先失效再释放槽；请求接收不等于清理完成；failed 放弃恢复不改 cancelled |
++| POST `CR/cancel` | `Construction.Cancel` / 015 | `{expected_revision!,attempt_id:ID\|null!}` → CommandResult | 无已分配执行身份时 attempt_id 才可为空，按 Run ID 和修订取消；与 published/no_change 完成排他裁决；旧 Worker 写资格先失效再释放槽；请求接收不等于清理完成；failed 放弃恢复不改 cancelled |
+ 
+ 输入冻结后新上传默认待下一轮；同 Run 返回检索只允许手动 retrieval Run 的筛选等待点追加已确认词，不允许其他阶段或 revision_only。保留原词、原解析来源集合、时间范围、每源总预算、模型、配置和知识基线；新词来源策略不得引入新来源，按剩余额度执行，额度已耗尽拒绝。只合并新增候选并重新去重/筛选，原人工决定及无关结果保留；受影响确认失效，旧执行资格撤销，迟到结果不得写入新输入修订。发布只由 Construction 内部执行。
+ 
+@@ -217,7 +263,7 @@
+ 
+ 论文过滤query：title/abstract/author/source为可选1–200字符字符串，score_min/score_max为可选有限数且min≤max、按资产返回的score_scale解释；valid/cited为可选boolean，push_status可选not_enabled|not_sent|sent|failed。资料过滤query：title/source为可选1–200字符，content_format为04-02已支持格式枚举，processing_status可选pending|processing|available|degraded|failed|unsupported，participates_in_knowledge为可选boolean。q为可选1–200字符全文匹配词；未列字段拒绝，不接受任意排序表达式。P0 push_status 只能展示未启用或已有事实，不能隐式触发推送。空过滤结果为成功空列表，缺失版本为明确错误。
+ 
+-`AdoptionPreviewRequest={expected_revision!,target_knowledge_version_id:ID!,inheritance:{stable_message_ids?:ID[],reference_content_ids?:ID[]}}`。预览返回 ConfirmationPreview 加 `{source_object_id,source_bound_version_id,target_knowledge_version_id,source_content_revisions:object[],regeneration_scope:string[],cost_notice:string}`。cost_notice 可说明无法估算，不伪造精确费用。Research 继承只取已保存稳定内容，标为待复核背景；Review 保留原主题，人工内容仅为明确参考，不继承确认状态。
++`AdoptionPreviewRequest={expected_revision!,target_knowledge_version_id:ID!,inheritance:{stable_message_ids?:ID[],reference_content_ids?:ID[]}}`。预览返回 ConfirmationPreview 加 `{source_object_id,source_bound_version_id,target_knowledge_version_id,source_content_revisions:PreviewContentRevision[],regeneration_scope:string[],cost_notice:string}`。cost_notice 可说明无法估算，不伪造精确费用。Research 继承只取已保存稳定内容，标为待复核背景；Review 保留原主题，人工内容仅为明确参考，不继承确认状态。
+ 
+ ### 5.1 版本摘要与引用解析补充
+ 
+--- before/docs/design/04-02_transport_task_file_contracts.md
++++ after/docs/design/04-02_transport_task_file_contracts.md
+@@ -1,6 +1,6 @@
+ # API 附录：异步任务、事件传输与文件
+ 
+-文档版本：v1.8
++文档版本：v1.9
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
+@@ -23,8 +23,9 @@
+ | 字段 | 类型与含义 |
+ | --- | --- |
+ | `task_id` | UUID；一次受理执行的稳定标识 |
+-| `project_id` | UUID 或 null；Project 操作必须有值，个人/系统配置测试可为空 |
+-| `target` | `{type:string,id:UUID}`；业务目标，例如 construction_run、research_response_attempt、review_chapter、review_final、supplement、user_llm_config；枚举由操作契约限定，客户端不得自行新增 |
++| `project_id` | UUID 或 null；Project操作必须有值，配置与账号治理任务按§2.1.1允许为空 |
++| `knowledge_version_id` | ID或null，必填；Research/Review为创建时固定版，其余为null；与事件绑定一致 |
++| `target` | `{type:string,id:UUID}`；封闭目标及操作映射见§2.1.1；客户端不得自行新增 |
+ | `attempt_id` | UUID；本次执行尝试身份，不因网络重订阅改变 |
+ | `execution_status` | `queued / running / waiting_user / succeeded / failed / cancelled`；仅为技术执行投影 |
+ | `status_url` | `/api/v1/tasks/{task_id}` |
+@@ -54,11 +55,58 @@
+ 
+ 配置连接测试及模型刷新任务的 `result_refs` 指向 `GET /tasks/{task_id}/result`（`Task.ReadConnectionResult`）：200 的 data 为 `{result_type:"connection_test",payload:ConnectionTest}`，ConnectionTest 结构见04-01。未完成返回409 `STATE_OPERATION_NOT_ALLOWED`，无此结果类型返回安全404；执行失败优先读取TaskView.error。此路由只承接配置测试结果，不作为可写通用业务结果入口。其他任务通过其业务结果URL读取具名投影。
+ 
++### 2.1.1 Task目标、定位与结果引用（A07设计）
++
++本节新增结构尚未机器转写，字段由本文维护；现有BusinessState/ResultRef/StatusPayload等机器类型继续由JSON维护，本节补跨字段约束。Task目标一经受理不能因阶段变化、重连或生成新结果而换ID；生成前尚无内容对象时使用已存在的父对象，不生成占位正文。任务的技术attempt_id与target.id所属业务身份分别校验，不按字符串恰好相同推导关系。
++
++| target.type / id含义 | 产生操作（04-01具名用例） | Project / 业务版本 | 取消与结果定位 |
++| --- | --- | --- | --- |
++| user_llm_config / config_id | Config.TestLLM、RefreshModels | project_id=null，无KV | 无公开取消；结果走Task.ReadConnectionResult |
++| user_data_source_config / config_id | Config.TestSource | null，无KV | 同上 |
++| system_llm_config / config_id | Admin.TestSystemLLM、RefreshSystemModels | null，无KV，当前管理员 | 同上，不泄漏密钥 |
++| system_data_source_config / config_id | Admin.TestSystemSource | null，无KV，当前管理员 | 同上 |
++| system_smtp_config / 服务端稳定配置身份 | Admin.TestSMTPConnection | null，无KV，当前管理员 | 定位既有单例配置入口，不新增按ID路由；连接/认证，不发送邮件 |
++| account / user_id | Admin.DeleteUser在返回异步CommandResult时 | null，无KV，仅对应治理权限 | 无通用取消；只读治理结果安全摘要，不读该用户Project内容 |
++| project / project_id | Project.Cleanup等既定操作在返回异步CommandResult时 | 当前Project，无固定KV | 无通用取消；原Project状态/安全结果，删除后不可读私人内容 |
++| construction_workspace / Workspace身份 | Construction.GenerateTerms | 当前Project，无KV | 无通用取消；原检索词列表及实际生成词 |
++| supplement / supplement_id | Construction.SubmitSupplement、UploadSupplement | 当前Project，无KV，无需Run | 无补充重跑/取消新路由；补充详情及静态/解析结果 |
++| construction_run / run_id | Construction.Start、ClearAssociations、AppendSearchTerms、ScoreCandidates及步骤继续 | 当前Project；顶层knowledge_version_id=null | 既有Construction取消；Run详情及已提交结果，基线/发布版本从具名业务投影读取 |
++| construction_candidate / candidate_id | Construction.GenerateAnalysis | 当前Project、所属Run；顶层KV=null | 仅原操作允许的Run级取消，不能暗示只取消候选；候选详情 |
++| research_response_attempt / 业务回复attempt_id | Research.SendMessage、ContinueWithoutEvidence | 当前Project、Session固定KV | 仅原回复取消；attempt详情、已保存回复/输出 |
++| review_run / run_id | Review.Create、AdoptVersion、首次Finalize（无终稿身份时） | 当前Project、Run固定KV | 既有Review指定Task取消；Run详情及后续实际产物引用 |
++| review_outline / 所属run_id | Review.GenerateOutline、ReviewOutline | 当前Project、Run固定KV；大纲为Run内单例 | 同上；outline详情，id使用父Run身份且type明确，不虚构大纲UUID |
++| review_chapter / chapter_id | Review.GenerateChapter、ReviewChapter | 当前Project、Run固定KV | 同上；chapter详情 |
++| review_final / final_id | Review.ReviewFinal、RegenerateFinalComponents、重汇总到已有终稿 | 当前Project、Run固定KV | 同上；当前final详情；finalize目标选择在受理时固定 |
++
++`TaskView.target_location:TaskTargetLocation`为必填只读补充：`{parent_type:project|construction_run|research_session|review_run|null,parent_id:ID|null,read_url:string|null}`。parent两字段同时为空或同时非空；需Run/Session祖先的目标必须提供对应父身份，Workspace/补充/Project子范围以Project作父，配置/账号无父。read_url由服务端生成，使用04-01现有读取入口（singleton/list也可），只在当前主体合法可读时非空；它不是外部URL、任意路由分发或授权。TaskHandle保持轻量，客户端用status_url取得完整定位；SSE不另外复制此定位，可刷新TaskView。
++
++配置单例/Workspace的稳定身份由既有对象注册记录提供，不能由客户端指定，也不要求增加公开ID读路由。账号治理Task的project_id=null是既有账号级治理的表达，不给予管理员Project权限；返回安全治理摘要，不把私人Project列表塞入result_refs/business_state。其他Project业务Task必须有project_id。
++
++ResultRef字段复用机器schema；其type在P0限定为connection_test、account、project、search_term、supplement、construction_run、construction_candidate、knowledge_version、research_response_attempt、review_run、review_outline、review_chapter、review_final、task_output。id为实际目标身份，url来自上述既有授权入口；connection_test/task_output的id为task_id。不存在的结果不返回引用；search_term多项逐项引用，生成前父目标保持不变。published才可引用本次新knowledge_version，no_change只能引用核验既有版。partial_result_ref只允许task_output且指向本Task的output；不得把未采纳文本加入成功业务result_refs冒充正文。关系/权限/URL路径匹配属于后续运行断言，宽泛机器string暂不能验证这些条件。
++
++### 2.1.2 等待引用与资料提示（A07设计）
++
++`TaskView.waiting_items`具体为`TaskWaitingRef[]`。每项必填`kind`、`subject:{type,id}`、`subject_revision:Revision`、`owner:{type,id}`、`read_url:string`、`allowed_actions:string[]`；数组按(kind,subject.type,subject.id)去重。subject_revision取被确认依据对象的当前修订，不取Task revision；owner为受授权的所属Run/Session/Workspace。所有ID须与Task/project_id祖先关系一致。read_url只允许现有详情/预览入口；allowed_actions只列下表与当前权限、状态、已实现能力的交集，无合法动作则[]，不包含token或任意命令URL。
++
++| kind | subject / owner及读取落点 | 可提供的已有动作与提交依据 |
++| --- | --- | --- |
++| construction_step | waiting_item / construction_run；Run详情，ingestion_preview亦可经原入库预览读取 | confirm；仅screening等待点可另有append_search_terms；取消从Task.cancel_url单列。confirm用WaitingItem.revision作expected_revision，并提交其确认对象的subject_revision/candidate_revision；追加词用Run修订，不挪用等待项修订 |
++| research_empty | research_response_attempt / research_session；attempt详情 | continue_without_evidence，仅retrieval_status=empty；failed检索不得映射成该等待。expected_revision为attempt修订，详情confirmations提供token |
++| supplement_confirmation | supplement / construction_workspace；supplement详情 | edit、confirm按原入口及当前可确认条件裁剪；未解析/歧义/缺标题时不伪造confirm可用；不新建重试接口 |
++| review_outline_confirmation | review_outline / review_run；outline详情 | edit、confirm；expected_revision为OutlineView.revision，固定KV与低支撑提示不变 |
++| review_chapter_confirmation | review_chapter / review_run；chapter详情 | edit、confirm；expected_revision为ChapterView.revision，不新增覆盖率门槛 |
++
++WaitingItem实体仍由04-01维护，kind仅原六类search_terms/retrieval/screening/processing/analysis/ingestion_preview；TaskWaitingRef.kind是引用变体，两者不能混用。详情的confirmations/allowed_actions是当前安全投影，执行仍重查；旧引用通过读取owner刷新，不新建通用waiting-item GET/confirm路由。
++
++这些引用表示与任务产物相关的未完成业务确认，不要求Task本身waiting_user。已完成解析/章节生成可succeeded而相关对象仍待确认；无等待项为[]。只有原业务流程实际挂起该执行时才投影waiting_user，确认后继续同一合法流程；Review Run待操作不制造一个永久活跃Task，终稿默认accepted无需额外确认引用。已失效/完成/无权的项不再作为当前可执行等待返回，历史记录仍按原审计保留。
++
++新增`TaskView.material_use_notices:MaterialUseNotice[]`及`TaskOutputSnapshot.material_use_notices:MaterialUseNotice[]`，缺项不得省略，无提示为[]；元素复用A05机器schema，只读、安全、与对应快照游标一致。warning事件仍用既有Warning，资料提示变化通过既有status提示客户端刷新快照，不新增SSE类型或在Warning塞额外字段。A06必需资料拒绝依旧是TaskError，不生成一种“等待开启私人”的新Task状态/通用恢复动作；设置/分类同步操作不制造Task。classification未确认只提供安全说明及已有目标详情，不能把分类确认混成处理/入库确认。
++
+ ### 2.2 累计文本恢复
+ 
+ 对于产生 delta 的文本任务，`partial_result_ref.url` 指向 `GET /tasks/{task_id}/output`；相同当前任务权限适用。不存在已保存输出时 partial_result_ref 为 null，直接调用返回安全 404。输出对象为：
+ 
+-`{task_id,attempt_id,output_revision,text,text_length_chars,execution_status,event_cursor,citations,warnings,result_refs,business_state}`。
++`{task_id,attempt_id,output_revision,text,text_length_chars,execution_status,event_cursor,citations,warnings,result_refs,business_state,material_use_notices}`。
+ 
+ `citations` 为截至该游标的完整证据引用快照，元素固定使用04-01 EvidenceRef；当前权限不可读取的证据不能泄漏内容，也不能用其他版本证据补齐。`warnings` 为截至该游标仍需展示的 `{code,message}` 数组；`result_refs`、`business_state` 与 TaskView 的结构和语义一致。空集合返回 []，无业务状态时返回 null。这些字段与累计文本、执行状态、event_cursor 必须属于同一个原子快照，不能仅恢复文本而跳过此前 citation/warning/status 事件。
+ 
+@@ -92,7 +140,7 @@
+ 
+ ### 3.1 订阅和事件结构
+ 
+-`status/delta/warning/done` 的payload字段唯一维护于[机器契约](../../contracts/p0.openapi.json)的 `StatusPayload/DeltaPayload/Warning/DonePayload`；下表仅导航。完整事件信封、citation/error及流行为尚未完成机器转写，覆盖与检查见[04-03](04-03_machine_contract_governance.md)。
++`status/delta/warning/done` 的payload字段唯一维护于[机器契约](../../contracts/p0.openapi.json)的 `StatusPayload/DeltaPayload/Warning/DonePayload`；下表仅导航。完整信封/citation的设计见§3.4，仍未机器转写；error已由A04 ErrorPayload/TaskError维护，流行为仍待运行验证，覆盖与检查见[04-03](04-03_machine_contract_governance.md)。
+ 
+ `GET /tasks/{task_id}/events` 返回 `text/event-stream`，采用主文同源会话认证。订阅是只读操作，不创建 Task 或触发模型生成。认证失败在流建立前按 HTTP 错误处理；连接存续期间持续核验当前授权，身份失效或权限撤销后停止推送和关闭连接。
+ 
+@@ -104,7 +152,7 @@
+ ```
+ 
+ - `event_id` 是去重身份；`sequence` 是该 Task/attempt 内单调递增整数，不承诺全 Project 的全局顺序。
+-- `project_id` 仅配置类任务可为空；`knowledge_version_id` 对无知识版本任务可为空，Research/Review 必须等于其实际绑定版本；Construction 的基线/候选/发布版本通过明确命名的 payload 字段表达，不能以一个含糊版本字段互相替代。
++- `project_id` 仅§2.1.1的配置/账号治理任务可为空；`knowledge_version_id` 对无知识版本任务可为空，Research/Review 必须等于其实际绑定版本；Construction 的基线/候选/发布版本通过明确命名的 payload 字段表达，不能以一个含糊版本字段互相替代。
+ - `task_revision` 必填，对应该事件提交时 TaskView.revision；`target_revision` 可为空，非空时对应 target 业务对象修订，不能混用。`business_state.revision` 仅对应 business_state.target_id 的业务对象，若与事件 target 相同则应与 target_revision 一致。两类修订均不比较大小，事件顺序由 sequence 决定。
+ - delta 必须可重放或包含在可恢复快照中后才能发送。客户端按 event_id 去重；不得重复追加文本。
+ 
+@@ -141,6 +189,42 @@
+ ```
+ 
+ 任务失败后的 GET 响应仍可为 200，`data.execution_status="failed"`，`data.error.code="PROVIDER_UNAVAILABLE"`；这不授权客户端自动创建新 attempt。API 主文的错误前缀和恢复动作限制适用于所有事件错误。
++
++### 3.4 完整事件信封与累计快照关联（A07设计）
++
++SSE帧由id、event、data组成：id是本事件可用于续读的不透明游标，event仅status/delta/citation/warning/error/done六值；data为下表`TaskEventEnvelope`，event与payload必须按下表配对，不把event额外放进data或将内部事件schema_version直接透传。信封字段全部必填，只有明确null分支可空。
++
++| TaskEventEnvelope字段 | 类型及依据 |
++| --- | --- |
++| event_id | ID；持久事件去重身份，同事实重放保持相同 |
++| sequence | integer≥1；Task/attempt内严格递增，客户端只比较顺序，不把revision转整数 |
++| task_id / attempt_id | ID；必须是订阅Task和其实际执行尝试；重连不改变 |
++| project_id | ID或null；与Task作用域一致 |
++| target | TaskHandle.target，同Task固定目标；不能换成新生成产物 |
++| knowledge_version_id | ID或null；Research/Review等于绑定版；配置/治理/补充/构建为null，构建版本从业务结果读取 |
++| task_revision | Revision；对应该持久提交的Task视图 |
++| target_revision | Revision或null；尚无/不提供目标修订时null；若business_state指同目标，其revision须匹配 |
++| occurred_at | Time；提交事实时间，不是重放发送时间 |
++| payload | 下表对应的具名结构；不接收额外凭据/内部诊断 |
++
++| SSE event | payload唯一维护位置 | 引用与消费约束 |
++| --- | --- | --- |
++| status | 机器StatusPayload | 更新技术状态/阶段/明确目标的business_state；收到后重新读TaskView获取当前等待项和资料提示，不从状态猜确认动作 |
++| delta | 机器DeltaPayload | 只追加相同attempt生成缓冲；空字符串按机器约束，不伪造成功正文 |
++| citation | 本文`CitationPayload={citation_ref:EvidenceRef}`，必填非空 | EvidenceRef完整字段以04-01 §5/5.1为准；project_id/KV须与流绑定一致，不可引用候选或别版替代。无知识版本的任务不能发citation |
++| warning | 机器Warning | 安全展示；不将任意code当可执行动作，不输出其他主体来源明细 |
++| error | 机器ErrorPayload，其error为TaskError | 已受理失败不得使用命令未受理或自动重试语义；不能代替最终快照 |
++| done | 机器DonePayload | 仅三终态，result_refs按§2.1.1；business_state需从同提交快照读取，不据done结束Session/整个Run |
++
++`TaskOutputSnapshot`为§2.2累计结构的具名名称，另含§2.1.2资料提示；其text允许空字符串，text_length_chars≥0且等于Unicode码点数，不是UTF-8字节或UTF-16单元数（例如“研😀”长度2）。首次尚无事件时TaskView.event_cursor和已有空输出的event_cursor使用服务端签发的起始游标，不能为空串或客户端猜测的0；起始游标仍绑定Task/attempt/当前授权范围。游标只用于定位，不能从中解析授权或把它当sequence。
++
++每次形成可投影事件的业务提交，应用同时持久更新Task修订、事件序号/游标，以及适用的累计文本、引用、warning、结果/业务状态和资料提示；没有文本增量的status/citation/warning/error/done也必须推进输出快照的相应投影，避免输出长期停在旧running。无输出对象时只更新TaskView；不能为了状态事件创建假正文。快照游标表示该快照已吸收的最后事件，读取不混合不同提交；任何事件只能在持久化后发送。
++
++恢复先读TaskView，再有文本则读output并完全替换同attempt临时缓冲；随后从选定快照游标之后订阅。允许后续sequence不从1开始、也不要求相邻加一；服务器必须保证从该游标之后不漏已授权事件。客户端不凭不透明游标猜sequence：恢复时建立新的订阅代次，丢弃旧连接的迟到帧；本次新流内按event_id去重并按sequence拒绝较旧帧。一旦检测实际顺序异常/身份不匹配，丢弃该流并重新读取快照，不能继续拼接已知不一致的正文。订阅代次只是本地显示隔离，不创建业务attempt。Last-Event-ID与after_event_id的冲突、错流、过期和无权错误沿§3.2/A04。
++
++事件存储不保存确认token、带token的预览、当前scope授权或完整来源依赖。回放时先按当前权限检查整体Task与引用，无法安全投影时停止流并要求当前快照/安全不可用处理，不能原样重放私有旧payload、伪造缺引用成功或偷偷换KV。旧event_id/sequence不会变成新的业务命令；当前可见性过滤不使已保存历史事实被改写。私人模式开关只控制Agent使用，合法人工读取沿原权限，不能用关闭Agent私人读取把合法UI历史全删。
++
++合法例：回复attempt A在V12累计“研😀”、length=2，输出游标c12后重连，仅消费c12之后属于A/V12的事件；重复event_id不再追加。反例：把A的delta送到B、citation指V13、waiting_user配done、error携带未受理重试、回放携带旧token、c13配c12文本均不得成为有效当前展示；后续真实测试须同时检查数据库记录与浏览器缓冲，schema不能证明原子性。
+ 
+ ## 4. 单文件上传与补充处理
+ 
+--- before/docs/design/05-01_internal_module_contracts.md
++++ after/docs/design/05-01_internal_module_contracts.md
+@@ -1,6 +1,6 @@
+ # 内部模块与执行契约
+ 
+-文档版本：v1.5
++文档版本：v1.6
+ 更新日期：2026-10-23
+ 依据文档：[00](00_layers.md)、[02](02_domain_core.md)、[04](04_api_contracts.md)、[05](05_application_use_cases.md)、[06](06_agent_knowledge_services.md)
+ 
+@@ -171,3 +171,19 @@
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
+ 
+ 本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
++
++## A07 任务投影、预览与公开事件接缝
++
++公开字段唯一见[04-01 §1.1–1.2](04-01_p0_operation_contracts.md#11-confirmationpreview具名影响与保留项a07设计)及[04-02](04-02_transport_task_file_contracts.md)。以下为内部职责，不新增公共命令或业务状态。
++
++| 生产者 → 消费者 | 输入与输出 | 必须维持的约束 |
++| --- | --- | --- |
++| 各用例受理 → Task投影 | 持久command/attempt、目标及祖先、固定ReadBinding → TaskHandle/TaskView | 目标在受理时固定；尚未产生的终稿以Run定位，生成后不改原target；账号治理无Project内容权限 |
++| 业务读取 → 等待投影 | 当前等待实体/修订、当前主体与能力 → TaskWaitingRef[] | 先校验Task和祖先权限，再返回合法读取入口与动作交集；内容待确认不等于技术Task挂起，无活跃任务不制造Task |
++| 预览应用 → 确认校验/命令受理 | 当前目标、动作参数、完整影响集/修订 → ConfirmationPreview | 服务端持久或可验证绑定精确影响；预览不写业务状态；正常受理按04幂等优先级处理，首次受理重验token、范围、修订、权限、锁；受理后使用持久确认依据 |
++| 业务提交/任务执行 → 快照与SSE投影 | 已提交状态、增量/引用/安全错误、A06安全资料提示 → 同提交TaskView/适用output/事件 | 07事务边界下原子保存游标和所有相应投影；不可先发送后落库。资料提示不泄漏来源依赖且不变成可执行授权 |
++| 当前可见性服务 → 查询与回放 | 当前账号/Project资格、流绑定及引用 → 安全投影或拒绝 | 每次读取/订阅及持续连接检查；内部事件不直接透传，旧token/私有内部诊断不得进入公开日志或回放 |
++
++内部事件event_id与公开事件event_id不假定一对一：一个提交可投影多个公开事件。持久记录公开事件身份及每attempt顺序，重投同一投影复用身份；内部schema_version不冒充公开信封版本。重新读取/订阅是纯查询，不领取执行资格、不派发Provider、不新建attempt。若投影异步实现，必须返回同一已投影提交的完整快照，不能让新游标越过未投影正文；具体存储方案留工程任务。
++
++本次v1.6仅完成接缝设计。所有权、原子性、撤权、重复和迟到提交仍需隔离持久化测试，见09的A07验收交接。
+--- before/docs/design/03-04_ui_shared_interactions_appendix.md
++++ after/docs/design/03-04_ui_shared_interactions_appendix.md
+@@ -1,6 +1,6 @@
+ # UI 共用面板与交互附录
+ 
+-文档版本：v1.6
++文档版本：v1.7
+ 更新日期：2026-10-23
+ 来源：`03_ui_workspace.md` v1.18 第 9 章；保留 P 编号，按模块拆分。
+ 
+@@ -242,3 +242,15 @@
+ 资料来源面板展示04-01 §10的只读MaterialProvenance，区分本次主动文字、历史自动取用、上传、检索、派生与未知；这些标签不能由用户切换为免检。可信本次主动文字在当前主体、Project及本次命令范围内使用时，不额外弹分类确认；不据此标为公开或修改原分类。本次输入例外仅绑定当前提交，历史自动取用/草稿及上传文件不能沿用，派生结果仍检查全部来源依赖。派生依赖不全、分类未确认或未知来源明确提示，不能以“无引用”显示为公开。
+ 
+ MaterialUseNotice词汇供后续受控读取接口消费：私人来源提示“当前设置不允许使用私人资料”；文件/检索及历史来源未确认时提示先确认分类；可信本次主动文字按上述例外直接供本任务使用；未知/依赖不全提示无法证明可用范围；必须使用受限历史时明确阻断，保留历史而不静默剪消息；允许子集检索标注“当前权限限制了可用范围”，不隐式换KnowledgeVersion、不报告为完整知识库没有资料。可跳转已有设置/分类详情，由用户明确操作后沿原合法入口继续；不新增通用retry/rerun。字段载体在A06/A07收口，本次未实现页面。
++
++## A07 等待、预览与事件恢复交互
++
++Task面板按[04-02](04-02_transport_task_file_contracts.md)的target_location定位既有页面，展示TaskWaitingRef的当前动作；打开后读取详情取得最新修订/确认，不从历史SSE或Workspace恢复草稿提取token。只显示后端允许且已实现的动作，禁用原因使用安全说明；过时或无权引用刷新所属对象，不猜通用重试入口。技术succeeded与“内容待确认”分别显示，done不把Review Run/Session标为业务完成。
++
++P36/P37按[04-01 §1.1–1.2](04-01_p0_operation_contracts.md#11-confirmationpreview具名影响与保留项a07设计)逐项展示影响与保留范围：人工覆盖显示目标及修订；终止显示确切冲突执行；关联移除与私人清理分别描述。protected_scope只作保留说明，不能遮蔽必须同意的影响对象。账号管理员只看治理摘要；没有权限不展示私人ID/标题/链接。blocked_reasons非空不允许提交；token过期/依据变化按已有安全错误重新预览，保留用户草稿但不自动确认。普通保存不额外增加确认窗。
++
++版本采用明确列原绑定、选定目标版及稳定继承内容，出现更新版本不替换已选版；清楚说明创建新对象、不继承旧确认。首次无受保护稿的终稿汇总保留原有直接入口，不新增二次确认。
++
++重连先隔离旧连接代次，读Task和适用output恢复完整生成缓冲/引用/警告/资料提示，再从对应游标订阅；人工编辑区不被恢复文本覆盖。新流校验Task/attempt/Project/KV/target、去重及顺序；异常重新读快照，不自动重生成。资料提示使用A05安全词汇，允许子集不显示“完整库无资料”，必需历史受限显示错误并保留原内容；合法人工历史读取不被Agent私人模式误隐藏。
++
++本节为交互契约，未实现组件或浏览器验收；具体反例与追踪见task010 TC-01–12及09。
+--- before/docs/design/09_quality_observability.md
++++ after/docs/design/09_quality_observability.md
+@@ -1,6 +1,6 @@
+ # 核心架构与功能模块测试设计
+ 
+-文档版本：v1.19
++文档版本：v1.20
+ 更新日期：2026-10-23
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -219,3 +219,18 @@
+ B02–B04须在显式隔离数据库/schema及文件/向量/图谱前缀执行真实commit与可控并发屏障，覆盖服务内部commit；结束后核对记录、对象和进程清理。Provider/论文源/邮件默认mock，观察实际适配器交付内容而非仅统计Evaluate调用；网络交接用本地受控接收端即可，不授权真实第三方外发。B03须验证读取/派发/提交与政策/分类更新的相反顺序和故障窗口；B04验证缓存范围与依赖闭包。执行命令待业务入口建立，当前不存在可冒充通过的运行命令。
+ 
+ A07消费安全错误、任务终止及提示词汇，补等待项/确认预览/事件；A08消费来源身份、分类/依赖只读投影，补完整详情。二者不改变A05同步操作，也不能借本单打开P0通用恢复。DAP-16–18仅按P1既有分期：互联网公开来源自动确认必须记录具体内容依据，内网不隐式纳入，重复命中不覆盖人工私人分类。P0仍按A05手动分类；本单不启动P1自动流程、A09选型或任何业务实现。
++
++## A07 设计验收与运行交接
++
++[task010](../../tasks/010-task-confirmation-event-contracts.md)的TC-01–12维护本轮输入、预期和禁止副作用，设计来源对应04-01 §1.1–1.2、04-02 §2–3、05-01 A07及03共用交互A07。本轮逐条文档核验和独立反例审查不等于可执行schema或运行通过。
++
++| 场景 | 后续可执行验证层及证据 |
++| --- | --- |
++| TC-01/02 | API投影集成：逐操作目标/祖先/等待变体，未知type/错祖先拒绝，成功任务仍可业务待确认；无伪Task |
++| TC-03/04/06 | 隔离真实事务：预览后编辑/新冲突/锁竞争/过期及重复受理；断言完整影响集、旧token拒绝、同键只提交一次、受理后TTL不撤销持久确认 |
++| TC-05 | 隔离持久化：选择V13后发布V14，采用仍建V13新对象；原稿/原确认不改变，半成品不继承 |
++| TC-07/08 | schema正负例+真实流/浏览器：六payload/绑定，Unicode、重复/迟到/乱序、快照和提交交错；断言文本/引用/资料提示/状态/游标同提交及人工草稿不变 |
++| TC-09/11 | 授权集成：双游标/过期/错流/撤权和治理身份；检查HTTP、帧、日志、引用均不泄漏；断线恢复不调用Provider |
++| TC-10/12 | A05/A06回归与业务集成：必需历史拒绝/允许子集/主动文字例外、终态与业务状态分离；失败不覆盖内容、不改变版本、不增加P0恢复 |
++
++运行任务应使用显式隔离测试库、真实commit及确定性屏障制造交错，默认mock Provider/邮箱；同时检查持久副作用、HTTP/流载荷及UI。转写时先建立各联合变体、必填/null、跨变体字段拒绝和枚举正负例；schema不能代替上述权限/并发/重连断言。所有这些新增可执行测试当前未建立、未运行；TRACK运行项保持开放。
+--- before/docs/design/04-03_machine_contract_governance.md
++++ after/docs/design/04-03_machine_contract_governance.md
+@@ -1,6 +1,6 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.4
++文档版本：v1.5
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 
+@@ -15,7 +15,7 @@
+ | 缺项类别 | 已识别范围 | 后续动作 |
+ | --- | --- | --- |
+ | 已定但尚未转写 | 其余配置测试、Construction/Research/Review、知识资产、文件、完整 SSE/累计输出等结构 | 按领域规则机械转写，不能视为新的业务待决或分期变更 |
+-| 设计字段尚未闭合 | Task 目标类型完整枚举、waiting_items 引用；ConfirmationPreview.affected_items/retained_items | 定义具名字段及允许变体，关联对应用例后再转写；不要猜业务默认 |
++| A07设计已具名、待人工审核及机器转写 | Task目标/等待引用；ConfirmationPreview影响/保留变体；完整事件信封/citation | 见04-01/04-02及task010；新增结构无机器或运行覆盖 |
+ | 实现验证 | 权限、跨 Project 防枚举、Origin/CSRF、状态、修订、确认、去重、原子快照、模型能力范围、SMTP认证类型字段组合、Workspace草稿object/part唯一性等 | 后续实际服务、隔离存储和端到端验收；schema 不能替代 |
+ 
+ 可重定位的本轮Agent限定核对基线见[A01–A03记录](../workorders/a01_a03_design_closure_2026-10-21.md)。它记录Git对象与内容摘要，不提升机器覆盖、不代表人类批准；后续兼容检查从指定Git对象提取旧JSON，不能拿本次修改后的JSON自比。
+@@ -62,3 +62,8 @@
+ A05限定交付见[任务007审核包](../workorders/task007_a05_review_2026-10-22.md)。资料来源投影/提示词汇已具名，但完整来源详情、TaskView承载及可信签发/并发裁决仍待A06–A08；新增字段不构成运行授权。发现模式 `python -m unittest discover -s scripts/tests -p 'test_*.py' -v` 包含全部契约回归。本次兼容对比使用入场实际工作树快照，不称其为人工已接受基线；A04原基线差异仍待人工接受；并行R01–R03修复归属[task006修复包](../workorders/task006_p2_fixes_2026-10-22.md)，本轮合并态回归涵盖其修复，不将其计为A05新增成果。
+ 
+ 2026-10-23 task007复审修复：仅收紧分类confirm/correct的成功data及meta，新增两个具名组合schema，保持GET未确认展示和设置GET/PUT契约；回归与兼容方向见[修复复审包](../workorders/task007_fixes_2026-10-23.md)。主动文字例外按08-01既定规则澄清，无新增运行实现。
++
++## A07 设计交付状态
++
++Task目标/等待引用、ConfirmationPreview影响/保留联合及完整事件信封/citation设计已见04-01 §1.1–1.2、04-02 §2–3，新增字段尚未机器转写，待task010人工审核。现有JSON未修改；覆盖清单仅更新经差异审查的源指纹与缺项说明。设计闭合不消除机器或运行缺口；不提高typed_operations覆盖。A06接缝已限定接受，A05人工接受仍待记录，A04已限定接受；前述历史记录保留原时点。
++
+--- before/tasks/010-task-confirmation-event-contracts.md
++++ after/tasks/010-task-confirmation-event-contracts.md
+@@ -0,0 +1,72 @@
++# Task010：A07 Task等待项、确认预览与事件引用契约
++
++文档版本：v1.0
++更新日期：2026-10-23
++
++## 1. 目标与授权
++
++用户2026-10-23明确授权：“继续按 project-delivery 流程推进 A07，建立任务单，完成 Task 等待项、确认预览和事件引用的契约设计、自验及独立审查，再提交我审核。”本单承接[实施前清单A07](../docs/workorders/preimplementation_design_tasks_2026-10-21.md#a07-补齐任务等待项与确认预览的结构)，task009已用于Workspace规划，故使用010。唯一授权队列为本任务。
++
++可观察结果：实现者能从Task定位正确对象/等待动作，从确认预览区分实际影响与保留范围，从快照/事件恢复同attempt显示；不依赖无界object猜字段，不把技术状态、提示或旧token当业务授权。
++
++类型为契约设计。包括Task目标/等待引用、累计输出与事件关联、ConfirmationPreview影响/保留项、修订/权限与UI对应、A04–A06消费、设计验收追踪。新增尚未机器转写的结构在负责Markdown中单点定义；已有机器字段继续由JSON维护。本轮只更新覆盖清单的文档指纹/设计缺项分类，不改变OpenAPI/schema、业务源码、DTO、路由、存储、前端或状态机，不启动A08/A09/P1恢复。设计交付不是机器转写或端到端验收。
++
++## 2. 依据与基线
++
++遵循[AGENTS](../AGENTS.md)、[实施入口](../docs/IMPLEMENTATION_ENTRY.md)、[设计索引](../docs/design/README.md)及[任务模板](example.md)。A04限定接受见task006 §11；A05修复已独立复审但人工接受仍待记录；A06已获用户C01–C05接受并S7收口，见task008 §9。本单消费实际字段/语义，不扩大这些接受范围。
++
++| 规范 | 采用边界 |
++| --- | --- |
++| 01 FR-014/015/016/017/018、028、032–035 | 技术任务与业务对象分开、原内容保护、固定版本、明确确认与P0阶段动作 |
++| 02/02-02/02-04 | 原Run/attempt状态、槽及终态；P1通用恢复不提前 |
++| 04 §5–7、04-01 §1/4/5/6/7、04-02 §2–3 | 安全错误、token与幂等、已有确认入口、Task/output/SSE |
++| 05 §3/6、05-01 §3/5、07 §6 | 提案提交、持久确认、事件与输出原子快照 |
++| 08 §3/5、08-01、A06 | 当前可见性、管理员不读私人内容、资料拒绝及不可转移来源 |
++| 03共用交互、09 SEC/TTF | 确认/跳转、重连只恢复显示与可执行验收交接 |
++
++入场[entry.json](../docs/workorders/evidence/task010_a07_2026-10-23/entry.json)含HEAD/工作区/授权，188文件[before清单](../docs/workorders/evidence/task010_a07_2026-10-23/before/source-manifest.json)及同目录tar含未提交/未跟踪文件。保留旧证据与全部现有修改。
++
++## 3. 修改落点与步骤
++
++| 步骤 | 文件与产物 | 边界 |
++| --- | --- | --- |
++| TC01 | 04-02目标、等待项与结果定位矩阵 | 具名引用，不新增业务对象/路由 |
++| TC02 | 04-01确认影响/保留变体及操作对应 | 固定范围及修订，不新增确认门槛 |
++| TC03 | 04-02事件信封/六payload映射、累计快照恢复 | 旧事件不携带可执行token，不重跑 |
++| TC04 | 05-01生产消费接缝、03共用交互 | 应用所有权、当前权限与资料拒绝 |
++| TC05 | 09追踪、本单/状态/审核包、04-03及覆盖指纹 | 设计/机器/运行证据分开 |
++
++## 4. 需求与设计验收规格
++
++以下用例为设计核验，实际运行测试均未建立。输入/预期来自上述规范；本轮逐行检查相应结构与反例，未来按09执行隔离持久化和UI验证。
++
++| 场景 / 依据 | 正向、拒绝、故障与交错 | 必须观察 / 禁止副作用 |
++| --- | --- | --- |
++| TC-01 / FR-014、04-02 §2 | 各P0异步操作定位目标；配置/账号治理/Project区别；伪造未知type或跨祖先 | 正确对象及可读入口，不新增Project授权、无伪Task |
++| TC-02 / FR-016、028、032 | 构建六等待种类、Research空证据、补充/Review待确认；过时引用 | 只调用原合法动作；Task成功不自动确认，业务waiting不制造活跃Task |
++| TC-03 / FR-017、04 §6 | 人工覆盖与确认依赖变化/锁竞争；不需确认的普通保存 | 影响/保留范围具名且绑定修订，拒绝静默覆盖/新增强制确认 |
++| TC-04 / FR-008、023、026 | Project治理、私人清理、选定/全部关联移除；预览后新冲突Run | 固定目标/冲突与保留旧引用；不扩大终止/删除、不把移除当物理清理 |
++| TC-05 / FR-018 | 采用已选V13后发布V14；稳定背景/人工参考与半成品 | 新对象绑定V13、原对象不改，继承范围/修订明确、不继承确认 |
++| TC-06 / 04 §6–7 | token受理前过期、受理后到期、同键重放、旧revision | 新受理重验、持久确认不因TTL失效；不重复消费，不用force |
++| TC-07 / TTF、04-02 §3 | 六事件、无版本任务/绑定任务、错Task/attempt/Project/版本/target | 信封身份及payload对应；禁止旧事件写入新流或改绑 |
++| TC-08 / TTF快照恢复 | Unicode累计输出、重复/迟到/跳序事件、快照与实时竞争 | 文本/引用/状态/游标同一提交；去重，不丢中间状态、不覆盖人工草稿 |
++| TC-09 / SEC-02、A04 | 过期/错流游标、双游标冲突、撤权/归档、事件缺失 | 当前授权优先；只重读/订阅、不重生成；无存在性或token泄漏 |
++| TC-10 / A05/A06、DAP | 必需历史受限、允许检索子集、未知分类/依赖；当前文字例外 | TaskError/资料提示有载体，失败保留原内容；不自动开私人或造分类等待状态 |
++| TC-11 / 08 §3/5 | 管理员治理他人账号、Owner清理本Project、失权引用 | 管理员仅安全治理摘要，无私人ID/标题/URL/正文；授权引用仍逐次校验 |
++| TC-12 / FR-034、P0边界 | done/failed/cancelled、成功终稿、Review等待/完成、事件断线 | Task终态不结束Run/Session、不伪造人工接受；不新增P0重跑或通用取消 |
++
++## 5. 验证与限制
++
++S2执行文档链接/锚点、版本、逐TC结构与操作映射、自审diff、覆盖源行/指纹与机器结构检查。实际命令/结果写单一审核包；保留OpenAPI入场字节，不能因指纹更新声称新schema已验证。新增文档字段无机器验证器，不用关键词计数证明语义正确，S3由subagent独立读规范/反例。数据库、Provider、浏览器及端到端均不在本轮执行；后续真实commit与流恢复测试默认mock外部服务、显式隔离存储。
++
++## 6. 人工决定与审核
++
++当前无新增业务决定。若现行规则不足以确定某变体，只暂停该分支并列证据/选项；不自行改变状态、权限、分期或人工保护。提交审核时重点检查任务与业务等待分离、影响清单完整性、管理员安全摘要、token生命周期及事件恢复。接受待用户真实答复。
++
++## 7. 单一交付报告
++
++审核包：[task010 A07](../docs/workorders/task010_a07_review_2026-10-23.md)。设计、文档自动验证、独立审查及人工接受分别记录；未转写字段与业务运行不冒充已完成。
++
++## 8. 顺序交付检查点
++
++S1/S2/S3已完成；TC01–TC05设计及TC-01–12文档核验完成，三项P2及C01修复并由独立subagent复审闭合。当前S4等待用户审核；S5–S7未开始，接受不得从检查通过推断。受审快照s3-input清单SHA256为a96703b3d2be612e9798090c626151009ba26a1b19fac92d244dc342a3e3af20；交付快照delivery保留相同设计/覆盖JSON，仅本单、审核包和项目状态更新交接记录。实际命令/证据见单一审核包。下一动作：收到本轮设计范围的真实接受后执行S5–S7；若要求修订则返回S2并复审。队列仅task010，无下一任务授权。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.49
++文档版本：v1.50
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 
+@@ -23,7 +23,7 @@
+ | --- | --- | --- |
+ | 项目级顺序交付 skill | 已完成；2026-10-23获用户限定人工接受 | [project-delivery](../.agents/skills/project-delivery/SKILL.md)、实施入口和任务模板支持授权队列、恢复检查点及人工节点；[本轮记录](workorders/project_delivery_skill_2026-10-23.md)。已核对三个流程文件与交付快照一致；接受仅限skill及配套文档，跨会话运行未验收，不启动task008或其他未授权业务任务 |
+ | 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计自验及独立复审通过，S4待人工审核；A08/A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -44,7 +44,7 @@
+ 
+ 下一步任务已在[task007第6节](../tasks/007-skeleton-review-fixes.md#6-下一阶段计划a05-资料设置与分类操作契约)登记：A05资料设置与分类UI/API契约，分设置操作、分类操作、错误/UI对应、契约测试四步。A05限定设计、五个同步操作及契约验证已交付，见[审核包](workorders/task007_a05_review_2026-10-22.md)；[2026-10-23独立审核](workorders/task007_independent_review_2026-10-23.md)所列分类写成功状态、幂等期限2项P2已修复，主动文字例外已澄清；[修复复审](workorders/task007_fixes_2026-10-23.md)50方法及三位subagent通过；原task007骨架修复历史保留。A06及后续任务另列依赖，不自动启动业务实现或恢复延期选型。
+ 
+-[task008：A06资料来源与当前政策内部契约](../tasks/008-material-policy-internal-contracts.md) C01–C05已完成设计交付并于2026-10-23获用户限定接受。S5逐IC覆盖复核未发现设计缺口；S6无需修改；S7文档、内容基线及历史证据复验通过，S1–S7已收口。五份设计与已接受快照一致，原独立审查两项P2及C01闭合结论有效；详见[审核包收口记录](workorders/task008_internal_contract_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写、业务代码、真实事务/派发/并发与端到端未实现；TRACK-012c/012d/021运行范围保持开放，A05接受不包含在本次决定中。当前授权队列耗尽，A07/A08及业务编码未启动。
++[task008：A06资料来源与当前政策内部契约](../tasks/008-material-policy-internal-contracts.md) C01–C05已完成设计交付并于2026-10-23获用户限定接受。S5逐IC覆盖复核未发现设计缺口；S6无需修改；S7文档、内容基线及历史证据复验通过，S1–S7已收口。五份设计与已接受快照一致，原独立审查两项P2及C01闭合结论有效；详见[审核包收口记录](workorders/task008_internal_contract_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写、业务代码、真实事务/派发/并发与端到端未实现；TRACK-012c/012d/021运行范围保持开放，A05接受不包含在本次决定中。本任务原授权已收口；后续用户已另行授权task010 A07设计交付，见下项。
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
+@@ -149,3 +149,5 @@
+ 本次修订 v1.48（2026-10-23）：记录task008 C01–C05明确执行授权及当前交付阶段；A05接受不代填，运行验收保持开放。
+ 
+ 本次修订 v1.49（2026-10-23）：记录用户接受task008 C01–C05及S5–S7设计收口，设计产物未变；业务运行与其他任务接受/执行授权保持原边界。
++
++本次修订 v1.50（2026-10-23）：[task010 A07](../tasks/010-task-confirmation-event-contracts.md)补齐Task目标/等待引用、确认预览影响/保留及事件关联设计，文档自验通过，独立审查三项P2及C01已修复并复审闭合，当前S4等待人工审核；[单一审核包](workorders/task010_a07_review_2026-10-23.md)记录当前证据与检查点。机器转写与运行验收未完成，人工接受未记录；A08/A09及业务实现未启动。
+--- before/docs/workorders/task010_a07_review_2026-10-23.md
++++ after/docs/workorders/task010_a07_review_2026-10-23.md
+@@ -0,0 +1,48 @@
++# Task010 A07 审核包
++
++文档版本：v1.0
++更新日期：2026-10-23
++
++## 范围与当前状态
++
++授权原文、依赖、TC-01–12验收规格及恢复检查点见[任务单](../../tasks/010-task-confirmation-event-contracts.md)。本轮仅设计，新增字段尚未机器转写；OpenAPI字节与入场一致。A05接受不被本轮代替，A06已接受范围不扩大。S1/S2/S3完成，当前S4等待人工审核；S5–S7未开始。
++
++## 设计产物
++
++- [04-01 §1.1–1.2](../design/04-01_p0_operation_contracts.md#11-confirmationpreview具名影响与保留项a07设计)：完整确认预览、具名影响/保留联合、覆盖片段范围、操作对应与修订依据。
++- [04-02 §2–3](../design/04-02_transport_task_file_contracts.md)：Task目标/固定版本/祖先、等待引用、结果定位、资料提示、六事件信封与累计快照恢复。
++- [05-01 A07](../design/05-01_internal_module_contracts.md)、[共用UI A07](../design/03-04_ui_shared_interactions_appendix.md)：生产消费责任、当前授权和人工内容保护。
++- [09 A07](../design/09_quality_observability.md)、[04-03](../design/04-03_machine_contract_governance.md)：需求场景与机器/运行缺口。覆盖清单仅更新源指纹及缺项分类，未提高机器覆盖。
++
++## S2 自验与逐项结论
++
++| 场景 | 文档核验落点与结论 |
++| --- | --- |
++| TC-01 | 04-02 §2.1.1封闭目标及祖先、null例外；不以账号治理获得Project读取权 |
++| TC-02 | §2.1.2五引用变体映射原六阶段等待与各详情；技术成功不自动确认 |
++| TC-03 | 04-01 §1.1内容范围/修订，§1.2原操作条件；无新保存确认门槛 |
++| TC-04 | 关联移除/执行撤销/私人清理分型，固定冲突及资产修订；保护历史引用 |
++| TC-05 | version_adoption与PreviewContentRevision绑定已选版及稳定参考，原对象保留 |
++| TC-06 | 沿04既有token/幂等受理顺序，05-01明确持久确认；不因TTL撤销已受理结果 |
++| TC-07 | 04-02 §3.4完整身份/版本信封与六payload唯一来源 |
++| TC-08 | §2.2/3.4同提交完整快照、Unicode码点、旧连接代次隔离、顺序异常重读 |
++| TC-09 | §3.2/A04游标错误与当前授权，§3.4回放无token、只读不重生成 |
++| TC-10 | Task/output具名MaterialUseNotice载体，拒绝仍TaskError；保持A05/A06规则 |
++| TC-11 | 管理员安全治理变体及protected_scope，不返回私人对象身份；链接逐次鉴权 |
++| TC-12 | done只技术终态；等待不制造业务状态，P0无新增恢复/通用取消 |
++
++以上为文档语义自验，不是测试通过。自动文档检查覆盖链接/锚点、版本、日期、范围保护；机器结构检查仅验证既有47请求成功局部+40仅请求、172schema、131源行、5/6 payload。完整Task/预览/信封新增schema、数据库、流与浏览器验收未建立/未执行，后续用例见09。
++
++## S3 独立审查
++
++只读subagent task010_review自行阅读规范与实际文件。初审R01（P2）TaskView缺显式KV绑定、R02（P2）内容覆盖缺片段范围、R03（P2）联合枚举破坏表格，以及C01补充用例名错误，均已修订，独立复审通过，无剩余阻断。[审查记录](evidence/task010_a07_2026-10-23/independent-review.txt)与[自验输出](evidence/task010_a07_2026-10-23/s2-checks.json)保留结论和限制。
++
++## 人工审核问题
++
++是否接受本轮TC01–TC05、TC-01–12所限定的A07契约设计？建议接受设计后进入S5–S7覆盖复核与简化收口；也可指出需修订的具体契约后返回S2。机器转写、运行验证和其他backlog不包含在接受范围中。当前无人类接受记录。
++
++## 精确基线与复验入口
++
++[受审清单](evidence/task010_a07_2026-10-23/s3-input/source-manifest.json)包含190文件，SHA256为`a96703b3d2be612e9798090c626151009ba26a1b19fac92d244dc342a3e3af20`。[交付清单](evidence/task010_a07_2026-10-23/delivery/source-manifest.json)仅对任务/报告/状态补S4记录，设计及覆盖清单与独立受审版本一致；[最终检查](evidence/task010_a07_2026-10-23/final-checks.json)核验这一点。[入场到交付差异](evidence/task010_a07_2026-10-23/delivery.patch)保留原工作区修改。
++
++复验：`python3 docs/workorders/evidence/task010_a07_2026-10-23/check_docs.py`（只写本任务检查证据）；`/tmp/rpb-contract-check/bin/python scripts/check_api_contracts.py --baseline docs/workorders/evidence/task010_a07_2026-10-23/before-openapi.json`；`python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/task010_a07_2026-10-23/delivery`。均不调用数据库或外部Provider。自动结构检查未覆盖新设计联合；文档自验与独立审查均不构成业务运行验收。
+--- before/contracts/p0.coverage.json
++++ after/contracts/p0.coverage.json
+@@ -1,5 +1,5 @@
+ {
+-  "version": "1.3",
++  "version": "1.4",
+   "date": "2026-10-23",
+   "source_rows": [
+     {
+@@ -635,15 +635,15 @@
+     },
+     {
+       "id": "GAP-TASK",
+-      "kind": "design-detail-missing",
++      "kind": "not-yet-transcribed",
+       "scope": "TaskHandle/TaskView, all asynchronous response operations",
+-      "reason": "Task target types are examples, not exhaustive; waiting_items reference shape is not closed. No generic object or invented enumeration."
++      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
+     },
+     {
+       "id": "GAP-CONFIRM",
+-      "kind": "design-detail-missing",
++      "kind": "not-yet-transcribed",
+       "scope": "ConfirmationPreview and operations returning confirmations",
+-      "reason": "affected_items/retained_items remain object[] without named fields."
++      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
+     },
+     {
+       "id": "GAP-REMAINING",
+@@ -666,8 +666,8 @@
+   ],
+   "normative_fingerprints": {
+     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
+-    "04-01_p0_operation_contracts.md": "5251a85c3a25b146bb53e19ce916ad2dc9ef23a03679af6dc06d79c854fc92cc",
+-    "04-02_transport_task_file_contracts.md": "8c46010a169b7d0c49041d0b92ce032163ca366b2f066f467980222a856f54c8"
++    "04-01_p0_operation_contracts.md": "700d8fdc7f30d7bf07704ad89959f57f2e329515ea66635f00e0314876bf405e",
++    "04-02_transport_task_file_contracts.md": "42ebe0e6f73529c7dbb361037a7a744c47664fadfa06a05ec2f67ab4939c66da"
+   },
+   "operation_coverage": {
+     "Account.GetCSRF": {

@@ -1,0 +1,47 @@
+[
+  {
+    "name": "scoped-tests",
+    "cmd": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-v"
+    ],
+    "cwd": "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-task006-p2-1fy_jad2",
+    "exit_code": 1
+  },
+  {
+    "name": "scoped-structure",
+    "cmd": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "cwd": "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-task006-p2-1fy_jad2",
+    "exit_code": 1
+  },
+  {
+    "name": "scoped-compatibility-before",
+    "cmd": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task006_p2_fixes_2026-10-22/before/contracts/p0.openapi.json"
+    ],
+    "cwd": "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-task006-p2-1fy_jad2",
+    "exit_code": 1
+  },
+  {
+    "name": "scoped-compatibility-original",
+    "cmd": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json"
+    ],
+    "cwd": "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-task006-p2-1fy_jad2",
+    "exit_code": 1
+  }
+]

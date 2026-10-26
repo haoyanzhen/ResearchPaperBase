@@ -1,0 +1,4 @@
+rpb/modules/project/application/use_case.py 'import rpb.adapters' => []
+rpb/modules/project/application/use_case.py 'from rpb import adapters' => []
+rpb/knowledge/read.py 'from rpb import agents' => []
+rpb/modules/project/application/use_case.py 'from rpb.modules.review.application import ports' => ['rpb/modules/project/application/use_case.py:1: forbidden import rpb.modules.review.application.ports']

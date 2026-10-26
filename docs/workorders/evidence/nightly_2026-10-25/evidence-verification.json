@@ -1,0 +1,164 @@
+[
+  {
+    "snapshot": "docs/workorders/evidence/nightly_2026-10-24/after",
+    "files": 196,
+    "current_drift": [
+      ".agents/skills/project-delivery/SKILL.md",
+      "AGENTS.md",
+      "README.md",
+      "backend/alembic.ini",
+      "backend/migrations/env.py",
+      "backend/pyproject.toml",
+      "contracts/p0.coverage.json",
+      "contracts/p0.openapi.json",
+      "docs/IMPLEMENTATION_ENTRY.md",
+      "docs/PROJECT_STATUS.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "docs/workorders/task012_a09_review_2026-10-23.md",
+      "scripts/check_api_contracts.py",
+      "scripts/engineering.py",
+      "scripts/tests/test_public_errors.py",
+      "tasks/005-engineering-skeleton.md",
+      "tasks/012-graph-rag-technical-design.md",
+      "tasks/example.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task005_a10_2026-10-24/delivery",
+    "files": 197,
+    "current_drift": [
+      ".agents/skills/project-delivery/SKILL.md",
+      "AGENTS.md",
+      "README.md",
+      "backend/alembic.ini",
+      "backend/migrations/env.py",
+      "backend/pyproject.toml",
+      "contracts/p0.coverage.json",
+      "contracts/p0.openapi.json",
+      "docs/IMPLEMENTATION_ENTRY.md",
+      "docs/PROJECT_STATUS.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "docs/workorders/task005_a10_review_2026-10-24.md",
+      "scripts/check_api_contracts.py",
+      "scripts/engineering.py",
+      "scripts/tests/test_public_errors.py",
+      "tasks/005-engineering-skeleton.md",
+      "tasks/example.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task005_a10_2026-10-24/closeout/final",
+    "files": 197,
+    "current_drift": [
+      ".agents/skills/project-delivery/SKILL.md",
+      "AGENTS.md",
+      "README.md",
+      "backend/alembic.ini",
+      "backend/migrations/env.py",
+      "backend/pyproject.toml",
+      "contracts/p0.coverage.json",
+      "contracts/p0.openapi.json",
+      "docs/IMPLEMENTATION_ENTRY.md",
+      "docs/PROJECT_STATUS.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "scripts/check_api_contracts.py",
+      "scripts/engineering.py",
+      "scripts/tests/test_public_errors.py",
+      "tasks/example.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task012_a09_2026-10-23/delivery",
+    "files": 194,
+    "current_drift": [
+      ".agents/skills/project-delivery/SKILL.md",
+      "AGENTS.md",
+      "README.md",
+      "backend/alembic.ini",
+      "backend/migrations/env.py",
+      "backend/pyproject.toml",
+      "contracts/p0.coverage.json",
+      "contracts/p0.openapi.json",
+      "docs/IMPLEMENTATION_ENTRY.md",
+      "docs/PROJECT_STATUS.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+      "docs/workorders/task012_a09_review_2026-10-23.md",
+      "scripts/check_api_contracts.py",
+      "scripts/engineering.py",
+      "scripts/tests/test_public_errors.py",
+      "tasks/005-engineering-skeleton.md",
+      "tasks/012-graph-rag-technical-design.md",
+      "tasks/example.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task012_a09_2026-10-23/closeout/final",
+    "files": 196,
+    "current_drift": [
+      ".agents/skills/project-delivery/SKILL.md",
+      "AGENTS.md",
+      "README.md",
+      "backend/alembic.ini",
+      "backend/migrations/env.py",
+      "backend/pyproject.toml",
+      "contracts/p0.coverage.json",
+      "contracts/p0.openapi.json",
+      "docs/IMPLEMENTATION_ENTRY.md",
+      "docs/PROJECT_STATUS.md",
+      "docs/design/04-03_machine_contract_governance.md",
+      "scripts/check_api_contracts.py",
+      "scripts/engineering.py",
+      "scripts/tests/test_public_errors.py",
+      "tasks/005-engineering-skeleton.md",
+      "tasks/example.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task014_b01_2026-10-24/delivery",
+    "files": 200,
+    "current_drift": [
+      ".agents/skills/project-delivery/SKILL.md",
+      "AGENTS.md",
+      "README.md",
+      "backend/alembic.ini",
+      "backend/migrations/env.py",
+      "backend/pyproject.toml",
+      "docs/IMPLEMENTATION_ENTRY.md",
+      "docs/PROJECT_STATUS.md",
+      "docs/workorders/task014_b01_review_2026-10-24.md",
+      "scripts/engineering.py",
+      "tasks/014-project-create-machine-contract.md",
+      "tasks/example.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task014_b01_2026-10-24/closeout/final",
+    "files": 200,
+    "current_drift": [
+      ".agents/skills/project-delivery/SKILL.md",
+      "AGENTS.md",
+      "README.md",
+      "backend/alembic.ini",
+      "backend/migrations/env.py",
+      "backend/pyproject.toml",
+      "docs/IMPLEMENTATION_ENTRY.md",
+      "docs/PROJECT_STATUS.md",
+      "scripts/engineering.py",
+      "tasks/example.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task015_b02_2026-10-25/s3-fix",
+    "files": 209,
+    "current_drift": [
+      "docs/PROJECT_STATUS.md",
+      "tasks/015-account-storage-migration.md"
+    ]
+  },
+  {
+    "snapshot": "docs/workorders/evidence/task015_b02_2026-10-25/delivery",
+    "files": 209,
+    "current_drift": []
+  }
+]

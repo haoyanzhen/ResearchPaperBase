@@ -1,0 +1,14 @@
+{
+  "errors": [],
+  "checked_documents": 8,
+  "trace_scenarios": 12,
+  "accepted_snapshot_files": 188,
+  "unchanged_design_files": 5,
+  "record_only_changes": [
+    "docs/PROJECT_STATUS.md",
+    "docs/workorders/task008_internal_contract_review_2026-10-23.md",
+    "tasks/008-material-policy-internal-contracts.md"
+  ],
+  "preserved_existing_evidence_files": 22,
+  "level": "documentation and snapshot verification only; business runtime untested"
+}

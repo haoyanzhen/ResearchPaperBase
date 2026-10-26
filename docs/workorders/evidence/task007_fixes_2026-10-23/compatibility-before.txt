@@ -1,0 +1,2 @@
+operation changed/removed: POST /projects/{project_id}/material-sources/{source_id}/classification/confirm
+operation changed/removed: POST /projects/{project_id}/material-sources/{source_id}/classification/correct

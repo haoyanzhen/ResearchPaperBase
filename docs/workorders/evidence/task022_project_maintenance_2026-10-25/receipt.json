@@ -1,0 +1,36 @@
+{
+  "task": "022",
+  "date": "2026-10-25",
+  "engineering": "S1-S7 complete",
+  "milestone": "M-P0-03 awaiting human acceptance",
+  "source_count": 244,
+  "sha256": {
+    "delivery/source-manifest.json": "e635f514ac474dc1500a7040272846bfd8e09e32d79036d845e0502af85b8d37",
+    "delivery/source.tar.gz": "972fa9f1b3efd9e3aaa152c09141b027e2fb26d05cc769692f8ec25c2b13b235",
+    "integration-verified.log": "69085796abd005d16379de5f1947cf7dfae70d3540a47f9b1d8c23f72eddeb9b",
+    "check-final.log": "aed21a2c578485dc905fa14679bb0ad26f3bda3d8639f091483e1300628620e6",
+    "lint-final.log": "cd7f41cf1ad5ba8b6263217889865f18d2b85df5ad631a05d6d321f51fd1b7b2",
+    "build-final.log": "64443dbf05b6549e8b68b0416d1dc7e0e6323f267cf76f546423bf814eb6e65b",
+    "independent-review-final.json": "39924f9a1295cf308c64d2de01d37fc7fe24070852fb191ba3433d58677ead0b",
+    "documentation-check.json": "b46ed5eec075170c78c21615f5d2c5d3b8453f77de04fc8c4b9117488b45f7b5",
+    "changes.patch": "71cf8315f17316f34536846f2153bb2e1784b8c4ff464c6ab04234b49cbced62"
+  },
+  "verification": {
+    "integration": 271,
+    "new_cases": 60,
+    "independent": 61,
+    "unit_backend": 87,
+    "contracts": 66,
+    "unit_frontend": 3,
+    "temporary_databases_cleaned": true
+  },
+  "limitations": [
+    "Active Run termination not implemented or verified",
+    "No physical asset cleanup or production deployment",
+    "Lifecycle OpenAPI transcription remains partial; normative runtime cases exercised"
+  ],
+  "predecessor_acceptance": {
+    "milestone": "M-P0-02",
+    "manifest_sha256": "57fcb21b5d7642603368b7a3d2f05b524093a447c7beb198b13f6ca0b2a8edd6"
+  }
+}

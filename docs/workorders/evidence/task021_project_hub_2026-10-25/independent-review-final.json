@@ -1,0 +1,39 @@
+{
+  "stage": "S6 independent follow-up complete",
+  "conclusion": "No remaining blocking findings within task021 PH01-PH05",
+  "closed": [
+    {
+      "id": "C01",
+      "evidence": "test_ph05_delayed_list_cannot_restore_previous_account uses a real fetched response held at delivery; asserts loading/disabled refresh, logout/new actor and no stale list after release; passed independently."
+    },
+    {
+      "id": "C02",
+      "evidence": "Project.List cursor schema now maxLength=2048 matching runtime; actor guard remains optional UUID header. Historical A04 compatibility test asserts precise technical additions before normalization and keeps exact equality for the rest."
+    }
+  ],
+  "verification": {
+    "integration": {
+      "passed": 20,
+      "new_task021_cases": 19,
+      "existing_auth_case": 1,
+      "deselected": 191,
+      "seconds": 26.58,
+      "run_id": "rpb_test_e04ae16326e34a7cab6d25892b0b2603",
+      "server_stopped": true,
+      "root_removed": true,
+      "log": "independent-final-ph.log"
+    },
+    "changed_contract_tests": {
+      "passed": 8,
+      "log": "independent-contract.log"
+    },
+    "hashes": "independent-final-before.json",
+    "hash_drift": []
+  },
+  "limitations": [
+    "Reviewer did not independently rerun all 211 integration cases; root owns full regression evidence.",
+    "Local single-process demo only; per-service cursor signing key resets on restart, with safe first-page recovery.",
+    "Existing Starlette deprecation warning remains.",
+    "No production/real LLM/provider/email checks were run or implied."
+  ]
+}

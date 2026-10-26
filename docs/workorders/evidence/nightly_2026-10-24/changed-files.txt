@@ -1,0 +1,4 @@
+docs/IMPLEMENTATION_ENTRY.md
+docs/PROJECT_STATUS.md
+docs/workorders/preimplementation_design_tasks_2026-10-21.md
+tasks/013-human-content-protection-plan.md

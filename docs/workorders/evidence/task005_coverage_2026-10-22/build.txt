@@ -1,0 +1,23 @@
+COMMAND: python3 scripts/engineering.py build
++ uv build --no-sources
+Building source distribution...
+Building wheel from source distribution...
+Successfully built dist/research_paper_base-1.0.0.tar.gz
+Successfully built dist/research_paper_base-1.0.0-py3-none-any.whl
++ npm run build
+
+> rpb-workspace@1.0.0 build
+> tsc --noEmit && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 16 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.36 kB │ gzip:  0.27 kB
+dist/assets/index-CynehX3L.css    1.76 kB │ gzip:  0.81 kB
+dist/assets/index-fAwn9xep.js   220.84 kB │ gzip: 69.34 kB
+
+✓ built in 76ms
+
+EXIT: 0

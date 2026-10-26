@@ -1,0 +1,31 @@
+{
+  "outside_scope_changed": [
+    "docs/IMPLEMENTATION_ENTRY.md",
+    "docs/design/03-01_ui_system_pages_appendix.md",
+    "docs/design/03-02_ui_construction_appendix.md",
+    "docs/design/03-04_ui_shared_interactions_appendix.md",
+    "docs/design/04-01_p0_operation_contracts.md",
+    "docs/design/04-02_transport_task_file_contracts.md",
+    "docs/design/09_quality_observability.md",
+    "tasks/007-skeleton-review-fixes.md"
+  ],
+  "parallel_new_paths_preserved": [
+    "/projects/{project_id}/material-policy",
+    "/projects/{project_id}/material-sources/{source_id}/classification",
+    "/projects/{project_id}/material-sources/{source_id}/classification/confirm",
+    "/projects/{project_id}/material-sources/{source_id}/classification/correct"
+  ],
+  "parallel_new_schemas_preserved": [
+    "MaterialClassification",
+    "MaterialClassificationFact",
+    "MaterialClassificationView",
+    "MaterialClassificationWrite",
+    "MaterialPolicyView",
+    "MaterialPolicyWrite",
+    "MaterialProvenance",
+    "MaterialSourceIdentity",
+    "MaterialUseMode",
+    "MaterialUseNotice"
+  ],
+  "note": "Concurrent additions retained; ownership not inferred from hashes. delivery.patch uses isolated contracts/checker and may include concurrent state/document rows; full live input is separately hashed."
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "name": "live-compatibility-before",
+    "exit_code": 1,
+    "lines": 3
+  },
+  {
+    "name": "live-compatibility-original",
+    "exit_code": 1,
+    "lines": 83
+  }
+]

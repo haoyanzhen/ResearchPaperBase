@@ -1,0 +1,12 @@
+{
+  "checked": [
+    "tasks/015-account-storage-migration.md",
+    "tasks/016-project-storage.md",
+    "tasks/017-account-authentication.md",
+    "tasks/018-project-create-runtime.md",
+    "docs/PROJECT_STATUS.md",
+    "docs/design/01_functional_requirements.md",
+    "docs/design/08_security_permissions.md"
+  ],
+  "broken_links": []
+}

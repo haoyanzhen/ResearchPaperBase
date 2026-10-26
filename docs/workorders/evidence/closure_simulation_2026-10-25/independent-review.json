@@ -1,0 +1,16 @@
+{
+  "reviewer": "simulation_review",
+  "finding": "R1 Project text normalization P2, fixed and reviewed",
+  "result": "10 passed, 182 deselected; no remaining blocking findings",
+  "scope": [
+    "backend/src/rpb/api/projects.py",
+    "backend/tests/integration/test_browser_business.py",
+    "backend/tests/integration/test_project_commands.py"
+  ],
+  "sha256": {
+    "backend/src/rpb/api/projects.py": "03ac694b4240035094cd5396584853bc0052e132da9a8f31876fc09bce7374c5",
+    "backend/tests/integration/test_browser_business.py": "694de28766d2728a9bc3289552d24602b37a8f79730a2a87406f2e1ec0d793c3",
+    "backend/tests/integration/test_project_commands.py": "a7bc705e241e61808a97205332cc3955c2cfbc3eb84532a2d632e3af5e2268b8"
+  },
+  "limitation": "did not independently rerun all 192"
+}

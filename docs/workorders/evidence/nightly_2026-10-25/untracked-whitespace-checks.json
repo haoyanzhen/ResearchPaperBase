@@ -1,0 +1,78 @@
+[
+  {
+    "initial_command": [
+      "git",
+      "diff",
+      "--no-index",
+      "--check",
+      "/dev/null",
+      "docs/design/README.md"
+    ],
+    "result": "existing Markdown double-space hard break at line 5 flagged; unchanged from before; correct scope uses before-to-current diff; no source change"
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--no-index",
+      "--check",
+      "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/tmp5y0s6n5r/README.md",
+      "docs/design/README.md"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--no-index",
+      "--check",
+      "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/tmp5y0s6n5r/PROJECT_STATUS.md",
+      "docs/PROJECT_STATUS.md"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--no-index",
+      "--check",
+      "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/tmp5y0s6n5r/preimplementation_design_tasks_2026-10-21.md",
+      "docs/workorders/preimplementation_design_tasks_2026-10-21.md"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--no-index",
+      "--check",
+      "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/tmp5y0s6n5r/013-human-content-protection-plan.md",
+      "tasks/013-human-content-protection-plan.md"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--no-index",
+      "--check",
+      "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/tmp5y0s6n5r/nightly_maintenance_2026-10-25.md",
+      "docs/workorders/nightly_maintenance_2026-10-25.md"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  }
+]

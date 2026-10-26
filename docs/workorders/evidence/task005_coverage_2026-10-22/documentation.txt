@@ -1,0 +1,4 @@
+PASS version/date/local file references: tasks/005-engineering-skeleton.md
+PASS version/date/local file references: docs/workorders/task005_coverage_closure_2026-10-22.md
+PASS version/date/local file references: docs/PROJECT_STATUS.md
+Visual review: four current screenshots show readable previews with disabled actions; no clipping observed.

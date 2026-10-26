@@ -1,0 +1,20 @@
+{
+  "status": "success",
+  "time": "2026-10-25T03:04:08.659535+08:00",
+  "timezone": "Asia/Shanghai",
+  "head": "7ba2a2c638500eaa43f2137d16a6a0686b663630",
+  "previous_success": "docs/workorders/evidence/nightly_2026-10-24/success.json",
+  "before": "docs/workorders/evidence/nightly_2026-10-25/before",
+  "after": "docs/workorders/evidence/nightly_2026-10-25/after",
+  "after_manifest_sha256": "2c4ef84ebc9d3aa8aa79447b107abb81e22b493ce6b60e91764209b12dc2c3fd",
+  "validation": "docs/workorders/evidence/nightly_2026-10-25/validation.json",
+  "changed_files": [
+    "docs/PROJECT_STATUS.md",
+    "docs/design/README.md",
+    "docs/workorders/nightly_maintenance_2026-10-25.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "tasks/013-human-content-protection-plan.md"
+  ],
+  "outside_scope_drift": [],
+  "scope": "document maintenance only; historical verification not business acceptance"
+}

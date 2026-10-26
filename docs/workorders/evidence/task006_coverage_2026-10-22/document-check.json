@@ -1,0 +1,12 @@
+{
+  "local_references_checked": 83,
+  "versions_dates_whitespace": "pass",
+  "unchanged_inputs": [
+    "contracts/p0.openapi.json",
+    "contracts/p0.coverage.json",
+    "scripts/check_api_contracts.py",
+    "scripts/tests/test_public_errors.py",
+    "scripts/tests/test_api_contracts.py"
+  ],
+  "compatibility_issues_match_prior": true
+}

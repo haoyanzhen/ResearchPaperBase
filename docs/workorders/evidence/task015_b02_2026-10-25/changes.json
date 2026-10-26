@@ -1,0 +1,21 @@
+{
+  "backend/alembic.ini": "modified",
+  "docs/IMPLEMENTATION_ENTRY.md": "modified",
+  "scripts/run_storage_tests.py": "added",
+  "scripts/engineering.py": "modified",
+  "docs/PROJECT_STATUS.md": "modified",
+  "backend/tests/integration/test_account_storage.py": "added",
+  "tasks/015-account-storage-migration.md": "added",
+  "backend/tests/conftest.py": "added",
+  "backend/pyproject.toml": "modified",
+  ".agents/skills/project-delivery/SKILL.md": "modified",
+  "backend/tests/integration/conftest.py": "added",
+  "AGENTS.md": "modified",
+  "README.md": "modified",
+  "docs/workorders/workflow_autonomy_2026-10-25.md": "added",
+  "backend/migrations/env.py": "modified",
+  "backend/tests/integration/test_fixture_cleanup.py": "added",
+  "backend/migrations/versions/0001_account.py": "added",
+  "tasks/example.md": "modified",
+  "backend/src/rpb/adapters/account.py": "added"
+}

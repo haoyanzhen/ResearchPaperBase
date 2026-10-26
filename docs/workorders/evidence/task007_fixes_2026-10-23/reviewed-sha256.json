@@ -1,0 +1,11 @@
+{
+  "contracts/p0.openapi.json": "6aee1d5d6723ee94d5cfd2f823a721966c5649a7e8ff79e6185cd675d75e6710",
+  "contracts/p0.coverage.json": "d1204eaa13d570bbacfa8bf6478eae52048727b97f38e6d54e765ac97cea6128",
+  "scripts/check_api_contracts.py": "8b7b96964e4350b54476f266e7e5408f41a53ebb29d3f6277d36a7c7762d2bc8",
+  "scripts/tests/test_material_policy_contracts.py": "1a543ef811284e466776a178b15fa7936c12a475c8df4f8b8ccc48068e24c95c",
+  "scripts/tests/test_material_policy_review_regressions.py": "0e90eee97b3e401fca64fce39aaf736ece365cb40ad9b27ef3a0bb3d1892e47c",
+  "docs/design/04-01_p0_operation_contracts.md": "5251a85c3a25b146bb53e19ce916ad2dc9ef23a03679af6dc06d79c854fc92cc",
+  "docs/design/04-02_transport_task_file_contracts.md": "8c46010a169b7d0c49041d0b92ce032163ca366b2f066f467980222a856f54c8",
+  "docs/design/04-03_machine_contract_governance.md": "9d9083237ef3fa5cea3e89382f18fe5be81c6da26f36dcfe7a2200f3c9892e40",
+  "docs/design/03-04_ui_shared_interactions_appendix.md": "eccb7b63b89837d5eea26c89c088e7f3dbbc0330c5e02dc57e10d0c001a29e0b"
+}

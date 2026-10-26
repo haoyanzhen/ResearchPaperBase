@@ -1,0 +1,73 @@
+{
+  "changed_files": [
+    "README.md",
+    "backend/migrations/versions/0005_project_lifecycle.py",
+    "backend/src/rpb/adapters/project_commands.py",
+    "backend/src/rpb/api/projects.py",
+    "backend/src/rpb/bootstrap/business.py",
+    "backend/src/rpb/modules/project/application/ports.py",
+    "backend/src/rpb/modules/project/application/service.py",
+    "backend/tests/integration/conftest.py",
+    "backend/tests/integration/test_account_auth.py",
+    "backend/tests/integration/test_account_storage.py",
+    "backend/tests/integration/test_project_maintenance.py",
+    "backend/tests/integration/test_project_maintenance_browser.py",
+    "backend/tests/integration/test_project_storage.py",
+    "docs/PROJECT_STATUS.md",
+    "docs/file_map.md",
+    "frontend/src/BusinessApp.tsx",
+    "frontend/src/style.css",
+    "scripts/run_storage_tests.py",
+    "tasks/021-project-hub.md",
+    "tasks/022-project-maintenance.md"
+  ],
+  "removed": [],
+  "reviewed_source_drift": [],
+  "post_final_test_changes": [
+    "README.md",
+    "docs/PROJECT_STATUS.md",
+    "docs/file_map.md",
+    "tasks/022-project-maintenance.md"
+  ],
+  "missing_local_paths": [],
+  "added_trailing_whitespace": [],
+  "document_headers": {
+    "README.md": [
+      "# Research Paper Base",
+      "",
+      "文档版本：v1.12",
+      "更新日期：2026-10-25",
+      ""
+    ],
+    "docs/PROJECT_STATUS.md": [
+      "# 项目进度与待完成项",
+      "",
+      "文档版本：v1.69",
+      "更新日期：2026-10-25",
+      "适用项目大版本：v1"
+    ],
+    "docs/file_map.md": [
+      "# 项目文件功能目录",
+      "",
+      "**文档版本**：v1.20 · 2026-10-25（Project基础维护入口登记）",
+      "**维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。",
+      ""
+    ],
+    "tasks/021-project-hub.md": [
+      "# Task021：Project Hub 本人项目找回闭环",
+      "",
+      "文档版本：v1.1",
+      "更新日期：2026-10-25",
+      ""
+    ],
+    "tasks/022-project-maintenance.md": [
+      "# Task022：Project基础维护闭环",
+      "",
+      "文档版本：v1.0",
+      "更新日期：2026-10-25",
+      ""
+    ]
+  },
+  "verification": "271 integration passed; 61 independent passed; all temporary databases cleaned",
+  "scope": "Local Markdown path existence checked; not a full anchor audit."
+}

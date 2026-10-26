@@ -1,0 +1,10 @@
+{
+  "command": "python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@17/bin",
+  "run_id": "rpb_test_859138158fdc4e6f93c42ecc643a7c78",
+  "stop": "PTY Ctrl-C",
+  "exit_code": 130,
+  "server_stopped": true,
+  "root_removed": true,
+  "port_closed_at_followup": true,
+  "http_200": "covered separately by automated terminal-interrupt regression"
+}

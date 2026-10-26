@@ -1,0 +1,19 @@
+{
+  "root": "/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-reviewed-fixes-kdr9_zhq",
+  "base": "initial-files.tar.gz excluding evidence",
+  "overlay": "candidate/source.tar.gz",
+  "owned_paths": [
+    "README.md",
+    "backend/tests/architecture/test_boundaries.py",
+    "backend/tests/unit/test_startup.py",
+    "backend/tests/unit/process_support.py",
+    "backend/tests/unit/test_review_regressions.py",
+    "backend/tests/unit/test_delivery_snapshot.py",
+    "scripts/check_architecture.py",
+    "scripts/engineering.py",
+    "scripts/verify_skeleton_delivery.py",
+    "scripts/delivery_snapshot.py",
+    "tasks/007-skeleton-review-fixes.md"
+  ],
+  "reason": "Concurrent unrelated contract/test edits preserved in live workspace; validate only authorized R01-R04 slice."
+}

@@ -1,0 +1,89 @@
+test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) ... 
+  test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='confirm', classification='public') ... FAIL
+  test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='confirm', classification='private') ... FAIL
+  test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='correct', classification='public') ... FAIL
+  test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='correct', classification='private') ... FAIL
+test_r01_r02_nested_fact_and_envelope_protection_preserved (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_r02_nested_fact_and_envelope_protection_preserved) ... ok
+test_r01_r02_read_and_policy_response_scope_preserved (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_r02_read_and_policy_response_scope_preserved) ... ok
+test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) ... 
+  test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='confirm', expiry='missing') ... FAIL
+  test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='confirm', expiry=None) ... FAIL
+  test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='correct', expiry='missing') ... FAIL
+  test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='correct', expiry=None) ... FAIL
+
+======================================================================
+FAIL: test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='confirm', classification='public')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 25, in test_r01_each_mutation_requires_confirmed_fact
+    self.assertFalse(accepts(schema, {'data': good | {'confirmation_status': 'unconfirmed', 'confirmation': None}, 'meta': META}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='confirm', classification='private')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 25, in test_r01_each_mutation_requires_confirmed_fact
+    self.assertFalse(accepts(schema, {'data': good | {'confirmation_status': 'unconfirmed', 'confirmation': None}, 'meta': META}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='correct', classification='public')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 25, in test_r01_each_mutation_requires_confirmed_fact
+    self.assertFalse(accepts(schema, {'data': good | {'confirmation_status': 'unconfirmed', 'confirmation': None}, 'meta': META}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_r01_each_mutation_requires_confirmed_fact (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r01_each_mutation_requires_confirmed_fact) (action='correct', classification='private')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 25, in test_r01_each_mutation_requires_confirmed_fact
+    self.assertFalse(accepts(schema, {'data': good | {'confirmation_status': 'unconfirmed', 'confirmation': None}, 'meta': META}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='confirm', expiry='missing')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 37, in test_r02_each_mutation_requires_nonnull_utc_expiry
+    self.assertFalse(accepts(schema, {'data': CONFIRMED, 'meta': {'request_id': ID}}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='confirm', expiry=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 40, in test_r02_each_mutation_requires_nonnull_utc_expiry
+    self.assertFalse(accepts(schema, {'data': CONFIRMED, 'meta': META | {'idempotency_expires_at': expiry}}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='correct', expiry='missing')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 37, in test_r02_each_mutation_requires_nonnull_utc_expiry
+    self.assertFalse(accepts(schema, {'data': CONFIRMED, 'meta': {'request_id': ID}}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_r02_each_mutation_requires_nonnull_utc_expiry (test_material_policy_review_regressions.MaterialPolicyReviewRegressionTests.test_r02_each_mutation_requires_nonnull_utc_expiry) (action='correct', expiry=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_material_policy_review_regressions.py", line 40, in test_r02_each_mutation_requires_nonnull_utc_expiry
+    self.assertFalse(accepts(schema, {'data': CONFIRMED, 'meta': META | {'idempotency_expires_at': expiry}}))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.016s
+
+FAILED (failures=8)

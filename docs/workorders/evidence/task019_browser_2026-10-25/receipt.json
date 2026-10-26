@@ -1,0 +1,27 @@
+{
+  "task": "019",
+  "milestone": "M-P0-01",
+  "engineering": "S1-S7 complete",
+  "human_acceptance": "pending",
+  "manifest_sha256": "8deb79a093642392afa68fee483cb83295df20f1a7c8e564a7a8ae1175a65a80",
+  "source_files": 236,
+  "final_integration": {
+    "passed": 182,
+    "run_id": "rpb_test_57f96379bdcb42dc9362e67be63429f8",
+    "cleanup": true
+  },
+  "independent": {
+    "full": 179,
+    "final_affected": 7,
+    "result": "passed"
+  },
+  "checks": {
+    "backend": 87,
+    "contracts": 66,
+    "frontend": 3,
+    "skeleton_browser": 2,
+    "build": true,
+    "clean_install": true
+  },
+  "remaining": "limited local disposable demo; no production or full module acceptance"
+}

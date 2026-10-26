@@ -1,0 +1,165 @@
+--- entry/backend/src/rpb/bootstrap/api.py
++++ exit/backend/src/rpb/bootstrap/api.py
+@@ -1,11 +1,8 @@
+-import sys
+-
+ import uvicorn
+ from fastapi import FastAPI
+-from pydantic import ValidationError
+ 
+ from rpb.api.health import router
+-from rpb.bootstrap.config import Settings
++from rpb.bootstrap.config import Settings, load_process_settings
+ 
+ 
+ def create_app() -> FastAPI:
+@@ -16,11 +13,7 @@
+ 
+ 
+ def main() -> None:
+-    try:
+-        settings = Settings.load()
+-    except ValidationError:
+-        print("Invalid process configuration; startup refused.", file=sys.stderr)
+-        raise SystemExit(2) from None
++    settings = load_process_settings()
+     uvicorn.run(create_app(), host=settings.host, port=settings.port, access_log=False)
+ 
+ 
+--- entry/backend/src/rpb/bootstrap/config.py
++++ exit/backend/src/rpb/bootstrap/config.py
+@@ -1,10 +1,11 @@
+ """Only process settings; no implicit dotenv, storage or provider configuration."""
+ 
+ import os
++import sys
+ from collections.abc import Mapping
+ from typing import Literal
+ 
+-from pydantic import BaseModel, ConfigDict, Field
++from pydantic import BaseModel, ConfigDict, Field, ValidationError
+ 
+ 
+ class Settings(BaseModel):
+@@ -18,3 +19,12 @@
+         source = os.environ if environ is None else environ
+         values = {key[4:].lower(): value for key, value in source.items() if key.startswith("RPB_")}
+         return cls.model_validate(values)
++
++
++def load_process_settings() -> Settings:
++    """CLI startup reports invalid settings without exposing environment values."""
++    try:
++        return Settings.load()
++    except ValidationError:
++        print("Invalid process configuration; startup refused.", file=sys.stderr)
++        raise SystemExit(2) from None
+--- entry/backend/src/rpb/bootstrap/worker.py
++++ exit/backend/src/rpb/bootstrap/worker.py
+@@ -5,20 +5,14 @@
+ import sys
+ from threading import Event
+ 
+-from pydantic import ValidationError
+-
+-from rpb.bootstrap.config import Settings
++from rpb.bootstrap.config import load_process_settings
+ 
+ 
+ def main() -> None:
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument("--idle", action="store_true", help="run an inactive skeleton process")
+     args = parser.parse_args()
+-    try:
+-        Settings.load()
+-    except ValidationError:
+-        print("Invalid process configuration; startup refused.", file=sys.stderr)
+-        raise SystemExit(2) from None
++    load_process_settings()
+     if not args.idle:
+         print("Task execution unavailable; use --idle only for skeleton checks.", file=sys.stderr)
+         raise SystemExit(2)
+--- entry/backend/tests/unit/test_startup.py
++++ exit/backend/tests/unit/test_startup.py
+@@ -65,15 +65,25 @@
+ 
+ 
+ @pytest.mark.parametrize("module", ["api", "worker"])
+-def test_process_rejects_configuration_without_leaking_values(module):
++@pytest.mark.parametrize(
++    "invalid",
++    [
++        {"RPB_PORT": "private-marker"},
++        {"RPB_ENVIRONMENT": "private-marker"},
++        {"RPB_HOST": "private-marker"},
++        {"RPB_DATABASE_URL": "postgresql://private-marker/business"},
++    ],
++)
++def test_process_rejects_configuration_without_leaking_values(module, invalid):
+     result = subprocess.run(
+         [sys.executable, "-m", f"rpb.bootstrap.{module}"],
+-        env=clean_env() | {"RPB_PORT": "private-marker"},
++        env=clean_env() | invalid,
+         capture_output=True,
+         text=True,
+         timeout=10,
+     )
+     assert result.returncode == 2
++    assert result.stderr == "Invalid process configuration; startup refused.\n"
+     assert "private-marker" not in result.stdout + result.stderr
+ 
+ 
+@@ -136,3 +146,9 @@
+         with managed_process([sys.executable, "-c", "pass"]) as process:
+             wait_for_line(process, "ready", timeout=2)
+     assert process.poll() is not None
++
++
++def test_app_factory_rejects_invalid_configuration(monkeypatch):
++    monkeypatch.setenv("RPB_PORT", "invalid")
++    with pytest.raises(ValidationError):
++        create_app()
+--- entry/frontend/src/App.tsx
++++ exit/frontend/src/App.tsx
+@@ -7,7 +7,7 @@
+     <header><a className="brand" href="/">Research Paper Base</a><span className="badge">工程预览</span></header>
+     <nav aria-label="主导航">{pages.map(item => <button key={item} aria-current={page === item ? 'page' : undefined} onClick={() => setPage(item)}>{item}</button>)}</nav>
+     <main id="content" tabIndex={-1}>
+-      <p className="eyebrow">研究工作空间</p><h1>{page === 'Projects' ? 'Projects' : '设置'}</h1>
++      <p className="eyebrow">研究工作空间</p><h1>{page}</h1>
+       <p className="intro">从文献发现，到有据可循的研究。</p>
+       <section aria-label="功能状态" className="empty"><div className="symbol" aria-hidden="true">▤</div>
+         <h2>{page === 'Projects' ? '项目功能尚未接入' : '账号与配置功能尚未接入'}</h2>
+--- entry/scripts/engineering.py
++++ exit/scripts/engineering.py
+@@ -63,9 +63,7 @@
+             ]
+         )
+     elif action == "check":
+-        backend(
+-            "ruff",
+-            "check",
++        check_paths = (
+             "src",
+             "tests",
+             "../scripts/check_architecture.py",
+@@ -73,17 +71,8 @@
+             "../scripts/verify_skeleton_delivery.py",
+             "../scripts/delivery_snapshot.py",
+         )
+-        backend(
+-            "ruff",
+-            "format",
+-            "--check",
+-            "src",
+-            "tests",
+-            "../scripts/check_architecture.py",
+-            "../scripts/engineering.py",
+-            "../scripts/verify_skeleton_delivery.py",
+-            "../scripts/delivery_snapshot.py",
+-        )
++        backend("ruff", "check", *check_paths)
++        backend("ruff", "format", "--check", *check_paths)
+         backend("mypy", "src")
+         backend("pytest", "-q")
+         run([str(ROOT / "contracts/.venv/bin/python"), "scripts/check_api_contracts.py"])

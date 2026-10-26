@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python3",
+    "scripts/delivery_snapshot.py",
+    "create",
+    "--directory",
+    "docs/workorders/evidence/nightly_2026-10-25/after"
+  ],
+  "exit": 0,
+  "stdout": "Verified complete snapshot: 210 files, including empty files.\n"
+}

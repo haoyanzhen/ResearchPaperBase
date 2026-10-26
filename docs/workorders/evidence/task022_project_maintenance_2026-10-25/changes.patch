@@ -1,0 +1,1850 @@
+--- a/README.md
++++ b/README.md
+@@ -1,6 +1,6 @@
+ # Research Paper Base
+ 
+-文档版本：v1.11
++文档版本：v1.12
+ 更新日期：2026-10-25
+ 
+ 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
+@@ -118,4 +118,4 @@
+ 
+ 登录后可在“我的项目”查看本人项目（默认每页20项），点击名称进入，返回列表或退出重登后重新找回；归档项目标为只读，已删除项目不显示，管理员也不列出他人项目。列表失败可重试，游标失效可回第一页。
+ 
+-当前未提供配置、治理、Project修改/归档/删除操作、知识构建等后续功能。默认根路径工程预览不等于业务入口；以/workspace和显式demo为验收对象。原认证/创建闭环已获限定接受，见[task019](tasks/019-browser-milestone.md)；Project Hub新增范围、验证和M-P0-02验收包见[task021](tasks/021-project-hub.md)。
++当前active项目可编辑名称/描述/研究范围，或经预览、勾选风险确认后归档/软删除。归档后只读且不提供解除归档或删除入口；软删除保留存储记录但不再允许进入。编辑冲突保留草稿，不自动以新修订覆盖；结果未知先核查，归档可核查同一原请求。当前未提供配置、账号治理、私人资产物理清理、知识构建等后续功能。默认根路径工程预览不等于业务入口；以/workspace和显式demo为验收对象。原认证/创建闭环已获限定接受，见[task019](tasks/019-browser-milestone.md)；Project Hub已获M-P0-02限定接受，见[task021](tasks/021-project-hub.md)。本批维护新增范围、验证与M-P0-03验收包见[task022](tasks/022-project-maintenance.md)。
+--- a/backend/migrations/versions/0005_project_lifecycle.py
++++ b/backend/migrations/versions/0005_project_lifecycle.py
+@@ -0,0 +1,61 @@
++"""Project lifecycle confirmation/audit and archive receipt, isolated from creation receipts."""
++
++import sqlalchemy as sa
++from alembic import op
++from sqlalchemy.dialects.postgresql import JSONB
++
++revision = "0005_project_lifecycle"
++down_revision = "0004_project_commands"
++branch_labels = None
++depends_on = None
++
++
++def upgrade():
++    op.create_table(
++        "project_lifecycle_records",
++        sa.Column("id", sa.Uuid, primary_key=True),
++        sa.Column("actor_id", sa.Uuid, nullable=False),
++        sa.Column("project_id", sa.Uuid, nullable=False),
++        sa.ForeignKeyConstraint(
++            ["project_id", "actor_id"],
++            ["projects.id", "projects.owner_id"],
++            name="fk_lifecycle_owner",
++        ),
++        sa.Column("action", sa.Text, nullable=False),
++        sa.Column("key", sa.String(128, collation="C"), nullable=True),
++        sa.Column("fingerprint", sa.String(64), nullable=False),
++        sa.Column("schema_version", sa.Integer, nullable=False),
++        sa.Column("subject_revision", sa.Uuid, nullable=False),
++        sa.Column("confirmation", JSONB, nullable=False),
++        sa.Column("result", JSONB, nullable=False),
++        sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=False),
++        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
++        sa.UniqueConstraint("actor_id", "project_id", "action", "key", name="uq_lifecycle_key"),
++        sa.UniqueConstraint("project_id", "subject_revision", name="uq_lifecycle_revision"),
++        sa.CheckConstraint("action IN ('archive','delete')", name="ck_lifecycle_action"),
++        sa.CheckConstraint(
++            "(action = 'archive' AND key IS NOT NULL AND expires_at IS NOT NULL "
++            "AND expires_at >= accepted_at + interval '24 hours') "
++            "OR (action = 'delete' AND key IS NULL AND expires_at IS NULL)",
++            name="ck_lifecycle_receipt",
++        ),
++        sa.CheckConstraint(
++            "key IS NULL OR (char_length(key) BETWEEN 16 AND 128 AND key !~ '[^ -~]')",
++            name="ck_lifecycle_key",
++        ),
++        sa.CheckConstraint(
++            "char_length(fingerprint) = 64 AND fingerprint !~ '[^0-9a-f]'",
++            name="ck_lifecycle_fingerprint",
++        ),
++        sa.CheckConstraint(
++            "jsonb_typeof(confirmation) = 'object' AND jsonb_typeof(result) = 'object'",
++            name="ck_lifecycle_objects",
++        ),
++    )
++
++
++def downgrade():
++    op.execute("LOCK TABLE project_lifecycle_records IN ACCESS EXCLUSIVE MODE")
++    if op.get_bind().scalar(sa.text("SELECT EXISTS (SELECT 1 FROM project_lifecycle_records)")):
++        raise RuntimeError("Lifecycle downgrade refused: records contains data")
++    op.drop_table("project_lifecycle_records")
+--- a/backend/src/rpb/adapters/project_commands.py
++++ b/backend/src/rpb/adapters/project_commands.py
+@@ -5,7 +5,7 @@
+ from contextlib import contextmanager
+ from datetime import datetime
+ from typing import Any
+-from uuid import UUID
++from uuid import UUID, uuid4
+ 
+ import sqlalchemy as sa
+ from sqlalchemy.dialects.postgresql import JSONB
+@@ -62,11 +62,104 @@
+ )
+ 
+ 
++lifecycle = sa.Table(
++    "project_lifecycle_records",
++    metadata,
++    sa.Column("id", sa.Uuid, primary_key=True),
++    sa.Column("actor_id", sa.Uuid, nullable=False),
++    sa.Column("project_id", sa.Uuid, nullable=False),
++    sa.ForeignKeyConstraint(
++        ["project_id", "actor_id"], ["projects.id", "projects.owner_id"], name="fk_lifecycle_owner"
++    ),
++    sa.Column("action", sa.Text, nullable=False),
++    sa.Column("key", sa.String(128, collation="C"), nullable=True),
++    sa.Column("fingerprint", sa.String(64), nullable=False),
++    sa.Column("schema_version", sa.Integer, nullable=False),
++    sa.Column("subject_revision", sa.Uuid, nullable=False),
++    sa.Column("confirmation", JSONB, nullable=False),
++    sa.Column("result", JSONB, nullable=False),
++    sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=False),
++    sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
++    sa.UniqueConstraint("actor_id", "project_id", "action", "key", name="uq_lifecycle_key"),
++    sa.UniqueConstraint("project_id", "subject_revision", name="uq_lifecycle_revision"),
++    sa.CheckConstraint("action IN ('archive','delete')", name="ck_lifecycle_action"),
++    sa.CheckConstraint(
++        "(action = 'archive' AND key IS NOT NULL AND expires_at IS NOT NULL "
++        "AND expires_at >= accepted_at + interval '24 hours') "
++        "OR (action = 'delete' AND key IS NULL AND expires_at IS NULL)",
++        name="ck_lifecycle_receipt",
++    ),
++    sa.CheckConstraint(
++        "key IS NULL OR (char_length(key) BETWEEN 16 AND 128 AND key !~ '[^ -~]')",
++        name="ck_lifecycle_key",
++    ),
++    sa.CheckConstraint(
++        "char_length(fingerprint) = 64 AND fingerprint !~ '[^0-9a-f]'",
++        name="ck_lifecycle_fingerprint",
++    ),
++    sa.CheckConstraint(
++        "jsonb_typeof(confirmation) = 'object' AND jsonb_typeof(result) = 'object'",
++        name="ck_lifecycle_objects",
++    ),
++)
++
++
+ class Transaction:
+     def __init__(
+         self, conn: Connection, actor_id: UUID, construction: ConstructionInitializer
+     ) -> None:
+         self.conn, self.actor_id, self.construction = conn, actor_id, construction
++
++    def update_metadata(
++        self, identity: UUID, data: dict[str, str], now: datetime
++    ) -> dict[str, Any]:
++        row = (
++            self.conn.execute(
++                projects.update()
++                .where(projects.c.id == identity, projects.c.owner_id == self.actor_id)
++                .values(**data, revision=uuid4(), updated_at=now)
++                .returning(projects)
++            )
++            .mappings()
++            .one()
++        )
++        return self.project_view(row)
++
++    def transition(self, identity: UUID, status: str, now: datetime) -> dict[str, Any]:
++        row = (
++            self.conn.execute(
++                projects.update()
++                .where(projects.c.id == identity, projects.c.owner_id == self.actor_id)
++                .values(
++                    status=status,
++                    authority_epoch=projects.c.authority_epoch + 1,
++                    revision=uuid4(),
++                    updated_at=now,
++                )
++                .returning(projects)
++            )
++            .mappings()
++            .one()
++        )
++        return self.project_view(row)
++
++    def find_lifecycle(self, identity: UUID, key: str) -> dict[str, Any] | None:
++        row = (
++            self.conn.execute(
++                sa.select(lifecycle).where(
++                    lifecycle.c.actor_id == self.actor_id,
++                    lifecycle.c.project_id == identity,
++                    lifecycle.c.action == "archive",
++                    lifecycle.c.key == key,
++                )
++            )
++            .mappings()
++            .first()
++        )
++        return dict(row) if row else None
++
++    def save_lifecycle(self, record: dict[str, Any]) -> None:
++        self.conn.execute(lifecycle.insert().values(**record))
+ 
+     def find_command(self, key: str) -> dict[str, Any] | None:
+         row = (
+--- a/backend/src/rpb/api/projects.py
++++ b/backend/src/rpb/api/projects.py
+@@ -1,7 +1,7 @@
+ """Project.Create/Read transport only."""
+ 
+ from datetime import UTC, datetime
+-from typing import Annotated, Any
++from typing import Annotated, Any, Literal
+ from uuid import UUID
+ 
+ from fastapi import APIRouter, Header, Query, Request, Response
+@@ -29,6 +29,41 @@
+         if not value.strip():
+             raise ValueError("blank name")
+         return value
++
++
++class RequiredWhenPresent(BaseModel):
++    @field_validator("*", mode="before")
++    @classmethod
++    def reject_null(cls, value: Any) -> Any:
++        if value is None:
++            raise ValueError("null is not supported")
++        return value
++
++
++class ProjectPatch(RequiredWhenPresent):
++    model_config = ConfigDict(extra="forbid", strict=True)
++    expected_revision: Annotated[str | None, Field(min_length=1, max_length=128)] = None
++    name: Annotated[str | None, Field(min_length=1, max_length=200)] = None
++    description: Annotated[str | None, Field(max_length=10000)] = None
++    research_scope: Annotated[str | None, Field(max_length=10000)] = None
++
++    @field_validator("name", "description", "research_scope", mode="before")
++    @classmethod
++    def trim_text(cls, value: Any) -> Any:
++        return value.strip() if isinstance(value, str) else value
++
++
++class LifecyclePreview(RequiredWhenPresent):
++    model_config = ConfigDict(extra="forbid", strict=True)
++    action: Literal["archive", "delete"]
++    expected_revision: Annotated[str | None, Field(min_length=1, max_length=128)] = None
++
++
++class LifecycleCommand(RequiredWhenPresent):
++    model_config = ConfigDict(extra="forbid", strict=True)
++    expected_revision: Annotated[str | None, Field(min_length=1, max_length=128)] = None
++    confirmation_token: Annotated[str | None, Field(min_length=1, max_length=4096)] = None
++    acknowledged_risk_ids: list[str]
+ 
+ 
+ def router_for(service: ProjectService, origin: str) -> APIRouter:
+@@ -103,4 +138,100 @@
+             "meta": {"request_id": request.state.request_id},
+         }
+ 
++    def private_write(request: Request, csrf: str | None) -> tuple[str, str]:
++        session = token(request)
++        if request.headers.get("origin") != origin or not csrf:
++            raise AccountError("PERMISSION_CSRF_REJECTED", 403)
++        return session, csrf
++
++    @router.patch("/{project_id}")
++    def update(
++        project_id: UUID,
++        body: ProjectPatch,
++        request: Request,
++        x_csrf_token: Annotated[str | None, Header()] = None,
++    ) -> dict[str, Any]:
++        session, csrf = private_write(request, x_csrf_token)
++        values = body.model_dump(exclude_unset=True)
++        revision = values.pop("expected_revision", None)
++        return {
++            "data": wire(service.update(session, csrf, project_id, revision, values)),
++            "meta": {"request_id": request.state.request_id},
++        }
++
++    @router.post("/{project_id}/action-preview")
++    def preview(
++        project_id: UUID,
++        body: LifecyclePreview,
++        request: Request,
++        x_csrf_token: Annotated[str | None, Header()] = None,
++    ) -> dict[str, Any]:
++        session, csrf = private_write(request, x_csrf_token)
++        return {
++            "data": wire(
++                service.preview(session, csrf, project_id, body.expected_revision, body.action)
++            ),
++            "meta": {"request_id": request.state.request_id},
++        }
++
++    @router.post("/{project_id}/archive")
++    def archive(
++        project_id: UUID,
++        body: LifecycleCommand,
++        request: Request,
++        x_csrf_token: Annotated[str | None, Header()] = None,
++        idempotency_key: Annotated[str | None, Header()] = None,
++    ) -> dict[str, Any]:
++        session, csrf = private_write(request, x_csrf_token)
++        if (
++            idempotency_key is None
++            or not 16 <= len(idempotency_key) <= 128
++            or any(not 32 <= ord(ch) <= 126 for ch in idempotency_key)
++        ):
++            raise AccountError("VALIDATION_BAD_REQUEST", 400)
++        result, expires = service.change_state(
++            session,
++            csrf,
++            project_id,
++            "archive",
++            body.expected_revision,
++            body.confirmation_token,
++            body.acknowledged_risk_ids,
++            idempotency_key,
++        )
++        return {
++            "data": wire(result),
++            "meta": {
++                "request_id": request.state.request_id,
++                "idempotency_expires_at": wire(expires),
++            },
++        }
++
++    @router.delete("/{project_id}", status_code=204)
++    def delete(
++        project_id: UUID,
++        request: Request,
++        expected_revision: Annotated[str | None, Query(min_length=1, max_length=128)] = None,
++        confirmation_token: Annotated[str | None, Query(min_length=1, max_length=4096)] = None,
++        acknowledged_risk_ids: Annotated[list[str], Query()] = [],
++        x_csrf_token: Annotated[str | None, Header()] = None,
++    ) -> Response:
++        session, csrf = private_write(request, x_csrf_token)
++        if set(request.query_params) - {
++            "expected_revision",
++            "confirmation_token",
++            "acknowledged_risk_ids",
++        }:
++            raise AccountError("VALIDATION_BAD_REQUEST", 400)
++        service.change_state(
++            session,
++            csrf,
++            project_id,
++            "delete",
++            expected_revision,
++            confirmation_token,
++            acknowledged_risk_ids,
++        )
++        return Response(status_code=204)
++
+     return router
+--- a/backend/src/rpb/bootstrap/business.py
++++ b/backend/src/rpb/bootstrap/business.py
+@@ -89,6 +89,8 @@
+                     return error(request, "VALIDATION_PAYLOAD_TOO_LARGE", 413)
+                 chunks.append(chunk)
+             request._body = b"".join(chunks)
++            if request.method == "DELETE" and request._body.strip():
++                return error(request, "VALIDATION_BAD_REQUEST", 400)
+         try:
+             response = await call_next(request)
+         except Exception:
+--- a/backend/src/rpb/modules/project/application/ports.py
++++ b/backend/src/rpb/modules/project/application/ports.py
+@@ -11,6 +11,12 @@
+     actor_id: UUID
+     construction: ConstructionInitializer
+ 
++    def update_metadata(
++        self, identity: UUID, data: dict[str, str], now: datetime
++    ) -> dict[str, Any]: ...
++    def transition(self, identity: UUID, status: str, now: datetime) -> dict[str, Any]: ...
++    def find_lifecycle(self, identity: UUID, key: str) -> dict[str, Any] | None: ...
++    def save_lifecycle(self, record: dict[str, Any]) -> None: ...
+     def find_command(self, key: str) -> dict[str, Any] | None: ...
+     def insert_project(self, identity: UUID, workspace: UUID, data: dict[str, str]) -> None: ...
+     def list_projects(
+--- a/backend/src/rpb/modules/project/application/service.py
++++ b/backend/src/rpb/modules/project/application/service.py
+@@ -103,3 +103,178 @@
+                 signature = hmac.new(self._cursor_key, payload.encode(), "sha256").hexdigest()
+                 next_cursor = payload + "." + signature
+             return items, next_cursor
++
++    @staticmethod
++    def require_revision(current: dict[str, Any], revision: str | None) -> None:
++        if revision is None:
++            raise AccountError("STATE_REVISION_REQUIRED", 428)
++        if str(current["revision"]) != revision:
++            raise AccountError("STATE_REVISION_CONFLICT", 412)
++
++    @staticmethod
++    def require_active(current: dict[str, Any]) -> None:
++        if current["status"] != "active":
++            raise AccountError("STATE_PROJECT_READ_ONLY", 409)
++
++    def update(
++        self, token: str, csrf: str, identity: UUID, revision: str | None, data: dict[str, str]
++    ) -> dict[str, Any]:
++        with self.uow(token, csrf) as tx:
++            current = tx.read_project(identity)
++            self.require_active(current)
++            self.require_revision(current, revision)
++            changed = {k: v for k, v in data.items() if v != current[k]}
++            return tx.update_metadata(identity, changed, self.clock()) if changed else current
++
++    @staticmethod
++    def confirmation_view(payload: dict[str, Any], signed: str) -> dict[str, Any]:
++        action = payload["action"]
++        risk = "archive_readonly" if action == "archive" else "delete_unavailable"
++        message = (
++            "归档后只读保留，不能解除归档。"
++            if action == "archive"
++            else "软删除后不能进入此项目，也不再出现在项目列表中。"
++        )
++        return {
++            "confirmation_id": payload["id"],
++            "action": action,
++            "target": {"type": "project", "id": payload["project"]},
++            "subject_revision": payload["revision"],
++            "impact_revision": payload["revision"],
++            "knowledge_version_id": None,
++            "candidate_revision": None,
++            "risks": [{"id": risk, "message": message}],
++            "expires_at": datetime.fromtimestamp(payload["expires"], UTC)
++            .isoformat()
++            .replace("+00:00", "Z"),
++            "confirmation_token": signed,
++            "affected_items": [],
++            "retained_items": [
++                {
++                    "kind": "protected_scope",
++                    "scope": "existing_content",
++                    "reason": "保留项目已有记录，本操作不物理清理资产。",
++                },
++                {
++                    "kind": "protected_scope",
++                    "scope": "shared_identity",
++                    "reason": "不删除共享论文身份。",
++                },
++                {
++                    "kind": "protected_scope",
++                    "scope": "other_projects",
++                    "reason": "不修改其他项目或用户数据。",
++                },
++                {
++                    "kind": "protected_scope",
++                    "scope": "completed_exports",
++                    "reason": "不删除已完成导出。",
++                },
++            ],
++            "blocked_reasons": [],
++        }
++
++    def preview(
++        self, token: str, csrf: str, identity: UUID, revision: str | None, action: str
++    ) -> dict[str, Any]:
++        with self.uow(token, csrf) as tx:
++            current = tx.read_project(identity)
++            self.require_active(current)
++            self.require_revision(current, revision)
++            payload = {
++                "scope": "project-lifecycle-v1",
++                "id": str(uuid4()),
++                "actor": str(tx.actor_id),
++                "project": str(identity),
++                "revision": revision,
++                "action": action,
++                "expires": int(self.clock().timestamp()) + 600,
++            }
++            raw = base64.urlsafe_b64encode(
++                json.dumps(payload, separators=(",", ":")).encode()
++            ).decode()
++            signed = raw + "." + hmac.new(self._cursor_key, raw.encode(), "sha256").hexdigest()
++            return self.confirmation_view(payload, signed)
++
++    def change_state(
++        self,
++        token: str,
++        csrf: str,
++        identity: UUID,
++        action: str,
++        revision: str | None,
++        confirmation: str | None,
++        risks: list[str],
++        key: str | None = None,
++    ) -> tuple[dict[str, Any], datetime | None]:
++        fingerprint = hashlib.sha256(
++            json.dumps(
++                [action, revision, confirmation, sorted(risks)], separators=(",", ":")
++            ).encode()
++        ).hexdigest()
++        with self.uow(token, csrf) as tx:
++            current = tx.read_project(identity)
++            if key is not None:
++                old = tx.find_lifecycle(identity, key)
++                if old:
++                    if old["schema_version"] != 1:
++                        raise AccountError("STORAGE_INTERNAL_FAILURE", 500)
++                    if old["fingerprint"] != fingerprint:
++                        raise AccountError("STATE_IDEMPOTENCY_CONFLICT", 409)
++                    return old["result"], old["expires_at"]
++            self.require_active(current)
++            self.require_revision(current, revision)
++            if not confirmation:
++                raise AccountError("STATE_CONFIRMATION_REQUIRED", 409)
++            try:
++                raw, signature = confirmation.split(".")
++                if not hmac.compare_digest(
++                    signature, hmac.new(self._cursor_key, raw.encode(), "sha256").hexdigest()
++                ):
++                    raise ValueError("signature")
++                payload = json.loads(base64.urlsafe_b64decode(raw))
++                if (
++                    payload["scope"],
++                    payload["actor"],
++                    payload["project"],
++                    payload["revision"],
++                    payload["action"],
++                ) != ("project-lifecycle-v1", str(tx.actor_id), str(identity), revision, action):
++                    raise ValueError("binding")
++                if payload["expires"] <= self.clock().timestamp():
++                    raise ValueError("expired")
++            except ValueError, TypeError, KeyError, binascii.Error, UnicodeError:
++                raise AccountError("STATE_CONFIRMATION_STALE", 409) from None
++            preview = self.confirmation_view(payload, confirmation)
++            if sorted(risks) != sorted(r["id"] for r in preview["risks"]):
++                raise AccountError("STATE_CONFIRMATION_REQUIRED", 409)
++            now = self.clock()
++            result = tx.transition(identity, "archived" if action == "archive" else "deleted", now)
++            expires = now + timedelta(hours=48) if key is not None else None
++            preview.pop("confirmation_token")
++            preview["token_digest"] = hashlib.sha256(confirmation.encode()).hexdigest()
++
++            def wire(value: Any) -> str:
++                return (
++                    value.isoformat().replace("+00:00", "Z")
++                    if isinstance(value, datetime)
++                    else str(value)
++                )
++
++            tx.save_lifecycle(
++                {
++                    "id": uuid4(),
++                    "actor_id": tx.actor_id,
++                    "project_id": identity,
++                    "action": action,
++                    "key": key,
++                    "fingerprint": fingerprint,
++                    "schema_version": 1,
++                    "subject_revision": UUID(str(revision)),
++                    "confirmation": preview,
++                    "result": json.loads(json.dumps(result, default=wire)),
++                    "accepted_at": now,
++                    "expires_at": expires,
++                }
++            )
++            return result, expires
+--- a/backend/tests/integration/conftest.py
++++ b/backend/tests/integration/conftest.py
+@@ -51,6 +51,7 @@
+ def db(storage):
+     engine, cfg = storage
+     with engine.begin() as conn:
++        conn.execute(sa.text("DELETE FROM project_lifecycle_records"))
+         conn.execute(sa.text("DELETE FROM project_create_commands"))
+         conn.execute(sa.text("DELETE FROM auth_sessions"))
+         conn.execute(sa.text("DELETE FROM construction_workspaces"))
+@@ -58,6 +59,7 @@
+         conn.execute(sa.text("DELETE FROM accounts"))
+     yield engine, cfg
+     with engine.begin() as conn:
++        conn.execute(sa.text("DELETE FROM project_lifecycle_records"))
+         conn.execute(sa.text("DELETE FROM project_create_commands"))
+         conn.execute(sa.text("DELETE FROM auth_sessions"))
+         conn.execute(sa.text("DELETE FROM construction_workspaces"))
+--- a/backend/tests/integration/test_account_auth.py
++++ b/backend/tests/integration/test_account_auth.py
+@@ -596,7 +596,7 @@
+         assert conn.scalar(sa.select(sessions.c.token_hash)) == "a" * 64
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
++            == "0005_project_lifecycle"
+         )
+ 
+ 
+--- a/backend/tests/integration/test_account_storage.py
++++ b/backend/tests/integration/test_account_storage.py
+@@ -46,7 +46,7 @@
+         assert conn.scalar(sa.select(accounts.c.id)) == identity
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
++            == "0005_project_lifecycle"
+         )
+         columns = sa.inspect(conn).get_columns("accounts")
+         assert not {"password", "plaintext_password", "session_token"} & {
+@@ -161,7 +161,7 @@
+     with engine.begin() as conn:
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
++            == "0005_project_lifecycle"
+         )
+         assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
+         conn.execute(accounts.delete())
+@@ -204,7 +204,7 @@
+         assert sa.inspect(conn).has_table("accounts")
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
++            == "0005_project_lifecycle"
+         )
+         privileges = conn.execute(
+             sa.text(
+@@ -270,5 +270,5 @@
+         assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
+-        )
++            == "0005_project_lifecycle"
++        )
+--- a/backend/tests/integration/test_project_maintenance.py
++++ b/backend/tests/integration/test_project_maintenance.py
+@@ -0,0 +1,682 @@
++"""PM01–06: committed metadata/lifecycle behavior with isolated PostgreSQL."""
++
++import time
++from concurrent.futures import ThreadPoolExecutor
++from datetime import UTC, datetime, timedelta
++from threading import Event
++from uuid import UUID, uuid4
++
++import pytest
++import sqlalchemy as sa
++from alembic.autogenerate import compare_metadata
++from alembic.migration import MigrationContext
++from test_account_auth import client
++from test_account_storage import migrate
++from test_project_commands import DATA, KEY, counts, create, service_subject, signed_in
++
++from rpb.adapters.account import accounts
++from rpb.adapters.project import construction_workspaces as cw
++from rpb.adapters.project import projects
++from rpb.adapters.project_commands import lifecycle, metadata
++from rpb.modules.account_config.application.ports import AccountError
++
++
++def subject(engine):
++    c, h = signed_in(engine)
++    r = create(
++        c,
++        h,
++        {"name": "Original", "description": "Keep description", "research_scope": "Keep scope"},
++    )
++    return c, h, r.json()["data"], r.headers["location"]
++
++
++def preview(c, h, url, project, action="archive"):
++    return c.post(
++        url + "/action-preview",
++        headers=h,
++        json={"action": action, "expected_revision": project["revision"]},
++    )
++
++
++def confirmed(value):
++    return {
++        "expected_revision": value["subject_revision"],
++        "confirmation_token": value["confirmation_token"],
++        "acknowledged_risk_ids": [r["id"] for r in value["risks"]],
++    }
++
++
++def archive(c, h, url, body, key="archive-project-key-0001"):
++    return c.post(url + "/archive", headers=h | {"Idempotency-Key": key}, json=body)
++
++
++def delete(c, h, url, body):
++    return c.delete(url, headers=h | {"Content-Type": "application/json"}, params=body)
++
++
++def test_pm01_partial_normalized_edit_noop_and_preserved_container(db):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    with engine.connect() as conn:
++        before = dict(conn.execute(sa.select(projects)).mappings().one())
++        container = dict(conn.execute(sa.select(cw)).mappings().one())
++    r = c.patch(
++        url,
++        headers=h,
++        json={
++            "expected_revision": p["revision"],
++            "name": "  " + "N" * 200 + "  ",
++            "description": "  a  b\nc  ",
++        },
++    )
++    assert r.status_code == 200
++    updated = r.json()["data"]
++    assert updated["name"] == "N" * 200 and updated["description"] == "a  b\nc"
++    assert updated["research_scope"] == p["research_scope"] and updated["revision"] != p["revision"]
++    assert c.get(url).json()["data"] == updated
++    assert (
++        c.patch(url, headers=h, json={"expected_revision": updated["revision"]}).json()["data"]
++        == updated
++    )
++    r = c.patch(url, headers=h, json={"expected_revision": updated["revision"], "description": ""})
++    assert r.json()["data"]["description"] == "" and r.json()["data"]["name"] == updated["name"]
++    with engine.connect() as conn:
++        after = dict(conn.execute(sa.select(projects)).mappings().one())
++        assert dict(conn.execute(sa.select(cw)).mappings().one()) == container
++        for field in (
++            "id",
++            "owner_id",
++            "construction_workspace_id",
++            "created_at",
++            "status",
++            "authority_epoch",
++        ):
++            assert after[field] == before[field]
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 0
++    assert counts(engine) == (1, 1, 1)
++
++
++@pytest.mark.parametrize(
++    "change",
++    [
++        {"name": None},
++        {"name": "  "},
++        {"name": "x" * 201},
++        {"description": None},
++        {"description": "x" * 10001},
++        {"research_scope": None},
++        {"research_scope": "x" * 10001},
++        {"owner_id": str(uuid4())},
++        {"status": "deleted"},
++        {"expected_revision": None},
++    ],
++)
++def test_pm01_reject_invalid_without_write(db, change):
++    c, h, p, url = subject(db[0])
++    r = c.patch(url, headers=h, json={"expected_revision": p["revision"]} | change)
++    assert r.status_code == 422
++    assert c.get(url).json()["data"] == p
++
++
++def test_pm02_permissions_revision_and_states(db):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    other, oh = signed_in(engine, "Other")
++    assert other.patch(url, headers=oh, json={"name": "No"}).status_code == 404
++    assert client(engine).patch(url, headers=h, json={"name": "No"}).status_code == 401
++    assert c.patch(url, json={"expected_revision": p["revision"], "name": "No"}).status_code == 403
++    assert c.patch(url, headers=h, json={"name": "No"}).status_code == 428
++    assert (
++        c.patch(url, headers=h, json={"expected_revision": "old", "name": "No"}).status_code == 412
++    )
++    for status, expected in [("archived", 409), ("deleted", 404)]:
++        with engine.begin() as conn:
++            conn.execute(projects.update().values(status=status))
++        assert (
++            c.patch(
++                url, headers=h, json={"expected_revision": p["revision"], "name": "No"}
++            ).status_code
++            == expected
++        )
++    with engine.begin() as conn:
++        conn.execute(projects.update().values(status="active"))
++        conn.execute(
++            accounts.update().where(accounts.c.username_key == "alice").values(enabled=False)
++        )
++    assert (
++        c.patch(url, headers=h, json={"expected_revision": p["revision"], "name": "No"}).status_code
++        == 401
++    )
++
++
++def test_pm02_concurrent_updates_have_one_winner(db):
++    engine, _ = db
++    service, token, csrf = service_subject(engine)
++    p, _ = service.create(token, csrf, KEY, DATA)
++    identity = p["id"]
++    reached, release = Event(), Event()
++    pids = []
++
++    def hold(conn, cursor, statement, parameters, context, executemany):
++        if statement.startswith("UPDATE projects"):
++            pids.append(conn.scalar(sa.text("SELECT pg_backend_pid()")))
++            reached.set()
++            assert release.wait(8)
++
++    sa.event.listen(engine, "after_cursor_execute", hold)
++    try:
++        with ThreadPoolExecutor(max_workers=2) as pool:
++            first = pool.submit(
++                service.update, token, csrf, identity, str(p["revision"]), {"name": "Winner"}
++            )
++            try:
++                assert reached.wait(5)
++                second = pool.submit(
++                    service.update, token, csrf, identity, str(p["revision"]), {"name": "Loser"}
++                )
++                with engine.connect() as observer:
++                    deadline = time.monotonic() + 5
++                    while time.monotonic() < deadline:
++                        observer.execute(sa.text("SELECT pg_stat_clear_snapshot()"))
++                        if observer.scalar(
++                            sa.text(
++                                "SELECT count(*) FROM pg_stat_activity "
++                                "WHERE :pid = ANY(pg_blocking_pids(pid))"
++                            ),
++                            {"pid": pids[0]},
++                        ):
++                            break
++                        time.sleep(0.01)
++                    else:
++                        pytest.fail("second writer did not block")
++                release.set()
++                assert first.result(timeout=8)["name"] == "Winner"
++                with pytest.raises(AccountError) as exc:
++                    second.result(timeout=8)
++                assert exc.value.code == "STATE_REVISION_CONFLICT"
++            finally:
++                release.set()
++    finally:
++        sa.event.remove(engine, "after_cursor_execute", hold)
++    assert service.read(token, identity)["name"] == "Winner"
++
++
++@pytest.mark.parametrize("action", ["archive", "delete"])
++def test_pm03_preview_has_exact_effects_and_no_business_writes(db, action):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    statements = []
++
++    def observe(conn, cursor, statement, parameters, context, executemany):
++        if statement.lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE")):
++            statements.append(statement)
++
++    sa.event.listen(engine, "before_cursor_execute", observe)
++    try:
++        first = preview(c, h, url, p, action)
++        second = preview(c, h | {"Idempotency-Key": "ignored-preview-key"}, url, p, action)
++    finally:
++        sa.event.remove(engine, "before_cursor_execute", observe)
++    assert not statements and first.status_code == second.status_code == 200
++    assert first.headers["cache-control"] == "no-store"
++    value = first.json()["data"]
++    assert set(value) == {
++        "confirmation_id",
++        "action",
++        "target",
++        "subject_revision",
++        "impact_revision",
++        "knowledge_version_id",
++        "candidate_revision",
++        "risks",
++        "expires_at",
++        "confirmation_token",
++        "affected_items",
++        "retained_items",
++        "blocked_reasons",
++    }
++    assert value["target"] == {"type": "project", "id": p["id"]}
++    assert value["subject_revision"] == value["impact_revision"] == p["revision"]
++    assert value["affected_items"] == value["blocked_reasons"] == []
++    assert value["knowledge_version_id"] is value["candidate_revision"] is None
++    assert {i["scope"] for i in value["retained_items"]} == {
++        "existing_content",
++        "shared_identity",
++        "other_projects",
++        "completed_exports",
++    }
++    assert first.json()["meta"].keys() == {"request_id"}
++    assert second.json()["data"]["confirmation_token"] != value["confirmation_token"]
++    assert c.get(url).json()["data"] == p and counts(engine) == (1, 1, 1)
++
++
++@pytest.mark.parametrize("action", ["archive", "delete"])
++def test_pm04_transition_audit_and_visibility(db, action):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    other, oh = signed_in(engine, "Other")
++    other_project = create(other, oh).json()["data"]
++    value = preview(c, h, url, p, action).json()["data"]
++    r = (
++        archive(c, h, url, confirmed(value))
++        if action == "archive"
++        else delete(c, h, url, confirmed(value))
++    )
++    assert r.status_code == (200 if action == "archive" else 204)
++    assert r.headers["cache-control"] == "no-store"
++    with engine.connect() as conn:
++        row = (
++            conn.execute(sa.select(projects).where(projects.c.id == UUID(p["id"]))).mappings().one()
++        )
++        audit = conn.execute(sa.select(lifecycle)).mappings().one()
++        assert row["status"] == ("archived" if action == "archive" else "deleted")
++        assert row["authority_epoch"] == 1 and str(row["revision"]) != p["revision"]
++        assert (
++            audit["subject_revision"] == UUID(p["revision"])
++            and audit["actor_id"] == row["owner_id"]
++        )
++        assert audit["confirmation"]["risks"] == value["risks"]
++        assert "confirmation_token" not in audit["confirmation"]
++    assert counts(engine) == (2, 2, 2)
++    assert other.get("/api/v1/projects/" + other_project["id"]).json()["data"] == other_project
++    if action == "archive":
++        archived = c.get(url).json()["data"]
++        assert archived == r.json()["data"]
++        assert preview(c, h, url, archived, "delete").status_code == 409
++        assert (
++            c.patch(
++                url, headers=h, json={"expected_revision": archived["revision"], "name": "No"}
++            ).status_code
++            == 409
++        )
++    else:
++        assert not r.content
++        assert c.get(url).status_code == 404
++        assert c.get("/api/v1/projects").json()["data"]["items"] == []
++        assert delete(c, h, url, confirmed(value)).status_code == 404
++        assert (
++            create(
++                c,
++                h,
++                {
++                    "name": "Original",
++                    "description": "Keep description",
++                    "research_scope": "Keep scope",
++                },
++            ).status_code
++            == 404
++        )
++
++
++def test_pm04_confirmation_binding_risks_and_revisions(db):
++    c, h, p, url = subject(db[0])
++    other = create(c, h, {"name": "Second"}, "second-project-key-0001").json()["data"]
++    value = preview(c, h, url, p).json()["data"]
++    body = confirmed(value)
++    assert archive(c, h, url, {"acknowledged_risk_ids": []}).status_code == 428
++    assert (
++        archive(
++            c, h, url, {"expected_revision": p["revision"], "acknowledged_risk_ids": []}
++        ).status_code
++        == 409
++    )
++    for change in [
++        {"confirmation_token": "tampered"},
++        {"acknowledged_risk_ids": []},
++        {"acknowledged_risk_ids": ["archive_readonly", "archive_readonly"]},
++        {"acknowledged_risk_ids": ["unknown"]},
++    ]:
++        assert archive(c, h, url, body | change).status_code == 409
++    assert (
++        archive(
++            c, h, "/api/v1/projects/" + other["id"], body | {"expected_revision": other["revision"]}
++        ).status_code
++        == 409
++    )
++    assert delete(c, h, url, body).status_code == 409
++    c.patch(url, headers=h, json={"expected_revision": p["revision"], "name": "New"})
++    assert archive(c, h, url, body).status_code == 412
++    assert c.get(url).json()["data"]["status"] == "active"
++
++
++def test_pm04_expiry_and_pm05_replay_after_expiry(db):
++    engine, _ = db
++    service, token, csrf = service_subject(engine)
++    now = datetime.now(UTC)
++    service.clock = lambda: now
++    p, _ = service.create(token, csrf, KEY, DATA)
++    value = service.preview(token, csrf, p["id"], str(p["revision"]), "archive")
++    args = (
++        token,
++        csrf,
++        p["id"],
++        "archive",
++        str(p["revision"]),
++        value["confirmation_token"],
++        ["archive_readonly"],
++        "archive-expiry-key-0001",
++    )
++    service.clock = lambda: now + timedelta(minutes=11)
++    with pytest.raises(AccountError) as exc:
++        service.change_state(*args)
++    assert exc.value.code == "STATE_CONFIRMATION_STALE"
++    service.clock = lambda: now
++    result, expires = service.change_state(*args)
++    service.clock = lambda: now + timedelta(days=3)
++    repeated, replay_expiry = service.change_state(*args)
++    assert (
++        str(result["id"]) == repeated["id"]
++        and repeated["status"] == "archived"
++        and replay_expiry == expires
++    )
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 1
++
++
++def test_pm05_archive_duplicate_conflict_visibility(db):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    body = confirmed(preview(c, h, url, p).json()["data"])
++    first = archive(c, h, url, body)
++    assert archive(c, h, url, body).json()["data"] == first.json()["data"]
++    assert archive(c, h, url, body | {"confirmation_token": "other"}).status_code == 409
++    assert archive(c, h, url, body, key="new-archive-key-0001").status_code == 409
++    other, oh = signed_in(engine, "Other")
++    assert archive(other, oh, url, body).status_code == 404
++    with engine.begin() as conn:
++        conn.execute(
++            projects.update().where(projects.c.id == UUID(p["id"])).values(status="deleted")
++        )
++    assert archive(c, h, url, body).status_code == 404
++
++
++@pytest.mark.parametrize("action", ["archive", "delete"])
++@pytest.mark.parametrize("failure_table", ["projects", "project_lifecycle_records"])
++def test_pm04_transaction_failure_has_no_partial_state(db, failure_table, action):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    body = confirmed(preview(c, h, url, p, action).json()["data"])
++
++    def fail(conn, cursor, statement, parameters, context, executemany):
++        if statement.startswith(("UPDATE " + failure_table, "INSERT INTO " + failure_table)):
++            raise RuntimeError("PRIVATE FAILURE")
++
++    sa.event.listen(engine, "after_cursor_execute", fail)
++    try:
++        r = archive(c, h, url, body) if action == "archive" else delete(c, h, url, body)
++        assert r.status_code == 500 and "PRIVATE" not in r.text
++    finally:
++        sa.event.remove(engine, "after_cursor_execute", fail)
++    assert c.get(url).json()["data"] == p
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 0
++    result = archive(c, h, url, body) if action == "archive" else delete(c, h, url, body)
++    assert result.status_code == (200 if action == "archive" else 204)
++
++
++def test_pm06_migration_data_preserved_and_downgrade_guard(db):
++    engine, cfg = db
++    c, h, p, url = subject(engine)
++    migrate(engine, cfg, "downgrade", "0004_project_commands")
++    assert c.get(url).json()["data"] == p
++    migrate(engine, cfg, "upgrade", "head")
++    with engine.connect() as conn:
++        assert compare_metadata(MigrationContext.configure(conn), metadata) == []
++    archive(c, h, url, confirmed(preview(c, h, url, p).json()["data"]))
++    with pytest.raises(RuntimeError, match="contains data"):
++        migrate(engine, cfg, "downgrade", "0004_project_commands")
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 1
++        assert compare_metadata(MigrationContext.configure(conn), metadata) == []
++
++
++def wait_for_blocker(engine, pid):
++    with engine.connect() as observer:
++        deadline = time.monotonic() + 5
++        while time.monotonic() < deadline:
++            observer.execute(sa.text("SELECT pg_stat_clear_snapshot()"))
++            if observer.scalar(
++                sa.text(
++                    "SELECT count(*) FROM pg_stat_activity WHERE :pid = ANY(pg_blocking_pids(pid))"
++                ),
++                {"pid": pid},
++            ):
++                return
++            time.sleep(0.01)
++    pytest.fail("competing transaction never blocked")
++
++
++@pytest.mark.parametrize("second_action", ["archive", "update", "delete", "downgrade"])
++def test_pm04_pm05_pm06_archive_commit_serializes_competitors(db, second_action):
++    engine, cfg = db
++    service, token, csrf = service_subject(engine)
++    p, _ = service.create(token, csrf, KEY, DATA)
++    a = service.preview(token, csrf, p["id"], str(p["revision"]), "archive")
++    d = service.preview(token, csrf, p["id"], str(p["revision"]), "delete")
++    args = (
++        token,
++        csrf,
++        p["id"],
++        "archive",
++        str(p["revision"]),
++        a["confirmation_token"],
++        ["archive_readonly"],
++        "archive-race-key-0001",
++    )
++    reached, release = Event(), Event()
++    pids = []
++
++    def hold(conn, cursor, statement, parameters, context, executemany):
++        if statement.startswith("INSERT INTO project_lifecycle_records"):
++            pids.append(conn.scalar(sa.text("SELECT pg_backend_pid()")))
++            reached.set()
++            assert release.wait(8)
++
++    sa.event.listen(engine, "after_cursor_execute", hold)
++    try:
++        with ThreadPoolExecutor(max_workers=2) as pool:
++            first = pool.submit(service.change_state, *args)
++            try:
++                assert reached.wait(5)
++                if second_action == "archive":
++                    second = pool.submit(service.change_state, *args)
++                elif second_action == "update":
++                    second = pool.submit(
++                        service.update,
++                        token,
++                        csrf,
++                        p["id"],
++                        str(p["revision"]),
++                        {"name": "Forbidden late write"},
++                    )
++                elif second_action == "delete":
++                    second = pool.submit(
++                        service.change_state,
++                        token,
++                        csrf,
++                        p["id"],
++                        "delete",
++                        str(p["revision"]),
++                        d["confirmation_token"],
++                        ["delete_unavailable"],
++                    )
++                else:
++                    second = pool.submit(migrate, engine, cfg, "downgrade", "0004_project_commands")
++                wait_for_blocker(engine, pids[0])
++                release.set()
++                result = first.result(timeout=8)
++                if second_action == "archive":
++                    assert second.result(timeout=8)[0]["revision"] == str(result[0]["revision"])
++                elif second_action == "downgrade":
++                    with pytest.raises(RuntimeError, match="contains data"):
++                        second.result(timeout=8)
++                else:
++                    with pytest.raises(AccountError) as exc:
++                        second.result(timeout=8)
++                    assert exc.value.code == "STATE_PROJECT_READ_ONLY"
++            finally:
++                release.set()
++    finally:
++        sa.event.remove(engine, "after_cursor_execute", hold)
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 1
++        assert conn.scalar(sa.select(projects.c.authority_epoch)) == 1
++        assert conn.scalar(sa.select(projects.c.name)) == DATA["name"]
++
++
++@pytest.mark.parametrize(
++    "change",
++    [
++        {field: None}
++        for field in [
++            "id",
++            "actor_id",
++            "project_id",
++            "action",
++            "fingerprint",
++            "schema_version",
++            "subject_revision",
++            "confirmation",
++            "result",
++            "accepted_at",
++            "key",
++            "expires_at",
++        ]
++    ]
++    + [
++        {"action": "restore"},
++        {"key": "short"},
++        {"fingerprint": "bad"},
++        {"confirmation": []},
++        {"result": []},
++        {"actor_id": uuid4()},
++    ],
++)
++def test_pm06_record_constraints_preserve_audit(db, change):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    assert archive(c, h, url, confirmed(preview(c, h, url, p).json()["data"])).status_code == 200
++    with engine.begin() as conn:
++        before = dict(conn.execute(sa.select(lifecycle)).mappings().one())
++        with pytest.raises(sa.exc.IntegrityError):
++            with conn.begin_nested():
++                conn.execute(lifecycle.update().values(**change))
++        assert dict(conn.execute(sa.select(lifecycle)).mappings().one()) == before
++
++
++def test_pm06_upgrade_ddl_failure_rolls_back_and_retry(db):
++    engine, cfg = db
++    c, h, p, url = subject(engine)
++    migrate(engine, cfg, "downgrade", "0004_project_commands")
++
++    def fail(conn, cursor, statement, parameters, context, executemany):
++        if "CREATE TABLE project_lifecycle_records" in statement:
++            raise RuntimeError("DDL injected failure")
++
++    sa.event.listen(engine, "after_cursor_execute", fail)
++    try:
++        with pytest.raises(RuntimeError, match="DDL injected"):
++            migrate(engine, cfg, "upgrade", "head")
++    finally:
++        sa.event.remove(engine, "after_cursor_execute", fail)
++    with engine.connect() as conn:
++        assert "project_lifecycle_records" not in sa.inspect(conn).get_table_names()
++        assert (
++            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
++            == "0004_project_commands"
++        )
++    assert c.get(url).json()["data"] == p
++    migrate(engine, cfg, "upgrade", "head")
++    with engine.connect() as conn:
++        assert compare_metadata(MigrationContext.configure(conn), metadata) == []
++
++
++def test_pm02_metadata_write_failure_rolls_back(db):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++
++    def fail(conn, cursor, statement, parameters, context, executemany):
++        if statement.startswith("UPDATE projects"):
++            raise RuntimeError("PRIVATE")
++
++    sa.event.listen(engine, "after_cursor_execute", fail)
++    try:
++        assert (
++            c.patch(
++                url, headers=h, json={"expected_revision": p["revision"], "name": "Rollback"}
++            ).status_code
++            == 500
++        )
++    finally:
++        sa.event.remove(engine, "after_cursor_execute", fail)
++    assert c.get(url).json()["data"] == p
++
++
++def test_pm03_preview_and_delete_reject_foreign_disabled_body_and_unknown_action(db):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    other, oh = signed_in(engine, "Other")
++    assert preview(other, oh, url, p).status_code == 404
++    assert preview(c, h, url, p, "restore").status_code == 422
++    assert c.post(url + "/action-preview", headers=h, json={"action": "archive"}).status_code == 428
++    assert preview(c, h, url, p | {"revision": "old"}).status_code == 412
++    assert (
++        c.post(
++            url + "/action-preview", json={"action": "archive", "expected_revision": p["revision"]}
++        ).status_code
++        == 403
++    )
++    body = confirmed(preview(c, h, url, p, "delete").json()["data"])
++    assert delete(other, oh, url, body).status_code == 404
++    assert (
++        c.request("DELETE", url, headers=h, params=body, json={"owner_id": "forged"}).status_code
++        == 400
++    )
++    with engine.begin() as conn:
++        conn.execute(
++            accounts.update().where(accounts.c.username_key == "alice").values(enabled=False)
++        )
++    assert preview(c, h, url, p).status_code == 401 and delete(c, h, url, body).status_code == 401
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(projects.c.status)) == "active"
++
++
++@pytest.mark.parametrize(
++    "field,length", [("name", 200), ("description", 10000), ("research_scope", 10000)]
++)
++def test_pm01_each_field_trimmed_before_length_check(db, field, length):
++    c, h, p, url = subject(db[0])
++    r = c.patch(
++        url, headers=h, json={"expected_revision": p["revision"], field: "  " + "x" * length + "  "}
++    )
++    assert r.status_code == 200 and r.json()["data"][field] == "x" * length
++    new = r.json()["data"]
++    assert (
++        c.patch(
++            url, headers=h, json={"expected_revision": new["revision"], field: "x" * length}
++        ).json()["data"]
++        == new
++    )
++
++
++def test_pm05_key_scope_and_pm06_existing_foreign_owner(db):
++    engine, _ = db
++    c, h, p, url = subject(engine)
++    second = create(c, h, {"name": "Second"}, "second-project-key-0001").json()["data"]
++    same_key = "same-key-different-projects"
++    for project, path in [(p, url), (second, "/api/v1/projects/" + second["id"])]:
++        body = confirmed(preview(c, h, path, project).json()["data"])
++        assert archive(c, h, path, body, same_key).status_code == 200
++    other, oh = signed_in(engine, "Other")
++    other_id = UUID(other.get("/api/v1/me").json()["data"]["id"])
++    with engine.begin() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 2
++        with pytest.raises(sa.exc.IntegrityError):
++            with conn.begin_nested():
++                conn.execute(
++                    lifecycle.update()
++                    .where(lifecycle.c.project_id == UUID(p["id"]))
++                    .values(actor_id=other_id)
++                )
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 2
+--- a/backend/tests/integration/test_project_maintenance_browser.py
++++ b/backend/tests/integration/test_project_maintenance_browser.py
+@@ -0,0 +1,213 @@
++"""PM07: real browser workflows and deterministic response-loss recovery."""
++
++from pathlib import Path
++
++import sqlalchemy as sa
++from playwright.sync_api import expect
++from test_browser_business import browser_app as browser_app
++from test_browser_business import login_ui, register_ui
++
++from rpb.adapters.project import projects
++from rpb.adapters.project_commands import lifecycle
++
++
++def open_project(page, base, name="Maintenance"):
++    register_ui(page, base)
++    login_ui(page)
++    page.get_by_label("项目名称", exact=True).fill(name)
++    page.get_by_role("button", name="创建 Project", exact=True).click()
++    expect(page.get_by_role("heading", name=name, exact=True)).to_be_visible()
++
++
++def test_pm07_edit_cancel_archive_readonly_and_delete(browser_app):
++    browser, base, engine, run_id = browser_app
++    page = browser.new_page(viewport={"width": 390, "height": 844})
++    open_project(page, base)
++    page.get_by_role("button", name="编辑信息", exact=True).click()
++    page.get_by_label("项目名称", exact=True).fill("Discarded")
++    page.get_by_role("button", name="取消编辑", exact=True).click()
++    expect(page.get_by_role("heading", name="Maintenance", exact=True)).to_be_visible()
++    page.get_by_role("button", name="编辑信息", exact=True).click()
++    page.get_by_label("项目名称", exact=True).fill("Edited")
++    page.get_by_label("描述", exact=True).fill("Preserved human description")
++    page.get_by_role("button", name="保存修改", exact=True).click()
++    expect(page.get_by_role("heading", name="Edited", exact=True)).to_be_visible()
++    page.reload()
++    expect(page.get_by_role("heading", name="Edited", exact=True)).to_be_visible()
++    page.get_by_role("button", name="归档项目", exact=True).click()
++    group = page.get_by_role("group", name="操作确认")
++    expect(group.get_by_role("button", name="确认执行")).to_be_disabled()
++    group.get_by_role("button", name="取消操作").click()
++    expect(group).to_have_count(0)
++    page.get_by_role("button", name="归档项目", exact=True).click()
++    group.get_by_role("checkbox").check()
++    page.wait_for_load_state("networkidle")
++    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
++    out = (
++        Path(__file__).resolve().parents[3]
++        / "docs/workorders/evidence/task022_project_maintenance_2026-10-25"
++    )
++    page.screenshot(path=str(out / f"confirmation-mobile-{run_id}.png"), full_page=True)
++    group.get_by_role("button", name="确认执行").click()
++    expect(page.get_by_text("已归档 · 只读", exact=True)).to_be_visible()
++    expect(page.get_by_role("button", name="编辑信息", exact=True)).to_have_count(0)
++    expect(page.get_by_role("button", name="删除项目", exact=True)).to_have_count(0)
++    page.get_by_role("link", name="新建项目", exact=True).click()
++    page.get_by_label("项目名称", exact=True).fill("Delete me")
++    page.get_by_role("button", name="创建 Project", exact=True).click()
++    expect(page.get_by_role("heading", name="Delete me", exact=True)).to_be_visible()
++    deleted_url = page.url
++    page.get_by_role("button", name="删除项目", exact=True).click()
++    group.get_by_role("checkbox").check()
++    group.get_by_role("button", name="确认执行").click()
++    expect(page.get_by_role("status")).to_have_text("Project 已软删除。")
++    expect(
++        page.get_by_role("region", name="我的项目").get_by_role("link", name="Delete me")
++    ).to_have_count(0)
++    page.goto(deleted_url)
++    expect(page.get_by_role("alert")).to_have_text("资源不可用。")
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 2
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 2
++    page.close()
++
++
++def test_pm07_conflict_retains_draft_and_requires_explicit_reload(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    open_project(page, base)
++    page.get_by_role("button", name="编辑信息", exact=True).click()
++    page.get_by_label("项目名称", exact=True).fill("My unsaved draft")
++    csrf = page.request.get(base + "/api/v1/auth/csrf").json()["data"]["csrf_token"]
++    with engine.connect() as conn:
++        p = conn.execute(sa.select(projects)).mappings().one()
++    r = page.request.patch(
++        base + "/api/v1/projects/" + str(p["id"]),
++        headers={"Origin": base, "X-CSRF-Token": csrf},
++        data={"expected_revision": str(p["revision"]), "name": "Other window"},
++    )
++    assert r.status == 200
++    page.get_by_role("button", name="保存修改", exact=True).click()
++    expect(page.get_by_role("alert")).to_contain_text("草稿已保留")
++    expect(page.get_by_label("项目名称", exact=True)).to_have_value("My unsaved draft")
++    expect(page.get_by_role("button", name="保存修改", exact=True)).to_be_disabled()
++    page.get_by_role("button", name="核查并加载当前内容（放弃草稿）", exact=True).click()
++    expect(page.get_by_role("heading", name="Other window", exact=True)).to_be_visible()
++    page.close()
++
++
++def test_pm07_lost_patch_and_archive_responses(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    open_project(page, base)
++    page.get_by_role("button", name="编辑信息", exact=True).click()
++    page.get_by_label("项目名称", exact=True).fill("Committed edit")
++
++    def lose_patch(route):
++        if route.request.method == "PATCH":
++            assert route.fetch().status == 200
++            route.abort()
++        else:
++            route.continue_()
++
++    page.route("**/api/v1/projects/*", lose_patch)
++    page.get_by_role("button", name="保存修改", exact=True).click()
++    expect(page.get_by_role("alert")).to_contain_text("提交结果尚未确认")
++    page.unroute("**/api/v1/projects/*")
++    page.get_by_role("button", name="核查并加载当前内容（放弃草稿）", exact=True).click()
++    expect(page.get_by_role("heading", name="Committed edit", exact=True)).to_be_visible()
++    page.get_by_role("button", name="归档项目", exact=True).click()
++    page.get_by_role("group", name="操作确认").get_by_role("checkbox").check()
++    keys = []
++
++    def lose_archive(route):
++        keys.append(route.request.headers["idempotency-key"])
++        if len(keys) == 1:
++            assert route.fetch().status == 200
++            route.abort()
++        else:
++            route.continue_()
++
++    page.route("**/archive", lose_archive)
++    page.get_by_role("button", name="确认执行", exact=True).click()
++    expect(page.get_by_role("button", name="核查原归档请求", exact=True)).to_be_enabled()
++    page.get_by_role("button", name="核查原归档请求", exact=True).click()
++    expect(page.get_by_text("已归档 · 只读", exact=True)).to_be_visible()
++    assert len(keys) == 2 and keys[0] == keys[1]
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 1
++        assert conn.scalar(sa.select(projects.c.authority_epoch)) == 1
++    page.close()
++
++
++def test_pm07_shared_cookie_change_cannot_submit_old_draft(browser_app):
++    browser, base, engine, _ = browser_app
++    context = browser.new_context()
++    page = context.new_page()
++    open_project(page, base)
++    page.get_by_role("button", name="编辑信息", exact=True).click()
++    page.get_by_label("项目名称", exact=True).fill("Wrong actor draft")
++    other = context.new_page()
++    other.goto(base + "/workspace")
++    other.get_by_role("button", name="退出登录", exact=True).click()
++    expect(other.get_by_role("heading", name="欢迎回来", exact=True)).to_be_visible()
++    register_ui(other, base, "Other", "other@example.invalid")
++    login_ui(other, "Other")
++    page.get_by_role("button", name="保存修改", exact=True).click()
++    expect(page.get_by_role("heading", name="欢迎回来", exact=True)).to_be_visible()
++    expect(page.get_by_text("Wrong actor draft", exact=True)).to_have_count(0)
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(projects.c.name)) == "Maintenance"
++    context.close()
++
++
++def test_pm07_invalid_edit_can_be_corrected_without_losing_draft(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    open_project(page, base)
++    page.get_by_role("button", name="编辑信息", exact=True).click()
++    page.get_by_label("项目名称", exact=True).fill("   ")
++    page.get_by_label("描述", exact=True).fill("Keep my description draft")
++    page.get_by_role("button", name="保存修改", exact=True).click()
++    expect(page.get_by_role("alert")).to_have_text("输入未通过校验，请修正后再保存。")
++    expect(page.get_by_role("button", name="保存修改", exact=True)).to_be_enabled()
++    expect(page.get_by_role("textbox", name="描述", exact=True)).to_have_value(
++        "Keep my description draft"
++    )
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(projects.c.name)) == "Maintenance"
++    page.get_by_label("项目名称", exact=True).fill("Corrected name")
++    page.get_by_role("button", name="保存修改", exact=True).click()
++    expect(page.get_by_role("heading", name="Corrected name", exact=True)).to_be_visible()
++    expect(page.get_by_text("Keep my description draft", exact=True)).to_be_visible()
++    page.close()
++
++
++def test_pm07_lost_delete_then_404_clears_unavailable_project(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    open_project(page, base)
++    page.get_by_role("button", name="删除项目", exact=True).click()
++    page.get_by_role("group", name="操作确认").get_by_role("checkbox").check()
++
++    def lose_delete(route):
++        if route.request.method == "DELETE":
++            assert route.fetch().status == 204
++            route.abort()
++        else:
++            route.continue_()
++
++    page.route("**/api/v1/projects/*", lose_delete)
++    page.get_by_role("button", name="确认执行", exact=True).click()
++    expect(page.get_by_role("alert")).to_contain_text("提交结果尚未确认")
++    page.get_by_role("button", name="核查并加载当前内容（放弃草稿）", exact=True).click()
++    expect(page.get_by_role("alert")).to_have_text("资源不可用。")
++    expect(page.get_by_role("region", name="当前项目")).to_have_count(0)
++    expect(page.get_by_role("group", name="操作确认")).to_have_count(0)
++    expect(page.get_by_role("heading", name="Maintenance", exact=True)).to_have_count(0)
++    expect(page.get_by_text("Project 已软删除。", exact=True)).to_have_count(0)
++    expect(page.get_by_role("region", name="我的项目").get_by_role("link")).to_have_count(0)
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(projects.c.status)) == "deleted"
++        assert conn.scalar(sa.select(sa.func.count()).select_from(lifecycle)) == 1
++    page.close()
+--- a/backend/tests/integration/test_project_storage.py
++++ b/backend/tests/integration/test_project_storage.py
+@@ -46,7 +46,7 @@
+         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
++            == "0005_project_lifecycle"
+         )
+ 
+ 
+@@ -76,6 +76,7 @@
+             "alembic_version",
+             "auth_sessions",
+             "project_create_commands",
++            "project_lifecycle_records",
+         }
+ 
+ 
+@@ -186,7 +187,7 @@
+         assert conn.scalar(sa.select(projects.c.id)) == pid
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
++            == "0005_project_lifecycle"
+         )
+         conn.execute(cw.delete())
+         conn.execute(projects.delete())
+@@ -265,7 +266,7 @@
+         assert conn.scalar(sa.select(projects.c.id)) == pid
+         assert (
+             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+-            == "0004_project_commands"
++            == "0005_project_lifecycle"
+         )
+ 
+ 
+--- a/docs/PROJECT_STATUS.md
++++ b/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.68
++文档版本：v1.69
+ 更新日期：2026-10-25
+ 适用项目大版本：v1
+ 
+@@ -37,6 +37,8 @@
+ 本轮现有实现审计与精简已完成代码及自动验证：集中CLI配置拒绝处理、复用检查文件清单、删除等价UI分支；82后端/58契约/3前端/2浏览器、构建及干净安装wheel验证通过。详见[审计记录](workorders/code_cleanup_2026-10-23.md)；保留已有和并行工作区变更，本轮精简代码现已由task005 A10在2026-10-24按SK-01–09独立审查及重新验证，见下述审核包；本轮SK-01–09已获2026-10-24用户限定接受，其他范围不扩大，不代表业务核心验收。
+ 
+ ## 3. 待完成项
++
++2026-10-25本轮：用户接受M-P0-02并授权持续实现到下一里程碑或未决设计，准确接受基线见[task021第9节](../tasks/021-project-hub.md#9-人工接受与后续授权2026-10-25)。[task022 Project基础维护](../tasks/022-project-maintenance.md)已完成S1–S7工程收口，覆盖元信息编辑、归档/软删除预览确认、原子审计/幂等与浏览器故障恢复。最终271项真实PG/HTTP/浏览器（新增60）、87后端/66契约/3前端、静态与构建通过；独立61项通过，R1/R2闭合。M-P0-03已到，提交单一验收包并等待人工接受；无新增未决设计。活跃Run终止、资产清理、完整FR008、配置/构建及生产部署仍未交付。下述旧待验收表述为历史状态。
+ 
+ 2026-10-25最新决定：用户接受最新task019验收包（含task020修复及delivery基线），M-P0-01已限定人工接受，接受摘要及无漂移核验见[task019第9节](../tasks/019-browser-milestone.md#9-最新基线人工接受2026-10-25)。下列待验收/暂停描述为历史交付状态。按本轮继续下一阶段授权，[task021 Project Hub](../tasks/021-project-hub.md)已完成S1–S7工程收口：本人项目分页列表、浏览器找回/进入/返回、失败恢复和身份隔离；19项新增与原192项合计211项真实PG/HTTP/浏览器通过，87后端/66契约/3前端、构建通过。独立20项（含19项新增）和8项契约测试通过，C01/C02闭合。M-P0-02已到，提交单一验收包，等待人工接受；未实现完整Project生命周期、配置/构建，不恢复延期项。
+ 
+--- a/docs/file_map.md
++++ b/docs/file_map.md
+@@ -1,6 +1,6 @@
+ # 项目文件功能目录
+ 
+-**文档版本**：v1.19 · 2026-10-25（Project Hub入口登记）
++**文档版本**：v1.20 · 2026-10-25（Project基础维护入口登记）
+ **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
+ 
+ ## 当前目录
+@@ -151,3 +151,6 @@
+ 
+ 
+ 本次修订 v1.19（2026-10-25）：登记本轮新增[task021](../tasks/021-project-hub.md)、`backend/tests/integration/test_project_list.py`（本人分页/权限/失败）与`backend/tests/integration/test_project_hub_browser.py`（真实浏览器列表/恢复/身份时序）。运行代码为`backend/src/rpb/`与`frontend/src/`，业务演示由`scripts/run_business_demo.py`装配；工程命令见[README](../README.md)。纠正顶部退役后“未启动实现”的过期描述，不改写历史证据。
++
++
++本次修订 v1.20（2026-10-25）：新增[task022](../tasks/022-project-maintenance.md)、`backend/migrations/versions/0005_project_lifecycle.py`（确认审计与归档回执）、`backend/tests/integration/test_project_maintenance.py`（真实PG/HTTP维护与并发/迁移）和`backend/tests/integration/test_project_maintenance_browser.py`（编辑/确认/故障恢复真实浏览器）。未交付范围仍在PROJECT_STATUS及任务单维护。
+--- a/frontend/src/BusinessApp.tsx
++++ b/frontend/src/BusinessApp.tsx
+@@ -1,7 +1,7 @@
+ import { useEffect, useRef, useState, type FormEvent } from 'react';
+ 
+ type User = { id: string; username: string; is_admin: boolean };
+-type Project = { id: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null; last_construction_at: string | null; last_activity_at: string | null };
++type Project = { id: string; revision: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null; last_construction_at: string | null; last_activity_at: string | null };
+ type ProjectInput = { name: string; description: string; research_scope: string };
+ class ApiError extends Error {
+   constructor(public status: number, public code: string, message: string) { super(message); }
+@@ -17,6 +17,7 @@
+ };
+ async function envelope<T>(url: string, init?: RequestInit): Promise<{ data: T; meta: { next_cursor: string | null; has_more: boolean } }> {
+   const response = await fetch(url, { credentials: 'same-origin', ...init });
++  if (response.status === 204) return { data: undefined as T, meta: { next_cursor: null, has_more: false } };
+   const value = await response.json();
+   if (!response.ok) throw new ApiError(response.status, value.error?.code ?? 'UNKNOWN', value.error?.message ?? '请求未完成。');
+   return value;
+@@ -24,7 +25,7 @@
+ async function json<T>(url: string, init?: RequestInit): Promise<T> {
+   return (await envelope<T>(url, init)).data;
+ }
+-async function post<T>(path: string, body: unknown, key?: string, expectedActor?: string): Promise<T> {
++async function post<T>(path: string, body: unknown, key?: string, expectedActor?: string, method = 'POST'): Promise<T> {
+   const csrf = await json<{ csrf_token: string }>('/api/v1/auth/csrf');
+   // Order is deliberate: the token binds this request to the session observed
+   // before identity validation. A later login rotation makes this token invalid.
+@@ -32,7 +33,95 @@
+     const current = await json<User>('/api/v1/me');
+     if (current.id !== expectedActor) throw new ApiError(401, 'AUTH_SESSION_INVALID', '登录账号已变化，请重新确认。');
+   }
+-  return json<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: JSON.stringify(body) });
++  return json<T>(path, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: method === 'DELETE' ? undefined : JSON.stringify(body) });
++}
++
++type LifecyclePreview = { action: 'archive' | 'delete'; subject_revision: string; confirmation_token: string; risks: { id: string; message: string }[]; retained_items: { reason: string }[] };
++function ProjectMaintenance({ project, actor, onChange, onDeleted, onUnavailable, onBusy, onAuthFailure }: {
++  project: Project; actor: string; onChange: (p: Project) => void; onDeleted: () => void; onUnavailable: () => void;
++  onBusy: (value: boolean) => void; onAuthFailure: (error: unknown) => void;
++}) {
++  const [editing, setEditing] = useState(false);
++  const [draft, setDraft] = useState<ProjectInput>({ name: project.name, description: project.description, research_scope: project.research_scope });
++  const [preview, setPreview] = useState<LifecyclePreview | null>(null);
++  const [acknowledged, setAcknowledged] = useState<string[]>([]);
++  const [pendingArchive, setPendingArchive] = useState<{ key: string; body: unknown } | null>(null);
++  const [working, setWorking] = useState(false);
++  const [error, setError] = useState('');
++  const [uncertain, setUncertain] = useState(false);
++  async function run(action: () => Promise<void>, writing = false) {
++    setWorking(true); onBusy(true); setError('');
++    try { await action(); }
++    catch (reason) {
++      if (reason instanceof ApiError && (reason.status === 401 || reason.code === 'PERMISSION_CSRF_REJECTED')) onAuthFailure(reason);
++      else if (reason instanceof ApiError && [400, 413, 415, 422, 428].includes(reason.status)) { setError('输入未通过校验，请修正后再保存。'); if (!uncertain) setPendingArchive(null); }
++      else if (reason instanceof ApiError && reason.status === 412) { setError('项目已被修改。草稿已保留，请核对最新内容后再编辑。'); setUncertain(true); }
++      else if (reason instanceof ApiError && reason.status === 404) onUnavailable();
++      else if (reason instanceof ApiError && reason.code.startsWith('STATE_CONFIRMATION_')) { setPreview(null); setPendingArchive(null); setError('确认依据已失效，请重新预览。'); }
++      else if (reason instanceof ApiError && reason.code === 'STATE_PROJECT_READ_ONLY') { setError('项目已只读，请加载当前内容。'); setUncertain(true); }
++      else { setError(writing ? '提交结果尚未确认，请先核查当前内容。' : '读取未完成，请重试。'); if (writing) setUncertain(true); }
++    } finally { setWorking(false); onBusy(false); }
++  }
++  function loadCurrent() {
++    void run(async () => {
++      const current = await json<Project>(`/api/v1/projects/${project.id}`);
++      onChange(current); setDraft({ name: current.name, description: current.description, research_scope: current.research_scope });
++      setEditing(false); setPreview(null); setPendingArchive(null); setUncertain(false);
++    });
++  }
++  function save(event: FormEvent) {
++    event.preventDefault();
++    void run(async () => {
++      const current = await post<Project>(`/api/v1/projects/${project.id}`, { ...draft, expected_revision: project.revision }, undefined, actor, 'PATCH');
++      onChange(current); setEditing(false); setUncertain(false);
++    }, true);
++  }
++  function requestPreview(action: 'archive' | 'delete') {
++    void run(async () => {
++      const result = await post<LifecyclePreview>(`/api/v1/projects/${project.id}/action-preview`, { action, expected_revision: project.revision }, undefined, actor);
++      setPreview(result); setAcknowledged([]); setEditing(false); setPendingArchive(null);
++    });
++  }
++  function confirm() {
++    if (!preview) return;
++    void run(async () => {
++      const body = { expected_revision: preview.subject_revision, confirmation_token: preview.confirmation_token, acknowledged_risk_ids: acknowledged };
++      if (preview.action === 'archive') {
++        const command = pendingArchive ?? { key: crypto.randomUUID(), body };
++        setPendingArchive(command);
++        const current = await post<Project>(`/api/v1/projects/${project.id}/archive`, command.body, command.key, actor);
++        onChange(current); setPendingArchive(null); setPreview(null); setUncertain(false);
++      } else {
++        const query = new URLSearchParams({ expected_revision: preview.subject_revision, confirmation_token: preview.confirmation_token });
++        acknowledged.forEach(id => query.append('acknowledged_risk_ids', id));
++        await post(`/api/v1/projects/${project.id}?${query}`, undefined, undefined, actor, 'DELETE');
++        onDeleted();
++      }
++    }, true);
++  }
++  return <section className="maintenance" aria-label="项目维护" aria-busy={working}>
++    {error && <p className="error" role="alert">{error}</p>}
++    {uncertain && <button disabled={working} onClick={loadCurrent}>核查并加载当前内容（放弃草稿）</button>}
++    {project.status === 'active' && !editing && !preview && !uncertain && <div className="list-pages">
++      <button disabled={working} onClick={() => { setDraft({ name: project.name, description: project.description, research_scope: project.research_scope }); setEditing(true); }}>编辑信息</button>
++      <button disabled={working} onClick={() => requestPreview('archive')}>归档项目</button>
++      <button disabled={working} onClick={() => requestPreview('delete')}>删除项目</button>
++    </div>}
++    {editing && <form onSubmit={save}>
++      <h3>编辑项目</h3>
++      <label>项目名称<input required maxLength={200} value={draft.name} disabled={working} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
++      <label>描述<textarea maxLength={10000} value={draft.description} disabled={working} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
++      <label>研究范围<textarea maxLength={10000} value={draft.research_scope} disabled={working} onChange={e => setDraft({ ...draft, research_scope: e.target.value })} /></label>
++      <div className="list-pages"><button type="submit" disabled={working || uncertain}>保存修改</button><button type="button" disabled={working} onClick={() => setEditing(false)}>取消编辑</button></div>
++    </form>}
++    {preview && <div className="confirmation" role="group" aria-label="操作确认">
++      <h3>{preview.action === 'archive' ? '确认归档' : '确认软删除'}</h3>
++      <p>将操作：{project.name}</p>
++      {preview.risks.map(r => <label className="checkbox" key={r.id}><input type="checkbox" disabled={working || !!pendingArchive} checked={acknowledged.includes(r.id)} onChange={e => setAcknowledged(e.target.checked ? [...acknowledged, r.id] : acknowledged.filter(id => id !== r.id))} />{r.message}</label>)}
++      <ul>{preview.retained_items.map((item, i) => <li key={i}>{item.reason}</li>)}</ul>
++      <div className="list-pages"><button disabled={working || acknowledged.length !== preview.risks.length || (uncertain && !pendingArchive)} onClick={confirm}>{pendingArchive ? '核查原归档请求' : '确认执行'}</button><button disabled={working || uncertain} onClick={() => { setPreview(null); setPendingArchive(null); }}>取消操作</button></div>
++    </div>}
++  </section>;
+ }
+ 
+ function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (error: unknown) => void }) {
+@@ -203,6 +292,7 @@
+         <h3>研究范围</h3><p className="preserve">{project.research_scope || '未填写'}</p>
+         <p className="knowledge-state">{project.default_knowledge_version_id ? '已有知识版本' : '尚未构建知识版本'}</p>
+         <a href={`/workspace?project=${encodeURIComponent(project.id)}`}>项目链接</a>
++        <ProjectMaintenance key={project.id} project={project} actor={user.id} onChange={setProject} onBusy={setBusy} onAuthFailure={explain} onUnavailable={() => { setProject(null); setName(''); setDescription(''); setScope(''); setNotice(''); setError('资源不可用。'); window.history.replaceState(null, '', '/workspace'); }} onDeleted={() => { setProject(null); window.history.replaceState(null, '', '/workspace'); setNotice('Project 已软删除。'); }} />
+       </section> : <section className="form-card" aria-label="新建研究项目">
+         <h2>新建 Project</h2><p className="hint">定义研究问题与范围，建立自己的研究容器。</p>
+         <form onSubmit={event => void createProject(event)}>
+--- a/frontend/src/style.css
++++ b/frontend/src/style.css
+@@ -3,3 +3,5 @@
+ .business main{max-width:820px;margin:48px auto}.business header{justify-content:space-between}.account-bar{display:flex;align-items:center;gap:16px;font-size:14px}.account-bar span{max-width:220px;overflow-wrap:anywhere}.business button{cursor:pointer;border:1px solid #c8d7cb;background:white;color:#304e3c;border-radius:8px;padding:10px 16px}.business button:disabled{cursor:wait;opacity:.6}.form-card{background:white;border:1px solid #dce4dc;border-radius:16px;padding:30px;margin-top:24px}.auth-card{max-width:480px}.auth-tabs{display:flex;gap:10px;margin-bottom:24px}.auth-tabs button[aria-pressed=true]{background:#e5eee5;border-color:#5f8067}.business form{display:grid;gap:20px}.business label{display:grid;gap:8px;font-size:14px;font-weight:600}.business input,.business textarea{font:inherit;color:#24332e;width:100%;border:1px solid #becdc0;border-radius:8px;padding:12px;background:#fcfdfb}.business input:focus,.business textarea:focus{outline:2px solid #789c80;outline-offset:2px}.business textarea{min-height:92px;resize:vertical}.business .checkbox{display:flex;align-items:center;font-weight:400}.checkbox input{width:auto}.business .primary{background:#2f5c43;color:white;border:0;font-weight:600;padding:14px 22px;justify-self:start}.hint{font-size:14px;line-height:1.7;color:#66796b;margin:0}.notice,.error{padding:12px 16px;border-radius:8px;line-height:1.6}.notice{background:#e4efe5;color:#2f613d}.error{background:#fff0eb;color:#8b422f}.project-heading{display:flex;justify-content:space-between;gap:16px;align-items:center}.business a{color:#315f43}.project-card h2{font-size:28px;overflow-wrap:anywhere}.project-card h3{font-size:14px;color:#687d6b;margin-top:28px}.preserve{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8}.knowledge-state{margin-top:30px;padding:18px;border-radius:8px;background:#f3f6ef;color:#637b61}.business h2{margin-top:0}.project-card h2{margin-top:24px}@media(max-width:600px){.business main{margin:28px auto}.form-card{padding:22px}.account-bar{gap:8px}.account-bar span{max-width:100px}.business header{height:auto;min-height:76px;flex-wrap:wrap;padding-top:16px;padding-bottom:16px}.business .primary{width:100%}.project-heading{flex-wrap:wrap}}
+ 
+ .project-list ul{list-style:none;padding:0;margin:20px 0}.project-list li{padding:18px 0;border-top:1px solid #dce4dc;overflow-wrap:anywhere}.project-list li>a{font-weight:600;margin-right:16px}.project-list li .badge{display:inline-block}.project-list .preserve{margin-bottom:0;max-height:7em;overflow:auto}.list-pages{display:flex;gap:12px;flex-wrap:wrap}
++
++.maintenance{border-top:1px solid #dce4dc;margin-top:28px;padding-top:20px}.confirmation{margin-top:20px;padding:18px;background:#f8f5ec;border-radius:10px}.confirmation label{margin:16px 0}.confirmation ul{line-height:1.8;padding-left:20px}
+--- a/scripts/run_storage_tests.py
++++ b/scripts/run_storage_tests.py
+@@ -147,7 +147,7 @@
+             ]
+         )
+         # subprocess.run waits for/kills the sole child before the database cleanup.
+-        result = subprocess.run(child, cwd=ROOT / "backend", env=env, timeout=1800 if demo else 180)
++        result = subprocess.run(child, cwd=ROOT / "backend", env=env, timeout=1800 if demo else 300)
+         return result.returncode
+     finally:
+         # Never erase the directory of a server whose stop could not be verified.
+--- a/tasks/021-project-hub.md
++++ b/tasks/021-project-hub.md
+@@ -1,6 +1,6 @@
+ # Task021：Project Hub 本人项目找回闭环
+ 
+-文档版本：v1.0
++文档版本：v1.1
+ 更新日期：2026-10-25
+ 
+ ## 1. 目标与授权
+@@ -67,3 +67,8 @@
+ 最终内容基线：证据根`delivery/source-manifest.json`及`source.tar.gz`；完整性和摘要见`receipt.json`。受审代码/测试/机器契约与独立执行摘要一致；S6后仅追加README、文件导航、任务和状态交接，未改变运行规则。文档引用/版本/差异核验见`documentation-check.json`。未提交、未跟踪文件均包含，保留全部既有工作区修改。
+ 
+ 交付状态：本片设计/代码/自动验证/工程收口完成；M-P0-01原范围已接受，M-P0-02待接受；完整FR008、配置/构建、生产部署仍未完成。
++
++
++## 9. 人工接受与后续授权（2026-10-25）
++
++用户回复“可以，继续推进项目实现，直到里程碑或出现未决策的设计时再交给我审核”，接受上一轮M-P0-02限定交付并授权继续既定P0。接受基线为task021证据根delivery，manifest SHA-256 `57fcb21b5d7642603368b7a3d2f05b524093a447c7beb198b13f6ca0b2a8edd6`；本轮逐文件核对无漂移。原等待描述保留为历史状态，当前M-P0-02已接受。后续批次见[task022](022-project-maintenance.md)。
+--- a/tasks/022-project-maintenance.md
++++ b/tasks/022-project-maintenance.md
+@@ -0,0 +1,79 @@
++# Task022：Project基础维护闭环
++
++文档版本：v1.0
++更新日期：2026-10-25
++
++## 1. 目标与授权
++
++用户接受task021并授权“继续推进项目实现，直到里程碑或出现未决策的设计时再交给我审核”。本批连续实现Project元信息编辑→归档/软删除影响预览与确认→浏览器闭环；以M-P0-03统一验收，不逐操作要求人工审核。排除私人资产物理清理、生产迁移、P1/P2及尚未实现的Run/Task终止运行验证；当前真实模型没有Run/资产，不伪造活跃任务。后续接入Run必须补齐治理终止接缝。
++
++## 2. 依据与基线
++
++01 FR008基础字段、Owner、active/archived/deleted；02 §2.3；03-01 P02a/b；04 §5–7修订、确认与幂等；04-01 §1/3；05原子提交；07锁顺序；08状态限制/审计。归档和删除仅active；归档无解除入口，归档项目不允许删除。PATCH省略保持、null拒绝、Owner/status禁止通用更新，缺修订428/冲突412；未知结果先读取，不自动换修订提交。
++
++入场task021 delivery240文件核对无漂移；快照在`docs/workorders/evidence/task022_project_maintenance_2026-10-25/before/`，全部既有修改保留。当前账号治理锁→Project行锁串行化短事务；不声称生产吞吐已验证。
++
++## 3. 修改落点
++
++Project服务/端口/PG适配器、API路由、独立生命周期审计/归档幂等记录迁移、BusinessApp、真实PG/HTTP/浏览器测试；按实际增量同步契约、README、状态。预览只签名不写业务记录；执行时原子保存确认事实、治理epoch/修订和结果，不生成伪Task。归档回执保存48小时最低承诺，已受理重放不重新校验旧token过期；删除失去可见性后返回统一404，不重放私人对象。
++
++## 4. 需求追踪
++
++- PM01 编辑：三字段部分更新、strip后长度/内部空白；省略保持、空说明清空、未知/只读/null拒绝；无字段修改不推进修订。
++- PM02 并发保护：当前Owner/账号/CSRF、active限制；缺修订428、旧修订412；并发仅一份成功，失败无部分写；不改CW/知识/其他项目。
++- PM03 预览：固定archive/delete动作、当前修订/Owner、有限有效期、影响/保留项/风险；不写业务状态或命令、无外部调用。
++- PM04 确认执行：绑定账号/目标/动作/修订/影响/风险，缺失/篡改/过期/变化拒绝；状态/epoch/新revision/审计同事务，失败回滚；归档只读不可逆、删除不可读取不物理删共享/其他对象。
++- PM05 幂等：归档同键同参只执行一次，同键异参409；先鉴权/可见性、重放保留原结果/到期元信息，不因旧revision/token过期失败；不同键重复受状态拒绝。
++- PM06 存储：升级保留既有数据、metadata一致、约束/回滚/有数据降级拒绝、真实隔离与清理。
++- PM07 UI：编辑/取消/保存、冲突保留草稿并显式重新加载、未知提交先核查、确认预览/取消/执行、归档只读/删除回列表、跨账号及失败恢复，桌面/窄屏；新功能不自动改写已接受内容。
++
++当前实现的场景追踪（测试位于`backend/tests/integration/`）：
++
++| 要求 | 可执行场景与证据边界 |
++| --- | --- |
++| PM01 | `test_pm01_partial_normalized_edit_noop_and_preserved_container`、10项`test_pm01_reject_invalid_without_write`、3项`test_pm01_each_field_trimmed_before_length_check`；保留省略字段、内部空白、清空说明、空PATCH/相同内容不推进修订、只读/未知/null拒绝 |
++| PM02 | `test_pm02_permissions_revision_and_states`、`test_pm02_concurrent_updates_have_one_winner`、`test_pm02_metadata_write_failure_rolls_back`；真实PG阻塞观察，不只比较最终值；Owner/禁用/CSRF、缺旧修订、active状态及事务失败 |
++| PM03 | 2项`test_pm03_preview_has_exact_effects_and_no_business_writes`、`test_pm03_preview_and_delete_reject_foreign_disabled_body_and_unknown_action`；完整具名字段/实际无Run的空影响集合、保留项、SQL无写入、重复预览不去重、权限/版本/动作拒绝 |
++| PM04 | 2项`test_pm04_transition_audit_and_visibility`、`test_pm04_confirmation_binding_risks_and_revisions`、`test_pm04_expiry_and_pm05_replay_after_expiry`、4项`test_pm04_transaction_failure_has_no_partial_state`；两种动作/两处写点故障均回滚、token/风险/目标/动作/修订/过期、数据保留/epoch/审计 |
++| PM05 | `test_pm05_archive_duplicate_conflict_visibility`、`test_pm05_key_scope_and_pm06_existing_foreign_owner`及4项`test_pm04_pm05_pm06_archive_commit_serializes_competitors`；归档同键重放/异参、不同Project同键独立、归档先提交后编辑/删除拒绝、并发降级不得删除已提交审计 |
++| PM06 | `test_pm06_migration_data_preserved_and_downgrade_guard`、18项`test_pm06_record_constraints_preserve_audit`、`test_pm06_upgrade_ddl_failure_rolls_back_and_retry`及上行并发降级/已存在其他Owner的复合FK拒绝；新迁移与metadata一致、旧数据保持、失败DDL回滚和禁止有数据降级 |
++| PM07 | `test_pm07_edit_cancel_archive_readonly_and_delete`、`test_pm07_conflict_retains_draft_and_requires_explicit_reload`、`test_pm07_lost_patch_and_archive_responses`、`test_pm07_shared_cookie_change_cannot_submit_old_draft`、`test_pm07_invalid_edit_can_be_corrected_without_losing_draft`、`test_pm07_lost_delete_then_404_clears_unavailable_project`；真实API响应先提交再断开，不伪造成功响应，含跨标签、明确字段拒绝可纠正、404安全空态 |
++
++默认权限仍由当前有效Owner获得，状态限制不篡改权限授予。PATCH不需确认；预览不带幂等要求；DELETE不使用幂等键，其重复或未知结果必须按当前可见性处理。三份既有存储/认证用例只更新最高迁移名与精确表集合，原回滚/数据保持断言保留。
++
++## 5. 验证计划与证据
++
++证据根`docs/workorders/evidence/task022_project_maintenance_2026-10-25/`。真实临时PG17/非管理员、HTTP/Chromium；外部LLM/Provider/邮件不调用。计划build、集成、check，独立subagent审查与复验；历史失败与修复记录保留；最终全套与独立复审均已通过，准确范围如下。
++
++- `integration-s2.log`：21通过/2失败，两项DELETE错误来自路由读取middleware私有`_body`属性；修复为统一请求边界检查，成功删除/错误确认拒绝原断言不变。
++- `integration-s2-retry.log`：26通过/1失败，为新共享cookie测试前置错误（已登录的新标签没有注册按钮）；改为另一标签明确退出再注册B，保留A旧标签草稿，不改变被测拒绝条件。
++- `integration-s3.log`：52通过/1失败，textarea可访问树和值已正确，但Playwright精确label选择器包含textarea内容而不匹配；改为可访问角色textbox/名称定位，同值断言保持。
++- 首轮全套`integration-final.log`：255通过/10失败，包括8个旧head期望、旧精确表集和上条选择器；后续`integration-delivery.log`为迭代中的全套记录。旧轮执行时源码逐步修复，不能把这些结果移交为最终基线通过；最终输入固定在`final-input/`并运行`integration-verified.log`。
++- 独立初审`/root/maintenance_review`发现R1：明确422误归为未知结果锁住可纠正草稿；R2：DELETE响应丢失后核查404仍保留旧详情。已修复并各补真实浏览器回归；不据404声称删除成功。初始独立反例和失败测试前置均保留，最终复审另记。
++- `check-final.log`：87后端/66契约/3前端，以及ruff格式/静态、mypy43源文件、TypeScript通过。`build-final.log`：wheel及前端构建通过；之后源码未再修改，仅需求测试及最高迁移/表清单期望同步。
++- 集成监督上限由180秒调整为300秒，以容纳扩展后的回归；保留超时/失败finally清理与30分钟demo限制，相关隔离清理回归仍执行。无依赖锁变化，未重新执行干净安装。
++- 当前机器契约仍是局部覆盖：PATCH沿用已有ProjectPatch，归档请求沿用ConfirmationCommand；完整预览响应和SoftDelete机器转写缺项仍开放。本片按现行04/04-01逐字段、行为与副作用验证运行，不宣称OpenAPI已完整覆盖生命周期。
++- 390px确认页面截图已目视核验，无横向溢出；其余浏览器操作使用默认桌面视口。已有Starlette测试客户端弃用警告保留。
++- `integration-verified.log`：最终271项通过（原211项回归＋本批60项新增），201.15秒，run `rpb_test_cb2bcea4d92d4d52b6ae702aaa9c3155`；API/PG停止与临时根删除成功。代码/测试绑定`final-input/`，之后只有文档交接更新。上一迭代`integration-delivery.log`仍含旧表清单失败，不冒充最终通过。
++- `independent-review-final.json`：R1/R2关闭，最终61项独立通过（本批60项及旧精确表集1项），210项未选择，59.82秒，run `rpb_test_8611470703e04ba291cfdc3e380ce5f8`，清理成功；受审源码、测试和迁移执行前后无漂移。未声称独立重跑全部271项。
++- 最后旧表清单期望同步后的限定ruff/格式检查见`lint-final.log`。文档路径/版本/差异与受审摘要核对见`documentation-check.json`；最终`delivery/`保存完整内容基线，摘要见`receipt.json`。
++
++## 6. 决策与里程碑
++
++暂无新增业务决定。M-P0-02已限定接受；M-P0-03为本批Project维护可操作闭环，S1–S7已工程收口，现提交一次人工验收。后续Run接入必须落实活跃执行的立即撤权/安全终止，不用本片无Run场景替代。
++
++## 7. 交付报告
++
++本批实现Project基础维护的API、持久事务和浏览器入口；新建独立生命周期确认/审计与归档回执表，未重写已接受的创建回执或历史迁移。普通字段编辑不会改状态、Owner、CW或知识资产，失败不部分提交。状态治理与审计同事务，软删除不物理删除Project/CW/他人记录。
++
++演示命令沿用已验证入口：先build，执行`python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@17/bin`；打开`http://127.0.0.1:8765/workspace`。注册登录→创建项目→编辑信息/取消或保存→刷新查看；归档先预览、勾选风险后确认，项目变为只读；另建项目测试软删除，确认后回列表且旧链接资源不可用。第二账号无法维护第一账号项目。数据仅存本轮临时库，结束清理，不是持久开发环境。
++
++本里程碑只涵盖当前尚无Run/资产的Project基础维护；运行中撤权/安全终止、私人资产清理、配置、知识构建、完整FR008和生产部署均未交付。预览签名为当前应用实例内存密钥，重启后重新预览，不声称多进程部署已验证。旧人工接受只绑定原基线，新维护行为由M-P0-03验收。
++
++## 8. 检查点
++
++流程v1.7；S1基线/范围、S2实现与自验、S3独立审查及R1/R2修复、S4逐PM覆盖补齐、S5保持现有UoW与独立维护组件无需额外抽象、S6最终271项/独立61项及构建/检查、S7基线和状态交接均已完成。所有操作使用本轮明确持续授权，不恢复延期或私人资产物理删除。
++
++M-P0-03工程已收口、人工验收待接受；按用户“直到里程碑或出现未决策的设计时再交给我审核”在此交接，不继续后续依赖业务。无新增未决业务设计。交付状态分别为：本片设计/代码/自动验证/工程收口完成；里程碑接受尚未发生。原M-P0-01/02接受保持各自历史基线。
++
++最终快照与`final-input/`相比仅README、文件索引、任务/状态记录追加，不改变受审行为。所有原工作区修改保留，未提交和未跟踪文件纳入快照。

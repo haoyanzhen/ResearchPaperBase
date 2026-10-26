@@ -1,0 +1,25 @@
+{
+  "changed_files": [
+    "contracts/p0.coverage.json",
+    "contracts/p0.openapi.json",
+    "docs/PROJECT_STATUS.md",
+    "docs/design/01_functional_requirements.md",
+    "docs/design/02-03_construction_assets_appendix.md",
+    "docs/design/02_domain_core.md",
+    "docs/design/03-01_ui_system_pages_appendix.md",
+    "docs/design/04-01_p0_operation_contracts.md",
+    "docs/design/06_agent_knowledge_services.md",
+    "tasks/027-source-configuration-design-gate.md"
+  ],
+  "file_links": "passed",
+  "schema_only_descriptions": [
+    "SourceWrite",
+    "SourcePatch",
+    "SourceView"
+  ],
+  "independent_reviewer": "/root/source_address_decision_review",
+  "independent_result": "no blocking semantic issues; wording recommendation fixed; no new approval gate for adapter engineering",
+  "runtime_tests": "not run: design synchronization only",
+  "previous_delivery_files": 278,
+  "application_code_changed": false
+}

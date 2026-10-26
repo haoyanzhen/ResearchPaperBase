@@ -1,0 +1,3 @@
+schema changed/removed (directional review required): ErrorTaskDetails
+schema changed/removed (directional review required): ErrorStateEventReplayUnavailable
+schema changed/removed (directional review required): TaskError

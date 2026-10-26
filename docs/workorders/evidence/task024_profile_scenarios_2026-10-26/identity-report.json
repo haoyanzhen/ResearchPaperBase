@@ -1,0 +1,51 @@
+{
+  "reviewer": "/root/scenario_identity",
+  "date": "2026-10-26",
+  "basis": [
+    "01 FR001 identity uniqueness and current account/session state",
+    "04 PATCH revision preconditions",
+    "08 personal account authorization"
+  ],
+  "scenarios": {
+    "IS01": "Both occupied-email transfers reject; explicit temporary-email sequence swaps addresses without swapping account/project ownership",
+    "IS02": "Unicode casefold collision across another username and own requested email rejects without identifying foreign account",
+    "IS03": "Two independent sessions: stale no-op rejects, explicit refresh preserves first writer, logout affects only current session",
+    "IS04": "Disable then attempted edit invalidates session; re-enable does not resurrect it; fresh login works",
+    "IS05": "Concurrent occupied-email swap behind deterministic governance lock rejects both and preserves originals",
+    "IS06": "Foreign revision grants no object authority; both accounts unchanged and response omits foreign identity"
+  },
+  "execution": {
+    "command": "PYTEST_ADDOPTS='-k identity_scenario' python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin",
+    "passed": 6,
+    "deselected": 308,
+    "seconds": 9.26,
+    "run_id": "rpb_test_5ac7215bd97040c5a5f9bfcbd2d81535",
+    "server_stopped": true,
+    "root_removed": true,
+    "log": "identity-barrier-verified.log"
+  },
+  "findings": [],
+  "artifact_hashes_after_execution": {
+    "backend/tests/integration/test_profile_identity_scenarios.py": "0d5c3c9e97766240c004a5ab9947fda8dad5997ca6e5f2d802ec994c28a3f3b8",
+    "backend/src/rpb/adapters/auth.py": "050c12c7ec85ea9d0f3da5199c34021927024bcf6b1027f01f1d4597e964f815",
+    "backend/src/rpb/api/account.py": "16d3fb8452085c480e7bbe3de366cd8e56f84fa982da093ff8eaccb1cfc11fd7",
+    "backend/src/rpb/adapters/account.py": "8e2c072882d5f13516afc5d8b78b3e28ed39a945577ea4171dac319bcdddae32"
+  },
+  "limitations": [
+    "Only six new HTTP/real-PG sequences were executed; browser journeys belong to another agent and full regressions to parent.",
+    "Disable/re-enable is explicit isolated SQL fixture state, not a claim that administrator governance is implemented.",
+    "No business database, external Provider/mail call or production verification.",
+    "Existing Starlette testclient deprecation warning retained."
+  ],
+  "initial_execution": {
+    "command": "PYTEST_ADDOPTS='-k identity_scenario' python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin",
+    "passed": 6,
+    "deselected": 302,
+    "seconds": 9.08,
+    "run_id": "rpb_test_4b49b524294b4462a84db10ff016d188",
+    "server_stopped": true,
+    "root_removed": true,
+    "log": "identity-initial.log"
+  },
+  "barrier_strengthening": "IS05 now observes exactly two distinct PIDs with ungranted advisory locks on the same ACCOUNT_GOVERNANCE_LOCK and both blocked by the held transaction before release; timeout fails. Original business assertions unchanged."
+}

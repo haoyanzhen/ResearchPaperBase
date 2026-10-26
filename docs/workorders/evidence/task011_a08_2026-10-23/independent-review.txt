@@ -1,0 +1,10 @@
+Reviewer /root/task011_review; read-only S3 review and fix re-review.
+Initial findings: R01/P2 LLM metadata draft missing named confidence/missing-fields/source evidence; R02/P2 no text location payload; C01 non-null usable text and file/Project/input consistency; clarify original Submit/Upload new request on failure.
+Final: S3修复复审通过，可提交S4；无剩余阻断项。
+Reviewed 192-file manifest SHA256: 1ac8a7f7e957acc7a80d9f9b010acbaaf6f5b57ac7b95a3f366e2f719597b53f
+R01 closed: 04-01 A08 MetadataDraftAssessment/MetadataDraftEvidence, confidence/missing fields/actual source and safe projection; 06 existing PDF local→anchored external→necessary LLM order.
+R02 closed: 06 A08.1 PreparedTextLocations/Segment, text/mapping revisions, Unicode ranges/sorting/nonoverlap; no fabricated page, temporary location not formal evidence.
+C01 closed: available/degraded nonnull text, failure null; file/Project/input consistency.
+Original Submit/Upload new request clarification and SP02/05/06 tracing verified.
+Independent checks: all current files equal reviewed manifest; snapshot verify passed; 11 authorized changed/new files; OpenAPI unchanged; structure and entry compatibility passed (47+40 operations,172 schemas,131 source rows,5/6 SSE payloads); self-checks,15 scenarios and 02-03/05/05-01/04-02/09 seams reviewed.
+Limits: documentation only; new types not transcribed, real parsers/transactions/concurrency/model quality/network safety/UI unverified. No human acceptance; S5–S7 not started.

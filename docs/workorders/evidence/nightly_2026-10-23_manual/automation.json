@@ -1,0 +1,10 @@
+{
+  "automation_id": "researchpaperbase",
+  "status": "ACTIVE",
+  "requested_schedule": "每天03:00 Asia/Shanghai",
+  "kind": "heartbeat",
+  "destination": "thread",
+  "create": "app confirmed created",
+  "view": "app rendered automation card",
+  "first_scheduled_execution": "not yet verified"
+}

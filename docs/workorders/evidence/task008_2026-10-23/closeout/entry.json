@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-23",
+  "authorization": "接受 task008 本轮 C01–C05 内部契约设计交付，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。",
+  "accepted_manifest": "delivery/source-manifest.json",
+  "accepted_manifest_sha256": "4cc7da2eec6ab3d5c95590f45a4cf8b580e61c286adcd28697c9d756aa2aefb0",
+  "head": "7ba2a2c638500eaa43f2137d16a6a0686b663630",
+  "status": " M AGENTS.md\n M README.md\n M contracts/p0.coverage.json\n M contracts/p0.openapi.json\n M docs/PROJECT_STATUS.md\n M docs/design/00-00_layer_design_file_mapping.md\n M docs/design/00_layers.md\n M docs/design/01-01-FR-reference.md\n M docs/design/02-01-domain-reference.md\n M docs/design/03-01_ui_system_pages_appendix.md\n M docs/design/03-02_ui_construction_appendix.md\n M docs/design/03-04_ui_shared_interactions_appendix.md\n M docs/design/04-01_p0_operation_contracts.md\n M docs/design/04-02_transport_task_file_contracts.md\n M docs/design/04-03_machine_contract_governance.md\n M docs/design/04_api_contracts.md\n M docs/design/05-01_internal_module_contracts.md\n M docs/design/05_application_use_cases.md\n M docs/design/06_agent_knowledge_services.md\n M docs/design/07_data_persistence.md\n M docs/design/08_security_permissions.md\n M docs/design/09_quality_observability.md\n M docs/design/10_operations_deployment.md\n M docs/design/README.md\n M docs/file_map.md\n M docs/proposals/core_rewrite_plan_2026-10-16.md\n M scripts/check_api_contracts.py\n M tasks/example.md\n?? .agents/\n?? backend/\n?? docs/IMPLEMENTATION_ENTRY.md\n?? docs/NIGHTLY_MAINTENANCE.md\n?? docs/design/00-01_engineering_baseline.md\n?? docs/workorders/a01_a03_design_closure_2026-10-21.md\n?? docs/workorders/a01_a03_review_2026-10-22.md\n?? docs/workorders/code_cleanup_2026-10-23.md\n?? docs/workorders/evidence/\n?? docs/workorders/nightly_maintenance_2026-10-23.md\n?? docs/workorders/nightly_maintenance_2026-10-23_0954.md\n?? docs/workorders/preimplementation_design_tasks_2026-10-21.md\n?? docs/workorders/project_delivery_skill_2026-10-23.md\n?? docs/workorders/skeleton_fixes_review_2026-10-22.md\n?? docs/workorders/skeleton_independent_review_2026-10-22.md\n?? docs/workorders/task005_coverage_closure_2026-10-22.md\n?? docs/workorders/task006_coverage_closure_2026-10-22.md\n?? docs/workorders/task006_independent_review_2026-10-22.md\n?? docs/workorders/task006_p2_fixes_2026-10-22.md\n?? docs/workorders/task007_a05_review_2026-10-22.md\n?? docs/workorders/task007_coverage_closure_2026-10-23.md\n?? docs/workorders/task007_fixes_2026-10-23.md\n?? docs/workorders/task007_independent_review_2026-10-23.md\n?? docs/workorders/task008_internal_contract_review_2026-10-23.md\n?? frontend/\n?? scripts/check_architecture.py\n?? scripts/delivery_snapshot.py\n?? scripts/engineering.py\n?? scripts/tests/test_material_policy_contracts.py\n?? scripts/tests/test_material_policy_coverage.py\n?? scripts/tests/test_material_policy_review_regressions.py\n?? scripts/tests/test_public_error_requirements.py\n?? scripts/tests/test_public_error_review_regressions.py\n?? scripts/tests/test_public_errors.py\n?? scripts/verify_skeleton_delivery.py\n?? tasks/004-project-create-idempotency-example.md\n?? tasks/005-engineering-skeleton.md\n?? tasks/006-public-error-recovery-contract.md\n?? tasks/007-skeleton-review-fixes.md\n?? tasks/008-material-policy-internal-contracts.md\n?? tasks/009-workspace-context-plan.md\n",
+  "existing_evidence": {
+    "entry.json": "6136d5757f214751ba0e840d9ba6ff7c7da2f028c107f01d28b3f0e7d46c86c1",
+    "check_docs.py": "085f7cd4d051cfc6716aa18a91d6585dfa519026a6698b3ef89bb7896e3b7343",
+    "delivery.patch": "2b829b48b08553d7a7da9e0abb5db986f9cf7a300254803b308b5ee09e576ee1",
+    "s2-checks.json": "3551a0572f898e9153af5e578699754a8dd616f14fc6d5c2b31aba2e5be4a90d",
+    "fixed-checks.json": "3551a0572f898e9153af5e578699754a8dd616f14fc6d5c2b31aba2e5be4a90d",
+    "reviewed-sha256.json": "bedc101fc50241d38f5aa4a58ffd1e2b1f2f9cf6361ed358aad4907a8bdef99f",
+    "recheck.json": "3551a0572f898e9153af5e578699754a8dd616f14fc6d5c2b31aba2e5be4a90d",
+    "r01-checks.json": "3551a0572f898e9153af5e578699754a8dd616f14fc6d5c2b31aba2e5be4a90d",
+    "independent-review.txt": "9591f3f9b63249654e92d8e6ddb3a342b318e2da749c83e1b75822f5f35ba44b",
+    "r02-checks.json": "3551a0572f898e9153af5e578699754a8dd616f14fc6d5c2b31aba2e5be4a90d",
+    "final-checks.json": "3551a0572f898e9153af5e578699754a8dd616f14fc6d5c2b31aba2e5be4a90d",
+    "final-preservation.json": "e14692b6b0cf083dfaf794a087cac52198f183ee1ea21cc759b477d95b300365",
+    "s3-fixed/source-manifest.json": "978ceece1dff227b987ea2d8fae44a6b41df9ab931be1131f385df0c235609a3",
+    "s3-fixed/source.tar.gz": "feb37d5aa633f2778b31ae89ef2d1405332dfcddd376b8913a6e4a8de9b61038",
+    "s3-revised/source-manifest.json": "2f29b2b6dc43f59b4b981d50cbb30665a65c595f561fba22547c1193e8c4c26d",
+    "s3-revised/source.tar.gz": "d4a2fb7b9aed344aa877d9fc1fc4511a1a1615581a946b53c2e2d09f298df434",
+    "before/source-manifest.json": "cd94e091b703cf6f070bf39c8b4a7a1f9b3b8484e9d4ca83b8f24da018463728",
+    "before/source.tar.gz": "39466101ee7995413c1b219d0459ad1670db57cac85d070593ed395b60c1f38c",
+    "delivery/source-manifest.json": "4cc7da2eec6ab3d5c95590f45a4cf8b580e61c286adcd28697c9d756aa2aefb0",
+    "delivery/source.tar.gz": "bac005760dda67c50f7a30d448c46362e6a687014218ab139105812b187d808e",
+    "s3-input/source-manifest.json": "ed7fddb9d7050adcdf217efefddcb41214c275b512f046b6093ed6eef6f4aad5",
+    "s3-input/source.tar.gz": "ee9f69d4fdd1713649ac13df63c5c5a6ae3e8e0270051e00e932703ef7191370"
+  },
+  "entry_drift": []
+}

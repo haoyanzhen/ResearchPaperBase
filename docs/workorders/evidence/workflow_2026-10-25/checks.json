@@ -1,0 +1,28 @@
+{
+  "errors": [],
+  "files": [
+    "AGENTS.md",
+    "docs/IMPLEMENTATION_ENTRY.md",
+    ".agents/skills/project-delivery/SKILL.md",
+    "tasks/example.md",
+    "docs/PROJECT_STATUS.md",
+    "docs/workorders/workflow_autonomy_2026-10-25.md"
+  ],
+  "local_links_checked": 161,
+  "stage_tables_match": true,
+  "scoped_diff_check_exit": 0,
+  "skill_validator": {
+    "exit": 0,
+    "stdout": "Skill is valid!\n",
+    "stderr": ""
+  },
+  "sha256": {
+    "AGENTS.md": "a95b392d76df825c2d20f1618e0e88a4e787488ca08223e0b0c6296b23db6a06",
+    "docs/IMPLEMENTATION_ENTRY.md": "e27057ee47ad5fabffdba98195d15e034e29302688ea8954d58c15571e893aa8",
+    ".agents/skills/project-delivery/SKILL.md": "987324598eb9ae572fa61f7b98c3a91490474b1764985ed6b0368c96f73555a2",
+    "tasks/example.md": "b2ca79c217abaa03dfc4c6f24433087a44a9ec61d85b988320fe4fef145bbff2",
+    "docs/PROJECT_STATUS.md": "c15c418cddcd06a3cc37650d7450e16ae2453e2a439d8a4794e80289163f6dad",
+    "docs/workorders/workflow_autonomy_2026-10-25.md": "86fc8967900b99d682ae91e3cf939dd3ec19285a21e299611747b41357e76005"
+  },
+  "scope": "documentation only; no application tests or business execution"
+}

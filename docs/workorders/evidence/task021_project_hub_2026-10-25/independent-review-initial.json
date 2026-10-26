@@ -1,0 +1,46 @@
+{
+  "stage": "S3 independent review, pending S4/S6 followup",
+  "scope": "task021 PH01-PH05",
+  "findings": [
+    {
+      "id": "C01",
+      "severity": "P2 coverage gap",
+      "location": "backend/tests/integration/test_project_hub_browser.py",
+      "requirement": "task021 PH05; AGENTS requirement-oriented cases",
+      "issue": "No deterministic old list response -> logout/new page -> release response case; loading state not asserted",
+      "status": "parent implementing"
+    },
+    {
+      "id": "C02",
+      "severity": "P2 contract consistency",
+      "location": "contracts/p0.openapi.json Project.List cursor",
+      "issue": "Runtime max_length=2048 absent from machine schema",
+      "status": "parent implementing"
+    }
+  ],
+  "product_findings": [],
+  "execution": {
+    "command": "PYTEST_ADDOPTS='-k ph' python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin",
+    "passed": 19,
+    "deselected": 191,
+    "seconds": 24.49,
+    "run_id": "rpb_test_98da371350d04f079cd400d161232229",
+    "server_stopped": true,
+    "root_removed": true
+  },
+  "source_hashes": {
+    "backend/src/rpb/modules/project/application/service.py": "c3ed9716b4115d2a96b364527de66c5af2bf0372548abb13664ddd9733b6f37c",
+    "backend/src/rpb/modules/project/application/ports.py": "cd27ddcc56657153698ae17e3a49274e44dcc0489e332f070a828bdb3f2167f4",
+    "backend/src/rpb/adapters/project_commands.py": "558e6226117faed46f70b6fd7f6aa24a01a8ed9ffa96d51206ee3fbdaf34ad69",
+    "backend/src/rpb/api/projects.py": "f33210f8281f5ab0ba84167172e27d58a27f8206ed70886e9f84afe4caf19ffa",
+    "frontend/src/BusinessApp.tsx": "ba4599badb2a7be85b144dee5d0f965e17371eb322793d28ebbea35f847ffb0d",
+    "frontend/src/style.css": "8d713428c88a949e83db4ddfd9b8b9f294760dc79042e6078c0324d76b576f5d",
+    "backend/tests/integration/test_project_list.py": "65f4e8533c8b5719e67a8e2e7b3638786788e531d150f9e97f8eb10fdf4c2ea5",
+    "backend/tests/integration/test_project_hub_browser.py": "df9a24714559ceb18496b65add355a44667032b90c22dfd02f45d539b19f6338"
+  },
+  "limitations": [
+    "No full regression rerun by reviewer",
+    "No production or multi-worker validation; per-service cursor key is explicitly local-process lifecycle",
+    "Existing Starlette deprecation warning remains"
+  ]
+}

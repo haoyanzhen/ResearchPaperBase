@@ -1,0 +1,18 @@
+{
+  "reviewed_manifest_sha256": "b909f9b4c732b9c84bab038987c72326d07a1537e2710e7334f5d3e8fc9e3ab3",
+  "verification": {
+    "source_sha256": {
+      "count": 64,
+      "mismatches": []
+    },
+    "artifact_sha256": {
+      "count": 6,
+      "mismatches": []
+    },
+    "evidence_sha256": {
+      "count": 15,
+      "mismatches": []
+    }
+  },
+  "status_at_review": " M AGENTS.md\n M README.md\n M docs/PROJECT_STATUS.md\n M docs/design/00-00_layer_design_file_mapping.md\n M docs/design/00_layers.md\n M docs/design/01-01-FR-reference.md\n M docs/design/02-01-domain-reference.md\n M docs/design/04-03_machine_contract_governance.md\n M docs/design/05-01_internal_module_contracts.md\n M docs/design/07_data_persistence.md\n M docs/design/09_quality_observability.md\n M docs/design/10_operations_deployment.md\n M docs/design/README.md\n M docs/file_map.md\n M docs/proposals/core_rewrite_plan_2026-10-16.md\n M tasks/example.md\n?? backend/\n?? docs/IMPLEMENTATION_ENTRY.md\n?? docs/design/00-01_engineering_baseline.md\n?? docs/workorders/a01_a03_design_closure_2026-10-21.md\n?? docs/workorders/a01_a03_review_2026-10-22.md\n?? docs/workorders/evidence/\n?? docs/workorders/preimplementation_design_tasks_2026-10-21.md\n?? frontend/\n?? scripts/check_architecture.py\n?? scripts/engineering.py\n?? scripts/verify_skeleton_delivery.py\n?? tasks/004-project-create-idempotency-example.md\n?? tasks/005-engineering-skeleton.md\n"
+}

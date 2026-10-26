@@ -1,0 +1,34 @@
+{
+  "source_sha256": {
+    "count": 64,
+    "mismatches": []
+  },
+  "artifact_sha256": {
+    "count": 6,
+    "mismatches": []
+  },
+  "evidence_sha256": {
+    "count": 15,
+    "mismatches": []
+  },
+  "initial_snapshot": {
+    "count": 106,
+    "mismatches": []
+  },
+  "reconstruction": {
+    "apply_exit": 0,
+    "stderr": "",
+    "mismatches": [
+      "backend/migrations/versions/.gitkeep"
+    ]
+  },
+  "reconstructed_migration_history": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "wheel_sources": {
+    "count": 30,
+    "mismatches": []
+  }
+}

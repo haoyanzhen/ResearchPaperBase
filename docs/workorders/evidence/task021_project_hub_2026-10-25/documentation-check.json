@@ -1,0 +1,80 @@
+{
+  "changed_files": [
+    "README.md",
+    "backend/src/rpb/adapters/project_commands.py",
+    "backend/src/rpb/api/projects.py",
+    "backend/src/rpb/modules/project/application/ports.py",
+    "backend/src/rpb/modules/project/application/service.py",
+    "backend/tests/integration/test_project_hub_browser.py",
+    "backend/tests/integration/test_project_list.py",
+    "contracts/p0.coverage.json",
+    "contracts/p0.openapi.json",
+    "docs/PROJECT_STATUS.md",
+    "docs/design/04-01_p0_operation_contracts.md",
+    "docs/file_map.md",
+    "frontend/src/BusinessApp.tsx",
+    "frontend/src/style.css",
+    "scripts/tests/test_public_errors.py",
+    "tasks/019-browser-milestone.md",
+    "tasks/020-closed-loop-operation-simulation.md",
+    "tasks/021-project-hub.md"
+  ],
+  "removed_files": [],
+  "reviewed_source_drift": [],
+  "missing_local_links": [],
+  "added_trailing_whitespace": [],
+  "document_headers": {
+    "README.md": [
+      "# Research Paper Base",
+      "",
+      "文档版本：v1.11",
+      "更新日期：2026-10-25",
+      ""
+    ],
+    "docs/PROJECT_STATUS.md": [
+      "# 项目进度与待完成项",
+      "",
+      "文档版本：v1.68",
+      "更新日期：2026-10-25",
+      "适用项目大版本：v1"
+    ],
+    "docs/design/04-01_p0_operation_contracts.md": [
+      "# API 附录：P0 操作与数据契约",
+      "",
+      "文档版本：v1.12",
+      "更新日期：2026-10-25",
+      "依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)"
+    ],
+    "docs/file_map.md": [
+      "# 项目文件功能目录",
+      "",
+      "**文档版本**：v1.19 · 2026-10-25（Project Hub入口登记）",
+      "**维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。",
+      ""
+    ],
+    "tasks/019-browser-milestone.md": [
+      "# Task019：注册登录与Project创建浏览器闭环",
+      "",
+      "文档版本：v1.3",
+      "更新日期：2026-10-25",
+      ""
+    ],
+    "tasks/020-closed-loop-operation-simulation.md": [
+      "# Task020：当前闭环全流程操作模拟",
+      "",
+      "文档版本：v1.1",
+      "更新日期：2026-10-25",
+      ""
+    ],
+    "tasks/021-project-hub.md": [
+      "# Task021：Project Hub 本人项目找回闭环",
+      "",
+      "文档版本：v1.0",
+      "更新日期：2026-10-25",
+      ""
+    ]
+  },
+  "final_integration": "211 passed / 144.10s / cleaned",
+  "independent": "20 passed (19 new + 1 existing), 8 contract passed",
+  "scope": "Links are path-checked; no claim of all Markdown anchors audited."
+}

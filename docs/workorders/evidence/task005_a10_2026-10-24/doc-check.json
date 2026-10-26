@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "stdout": "{\n  \"errors\": [],\n  \"preexisting_link_findings\": [],\n  \"checked_files\": 3,\n  \"trace_rows\": 9,\n  \"outside_scope_changes\": [],\n  \"level\": \"documentation only; no business execution\"\n}\n",
+  "stderr": ""
+}

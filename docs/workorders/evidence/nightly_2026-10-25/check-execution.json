@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "docs/workorders/evidence/nightly_2026-10-25/check_documents.py"
+  ],
+  "exit": 0,
+  "stdout": "{\n  \"files\": [\n    \"docs/design/README.md\",\n    \"docs/PROJECT_STATUS.md\",\n    \"docs/workorders/preimplementation_design_tasks_2026-10-21.md\",\n    \"tasks/013-human-content-protection-plan.md\",\n    \"docs/workorders/nightly_maintenance_2026-10-25.md\"\n  ],\n  \"local_links\": 217,\n  \"anchors\": 21,\n  \"FR_primary_assignments\": 36,\n  \"open_TRACK_assignments\": 24,\n  \"A_B_H_definitions\": 21,\n  \"hard_dependency_cycle_check\": \"passed\",\n  \"git_diff_check_exit\": 0,\n  \"errors\": [],\n  \"scope\": \"document structure and coverage routing; semantic self-review recorded in report; no business tests rerun\"\n}\n",
+  "stderr": ""
+}

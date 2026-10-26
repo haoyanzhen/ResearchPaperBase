@@ -1,0 +1,23 @@
+{
+  "references": 98,
+  "parallel_missing_targets": [
+    {
+      "source": "docs/design/04-03_machine_contract_governance.md",
+      "target": "../workorders/task007_a05_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_a05_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_a05_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_a05_review_2026-10-22.md"
+    }
+  ],
+  "git_diff_check_exit": 0,
+  "scope": "task006 references pass; any task007 targets are concurrent and pending verification"
+}

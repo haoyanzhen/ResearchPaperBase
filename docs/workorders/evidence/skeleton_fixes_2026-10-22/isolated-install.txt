@@ -1,0 +1,75 @@
++ uv sync --locked
+Using CPython 3.14.4 interpreter at: /opt/homebrew/opt/python@3.14/bin/python3.14
+Creating virtual environment at: .venv
+Resolved 37 packages in 0.90ms
+   Building research-paper-base @ file:///private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-reviewed-fixes-kdr9_zhq/backend
+      Built research-paper-base @ file:///private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-reviewed-fixes-kdr9_zhq/backend
+Prepared 1 package in 267ms
+Installed 34 packages in 36ms
+ + alembic==1.20.1
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.15.1
+ + certifi==2026.10.19
+ + click==8.5.0
+ + fastapi==0.159.1
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + idna==3.20
+ + iniconfig==2.3.1
+ + librt==0.16.0
+ + mako==1.4.3
+ + markupsafe==3.0.4
+ + mypy==1.20.2
+ + mypy-extensions==1.1.0
+ + opentelemetry-api==1.45.1
+ + packaging==26.3
+ + pathspec==1.1.1
+ + pluggy==1.7.0
+ + psycopg==3.3.6
+ + psycopg-binary==3.3.6
+ + pydantic==2.14.1
+ + pydantic-core==2.50.1
+ + pygments==2.21.0
+ + pytest==9.1.1
+ + research-paper-base==1.0.0 (from file:///private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-reviewed-fixes-kdr9_zhq/backend)
+ + ruff==0.17.1
+ + sqlalchemy==2.0.55
+ + starlette==1.9.0
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + uvicorn==0.54.0
++ npm ci --no-audit --no-fund
+
+added 108 packages in 912ms
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
++ uv venv --python 3.14 --allow-existing /private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-reviewed-fixes-kdr9_zhq/contracts/.venv
+Using CPython 3.14.4 interpreter at: /opt/homebrew/opt/python@3.14/bin/python3.14
+Creating virtual environment at: contracts/.venv
+Activate with: source contracts/.venv/bin/activate
++ uv pip install --python /private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/rpb-reviewed-fixes-kdr9_zhq/contracts/.venv/bin/python -r contracts/requirements.txt
+Using Python 3.14.4 environment at: contracts/.venv
+Resolved 18 packages in 5ms
+Installed 18 packages in 9ms
+ + attrs==26.1.0
+ + certifi==2026.10.19
+ + charset-normalizer==3.5.2
+ + idna==3.20
+ + jsonschema==4.23.0
+ + jsonschema-path==0.3.4
+ + jsonschema-specifications==2025.9.1
+ + lazy-object-proxy==1.13.0
+ + openapi-schema-validator==0.6.3
+ + openapi-spec-validator==0.7.2
+ + pathable==0.4.4
+ + pyyaml==6.0.3
+ + referencing==0.36.2
+ + requests==2.34.2
+ + rfc3339-validator==0.1.4
+ + rpds-py==2026.9.1
+ + six==1.17.0
+ + urllib3==2.8.0

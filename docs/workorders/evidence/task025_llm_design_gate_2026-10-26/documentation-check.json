@@ -1,0 +1,15 @@
+{
+  "changed": [
+    "docs/PROJECT_STATUS.md",
+    "tasks/023-account-profile.md",
+    "tasks/024-profile-user-scenarios.md"
+  ],
+  "added": [
+    "tasks/025-personal-llm-design-gate.md"
+  ],
+  "baseline_files": 252,
+  "unexpected_changes": [],
+  "broken_local_links": [],
+  "versions_checked": true,
+  "business_tests": "not rerun; documentation and design gate only"
+}

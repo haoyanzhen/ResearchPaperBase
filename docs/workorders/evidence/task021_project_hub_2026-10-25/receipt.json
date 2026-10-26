@@ -1,0 +1,29 @@
+{
+  "task": "021",
+  "date": "2026-10-25",
+  "engineering": "S1-S7 complete",
+  "milestone": "M-P0-02 awaiting human acceptance",
+  "source_count": 240,
+  "sha256": {
+    "delivery/source-manifest.json": "57fcb21b5d7642603368b7a3d2f05b524093a447c7beb198b13f6ca0b2a8edd6",
+    "delivery/source.tar.gz": "df6f69ed6736896902d3bc2d36e1ff721b49b95db265c3a9bac2453e7ad36e50",
+    "integration-final.log": "fc110ba2a0d14f9d66a8a4510f43ce9aa07675739b46e4e5b76628ec517a2d03",
+    "check-s4.log": "1021e40b958f255dfcb57bd521ed1fc0a03f216f65111c6561202aa21229a8fb",
+    "build-final.log": "ba88444ffac17bef43d3cd7c735a2ef6dc435d7096ae7f57f506c297d45a819a",
+    "independent-review-final.json": "f763334dc3951d2ed63160961073debc6469fd2149f565656bb66274edb8fdaa",
+    "documentation-check.json": "d81500c5aa0d3d04ef8efe1f4a6476010e47a70fa2f7ef203309a36d42f60002",
+    "changes.patch": "8b29bba12fa55cdc69a0b51d8a5eff8201b9886cf93ea6ebee1d9d8543be05ec"
+  },
+  "acceptance_predecessor": {
+    "milestone": "M-P0-01",
+    "user_message": "ok，接受最新的task019 验收包，继续推进下一阶段的任务",
+    "manifest_sha256": "e1d5b2f8e378ffc322a6d41410a592f820f91bddf63126f79f5c761cb7d70640"
+  },
+  "no_scope_expansion": [
+    "production deployment",
+    "full FR008",
+    "configuration",
+    "construction",
+    "P1/P2"
+  ]
+}

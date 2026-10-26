@@ -1,0 +1,37 @@
+[
+  {
+    "file": "docs/workorders/evidence/task015_b02_2026-10-25/integration-final.log",
+    "sha256": "5dfa8683737960896da09570be529a5f09a0c8d4d102b1c23549c8fa68742ae9",
+    "bytes": 457
+  },
+  {
+    "file": "docs/workorders/evidence/task015_b02_2026-10-25/check-final.log",
+    "sha256": "1b02bf52a0ed6724a7fb2c331c95fa95513426ede19e38369e628ac9aac49eda",
+    "bytes": 12837
+  },
+  {
+    "file": "docs/workorders/evidence/task015_b02_2026-10-25/build.log",
+    "sha256": "4efb57a0826152e100c4d774d142477796ae9e2fca23cdeff998c50d94388850",
+    "bytes": 645
+  },
+  {
+    "file": "docs/workorders/evidence/task015_b02_2026-10-25/clean-install.log",
+    "sha256": "0c6a63f75454d1500c820016a9a9ac02cdd7edf8cf2f07c28b1d102ffb13b642",
+    "bytes": 25511
+  },
+  {
+    "file": "docs/workorders/evidence/task015_b02_2026-10-25/regression-mutations.log",
+    "sha256": "73216b39e65d35514b9be7315d0198481969c56135431ddd1e81750406a1e185",
+    "bytes": 13727
+  },
+  {
+    "file": "docs/workorders/evidence/task014_b01_2026-10-24/all-contracts-fixed.log",
+    "sha256": "a04d5511f46238cae4202a33fe3d3fc391697c4c1dec3e04605c00519e3e95ac",
+    "bytes": 10632
+  },
+  {
+    "file": "docs/workorders/evidence/workflow_2026-10-25/independent-review.json",
+    "sha256": "3943cfcd90268ce006f6d648705fcad2eeaa904ac885227db115759d0c437ef7",
+    "bytes": 1758
+  }
+]

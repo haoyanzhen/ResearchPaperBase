@@ -1,0 +1,18 @@
+{
+  "files": [
+    "docs/PROJECT_STATUS.md",
+    "docs/design/README.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "tasks/022-project-maintenance.md",
+    "docs/workorders/nightly_maintenance_2026-10-26.md"
+  ],
+  "local_links": 225,
+  "anchors": 23,
+  "FR_primary_assignments": 36,
+  "open_TRACK_assignments": 24,
+  "A_B_H_definitions": 21,
+  "hard_dependency_cycle_check": "passed",
+  "git_diff_check_exit": 0,
+  "errors": [],
+  "scope": "document structure and coverage routing; semantic self-review recorded in report; no business tests rerun"
+}

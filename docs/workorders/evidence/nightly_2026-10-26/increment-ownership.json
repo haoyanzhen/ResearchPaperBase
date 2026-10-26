@@ -1,0 +1,434 @@
+[
+  {
+    "path": "README.md",
+    "before": "f2181dec000962a80e878d4f4cca7a6e13fff1192d157bac02eea53108d5217a",
+    "after": "27407af4a1988d9e567947b53f01d76af94c4f7df1d13f734c21c6cbb61346d5",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/migrations/env.py",
+    "before": "2144de0b01b95d5e46dcee23e6ae4fc7d26ddb7123dfee5e713969038b511767",
+    "after": "e5e2583d96a8a0aed7a86d142db98d8cdf4e8eadceb258c9d31a4fcc88d302ff",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task018_project_commands_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/migrations/versions/0002_project.py",
+    "before": null,
+    "after": "c71c6001874e6abd98246c5e6e1a709859c75f0939f10be501c05504a96565a8",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task016_project_storage_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/migrations/versions/0003_auth_sessions.py",
+    "before": null,
+    "after": "fc6be434d3c12028bb0ebb0573cefc357f7588bfc01b6341d651a33bedf78d52",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task017_auth_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/migrations/versions/0004_project_commands.py",
+    "before": null,
+    "after": "7fbb5eb015f39aa77dde563d1600e91053013d980d673330b722c469f5861395",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task018_project_commands_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/migrations/versions/0005_project_lifecycle.py",
+    "before": null,
+    "after": "87fb51d3f4300f663d02c8e94ca6b3598fa9d8414505933ac13e9db15eca03ba",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/pyproject.toml",
+    "before": "4ec43c2b1c941fa055fd1cd42c9210275a6ba11d4ff123faa01bd410e9906e86",
+    "after": "05419072121ef45e21c9ae0e4ed2588d13f4f73c4f5e99b9ea8c5220b85a7ba5",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task019_browser_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/adapters/auth.py",
+    "before": null,
+    "after": "5001d021b80b34858b32b557c81b59817447d3f5c68fd533e316bd51cfa48c2b",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task018_project_commands_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/adapters/construction.py",
+    "before": null,
+    "after": "4b7ad2eb109b42150aabc26c5894ad971d76ab045be25e7ada10cf75cb348172",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task018_project_commands_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/adapters/project.py",
+    "before": null,
+    "after": "715a3c4ded4f7ab56c599e8689df2104eca39f1ba1a996047ddde940af88fb91",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task017_auth_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/adapters/project_commands.py",
+    "before": null,
+    "after": "ffafbb1b105a2582d6ba063624bc0602d65025243c9b85cfd061d35769e04431",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/api/account.py",
+    "before": null,
+    "after": "2f2348d782f47ca7a871d997bcecb493ec87d4f8a245e69f7c5979292a0a289d",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task017_auth_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/api/projects.py",
+    "before": null,
+    "after": "2c94427dc2c5a8156afc81ef2fafd6454264b67942b83b97b678dc9615f39a5d",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/bootstrap/business.py",
+    "before": null,
+    "after": "abcf99734a917305350a0c6763f93fd2bc85d320506aa145a31aa2385015a195",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/modules/account_config/application/ports.py",
+    "before": null,
+    "after": "63e41710ccbf7690d537367c3c1e89ffc4b4dd796d7f4546b2e656126d2cbc78",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task017_auth_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/modules/account_config/application/service.py",
+    "before": null,
+    "after": "21756db3d5daf7b5efbded45b39989bd3155bd71e43662199dcfc15bbfda6a46",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task017_auth_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/modules/construction/application/ports.py",
+    "before": null,
+    "after": "cdf06b2e3b9eb001f6acc1bad77ef719a82732e74dd9f5d86168246657680f0f",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task018_project_commands_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/modules/project/application/ports.py",
+    "before": null,
+    "after": "5fdf2e6e9a68264db1d213f8aeaaeeb73e99b1104fbc93f3b31d7f2d1f0f944e",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/src/rpb/modules/project/application/service.py",
+    "before": null,
+    "after": "c86ba2c8625cff545e1ca892b321188a773da21b1f5ab1d7942ab887b69deac7",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/conftest.py",
+    "before": "75deb56d4e6a1cbdf305214139b5816d0ae574e62e13d6decae4e9513cb34027",
+    "after": "b4bee06a41ac4345e9a919d2d8f4f011c5a52cdc49cafebcd4a05f4e55f5b0f3",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_account_auth.py",
+    "before": null,
+    "after": "10f53a9dc6163c4c9c13e552553b5432567d5f11c4e52787e8643e15d6db5e79",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_account_storage.py",
+    "before": "1ef5ca6a38c23e64f75d14fabaed8a175871ffc323c163097cc6d45194fdc9e4",
+    "after": "2da0200c25fe045a6d8109ebac06ea6ad42f4b1eac41089338adb35309ae672a",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_browser_business.py",
+    "before": null,
+    "after": "694de28766d2728a9bc3289552d24602b37a8f79730a2a87406f2e1ec0d793c3",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "closure_simulation_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_fixture_cleanup.py",
+    "before": "83c56f13abaa08d50ed1b4cbcd026720e21119a65045ae18874305e4915f7190",
+    "after": "93683eafe0194c678cd648e0a0a9f5e917cef330850acc283f3e5145bc762c05",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task019_browser_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_project_commands.py",
+    "before": null,
+    "after": "a7bc705e241e61808a97205332cc3955c2cfbc3eb84532a2d632e3af5e2268b8",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "closure_simulation_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_project_hub_browser.py",
+    "before": null,
+    "after": "e3eede1bbec6e40b5cf5f9cb585c5f12bf55d5c71c9487598126c8654f6fcadb",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_project_list.py",
+    "before": null,
+    "after": "65f4e8533c8b5719e67a8e2e7b3638786788e531d150f9e97f8eb10fdf4c2ea5",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_project_maintenance.py",
+    "before": null,
+    "after": "71a6661f109170565e57ac2564040f342e16b7424b25b9c58ac682ff3b928b9a",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_project_maintenance_browser.py",
+    "before": null,
+    "after": "22b71bcc3596f1f7404db19afce2f3f2a565bc103f31ca443f9135a3efeb2368",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/integration/test_project_storage.py",
+    "before": null,
+    "after": "b38cf5f634de7ef47147dae20b464690719a5086924ef6c7a6cafc0facc3d3ea",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/tests/unit/test_business_demo.py",
+    "before": null,
+    "after": "86c3bb07daf55bcba160ebbc12808492c20aacc35342ae75ebb5752e41404ca6",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task019_browser_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "backend/uv.lock",
+    "before": "304c8ec5d51a01add79d040136e422a02aed14c03669ada356a5481996ce5e1f",
+    "after": "4225e3685ce3bb5e8bf7a428875ef779ad0a3f959c029dc449fee51dba9cf3a5",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task019_browser_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "contracts/p0.coverage.json",
+    "before": "c511066b1994b178ed5c3b434cb791d21e03aa32707e79e408107d89608f2c37",
+    "after": "99241fd63a61bc561e3d20549f1ea66e3654b069d2dc1fe2f6bd073e8bc5e6a0",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "contracts/p0.openapi.json",
+    "before": "57117f10787b72899818cf6829550cc71e77073298ac437fc6d67791cec18dfa",
+    "after": "8350d0ea64a3a5c86bce9477bca8b66f7f3a2eb601ebdabfe6fe36f464b1cc19",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "docs/PROJECT_STATUS.md",
+    "before": "77a6deca4b38baa19d86a78e1e0488b956b28f9758415529ba40294bbd59a3d4",
+    "after": "428f49b4bb7cfcf5fd8c6e2a2af0828f79f9b92add44738afbd00b1536264a89",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "docs/design/01_functional_requirements.md",
+    "before": "9c6a38aba11aa7bc3e31bd0e3252370abf224cfe550f3261ea38aa6f4498c51c",
+    "after": "c9369cf5c60c229d0da997f1eaa422d7e70352200342f91ecae02fed177f525a",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task016_project_storage_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "docs/design/04-01_p0_operation_contracts.md",
+    "before": "d7563787508e297bcab467b8c425dc8e2a21299cedd43612c83d87393267d43c",
+    "after": "1da4fc2cef5008addd86c3226f9b3bf608d4d27ea4eba9f2f114980588de85c8",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "docs/design/08_security_permissions.md",
+    "before": "6e9f265cd97567abc6172285c4bb245651d04640e9affc4cba50cfb96acf289e",
+    "after": "3227e6a2a874295004f8489df1a00f78fe592e351b3f070af4288516e676c8ce",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task016_project_storage_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "docs/file_map.md",
+    "before": "db8ec297503b4d10f22e48f41a4abdcc7f522b213b2d371bda6b2863a94822ab",
+    "after": "7ffa2427bc60f4b6839dcf1772084fda6168c755a844d94727449ec52126783d",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "frontend/src/BusinessApp.tsx",
+    "before": null,
+    "after": "fcb9defb2d26d03b52ca4aeba24db4f9b72192cafa9607e0f5af06f0e03bc730",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "frontend/src/main.tsx",
+    "before": "2fe4642d876463b795029ca172088c0aa819417c6aaedc08093c5df29e29202a",
+    "after": "9070c34abf1af733aa38d06a01a14278b855b58629b66cb04faf0629348ef80a",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task019_browser_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "frontend/src/style.css",
+    "before": "d1f5618eaa8eedd0b50effcd8e1e77d9a8d694bbbd6f9a6c0a38e8e066f9564a",
+    "after": "83a5e9829e334f260d05a86e5bfa72b0500ed80452c18a779ea797063dda965f",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "scripts/engineering.py",
+    "before": "916c97a5da7950986e1e20883ea74b978b2afe78213a9cdd2d16cee30811cf82",
+    "after": "364bd701b8df6ece8e461561bc741fd729a1878cc2b014490acdf1f8a5f35056",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task019_browser_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "scripts/run_business_demo.py",
+    "before": null,
+    "after": "2608fa458f98340cc6cd434165486079c8036cafb0571bd01a5d2afd4893c4cc",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task019_browser_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "scripts/run_storage_tests.py",
+    "before": "e3dcb40b94af1942095846988d1dd359c34381f3f6dfdcbdbeacf7575e707243",
+    "after": "bcbc9df245829ff9b80253a5f43d05d2fd6dc2d1e85003493497a4577d2dafc4",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "scripts/tests/test_public_errors.py",
+    "before": "0c7249ea90f3d3d69d44620e495f334839eabf165576fb6332d5890477ccb29c",
+    "after": "fb64e4b331d69e7d19e0623b0f897a1604fe4e7ac2076c545d7185ad575a45e2",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/015-account-storage-migration.md",
+    "before": "5a2fab0d61caf535eb435e47faff755c9d50e784c627cba25c32c380b35a8f9e",
+    "after": "95188cf27c36e018245c357cd830cc93bc4fde80b77979ee6641cd2f4a6ac708",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task016_project_storage_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/016-project-storage.md",
+    "before": null,
+    "after": "58279d6e50bbdbec787ffd651f21db36d94a338b4283fefd5ddd01207194a852",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task016_project_storage_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/017-account-authentication.md",
+    "before": null,
+    "after": "d227e6b481246e20ad4f0e5b1d660fdf073ec5caae7ac050034a026a77716492",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task017_auth_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/018-project-create-runtime.md",
+    "before": null,
+    "after": "c69aa5bc1b8bb893df83f64c640db462a7bc8fe8e60f8fa16bcc9e14c4bd6bde",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task018_project_commands_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/019-browser-milestone.md",
+    "before": null,
+    "after": "fd774e64fd0accc344f4b67be3c86d040b1f8a9f49d4053d4e9f0cf7b2a08647",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/020-closed-loop-operation-simulation.md",
+    "before": null,
+    "after": "154148c6dd129d5d4236d8f226bdf400f8f83adb4e63bd21eb5f6ef17a1133c1",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task021_project_hub_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/021-project-hub.md",
+    "before": null,
+    "after": "2599c5a5ffd75388ad968a1b7fd1d026d3738206dfb4616becd0a6125647b27f",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  },
+  {
+    "path": "tasks/022-project-maintenance.md",
+    "before": null,
+    "after": "574228e41d55e0e4618185e1c282e4232eaa47bb628705c143df156606f9b60c",
+    "current_artifact_evidence": "task022_project_maintenance_2026-10-25",
+    "earliest_matching_delivery": "task022_project_maintenance_2026-10-25",
+    "scope": "historical execution and scoped acceptance per task; no rerun"
+  }
+]

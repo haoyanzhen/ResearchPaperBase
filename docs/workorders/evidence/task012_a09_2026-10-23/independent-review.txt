@@ -1,0 +1,10 @@
+Reviewer: /root/task012_review (independent read-only subagent)
+S3修复复审通过，可提交S4；五项P2已闭合，未发现剩余阻塞项。
+R01：按kind定义资产、Chunk、作者身份；语义标签仅导航，不断言实体等价。
+R02：双向邻接导航保留原有向断言；A→M←B反例覆盖图独有召回。
+R03：BuildProfile加入extractor_config_digest，无法证明配置同一性时禁止复用。
+R04：预算扣除当前问题及工具包装，引用/路径计入证据项；独立复算2176、−168。
+R05：元数据边只作内部导航；模型GraphPath必须完整原文支持，不伪造chunk/excerpt。
+受审manifest SHA256: 20426cc77965a9762d96fdab9fd147046d079ec490926a8e7f4332d5b033b5a9
+194个归档文件全部匹配清单，复审时当前工作区无漂移。复核task012、09追踪及S2证据，未修改共享文件。
+限制：仅设计一致性及反例闭合；真实tokenizer/推理、SQL计划/事务、图扩展、权限交错、容量及质量未执行。不构成运行验收或人工接受。

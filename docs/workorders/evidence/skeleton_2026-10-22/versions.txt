@@ -1,0 +1,83 @@
++ python3 --version
+Python 3.14.4
++ uv --version
+uv 0.11.7 (Homebrew 2026-04-15 aarch64-apple-darwin)
++ node --version
+v24.22.1
++ npm --version
+11.21.1
++ uv pip list --python backend/.venv/bin/python
+Package             Version    Editable project location
+------------------- ---------- -------------------------------------------------------
+alembic             1.20.1
+annotated-doc       0.0.5
+annotated-types     0.8.0
+anyio               4.15.1
+certifi             2026.10.19
+click               8.5.0
+fastapi             0.159.1
+h11                 0.16.0
+httpcore            1.0.9
+httpx               0.28.1
+idna                3.20
+iniconfig           2.3.1
+librt               0.16.0
+mako                1.4.3
+markupsafe          3.0.4
+mypy                1.20.2
+mypy-extensions     1.1.0
+opentelemetry-api   1.45.1
+packaging           26.3
+pathspec            1.1.1
+pluggy              1.7.0
+psycopg             3.3.6
+psycopg-binary      3.3.6
+pydantic            2.14.1
+pydantic-core       2.50.1
+pygments            2.21.0
+pytest              9.1.1
+research-paper-base 1.0.0      /Users/qingyue/projects/ResearchPaperBase_codex/backend
+ruff                0.17.1
+sqlalchemy          2.0.55
+starlette           1.9.0
+typing-extensions   4.16.0
+typing-inspection   0.4.4
+uvicorn             0.54.0
++ uv pip list --python contracts/.venv/bin/python
+Package                   Version
+------------------------- ----------
+attrs                     26.1.0
+certifi                   2026.10.19
+charset-normalizer        3.5.2
+idna                      3.20
+jsonschema                4.23.0
+jsonschema-path           0.3.4
+jsonschema-specifications 2025.9.1
+lazy-object-proxy         1.13.0
+openapi-schema-validator  0.6.3
+openapi-spec-validator    0.7.2
+pathable                  0.4.4
+pyyaml                    6.0.3
+referencing               0.36.2
+requests                  2.34.2
+rfc3339-validator         0.1.4
+rpds-py                   2026.9.1
+six                       1.17.0
+urllib3                   2.8.0
++ npm ls --prefix frontend --depth=0
+rpb-workspace@1.0.0 /Users/qingyue/projects/ResearchPaperBase_codex/frontend
+├── @playwright/test@1.64.1
+├── @testing-library/jest-dom@7.0.1
+├── @testing-library/react@16.3.3
+├── @types/node@26.6.5
+├── @types/react-dom@19.3.0
+├── @types/react@19.3.0
+├── @vitejs/plugin-react@6.1.2
+├── jsdom@30.1.3
+├── react-dom@19.3.1
+├── react@19.3.1
+├── typescript@7.0.2
+├── vite@8.3.5
+└── vitest@5.0.5
+
+PostgreSQL 17: not provisioned or tested; no database connection attempted. Docker daemon unavailable at initial inspection.

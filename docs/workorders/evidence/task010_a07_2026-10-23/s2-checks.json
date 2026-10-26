@@ -1,0 +1,34 @@
+[
+  {
+    "command": [
+      "python3",
+      "docs/workorders/evidence/task010_a07_2026-10-23/check_docs.py"
+    ],
+    "exit": 0,
+    "stdout": "{\n  \"errors\": [],\n  \"preexisting_link_findings\": [],\n  \"checked_files\": 9,\n  \"trace_rows\": 12,\n  \"outside_scope_changes\": [],\n  \"level\": \"documentation only; no business execution\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/tmp/rpb-contract-check/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/task010_a07_2026-10-23/before-openapi.json"
+    ],
+    "exit": 0,
+    "stdout": "PASS: 47 request/success partial + 40 request-only operations; 172 schemas; 131 inventoried source rows; 5/6 SSE payload types\nNOT VERIFIED: runtime authorization/state/transactions, runtime error sanitization/action eligibility, TaskView/output and uncovered operations; see coverage.\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "scripts/delivery_snapshot.py",
+      "verify",
+      "--directory",
+      "docs/workorders/evidence/task010_a07_2026-10-23/s3-input"
+    ],
+    "exit": 0,
+    "stdout": "Verified complete snapshot: 190 files, including empty files.\n",
+    "stderr": ""
+  }
+]

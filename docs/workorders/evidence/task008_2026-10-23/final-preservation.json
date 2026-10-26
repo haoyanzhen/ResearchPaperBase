@@ -1,0 +1,10 @@
+{
+  "post_review_changes": [
+    "docs/PROJECT_STATUS.md",
+    "docs/workorders/task008_internal_contract_review_2026-10-23.md",
+    "tasks/008-material-policy-internal-contracts.md"
+  ],
+  "design_unchanged": true,
+  "delivery_workspace_matches": true,
+  "files": 188
+}

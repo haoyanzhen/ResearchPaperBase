@@ -1,0 +1,506 @@
+{
+  "document_version": "v1.0",
+  "date": "2026-10-21",
+  "head": "7ba2a2c638500eaa43f2137d16a6a0686b663630",
+  "review_level": "agent-scoped-review; human-review-not-recorded",
+  "scope": "A01-A03 navigation, engineering decisions and review process; not complete semantic/API/runtime acceptance",
+  "initial_status": " M docs/PROJECT_STATUS.md\n M docs/file_map.md\n?? docs/workorders/preimplementation_design_tasks_2026-10-21.md\n",
+  "inputs": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "908e3c966577afaf0d5c3651c6658e2a61b84792ce93d788c75ddc2f2f90e51f",
+      "bytes": 5486,
+      "head_blob": "1382c4afebf04fed25b292024f7ef7d4c87bf5fc"
+    },
+    {
+      "path": "README.md",
+      "sha256": "98435871a7d571e45f50330d1796ca3b7db0d4df270deacc793cebcb3f696e61",
+      "bytes": 2434,
+      "head_blob": "f38219ac44084925a9e176d50c5f48a3d2db8396"
+    },
+    {
+      "path": "contracts/p0.coverage.json",
+      "sha256": "ed15d8e12fa284b22d22470bdd9fa502871169dfab879c56a765209cbdfda09c",
+      "bytes": 63122,
+      "head_blob": "61399f1657444f5d79667cd158cee03e94b191cf"
+    },
+    {
+      "path": "contracts/p0.openapi.json",
+      "sha256": "507496efe354fc66b40f59cd7fb9131482f6cb50282512cd5eaa3c667acf8110",
+      "bytes": 224429,
+      "head_blob": "2166ef00fafc15bf030892c299396c69bfcccd52"
+    },
+    {
+      "path": "contracts/requirements.txt",
+      "sha256": "3f10b705081fa81ff1b27a5627f7001b97991a883f3dc684b27fbea8c94bbbd1",
+      "bytes": 49,
+      "head_blob": "46a1d65131ced67755d3fd773ffa6f45c39bbe87"
+    },
+    {
+      "path": "docs/PROJECT_STATUS.md",
+      "sha256": "9e052252ece2f3a25f3313ee3022bd689c2dfcd722f9299802291d3d58be2193",
+      "bytes": 16898,
+      "head_blob": "3dcfa7e1e93de888022bc2c2352f080828f3940b"
+    },
+    {
+      "path": "docs/design/00-00_layer_design_file_mapping.md",
+      "sha256": "c64082d783c0fbc5518a8f8b57c4d19ff4026dd1d95bbda447bf27bb2a5b7619",
+      "bytes": 7207,
+      "head_blob": "b619319fc54ffbf9966cba8a3ba7e1286976e7e6"
+    },
+    {
+      "path": "docs/design/00_layers.md",
+      "sha256": "ee69adc44170534d9cca4a302cfff24a6c3b152578a643647c5b7b27225d35e0",
+      "bytes": 21078,
+      "head_blob": "05f600353551198e69419d5e453b83b21468d75b"
+    },
+    {
+      "path": "docs/design/01-01-FR-reference.md",
+      "sha256": "5a5d7c2cf43b126ad8151c5a1781853ca2b6f5d9892eaa6ff558ef1bec4496a8",
+      "bytes": 25308,
+      "head_blob": "665f170e3246f83310b1d57c060a95c34967c058"
+    },
+    {
+      "path": "docs/design/013-graph-choose.md",
+      "sha256": "15ddbb1c004b0f3b800c35c89eea30906a7cafabf046e1f713f4c9e1300b589f",
+      "bytes": 18369,
+      "head_blob": "5d352ae899c93d78990ed849945618170d438910"
+    },
+    {
+      "path": "docs/design/01_functional_requirements.md",
+      "sha256": "9c6a38aba11aa7bc3e31bd0e3252370abf224cfe550f3261ea38aa6f4498c51c",
+      "bytes": 171045,
+      "head_blob": "ec4ad5027695cc8b2c570137e5061c61256f1db8"
+    },
+    {
+      "path": "docs/design/02-01-domain-reference.md",
+      "sha256": "95beab20500dfebede93d6eb0e25f656499634bcdd2932c852072e901d666704",
+      "bytes": 22981,
+      "head_blob": "b83cbbf7d202e740a558b9aff1c789d3f81018af"
+    },
+    {
+      "path": "docs/design/02-02_construction_versioning_appendix.md",
+      "sha256": "8608d3769e653701e15461b9a4aea135361ea7edd8183e0c4efb2e1c87e13335",
+      "bytes": 70276,
+      "head_blob": "33ad5d9f99f667f2c012656671ab1976de0fe523"
+    },
+    {
+      "path": "docs/design/02-03_construction_assets_appendix.md",
+      "sha256": "bea013ba8b2a6a2c1ae39b2cf1dade2ff9347dcc3ba9ca4b0da9e6017c64dc60",
+      "bytes": 16936,
+      "head_blob": "347d1ea6e1de614b763c625a477ae4dce27e04eb"
+    },
+    {
+      "path": "docs/design/02-04_run_recovery_appendix.md",
+      "sha256": "5359d552a104941ffcdd3225c5f98356dc423dc3a7bbe581cac1a1e172b1b8fd",
+      "bytes": 11038,
+      "head_blob": "c7bd471a965ee0ef073a6f779c57864610ad7a61"
+    },
+    {
+      "path": "docs/design/02_domain_core.md",
+      "sha256": "efa193ee0340fe264efa5431039b48da31bd5c42942ee4867effbbff6a268cbf",
+      "bytes": 59181,
+      "head_blob": "baa62d147a4b775bd0af7ab99733dd4a701ae339"
+    },
+    {
+      "path": "docs/design/03-01_ui_system_pages_appendix.md",
+      "sha256": "e34438c45a7f31810546413af812a8764c80be1e206b4501ef81d94ca2695f55",
+      "bytes": 36678,
+      "head_blob": "a5ef40ce3e88ec03758ef71bdea0c5b95699a50b"
+    },
+    {
+      "path": "docs/design/03-02_ui_construction_appendix.md",
+      "sha256": "97f310385595c2d4b9d8cf1771c7f2748451f27cd6bf35d0501c4b68cec02838",
+      "bytes": 33258,
+      "head_blob": "a65240d518e1fb8bda0675fdcf26751229fe306e"
+    },
+    {
+      "path": "docs/design/03-03_ui_research_review_appendix.md",
+      "sha256": "084192051c884ccc56721b1b76da42ac5a5d3cb7a1fca57f3998ed0c171f965b",
+      "bytes": 19456,
+      "head_blob": "abf600c2ff36f381ad1902dc620fcb42cce6ede7"
+    },
+    {
+      "path": "docs/design/03-04_ui_shared_interactions_appendix.md",
+      "sha256": "a37db4c2dd76f7837f756fa40e814e8b3b202605541e155944c32fbb46365168",
+      "bytes": 22448,
+      "head_blob": "2e449da924d9daac82d10a63f18ca7ad9c60186a"
+    },
+    {
+      "path": "docs/design/03_ui_workspace.md",
+      "sha256": "db9c64685bb0cdf71d0a5afde2026ce702d4b2a58c255d12b2d9ec435ba94403",
+      "bytes": 26606,
+      "head_blob": "39551a00765800701e90436a7ae1425b1e91801a"
+    },
+    {
+      "path": "docs/design/04-01_p0_operation_contracts.md",
+      "sha256": "2d2f791b647edc7d5affd194b2fd8ba529ca01ee8c47b9e325a79976c9d34429",
+      "bytes": 70727,
+      "head_blob": "9feb9c0c8578511c2761f93c0f3809b77cb57554"
+    },
+    {
+      "path": "docs/design/04-02_transport_task_file_contracts.md",
+      "sha256": "dd45e177573c956d29223f2f28b7b1302848e1672c7f699e3db573003f7c61b5",
+      "bytes": 30117,
+      "head_blob": "d49075126683c09a6adab0e1823989d8fb208a25"
+    },
+    {
+      "path": "docs/design/04-03_machine_contract_governance.md",
+      "sha256": "5b412783bd2294e032271b9be4434b451ef1f83de7bedfe85fe0028ac04677f8",
+      "bytes": 6664,
+      "head_blob": "b0e8dca6a7a37c831a644dd6e10538fce66216e5"
+    },
+    {
+      "path": "docs/design/04_api_contracts.md",
+      "sha256": "473a3f0499a3b3bea7e07151b847aa97cb36e5a38f525722baa776c79c809c2a",
+      "bytes": 25039,
+      "head_blob": "b6904cf77ed221581ade8b6a5d235038f709f2cd"
+    },
+    {
+      "path": "docs/design/05-01_internal_module_contracts.md",
+      "sha256": "19394da9e03fac84306af4ce59290fb567a8913d69dc72faa252c3299e670776",
+      "bytes": 16968,
+      "head_blob": "9e91f7a7c5cdeb46cd784a5583815f925668cf80"
+    },
+    {
+      "path": "docs/design/05_application_use_cases.md",
+      "sha256": "2fcab4cc9424bb4f201761f9467adfeadf545c8ed50b7118fd8182027cd7788c",
+      "bytes": 25627,
+      "head_blob": "82d971caf4dcc55d92eecd5cb290d767f78c83dd"
+    },
+    {
+      "path": "docs/design/06_agent_knowledge_services.md",
+      "sha256": "abdff2f1ac5cc7d42656d61a9cdb4370bb0ef5fb06f7a715c76f847e84e8f436",
+      "bytes": 21928,
+      "head_blob": "31224a7fe4f7ec07f5b9173e9c45f65fd98e7e81"
+    },
+    {
+      "path": "docs/design/07_data_persistence.md",
+      "sha256": "ef8f0e6e97aa81f4ffc29ac9f673cc5763b9649a698ce45b10dd63b3c58a2384",
+      "bytes": 31783,
+      "head_blob": "e3c98ed37f4c400ee914a22150e053f6ab0df761"
+    },
+    {
+      "path": "docs/design/08-01_agent_data_access_policy.md",
+      "sha256": "0db1c0bf4e98bf9c08b00c133aa22131d72441c8d2ca229f27655a75eef3619f",
+      "bytes": 22486,
+      "head_blob": "8db043397708acec0db18709dae7c0364279ebdc"
+    },
+    {
+      "path": "docs/design/08_security_permissions.md",
+      "sha256": "1ab0e3d38e75e76075f9e0686bda1c049865118eeb4eedbee8fc6b1f0b624f9f",
+      "bytes": 19551,
+      "head_blob": "5acf4357fec88a3c87f9a8e3a614f3c88fce2aae"
+    },
+    {
+      "path": "docs/design/09_quality_observability.md",
+      "sha256": "31e75e454e531d965d632e37fcbfd877e098a13b8c5198f552ee9034bc91e9dc",
+      "bytes": 24941,
+      "head_blob": "0169c6d5bed486806ee4908ccf874368f05d35d8"
+    },
+    {
+      "path": "docs/design/10_operations_deployment.md",
+      "sha256": "57bf0508016ee076a6dc64c6a3f769a251cd5bcc88d4bcf365e8cefbf389e39c",
+      "bytes": 12082,
+      "head_blob": "2540fde6b25bd4a8b7bb41fb47507a20265c1779"
+    },
+    {
+      "path": "docs/design/README.md",
+      "sha256": "71f20576150dd435c1f98a8b1f1e960c34180b951193a0016599f3c35d0f43a0",
+      "bytes": 10813,
+      "head_blob": "259359e5f4cd0db0e41a085106d5a66e51be0749"
+    },
+    {
+      "path": "docs/file_map.md",
+      "sha256": "53fad015a119ed64eb3e913344ce1e4ba60a81685ae95954c947aa3e88ca3997",
+      "bytes": 16378,
+      "head_blob": "2ba912c1bc2c5fadbfff5dbbbfd688eb1e249c84"
+    },
+    {
+      "path": "docs/proposals/core_rewrite_plan_2026-10-16.md",
+      "sha256": "07c8fb98347b563f7e02a4454b9ff87c8583834f04de2b532119b08f6acd935a",
+      "bytes": 22845,
+      "head_blob": "4d44a48e69d504ed0525f3e87222436cf3f3a23b"
+    },
+    {
+      "path": "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+      "sha256": "358f1d69cec2a4b3c205e69c9f60fb9a2d6b1af17f14d342ebfadc3218b666cb",
+      "bytes": 22662,
+      "head_blob": null
+    },
+    {
+      "path": "scripts/check_api_contracts.py",
+      "sha256": "dd3d2cfcc2acd0a4927e82670013787141e3ab35a4c5da862bbec9d602707a5d",
+      "bytes": 7740,
+      "head_blob": "b800d114f26563f99b707f0444d5a8e68b4d4793"
+    },
+    {
+      "path": "scripts/tests/test_api_contracts.py",
+      "sha256": "8ce673a3c2c9a63fc3598b18e4c3475d8d5cbd9e10afd80c562b71e561cbdd09",
+      "bytes": 7540,
+      "head_blob": "aeee6bceff4a01c4e160da997e5cf178ce0774ce"
+    },
+    {
+      "path": "tasks/example.md",
+      "sha256": "936a916fac94043c0a969d5545debbfcf915e496900bb01fb2764cc3d92dc1e4",
+      "bytes": 3994,
+      "head_blob": "03144bb0fddd84a18458b8ea20f2b4eb72bd2a96"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "908e3c966577afaf0d5c3651c6658e2a61b84792ce93d788c75ddc2f2f90e51f",
+      "bytes": 5486
+    },
+    {
+      "path": "README.md",
+      "sha256": "9a86f2789d5d431add5e36163cc94529cf6173e72cb92a0306502575e116de15",
+      "bytes": 2831
+    },
+    {
+      "path": "contracts/p0.coverage.json",
+      "sha256": "ed15d8e12fa284b22d22470bdd9fa502871169dfab879c56a765209cbdfda09c",
+      "bytes": 63122
+    },
+    {
+      "path": "contracts/p0.openapi.json",
+      "sha256": "507496efe354fc66b40f59cd7fb9131482f6cb50282512cd5eaa3c667acf8110",
+      "bytes": 224429
+    },
+    {
+      "path": "contracts/requirements.txt",
+      "sha256": "3f10b705081fa81ff1b27a5627f7001b97991a883f3dc684b27fbea8c94bbbd1",
+      "bytes": 49
+    },
+    {
+      "path": "docs/IMPLEMENTATION_ENTRY.md",
+      "sha256": "70fa725c0f9107f898fff6c7bba063601993ec247e48a8d3d1f49e42ef164644",
+      "bytes": 4433
+    },
+    {
+      "path": "docs/PROJECT_STATUS.md",
+      "sha256": "7b79e6255abe24eb883cb61c865df3afecba13e7673b119fcf71e1dda2cca9c6",
+      "bytes": 17486
+    },
+    {
+      "path": "docs/design/00-00_layer_design_file_mapping.md",
+      "sha256": "3f1ea34ba3709a45f746945c6e5c0697b827a1faa8651824fe5a3f70f969c91e",
+      "bytes": 7612
+    },
+    {
+      "path": "docs/design/00-01_engineering_baseline.md",
+      "sha256": "bc0a6920c54e508a9b083ec80daa1eb72dba96c15c9a9c9fc195a254f830b1fb",
+      "bytes": 11810
+    },
+    {
+      "path": "docs/design/00_layers.md",
+      "sha256": "90b8afdea5389dd897fedcd4231edffdf40a387e251406b9ea0f93564643145c",
+      "bytes": 21393
+    },
+    {
+      "path": "docs/design/01-01-FR-reference.md",
+      "sha256": "73683c5521a2f90b39a1fb65dd8418ed04dbb7fb8a1bceb1e5662171395fd8c6",
+      "bytes": 25713
+    },
+    {
+      "path": "docs/design/013-graph-choose.md",
+      "sha256": "15ddbb1c004b0f3b800c35c89eea30906a7cafabf046e1f713f4c9e1300b589f",
+      "bytes": 18369
+    },
+    {
+      "path": "docs/design/01_functional_requirements.md",
+      "sha256": "9c6a38aba11aa7bc3e31bd0e3252370abf224cfe550f3261ea38aa6f4498c51c",
+      "bytes": 171045
+    },
+    {
+      "path": "docs/design/02-01-domain-reference.md",
+      "sha256": "2d4a2113caaa130b8bf1abe362abe1dc5826762fc4f39e23933a9eaef0f09fee",
+      "bytes": 23461
+    },
+    {
+      "path": "docs/design/02-02_construction_versioning_appendix.md",
+      "sha256": "8608d3769e653701e15461b9a4aea135361ea7edd8183e0c4efb2e1c87e13335",
+      "bytes": 70276
+    },
+    {
+      "path": "docs/design/02-03_construction_assets_appendix.md",
+      "sha256": "bea013ba8b2a6a2c1ae39b2cf1dade2ff9347dcc3ba9ca4b0da9e6017c64dc60",
+      "bytes": 16936
+    },
+    {
+      "path": "docs/design/02-04_run_recovery_appendix.md",
+      "sha256": "5359d552a104941ffcdd3225c5f98356dc423dc3a7bbe581cac1a1e172b1b8fd",
+      "bytes": 11038
+    },
+    {
+      "path": "docs/design/02_domain_core.md",
+      "sha256": "efa193ee0340fe264efa5431039b48da31bd5c42942ee4867effbbff6a268cbf",
+      "bytes": 59181
+    },
+    {
+      "path": "docs/design/03-01_ui_system_pages_appendix.md",
+      "sha256": "e34438c45a7f31810546413af812a8764c80be1e206b4501ef81d94ca2695f55",
+      "bytes": 36678
+    },
+    {
+      "path": "docs/design/03-02_ui_construction_appendix.md",
+      "sha256": "97f310385595c2d4b9d8cf1771c7f2748451f27cd6bf35d0501c4b68cec02838",
+      "bytes": 33258
+    },
+    {
+      "path": "docs/design/03-03_ui_research_review_appendix.md",
+      "sha256": "084192051c884ccc56721b1b76da42ac5a5d3cb7a1fca57f3998ed0c171f965b",
+      "bytes": 19456
+    },
+    {
+      "path": "docs/design/03-04_ui_shared_interactions_appendix.md",
+      "sha256": "a37db4c2dd76f7837f756fa40e814e8b3b202605541e155944c32fbb46365168",
+      "bytes": 22448
+    },
+    {
+      "path": "docs/design/03_ui_workspace.md",
+      "sha256": "db9c64685bb0cdf71d0a5afde2026ce702d4b2a58c255d12b2d9ec435ba94403",
+      "bytes": 26606
+    },
+    {
+      "path": "docs/design/04-01_p0_operation_contracts.md",
+      "sha256": "2d2f791b647edc7d5affd194b2fd8ba529ca01ee8c47b9e325a79976c9d34429",
+      "bytes": 70727
+    },
+    {
+      "path": "docs/design/04-02_transport_task_file_contracts.md",
+      "sha256": "dd45e177573c956d29223f2f28b7b1302848e1672c7f699e3db573003f7c61b5",
+      "bytes": 30117
+    },
+    {
+      "path": "docs/design/04-03_machine_contract_governance.md",
+      "sha256": "55e4dc16303eacd689d957776a331d4ed0b44d5e20aa857c07b6830933e3c398",
+      "bytes": 7072
+    },
+    {
+      "path": "docs/design/04_api_contracts.md",
+      "sha256": "473a3f0499a3b3bea7e07151b847aa97cb36e5a38f525722baa776c79c809c2a",
+      "bytes": 25039
+    },
+    {
+      "path": "docs/design/05-01_internal_module_contracts.md",
+      "sha256": "e5c6ac34c741b9f96a7283cf9ed2a7ee24e7f0b8d8543944b7ee96509e40ef19",
+      "bytes": 17237
+    },
+    {
+      "path": "docs/design/05_application_use_cases.md",
+      "sha256": "2fcab4cc9424bb4f201761f9467adfeadf545c8ed50b7118fd8182027cd7788c",
+      "bytes": 25627
+    },
+    {
+      "path": "docs/design/06_agent_knowledge_services.md",
+      "sha256": "abdff2f1ac5cc7d42656d61a9cdb4370bb0ef5fb06f7a715c76f847e84e8f436",
+      "bytes": 21928
+    },
+    {
+      "path": "docs/design/07_data_persistence.md",
+      "sha256": "c1cb1ebb31cf3b918c87d3d3a252fa685427ffe451c203ae00bd44e3a4a10331",
+      "bytes": 32080
+    },
+    {
+      "path": "docs/design/08-01_agent_data_access_policy.md",
+      "sha256": "0db1c0bf4e98bf9c08b00c133aa22131d72441c8d2ca229f27655a75eef3619f",
+      "bytes": 22486
+    },
+    {
+      "path": "docs/design/08_security_permissions.md",
+      "sha256": "1ab0e3d38e75e76075f9e0686bda1c049865118eeb4eedbee8fc6b1f0b624f9f",
+      "bytes": 19551
+    },
+    {
+      "path": "docs/design/09_quality_observability.md",
+      "sha256": "fd0362e919b206b2ecf79724944c43bf24191ccaffbdf400e436c99c4af7c8ad",
+      "bytes": 25378
+    },
+    {
+      "path": "docs/design/10_operations_deployment.md",
+      "sha256": "b0f4935989a79dce6399fad0914ee3d5d43f888dc31ef5b8a1bacaa2c71224ab",
+      "bytes": 12382
+    },
+    {
+      "path": "docs/design/README.md",
+      "sha256": "3855cd0710d38055955f9cec1e3f0e7353ad6b05ff69ca41d41f18ca4f7256ff",
+      "bytes": 11403
+    },
+    {
+      "path": "docs/file_map.md",
+      "sha256": "db8ec297503b4d10f22e48f41a4abdcc7f522b213b2d371bda6b2863a94822ab",
+      "bytes": 17213
+    },
+    {
+      "path": "docs/proposals/core_rewrite_plan_2026-10-16.md",
+      "sha256": "168ddfefcc98ffdb6b8605af90eb222d8cacc8c5d982310eba1186a53ed6c02e",
+      "bytes": 23358
+    },
+    {
+      "path": "docs/workorders/a01_a03_design_closure_2026-10-21.md",
+      "sha256": "0ecbacca880efc2880ebcb1aec49f38003f36efb411a5777cb5e3f7483093d14",
+      "bytes": 8144
+    },
+    {
+      "path": "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+      "sha256": "089e24f43226c39cc5e69758ce33c49101baf5fd7b9a23a0678a28ba78f70495",
+      "bytes": 23118
+    },
+    {
+      "path": "scripts/check_api_contracts.py",
+      "sha256": "dd3d2cfcc2acd0a4927e82670013787141e3ab35a4c5da862bbec9d602707a5d",
+      "bytes": 7740
+    },
+    {
+      "path": "scripts/tests/test_api_contracts.py",
+      "sha256": "8ce673a3c2c9a63fc3598b18e4c3475d8d5cbd9e10afd80c562b71e561cbdd09",
+      "bytes": 7540
+    },
+    {
+      "path": "tasks/004-project-create-idempotency-example.md",
+      "sha256": "888d6eb91c7b502b2f7f8f28b12869e4732f077234ef22253010c5643a53c287",
+      "bytes": 9092
+    },
+    {
+      "path": "tasks/example.md",
+      "sha256": "02b191a3ebd998e0c76b131cc07191cee1ba248f21c89bf7de34c1836c95755a",
+      "bytes": 5477
+    }
+  ],
+  "changed_in_this_task": [
+    "README.md",
+    "docs/IMPLEMENTATION_ENTRY.md",
+    "docs/PROJECT_STATUS.md",
+    "docs/design/00-00_layer_design_file_mapping.md",
+    "docs/design/00-01_engineering_baseline.md",
+    "docs/design/00_layers.md",
+    "docs/design/01-01-FR-reference.md",
+    "docs/design/02-01-domain-reference.md",
+    "docs/design/04-03_machine_contract_governance.md",
+    "docs/design/05-01_internal_module_contracts.md",
+    "docs/design/07_data_persistence.md",
+    "docs/design/09_quality_observability.md",
+    "docs/design/10_operations_deployment.md",
+    "docs/design/README.md",
+    "docs/file_map.md",
+    "docs/proposals/core_rewrite_plan_2026-10-16.md",
+    "docs/workorders/a01_a03_design_closure_2026-10-21.md",
+    "docs/workorders/preimplementation_design_tasks_2026-10-21.md",
+    "tasks/004-project-create-idempotency-example.md",
+    "tasks/example.md"
+  ],
+  "snapshot_excludes": [
+    "docs/workorders/evidence/a01_a03_2026-10-21/"
+  ],
+  "checks": {
+    "local_links": 338,
+    "untouched_core_files": 13,
+    "changed_documents": 20,
+    "contract_tests": 15,
+    "historical_compatibility": "not-executed"
+  },
+  "input_patch_sha256": "0623db57baaf2788b19876288f1c933dae0b88cfaeeadb32c066ba987e7dd3ba",
+  "output_patch_sha256": "b2eb205f8140b1398337160cf28254a5f725e3f66fdacdeb145f1f972468583c"
+}

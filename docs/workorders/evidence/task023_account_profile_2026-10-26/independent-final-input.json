@@ -1,0 +1,11 @@
+{
+  "backend/src/rpb/modules/account_config/application/ports.py": "2b862df5ccaccd8935b26808dad9669a9d60b448dd06fdef5ed96db7f1219d65",
+  "backend/src/rpb/adapters/account.py": "8e2c072882d5f13516afc5d8b78b3e28ed39a945577ea4171dac319bcdddae32",
+  "backend/src/rpb/adapters/auth.py": "050c12c7ec85ea9d0f3da5199c34021927024bcf6b1027f01f1d4597e964f815",
+  "backend/src/rpb/api/account.py": "16d3fb8452085c480e7bbe3de366cd8e56f84fa982da093ff8eaccb1cfc11fd7",
+  "frontend/src/BusinessApp.tsx": "2577d587a34b87ecfe6e5881018bceaa8e902a826e8f46dc86fabda02ff78315",
+  "backend/migrations/versions/0006_account_profile.py": "0ed664051c172b7c3ed933839677567111d73bc128d2164da16a35799133f451",
+  "backend/tests/integration/test_account_profile.py": "aae5f76afacb7903d4705be2165ff90cea1184f9e10101b4d8b1cce99b4fe544",
+  "backend/tests/integration/test_account_profile_browser.py": "ce344ea6f71cbc54d4f2c25d2db02f06ac6cf3a2595f9404ab6ba5c92b864e20",
+  "backend/tests/integration/test_project_storage.py": "8d09eacfe097586196513bae576d58ec3bd0cfa647c0367a45ffe97d2070a4aa"
+}

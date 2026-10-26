@@ -1,0 +1,142 @@
+{
+  "backend/src/rpb/bootstrap/api.py": {
+    "change": "modified",
+    "evidence_owner": "code_cleanup_2026-10-23; current source matches after; historical logs only"
+  },
+  "backend/src/rpb/bootstrap/config.py": {
+    "change": "modified",
+    "evidence_owner": "code_cleanup_2026-10-23; current source matches after; historical logs only"
+  },
+  "backend/src/rpb/bootstrap/worker.py": {
+    "change": "modified",
+    "evidence_owner": "code_cleanup_2026-10-23; current source matches after; historical logs only"
+  },
+  "backend/tests/unit/test_startup.py": {
+    "change": "modified",
+    "evidence_owner": "code_cleanup_2026-10-23; current source matches after; historical logs only"
+  },
+  "contracts/p0.coverage.json": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/PROJECT_STATUS.md": {
+    "change": "modified",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/design/00-01_engineering_baseline.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/02-03_construction_assets_appendix.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/03-04_ui_shared_interactions_appendix.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/04-01_p0_operation_contracts.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/04-02_transport_task_file_contracts.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/04-03_machine_contract_governance.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/05-01_internal_module_contracts.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/05_application_use_cases.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/06_agent_knowledge_services.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/07_data_persistence.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/design/09_quality_observability.md": {
+    "change": "modified",
+    "evidence_owner": "A06/A07/A08/A09 sequential design handoff; current bytes match task012 delivery; historical acceptance not promoted"
+  },
+  "docs/workorders/code_cleanup_2026-10-23.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/nightly_maintenance_2026-10-23_0954.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/preimplementation_design_tasks_2026-10-21.md": {
+    "change": "modified",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/project_delivery_skill_2026-10-23.md": {
+    "change": "modified",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/task007_coverage_closure_2026-10-23.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/task007_fixes_2026-10-23.md": {
+    "change": "modified",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/task008_internal_contract_review_2026-10-23.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/task010_a07_review_2026-10-23.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/task011_a08_review_2026-10-23.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "docs/workorders/task012_a09_review_2026-10-23.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "frontend/src/App.tsx": {
+    "change": "modified",
+    "evidence_owner": "code_cleanup_2026-10-23; current source matches after; historical logs only"
+  },
+  "scripts/engineering.py": {
+    "change": "modified",
+    "evidence_owner": "code_cleanup_2026-10-23; current source matches after; historical logs only"
+  },
+  "tasks/007-skeleton-review-fixes.md": {
+    "change": "modified",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "tasks/008-material-policy-internal-contracts.md": {
+    "change": "modified",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "tasks/009-workspace-context-plan.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "tasks/010-task-confirmation-event-contracts.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "tasks/011-supplement-processing-contracts.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  },
+  "tasks/012-graph-rag-technical-design.md": {
+    "change": "added",
+    "evidence_owner": "task/review/maintenance record; retained historical provenance, current handoff checked against task008/010/011/012"
+  }
+}

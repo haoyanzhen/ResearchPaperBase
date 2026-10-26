@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-24",
+  "decision": "接受 task014 本轮 B01 Project.Create 机器契约限定交付及所列兼容差异，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。",
+  "accepted_manifest_sha256": "230a2d99687b18d52a0b1b180a0521c336f8e9ce942e4b4f3fb351879d9915aa",
+  "accepted_openapi_sha256": "57117f10787b72899818cf6829550cc71e77073298ac437fc6d67791cec18dfa",
+  "current_drift": [],
+  "scope": "Project.Create PC-01–08 wire contract and reported POST /projects compatibility delta; excludes other operation acceptance and runtime"
+}

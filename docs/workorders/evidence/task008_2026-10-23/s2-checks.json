@@ -1,0 +1,8 @@
+{
+  "errors": [],
+  "preexisting_link_findings": [],
+  "checked_files": 8,
+  "trace_rows": 12,
+  "outside_scope_changes": [],
+  "level": "documentation only; no business execution"
+}

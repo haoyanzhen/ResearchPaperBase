@@ -1,0 +1,14 @@
+{
+  "old_file_changes": [
+    "docs/PROJECT_STATUS.md",
+    "docs/file_map.md",
+    "tasks/023-account-profile.md"
+  ],
+  "new_files": [
+    "backend/tests/integration/test_profile_identity_scenarios.py",
+    "backend/tests/integration/test_profile_user_journeys.py",
+    "tasks/024-profile-user-scenarios.md"
+  ],
+  "application_changes": [],
+  "test_drift_from_final_input": []
+}

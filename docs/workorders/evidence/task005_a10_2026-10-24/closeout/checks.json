@@ -1,0 +1,56 @@
+{
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "docs/workorders/evidence/task005_a10_2026-10-24/closeout/check_docs.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"errors\": [],\n  \"preexisting_link_findings\": [],\n  \"checked_files\": 3,\n  \"trace_rows\": 9,\n  \"outside_scope_changes\": [],\n  \"level\": \"documentation only; no business execution\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/delivery_snapshot.py",
+        "verify",
+        "--directory",
+        "docs/workorders/evidence/task005_a10_2026-10-24/delivery"
+      ],
+      "exit_code": 0,
+      "stdout": "Verified complete snapshot: 197 files, including empty files.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/delivery_snapshot.py",
+        "verify",
+        "--directory",
+        "docs/workorders/evidence/task005_a10_2026-10-24/closeout/final"
+      ],
+      "exit_code": 0,
+      "stdout": "Verified complete snapshot: 197 files, including empty files.\n",
+      "stderr": ""
+    }
+  ],
+  "accepted_to_final_changes": [
+    "docs/PROJECT_STATUS.md",
+    "docs/workorders/task005_a10_review_2026-10-24.md",
+    "tasks/005-engineering-skeleton.md"
+  ],
+  "current_drift": [],
+  "final_file_count": 197,
+  "final_manifest_sha256": "b621fa8dec595e265121f143a940544d907d2177431e643d1f0f6d820588e500",
+  "reused_evidence_sha256": {
+    "execution.json": "b44336adf1e81bacf3d75784317bdc776896c28b077d84149c1a362b05371ae2",
+    "check.log": "c8daad01d34ae313d0e79ef173931f4577b387f8e42947557e77595c9f7d71f9",
+    "build.log": "394f25263a300096d54aa940a017ec258aa1f7ccd519c2ba2fff90d178492cb3",
+    "e2e.log": "8113298edcc8957cf9f5d9dcc9e6fb73ba0e299b3364e60111d2910aee7fca2c",
+    "clean-delivery.log": "52fa9cf94d11679df015a419a40f05009e7d088a0a6914c9e84e2a19a8028f85",
+    "migration-history.log": "041995c8bc56c499d46d4eaca42c4062d6d8c4cfed819f20c444cbf2c08fbbe0",
+    "independent-review.txt": "4d86c162860a2cf5d71b0906109c4f3c7c147e0fa075c26c7b3891f1243bc9f6"
+  },
+  "full_test_rerun": false,
+  "reason": "Only acceptance/status records changed; source/tests/specifications unchanged; reuse same-day verified execution and independent review."
+}

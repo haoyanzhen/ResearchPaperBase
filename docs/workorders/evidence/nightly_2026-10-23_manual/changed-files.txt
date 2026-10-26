@@ -1,0 +1,5 @@
+docs/NIGHTLY_MAINTENANCE.md
+README.md
+tasks/008-material-policy-internal-contracts.md
+docs/workorders/preimplementation_design_tasks_2026-10-21.md
+docs/PROJECT_STATUS.md

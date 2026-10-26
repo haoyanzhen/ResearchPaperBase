@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-26",
+  "task": "023",
+  "milestone": "M-P0-04",
+  "engineering_status": "S1-S7 complete",
+  "human_acceptance": "pending",
+  "files": 249,
+  "manifest_sha256": "eb5c427173f8c8bbe0b73cfe1bc67ad54a589ac460786fa9cef712304d2431bc",
+  "integration": {
+    "passed": 302,
+    "new": 31,
+    "log": "integration-final.log",
+    "run_id": "rpb_test_8684f6961d714b75b984bc415c085660",
+    "cleanup": true
+  },
+  "independent": {
+    "passed": 31,
+    "report": "independent-review-final.json",
+    "findings": "R1-R3 closed"
+  },
+  "checks": "check-final.log",
+  "build": "build-final.log",
+  "source_drift_from_final_input": [],
+  "documentation_only_changes_from_final_input": [
+    "docs/PROJECT_STATUS.md",
+    "tasks/023-account-profile.md"
+  ]
+}

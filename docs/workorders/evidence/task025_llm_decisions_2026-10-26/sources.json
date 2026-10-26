@@ -1,0 +1,33 @@
+{
+  "commit": "33c1978d5bad52a31df75ea55143025dfad18d16",
+  "version": "0.12.4",
+  "retrieved": "2026-10-26",
+  "method": "GitHub connector read; not executed",
+  "files": [
+    {
+      "path": "src/lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
+      "sha256": "89f1375b6abc4aac4e7805233178ef9cc0235d81018eed878845dbc28fbcbf4d",
+      "url": "https://github.com/open-webui/open-webui/blob/33c1978d5bad52a31df75ea55143025dfad18d16/src/lib/components/chat/Settings/Advanced/AdvancedParams.svelte"
+    },
+    {
+      "path": "src/lib/components/chat/Settings/Advanced/CustomParams.svelte",
+      "sha256": "cbef982199fa0d37053359c366d653594253abfd9cbb655f89265470cdb5704d",
+      "url": "https://github.com/open-webui/open-webui/blob/33c1978d5bad52a31df75ea55143025dfad18d16/src/lib/components/chat/Settings/Advanced/CustomParams.svelte"
+    },
+    {
+      "path": "backend/open_webui/routers/openai.py",
+      "sha256": "85cdddc1df368c2fa9f88456c8c19064c65ea936ab5f596ff28a92034192df03",
+      "url": "https://github.com/open-webui/open-webui/blob/33c1978d5bad52a31df75ea55143025dfad18d16/backend/open_webui/routers/openai.py"
+    },
+    {
+      "path": "backend/open_webui/utils/payload.py",
+      "sha256": "2da7129fc25372634114005c486a101712c31c2036e03256d85c74f8f92cd3d2",
+      "url": "https://github.com/open-webui/open-webui/blob/33c1978d5bad52a31df75ea55143025dfad18d16/backend/open_webui/utils/payload.py"
+    },
+    {
+      "path": "backend/open_webui/utils/middleware.py",
+      "sha256": "1eef867603a0af56adb35fd73cfbdd9b5673b691edea1bc9b43d5991911dca6f",
+      "url": "https://github.com/open-webui/open-webui/blob/33c1978d5bad52a31df75ea55143025dfad18d16/backend/open_webui/utils/middleware.py"
+    }
+  ]
+}

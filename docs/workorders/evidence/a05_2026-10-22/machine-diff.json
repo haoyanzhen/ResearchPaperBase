@@ -1,0 +1,27 @@
+{
+  "added_operations": [
+    "MaterialPolicy.Read",
+    "MaterialPolicy.Update",
+    "MaterialSource.ReadClassification",
+    "MaterialSource.ConfirmClassification",
+    "MaterialSource.CorrectClassification"
+  ],
+  "added_schemas": [
+    "ErrorTaskStatusURL",
+    "MaterialClassification",
+    "MaterialClassificationFact",
+    "MaterialClassificationView",
+    "MaterialClassificationWrite",
+    "MaterialPolicyView",
+    "MaterialPolicyWrite",
+    "MaterialProvenance",
+    "MaterialSourceIdentity",
+    "MaterialUseMode",
+    "MaterialUseNotice"
+  ],
+  "existing_contract_changes": [
+    "schema changed/removed (directional review required): ErrorTaskDetails",
+    "schema changed/removed (directional review required): ErrorStateEventReplayUnavailable",
+    "schema changed/removed (directional review required): TaskError"
+  ]
+}

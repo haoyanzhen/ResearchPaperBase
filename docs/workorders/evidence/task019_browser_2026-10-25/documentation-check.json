@@ -1,0 +1,573 @@
+{
+  "versions": {
+    "README.md": "v1.10",
+    "docs/PROJECT_STATUS.md": "v1.66",
+    "tasks/019-browser-milestone.md": "v1.1"
+  },
+  "date": "2026-10-25",
+  "links": [
+    {
+      "source": "README.md",
+      "target": "docs/PROJECT_STATUS.md"
+    },
+    {
+      "source": "README.md",
+      "target": "tasks/005-engineering-skeleton.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/PROJECT_STATUS.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/NIGHTLY_MAINTENANCE.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/design/README.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/IMPLEMENTATION_ENTRY.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/design/00-01_engineering_baseline.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/workorders/a01_a03_design_closure_2026-10-21.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/design/04-03_machine_contract_governance.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/design/05-01_internal_module_contracts.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/workorders/security_delivery_refinement_2026-10-19.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/workorders/data_test_design_cleanup_2026-10-19.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/archive/design_retirement_2026-10-19/README.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/proposals/core_rewrite_plan_2026-10-16.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/proposals/reuse_independent_review_2026-10-16.md"
+    },
+    {
+      "source": "README.md",
+      "target": "archive/maybe_useful/README.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/workorders/legacy_cleanup_execution_2026-10-16.md"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/workorders/legacy_cleanup_manifest_2026-10-16.json"
+    },
+    {
+      "source": "README.md",
+      "target": "docs/file_map.md"
+    },
+    {
+      "source": "README.md",
+      "target": "tasks/015-account-storage-migration.md"
+    },
+    {
+      "source": "README.md",
+      "target": "tasks/017-account-authentication.md"
+    },
+    {
+      "source": "README.md",
+      "target": "tasks/018-project-create-runtime.md"
+    },
+    {
+      "source": "README.md",
+      "target": "tasks/007-skeleton-review-fixes.md"
+    },
+    {
+      "source": "README.md",
+      "target": "tasks/019-browser-milestone.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "NIGHTLY_MAINTENANCE.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/nightly_maintenance_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/nightly_maintenance_2026-10-23_0954.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/009-workspace-context-plan.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/workflow_autonomy_2026-10-25.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/005-engineering-skeleton.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task005_a10_review_2026-10-24.md#人工接受后的s5s7执行记录"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/a01_a03_design_closure_2026-10-21.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/a01_a03_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/00-01_engineering_baseline.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/006-public-error-recovery-contract.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_independent_review_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_fixes_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/design_alignment_00_03_2026-10-16.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/design_alignment_00_03_review_2026-10-16.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/04_api_contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/04-01_p0_operation_contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/04-02_transport_task_file_contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/05_application_use_cases.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "proposals/api_boundary_redesign_2026-10-16.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/05-01_internal_module_contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/data_test_design_cleanup_2026-10-19.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/02-02_construction_versioning_appendix.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/security_delivery_refinement_2026-10-19.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/code_cleanup_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/016-project-storage.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/017-account-authentication.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/018-project-create-runtime.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/019-browser-milestone.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/015-account-storage-migration.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/013-human-content-protection-plan.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/nightly_maintenance_2026-10-25.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/code_cleanup_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/nightly_maintenance_2026-10-24.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_coverage_closure_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/007-skeleton-review-fixes.md#6-下一阶段计划a05-资料设置与分类操作契约"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_a05_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_independent_review_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_fixes_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/008-material-policy-internal-contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task008_internal_contract_review_2026-10-23.md#人工接受后的s5s7执行记录"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/010-task-confirmation-event-contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task010_a07_review_2026-10-23.md#人工接受后的s5s7执行记录"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/011-supplement-processing-contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task011_a08_review_2026-10-23.md#人工接受后的s5s7执行记录"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/preimplementation_design_tasks_2026-10-21.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/006-public-error-recovery-contract.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task006_coverage_closure_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task006_independent_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task006_p2_fixes_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/006-public-error-recovery-contract.md#11-人工验收与最终证据2026-10-23"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "proposals/api_boundary_redesign_2026-10-16.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/api_p0_design_review_2026-10-16.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/04-03_machine_contract_governance.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/agent_contracts_and_downstream_review_2026-10-19.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/evidence/a04_2026-10-22/review.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task006_independent_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task006_p2_fixes_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/013-graph-choose.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/07_data_persistence.md#3-逻辑记录与字段映射"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "archive/design_retirement_2026-10-19/README.md#3-sql-草案删除记录"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/02-02_construction_versioning_appendix.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/design_05_06_audit_2026-10-19.md#5-授权修订与复核2026-10-19"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "proposals/design_document_reorganization_proposal_2026-10-15.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "proposals/design_document_reorganization_review_2026-10-15.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "archive/design_retirement_2026-10-19/README.md#2-d-001d-015-当前去向"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/a01_a03_review_2026-10-22.md#3-发现与处置建议"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/02-02_construction_versioning_appendix.md#25-不可变逻辑快照与资产复用边界"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/09_quality_observability.md#41-不可变快照一致性验收"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/knowledge_citation_selection_review_2026-10-16.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/08-01_agent_data_access_policy.md#11-闭合检查与剩余工作"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_a05_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task008_internal_contract_review_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/agent_data_policy_closure_2026-10-21.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "design/10_operations_deployment.md#9-待决策的运行目标"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "PROJECT_STATUS_APPENDIX.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/knowledge_citation_selection_review_2026-10-16.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/agent_contracts_and_downstream_review_2026-10-19.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/design_05_06_audit_2026-10-19.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/design_05_06_audit_2026-10-19.md#5-授权修订与复核2026-10-19"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/data_test_design_cleanup_2026-10-19.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/policy_feedback_2026-10-19.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/unattended_source_classification_2026-10-21.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../AGENTS.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "IMPLEMENTATION_ENTRY.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/example.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/a01_a03_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/a01_a03_review_2026-10-22.md#7-r01修复与文档核验2026-10-22"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task006_coverage_closure_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_a05_review_2026-10-22.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/006-public-error-recovery-contract.md#11-人工验收与最终证据2026-10-23"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_independent_review_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_fixes_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task007_fixes_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/010-task-confirmation-event-contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task010_a07_review_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/011-supplement-processing-contracts.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task011_a08_review_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/012-graph-rag-technical-design.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task012_a09_review_2026-10-23.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/012-graph-rag-technical-design.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task012_a09_review_2026-10-23.md#人工接受后的s5s7执行记录"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/005-engineering-skeleton.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task005_a10_review_2026-10-24.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/014-project-create-machine-contract.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task014_b01_review_2026-10-24.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "../tasks/014-project-create-machine-contract.md"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/task014_b01_review_2026-10-24.md#人工接受后的s5s7执行记录"
+    },
+    {
+      "source": "docs/PROJECT_STATUS.md",
+      "target": "workorders/workflow_autonomy_2026-10-25.md"
+    },
+    {
+      "source": "tasks/019-browser-milestone.md",
+      "target": "016-project-storage.md"
+    },
+    {
+      "source": "tasks/019-browser-milestone.md",
+      "target": "016-project-storage.md"
+    },
+    {
+      "source": "tasks/019-browser-milestone.md",
+      "target": "017-account-authentication.md"
+    },
+    {
+      "source": "tasks/019-browser-milestone.md",
+      "target": "018-project-create-runtime.md"
+    },
+    {
+      "source": "tasks/019-browser-milestone.md",
+      "target": "../docs/workorders/evidence/task019_browser_2026-10-25/"
+    },
+    {
+      "source": "tasks/019-browser-milestone.md",
+      "target": "../README.md"
+    }
+  ],
+  "post_review_changes": [
+    "README.md",
+    "docs/PROJECT_STATUS.md",
+    "tasks/019-browser-milestone.md"
+  ],
+  "scope": "only README recovery wording, task closeout and project status; no code/contract changes",
+  "snapshot_current": true
+}

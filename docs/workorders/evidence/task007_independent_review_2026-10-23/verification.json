@@ -1,0 +1,11 @@
+{
+  "before_files": 171,
+  "delivery_files": 175,
+  "old_evidence_files": 23,
+  "changed_delivery_sources": [
+    "docs/PROJECT_STATUS.md",
+    "tasks/006-public-error-recovery-contract.md"
+  ],
+  "local_links_checked": 83,
+  "missing_links": []
+}

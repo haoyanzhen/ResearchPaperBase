@@ -1,0 +1,77 @@
+ M AGENTS.md
+ M README.md
+ M contracts/p0.coverage.json
+ M contracts/p0.openapi.json
+ M docs/PROJECT_STATUS.md
+ M docs/design/00-00_layer_design_file_mapping.md
+ M docs/design/00_layers.md
+ M docs/design/01-01-FR-reference.md
+ M docs/design/02-01-domain-reference.md
+ M docs/design/02-03_construction_assets_appendix.md
+ M docs/design/03-01_ui_system_pages_appendix.md
+ M docs/design/03-02_ui_construction_appendix.md
+ M docs/design/03-04_ui_shared_interactions_appendix.md
+ M docs/design/04-01_p0_operation_contracts.md
+ M docs/design/04-02_transport_task_file_contracts.md
+ M docs/design/04-03_machine_contract_governance.md
+ M docs/design/04_api_contracts.md
+ M docs/design/05-01_internal_module_contracts.md
+ M docs/design/05_application_use_cases.md
+ M docs/design/06_agent_knowledge_services.md
+ M docs/design/07_data_persistence.md
+ M docs/design/08_security_permissions.md
+ M docs/design/09_quality_observability.md
+ M docs/design/10_operations_deployment.md
+ M docs/design/README.md
+ M docs/file_map.md
+ M docs/proposals/core_rewrite_plan_2026-10-16.md
+ M scripts/check_api_contracts.py
+ M tasks/example.md
+?? .agents/
+?? backend/
+?? docs/IMPLEMENTATION_ENTRY.md
+?? docs/NIGHTLY_MAINTENANCE.md
+?? docs/design/00-01_engineering_baseline.md
+?? docs/workorders/a01_a03_design_closure_2026-10-21.md
+?? docs/workorders/a01_a03_review_2026-10-22.md
+?? docs/workorders/code_cleanup_2026-10-23.md
+?? docs/workorders/evidence/
+?? docs/workorders/nightly_maintenance_2026-10-23.md
+?? docs/workorders/nightly_maintenance_2026-10-23_0954.md
+?? docs/workorders/preimplementation_design_tasks_2026-10-21.md
+?? docs/workorders/project_delivery_skill_2026-10-23.md
+?? docs/workorders/skeleton_fixes_review_2026-10-22.md
+?? docs/workorders/skeleton_independent_review_2026-10-22.md
+?? docs/workorders/task005_coverage_closure_2026-10-22.md
+?? docs/workorders/task006_coverage_closure_2026-10-22.md
+?? docs/workorders/task006_independent_review_2026-10-22.md
+?? docs/workorders/task006_p2_fixes_2026-10-22.md
+?? docs/workorders/task007_a05_review_2026-10-22.md
+?? docs/workorders/task007_coverage_closure_2026-10-23.md
+?? docs/workorders/task007_fixes_2026-10-23.md
+?? docs/workorders/task007_independent_review_2026-10-23.md
+?? docs/workorders/task008_internal_contract_review_2026-10-23.md
+?? docs/workorders/task010_a07_review_2026-10-23.md
+?? docs/workorders/task011_a08_review_2026-10-23.md
+?? docs/workorders/task012_a09_review_2026-10-23.md
+?? frontend/
+?? scripts/check_architecture.py
+?? scripts/delivery_snapshot.py
+?? scripts/engineering.py
+?? scripts/tests/test_material_policy_contracts.py
+?? scripts/tests/test_material_policy_coverage.py
+?? scripts/tests/test_material_policy_review_regressions.py
+?? scripts/tests/test_public_error_requirements.py
+?? scripts/tests/test_public_error_review_regressions.py
+?? scripts/tests/test_public_errors.py
+?? scripts/verify_skeleton_delivery.py
+?? tasks/004-project-create-idempotency-example.md
+?? tasks/005-engineering-skeleton.md
+?? tasks/006-public-error-recovery-contract.md
+?? tasks/007-skeleton-review-fixes.md
+?? tasks/008-material-policy-internal-contracts.md
+?? tasks/009-workspace-context-plan.md
+?? tasks/010-task-confirmation-event-contracts.md
+?? tasks/011-supplement-processing-contracts.md
+?? tasks/012-graph-rag-technical-design.md
+?? tasks/013-human-content-protection-plan.md

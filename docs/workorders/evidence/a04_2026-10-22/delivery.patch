@@ -1,0 +1,4694 @@
+--- before/contracts/p0.openapi.json
++++ after/contracts/p0.openapi.json
+@@ -2,8 +2,8 @@
+   "openapi": "3.1.0",
+   "info": {
+     "title": "Research Paper Base P0 typed contract subset",
+-    "version": "1.0.0",
+-    "description": "Bounded field contracts only. Coverage, unresolved error details and runtime invariants: p0.coverage.json and docs/design/04-03_machine_contract_governance.md."
++    "version": "1.1.0",
++    "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+   },
+   "servers": [
+     {
+@@ -21,7 +21,7 @@
+         "x-phase": "P0",
+         "x-authorization": "public",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [],
+         "parameters": [],
+         "responses": {
+@@ -73,7 +73,7 @@
+         "x-phase": "P0",
+         "x-authorization": "public",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [],
+         "parameters": [
+           {
+@@ -149,7 +149,7 @@
+         "x-phase": "P0",
+         "x-authorization": "public",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [],
+         "parameters": [
+           {
+@@ -219,7 +219,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-user",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -293,7 +293,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -346,7 +346,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -420,7 +420,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -505,7 +505,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -596,7 +596,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -658,7 +658,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -738,7 +738,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -798,7 +798,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -883,7 +883,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -974,7 +974,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1036,7 +1036,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1116,7 +1116,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1177,7 +1177,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1233,7 +1233,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1287,7 +1287,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1361,7 +1361,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1448,7 +1448,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1501,7 +1501,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1575,7 +1575,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1660,7 +1660,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1751,7 +1751,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-readable",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1813,7 +1813,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1897,7 +1897,7 @@
+         "x-phase": "P0",
+         "x-authorization": "task-current-owner-or-system-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -1961,7 +1961,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2046,7 +2046,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2137,7 +2137,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2199,7 +2199,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2279,7 +2279,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2339,7 +2339,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2424,7 +2424,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2515,7 +2515,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2577,7 +2577,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2657,7 +2657,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2718,7 +2718,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-readable",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2782,7 +2782,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2864,7 +2864,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2917,7 +2917,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -2992,7 +2992,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-user",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3047,7 +3047,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3110,7 +3110,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3173,7 +3173,7 @@
+         "x-phase": "P0",
+         "x-authorization": "self",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3236,7 +3236,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3299,7 +3299,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3362,7 +3362,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3425,7 +3425,7 @@
+         "x-phase": "P0",
+         "x-authorization": "enabled-admin",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3480,7 +3480,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3543,7 +3543,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3606,7 +3606,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3658,7 +3658,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3729,7 +3729,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3801,7 +3801,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3864,7 +3864,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -3937,7 +3937,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4016,7 +4016,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4087,7 +4087,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4170,7 +4170,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4249,7 +4249,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "not-applicable",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4320,7 +4320,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4392,7 +4392,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4471,7 +4471,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4550,7 +4550,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4623,7 +4623,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "explicit-or-default-at-creation",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4686,7 +4686,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4757,7 +4757,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4828,7 +4828,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4901,7 +4901,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -4969,7 +4969,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5049,7 +5049,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5128,7 +5128,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5208,7 +5208,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5296,7 +5296,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5377,7 +5377,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5445,7 +5445,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5525,7 +5525,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5613,7 +5613,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5692,7 +5692,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5763,7 +5763,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -5842,7 +5842,7 @@
+         "x-phase": "P0",
+         "x-authorization": "project-owner-active",
+         "x-version-binding": "bound-object",
+-        "x-errors": "markdown-only:04-section-5",
++        "x-errors": "#/components/schemas/PublicError",
+         "security": [
+           {
+             "sessionCookie": []
+@@ -8312,6 +8312,3395 @@
+             "additionalProperties": false
+           }
+         ]
++      },
++      "ErrorResourceURL": {
++        "type": "string",
++        "pattern": "^/api/v1/[a-zA-Z0-9_/-]+$",
++        "maxLength": 512,
++        "description": "Only an authorized same-origin API read reference; no query, fragment, credentials or physical path. Runtime authorization remains required."
++      },
++      "ErrorFieldIssue": {
++        "type": "object",
++        "properties": {
++          "field": {
++            "type": "string",
++            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*|\\.[0-9]+)*$",
++            "maxLength": 128
++          },
++          "reason": {
++            "enum": [
++              "required",
++              "invalid",
++              "unknown",
++              "unsupported",
++              "too_large",
++              "unreadable"
++            ]
++          }
++        },
++        "required": [
++          "field",
++          "reason"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorFieldsDetails": {
++        "type": "object",
++        "properties": {
++          "fields": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/ErrorFieldIssue"
++            },
++            "minItems": 1,
++            "maxItems": 100
++          }
++        },
++        "required": [
++          "fields"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorRevisionDetails": {
++        "type": "object",
++        "properties": {
++          "current_revision": {
++            "$ref": "#/components/schemas/Revision"
++          },
++          "resource_url": {
++            "$ref": "#/components/schemas/ErrorResourceURL"
++          }
++        },
++        "required": [
++          "current_revision",
++          "resource_url"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorTaskDetails": {
++        "type": "object",
++        "properties": {
++          "status_url": {
++            "$ref": "#/components/schemas/ErrorResourceURL"
++          }
++        },
++        "required": [
++          "status_url"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorDependencyDetails": {
++        "type": "object",
++        "properties": {
++          "reason": {
++            "enum": [
++              "format",
++              "protocol",
++              "authentication",
++              "network",
++              "model",
++              "rate_limit",
++              "quota",
++              "unavailable",
++              "timeout",
++              "failed"
++            ]
++          }
++        },
++        "required": [
++          "reason"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorSubmissionDetails": {
++        "type": "object",
++        "properties": {
++          "outcome": {
++            "enum": [
++              "not_accepted",
++              "unknown"
++            ]
++          }
++        },
++        "required": [
++          "outcome"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryReloadResource": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "reload_resource"
++          },
++          "label": {
++            "const": "重新读取"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryReloadTask": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "reload_task"
++          },
++          "label": {
++            "const": "重新读取状态"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryRefreshConfirmation": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "refresh_confirmation"
++          },
++          "label": {
++            "const": "重新查看确认依据"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryCorrectRequest": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "correct_request"
++          },
++          "label": {
++            "const": "修正请求"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryReauthenticate": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "reauthenticate"
++          },
++          "label": {
++            "const": "重新认证"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryRefreshCsrf": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "refresh_csrf"
++          },
++          "label": {
++            "const": "刷新请求凭据"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryRepairConfiguration": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "repair_configuration"
++          },
++          "label": {
++            "const": "检查配置"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryReloadPage": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "reload_page"
++          },
++          "label": {
++            "const": "重新读取第一页"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryCheckResult": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "check_result"
++          },
++          "label": {
++            "const": "核查原操作结果"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "RecoveryRetryRequest": {
++        "type": "object",
++        "properties": {
++          "action": {
++            "const": "retry_request"
++          },
++          "label": {
++            "const": "按原请求条件重试"
++          }
++        },
++        "required": [
++          "action",
++          "label"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorValidationBadRequest": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_BAD_REQUEST"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCorrectRequest"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 400
++      },
++      "ErrorValidationCursorMismatch": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_CURSOR_MISMATCH"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCorrectRequest"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 400
++      },
++      "ErrorValidationCursorExpired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_CURSOR_EXPIRED"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadPage"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 400
++      },
++      "ErrorAuthRequired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "AUTH_REQUIRED"
++          },
++          "category": {
++            "const": "auth"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReauthenticate"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 401
++      },
++      "ErrorAuthSessionInvalid": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "AUTH_SESSION_INVALID"
++          },
++          "category": {
++            "const": "auth"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReauthenticate"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 401
++      },
++      "ErrorAuthAccountDisabled": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "AUTH_ACCOUNT_DISABLED"
++          },
++          "category": {
++            "const": "auth"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReauthenticate"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 401
++      },
++      "ErrorAuthInvalidCredentials": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "AUTH_INVALID_CREDENTIALS"
++          },
++          "category": {
++            "const": "auth"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReauthenticate"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 401
++      },
++      "ErrorPermissionAdminRequired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "PERMISSION_ADMIN_REQUIRED"
++          },
++          "category": {
++            "const": "permission"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "type": "null"
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 403
++      },
++      "ErrorPermissionCsrfRejected": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "PERMISSION_CSRF_REJECTED"
++          },
++          "category": {
++            "const": "permission"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRefreshCsrf"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 403
++      },
++      "ErrorPermissionResourceUnavailable": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "PERMISSION_RESOURCE_UNAVAILABLE"
++          },
++          "category": {
++            "const": "permission"
++          },
++          "message": {
++            "const": "资源不可用"
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "type": "null"
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 404
++      },
++      "ErrorStateOperationNotAllowed": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_OPERATION_NOT_ALLOWED"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "type": "null"
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStateProjectReadOnly": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_PROJECT_READ_ONLY"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "type": "null"
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStateNotCancellable": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_NOT_CANCELLABLE"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "type": "null"
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStateLastAdminRequired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_LAST_ADMIN_REQUIRED"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "type": "null"
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStateIdempotencyConflict": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_IDEMPOTENCY_CONFLICT"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCheckResult"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStateConfirmationStale": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_CONFIRMATION_STALE"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRefreshConfirmation"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStateConfirmationRequired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_CONFIRMATION_REQUIRED"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRefreshConfirmation"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorLockConstructionOccupied": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "LOCK_CONSTRUCTION_OCCUPIED"
++          },
++          "category": {
++            "const": "lock_conflict"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorTaskDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadTask"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorLockResponseActive": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "LOCK_RESPONSE_ACTIVE"
++          },
++          "category": {
++            "const": "lock_conflict"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorTaskDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadTask"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorLockContentBusy": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "LOCK_CONTENT_BUSY"
++          },
++          "category": {
++            "const": "lock_conflict"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorTaskDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadTask"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorVersionRequired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VERSION_REQUIRED"
++          },
++          "category": {
++            "const": "version"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadResource"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorVersionBindingMismatch": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VERSION_BINDING_MISMATCH"
++          },
++          "category": {
++            "const": "version"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadResource"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorVersionBaselineStale": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VERSION_BASELINE_STALE"
++          },
++          "category": {
++            "const": "version"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadResource"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorConfigModelSelectionRequired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "CONFIG_MODEL_SELECTION_REQUIRED"
++          },
++          "category": {
++            "const": "configuration"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRepairConfiguration"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorConfigMissing": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "CONFIG_MISSING"
++          },
++          "category": {
++            "const": "configuration"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRepairConfiguration"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorConfigSecretUnavailable": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "CONFIG_SECRET_UNAVAILABLE"
++          },
++          "category": {
++            "const": "configuration"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRepairConfiguration"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorConfigSourceDisabled": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "CONFIG_SOURCE_DISABLED"
++          },
++          "category": {
++            "const": "configuration"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRepairConfiguration"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorConfigConnectionFailed": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "CONFIG_CONNECTION_FAILED"
++          },
++          "category": {
++            "const": "configuration"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorDependencyDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryRepairConfiguration"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStateEventReplayUnavailable": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_EVENT_REPLAY_UNAVAILABLE"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorTaskDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadTask"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 409
++      },
++      "ErrorStorageFileUnavailable": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STORAGE_FILE_UNAVAILABLE"
++          },
++          "category": {
++            "const": "storage"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "type": "null"
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 410
++      },
++      "ErrorStateRevisionConflict": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_REVISION_CONFLICT"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorRevisionDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadResource"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 412
++      },
++      "ErrorStateRevisionRequired": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_REVISION_REQUIRED"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryReloadResource"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 428
++      },
++      "ErrorValidationPayloadTooLarge": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_PAYLOAD_TOO_LARGE"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCorrectRequest"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 413
++      },
++      "ErrorValidationUnsupportedFormat": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_UNSUPPORTED_FORMAT"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "type": "null"
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCorrectRequest"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 415
++      },
++      "ErrorValidationFieldInvalid": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_FIELD_INVALID"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorFieldsDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCorrectRequest"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 422
++      },
++      "ErrorValidationUnknownField": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_UNKNOWN_FIELD"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorFieldsDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCorrectRequest"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 422
++      },
++      "ErrorValidationFileUnreadable": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "VALIDATION_FILE_UNREADABLE"
++          },
++          "category": {
++            "const": "validation"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "const": false
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorFieldsDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/RecoveryCorrectRequest"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 422
++      },
++      "ErrorStateResourceLimit": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STATE_RESOURCE_LIMIT"
++          },
++          "category": {
++            "const": "state"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "type": "boolean"
++          },
++          "details": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorDependencyDetails"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorSubmissionDetails"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryCheckResult"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryRetryRequest"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 429,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "retryable": {
++                  "const": true
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "details": {
++                  "type": "object",
++                  "properties": {
++                    "outcome": {
++                      "const": "not_accepted"
++                    }
++                  },
++                  "required": [
++                    "outcome"
++                  ],
++                  "additionalProperties": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryRetryRequest"
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "recovery": {
++                  "oneOf": [
++                    {
++                      "type": "null"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RecoveryCheckResult"
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          {
++            "if": {
++              "properties": {
++                "details": {
++                  "required": [
++                    "outcome"
++                  ],
++                  "properties": {
++                    "outcome": {
++                      "const": "unknown"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "retryable": {
++                  "const": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryCheckResult"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "ErrorProviderFailed": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "PROVIDER_FAILED"
++          },
++          "category": {
++            "const": "provider"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "type": "boolean"
++          },
++          "details": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorDependencyDetails"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorSubmissionDetails"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryCheckResult"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryRetryRequest"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 502,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "retryable": {
++                  "const": true
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "details": {
++                  "type": "object",
++                  "properties": {
++                    "outcome": {
++                      "const": "not_accepted"
++                    }
++                  },
++                  "required": [
++                    "outcome"
++                  ],
++                  "additionalProperties": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryRetryRequest"
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "recovery": {
++                  "oneOf": [
++                    {
++                      "type": "null"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RecoveryCheckResult"
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          {
++            "if": {
++              "properties": {
++                "details": {
++                  "required": [
++                    "outcome"
++                  ],
++                  "properties": {
++                    "outcome": {
++                      "const": "unknown"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "retryable": {
++                  "const": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryCheckResult"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "ErrorProviderUnavailable": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "PROVIDER_UNAVAILABLE"
++          },
++          "category": {
++            "const": "provider"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "type": "boolean"
++          },
++          "details": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorDependencyDetails"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorSubmissionDetails"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryCheckResult"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryRetryRequest"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 503,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "retryable": {
++                  "const": true
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "details": {
++                  "type": "object",
++                  "properties": {
++                    "outcome": {
++                      "const": "not_accepted"
++                    }
++                  },
++                  "required": [
++                    "outcome"
++                  ],
++                  "additionalProperties": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryRetryRequest"
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "recovery": {
++                  "oneOf": [
++                    {
++                      "type": "null"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RecoveryCheckResult"
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          {
++            "if": {
++              "properties": {
++                "details": {
++                  "required": [
++                    "outcome"
++                  ],
++                  "properties": {
++                    "outcome": {
++                      "const": "unknown"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "retryable": {
++                  "const": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryCheckResult"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "ErrorProviderTimeout": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "PROVIDER_TIMEOUT"
++          },
++          "category": {
++            "const": "provider"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "type": "boolean"
++          },
++          "details": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorDependencyDetails"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorSubmissionDetails"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryCheckResult"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryRetryRequest"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 504,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "retryable": {
++                  "const": true
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "details": {
++                  "type": "object",
++                  "properties": {
++                    "outcome": {
++                      "const": "not_accepted"
++                    }
++                  },
++                  "required": [
++                    "outcome"
++                  ],
++                  "additionalProperties": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryRetryRequest"
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "recovery": {
++                  "oneOf": [
++                    {
++                      "type": "null"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RecoveryCheckResult"
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          {
++            "if": {
++              "properties": {
++                "details": {
++                  "required": [
++                    "outcome"
++                  ],
++                  "properties": {
++                    "outcome": {
++                      "const": "unknown"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "retryable": {
++                  "const": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryCheckResult"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "ErrorStorageInternalFailure": {
++        "type": "object",
++        "properties": {
++          "code": {
++            "const": "STORAGE_INTERNAL_FAILURE"
++          },
++          "category": {
++            "const": "storage"
++          },
++          "message": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 256
++          },
++          "retryable": {
++            "type": "boolean"
++          },
++          "details": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorSubmissionDetails"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "recovery": {
++            "oneOf": [
++              {
++                "type": "null"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryCheckResult"
++              },
++              {
++                "$ref": "#/components/schemas/RecoveryRetryRequest"
++              }
++            ]
++          }
++        },
++        "required": [
++          "code",
++          "category",
++          "message",
++          "retryable",
++          "details",
++          "recovery"
++        ],
++        "additionalProperties": false,
++        "x-http-status": 500,
++        "allOf": [
++          {
++            "if": {
++              "properties": {
++                "retryable": {
++                  "const": true
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "details": {
++                  "type": "object",
++                  "properties": {
++                    "outcome": {
++                      "const": "not_accepted"
++                    }
++                  },
++                  "required": [
++                    "outcome"
++                  ],
++                  "additionalProperties": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryRetryRequest"
++                }
++              }
++            },
++            "else": {
++              "properties": {
++                "recovery": {
++                  "oneOf": [
++                    {
++                      "type": "null"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RecoveryCheckResult"
++                    }
++                  ]
++                }
++              }
++            }
++          },
++          {
++            "if": {
++              "properties": {
++                "details": {
++                  "required": [
++                    "outcome"
++                  ],
++                  "properties": {
++                    "outcome": {
++                      "const": "unknown"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
++              }
++            },
++            "then": {
++              "properties": {
++                "retryable": {
++                  "const": false
++                },
++                "recovery": {
++                  "$ref": "#/components/schemas/RecoveryCheckResult"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "PublicError": {
++        "oneOf": [
++          {
++            "$ref": "#/components/schemas/ErrorValidationBadRequest"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorValidationCursorMismatch"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorValidationCursorExpired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorAuthRequired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorAuthSessionInvalid"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorAuthAccountDisabled"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorAuthInvalidCredentials"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorPermissionAdminRequired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorPermissionCsrfRejected"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorPermissionResourceUnavailable"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateOperationNotAllowed"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateProjectReadOnly"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateNotCancellable"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateLastAdminRequired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateIdempotencyConflict"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateConfirmationStale"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateConfirmationRequired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorLockConstructionOccupied"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorLockResponseActive"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorLockContentBusy"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorVersionRequired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorVersionBindingMismatch"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorVersionBaselineStale"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorConfigModelSelectionRequired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorConfigMissing"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorConfigSecretUnavailable"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorConfigSourceDisabled"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorConfigConnectionFailed"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateEventReplayUnavailable"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStorageFileUnavailable"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateRevisionConflict"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateRevisionRequired"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorValidationPayloadTooLarge"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorValidationUnsupportedFormat"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorValidationFieldInvalid"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorValidationUnknownField"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorValidationFileUnreadable"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStateResourceLimit"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorProviderFailed"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorProviderUnavailable"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorProviderTimeout"
++          },
++          {
++            "$ref": "#/components/schemas/ErrorStorageInternalFailure"
++          }
++        ],
++        "description": "Shared safe error for HTTP, Task.error and SSE error payload. HTTP status mapping lives on each variant. Not a complete Task or endpoint contract."
++      },
++      "ErrorEnvelope": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "$ref": "#/components/schemas/PublicError"
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorPayload": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "$ref": "#/components/schemas/TaskError"
++          }
++        },
++        "required": [
++          "error"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope400": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorValidationBadRequest"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorValidationCursorMismatch"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorValidationCursorExpired"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope401": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorAuthRequired"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorAuthSessionInvalid"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorAuthAccountDisabled"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorAuthInvalidCredentials"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope403": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorPermissionAdminRequired"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorPermissionCsrfRejected"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope404": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorPermissionResourceUnavailable"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope409": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorStateOperationNotAllowed"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorStateProjectReadOnly"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorStateNotCancellable"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorStateLastAdminRequired"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorStateIdempotencyConflict"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorStateConfirmationStale"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorStateConfirmationRequired"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorLockConstructionOccupied"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorLockResponseActive"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorLockContentBusy"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorVersionRequired"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorVersionBindingMismatch"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorVersionBaselineStale"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorConfigModelSelectionRequired"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorConfigMissing"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorConfigSecretUnavailable"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorConfigSourceDisabled"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorConfigConnectionFailed"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorStateEventReplayUnavailable"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope410": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorStorageFileUnavailable"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope412": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorStateRevisionConflict"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope413": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorValidationPayloadTooLarge"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope415": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorValidationUnsupportedFormat"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope422": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorValidationFieldInvalid"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorValidationUnknownField"
++              },
++              {
++                "$ref": "#/components/schemas/ErrorValidationFileUnreadable"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope428": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorStateRevisionRequired"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope429": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorStateResourceLimit"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope500": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorStorageInternalFailure"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope502": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorProviderFailed"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope503": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorProviderUnavailable"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "ErrorEnvelope504": {
++        "type": "object",
++        "properties": {
++          "error": {
++            "oneOf": [
++              {
++                "$ref": "#/components/schemas/ErrorProviderTimeout"
++              }
++            ]
++          },
++          "meta": {
++            "type": "object",
++            "properties": {
++              "request_id": {
++                "$ref": "#/components/schemas/ID"
++              }
++            },
++            "required": [
++              "request_id"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "required": [
++          "error",
++          "meta"
++        ],
++        "additionalProperties": false
++      },
++      "TaskError": {
++        "allOf": [
++          {
++            "$ref": "#/components/schemas/PublicError"
++          },
++          {
++            "properties": {
++              "retryable": {
++                "const": false
++              },
++              "recovery": {
++                "not": {
++                  "required": [
++                    "action"
++                  ],
++                  "properties": {
++                    "action": {
++                      "const": "retry_request"
++                    }
++                  },
++                  "not": {
++                    "type": "null"
++                  }
++                }
++              }
++            }
++          }
++        ],
++        "description": "Error after task acceptance; same public vocabulary, never authorizes retry of the accepted request."
++      }
++    },
++    "responses": {
++      "PublicError400": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope400"
++            }
++          }
++        }
++      },
++      "PublicError401": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope401"
++            }
++          }
++        }
++      },
++      "PublicError403": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope403"
++            }
++          }
++        }
++      },
++      "PublicError404": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope404"
++            }
++          }
++        }
++      },
++      "PublicError409": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope409"
++            }
++          }
++        }
++      },
++      "PublicError410": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope410"
++            }
++          }
++        }
++      },
++      "PublicError412": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope412"
++            }
++          }
++        }
++      },
++      "PublicError413": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope413"
++            }
++          }
++        }
++      },
++      "PublicError415": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope415"
++            }
++          }
++        }
++      },
++      "PublicError422": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope422"
++            }
++          }
++        }
++      },
++      "PublicError428": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope428"
++            }
++          }
++        }
++      },
++      "PublicError429": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope429"
++            }
++          }
++        },
++        "headers": {
++          "Retry-After": {
++            "required": true,
++            "description": "Delay seconds before considering original request retry; does not authorize business rerun.",
++            "schema": {
++              "type": "integer",
++              "minimum": 0
++            }
++          }
++        }
++      },
++      "PublicError500": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope500"
++            }
++          }
++        }
++      },
++      "PublicError502": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope502"
++            }
++          }
++        }
++      },
++      "PublicError503": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope503"
++            }
++          }
++        }
++      },
++      "PublicError504": {
++        "description": "Safe public error; applicability follows 04 and operation preconditions.",
++        "content": {
++          "application/json": {
++            "schema": {
++              "$ref": "#/components/schemas/ErrorEnvelope504"
++            }
++          }
++        }
+       }
+     }
+   },
+@@ -8327,6 +11716,7 @@
+     },
+     "done": {
+       "$ref": "#/components/schemas/DonePayload"
+-    }
++    },
++    "error": "#/components/schemas/ErrorPayload"
+   }
+ }
+--- before/contracts/p0.coverage.json
++++ after/contracts/p0.coverage.json
+@@ -1,6 +1,6 @@
+ {
+-  "version": "1.0",
+-  "date": "2026-10-19",
++  "version": "1.1",
++  "date": "2026-10-22",
+   "source_rows": [
+     {
+       "signature": "`CW/search-terms/action-preview`",
+@@ -597,15 +597,16 @@
+     "status",
+     "delta",
+     "warning",
+-    "done"
++    "done",
++    "error"
+   ],
+-  "coverage_level": "request/success shapes only; not full HTTP or business acceptance",
++  "coverage_level": "partial request/success plus shared public errors; not full HTTP or business acceptance",
+   "gaps": [
+     {
+       "id": "GAP-ERROR",
+-      "kind": "design-detail-missing",
+-      "scope": "all operations; SSE error",
+-      "reason": "Safe error details/recovery fields lack a closed vocabulary; no permissive object schema substituted."
++      "kind": "not-yet-transcribed",
++      "scope": "per-operation HTTP error applicability and binding",
++      "reason": "PublicError, status-specific response components and SSE ErrorPayload are typed. Endpoint-specific error responses are not yet bound; TaskView remains incomplete."
+     },
+     {
+       "id": "GAP-TASK",
+@@ -629,7 +630,7 @@
+       "id": "GAP-SSE",
+       "kind": "not-yet-transcribed",
+       "scope": "citation payload, complete event envelope, Task output and SSE endpoint",
+-      "reason": "EvidenceRef cross-field/locator/target constraints and stream envelope have not been fully transferred. Four payload schemas alone do not validate complete SSE messages."
++      "reason": "EvidenceRef cross-field/locator/target constraints and stream envelope have not been fully transferred. Five payload schemas alone do not validate complete SSE messages."
+     },
+     {
+       "id": "GAP-RUNTIME",
+@@ -639,9 +640,9 @@
+     }
+   ],
+   "normative_fingerprints": {
+-    "04_api_contracts.md": "473a3f0499a3b3bea7e07151b847aa97cb36e5a38f525722baa776c79c809c2a",
+-    "04-01_p0_operation_contracts.md": "2d2f791b647edc7d5affd194b2fd8ba529ca01ee8c47b9e325a79976c9d34429",
+-    "04-02_transport_task_file_contracts.md": "dd45e177573c956d29223f2f28b7b1302848e1672c7f699e3db573003f7c61b5"
++    "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
++    "04-01_p0_operation_contracts.md": "3a8634e699e286bc10e3ed04279d5c4f9a4ba723b80c625b8a01a34894399bcb",
++    "04-02_transport_task_file_contracts.md": "990407413d42294568f1363504bb02dc617bd104ab79b072fd7dedf009039f7e"
+   },
+   "operation_coverage": {
+     "Account.GetCSRF": {
+@@ -2531,5 +2532,61 @@
+       },
+       "remaining": []
+     }
+-  ]
++  ],
++  "public_errors": {
++    "schema": "PublicError",
++    "envelope": "ErrorEnvelope",
++    "task_projection": "TaskError or null; constrained PublicError for accepted tasks; complete TaskView excluded",
++    "variants": [
++      "VALIDATION_BAD_REQUEST",
++      "VALIDATION_CURSOR_MISMATCH",
++      "VALIDATION_CURSOR_EXPIRED",
++      "AUTH_REQUIRED",
++      "AUTH_SESSION_INVALID",
++      "AUTH_ACCOUNT_DISABLED",
++      "AUTH_INVALID_CREDENTIALS",
++      "PERMISSION_ADMIN_REQUIRED",
++      "PERMISSION_CSRF_REJECTED",
++      "PERMISSION_RESOURCE_UNAVAILABLE",
++      "STATE_OPERATION_NOT_ALLOWED",
++      "STATE_PROJECT_READ_ONLY",
++      "STATE_NOT_CANCELLABLE",
++      "STATE_LAST_ADMIN_REQUIRED",
++      "STATE_IDEMPOTENCY_CONFLICT",
++      "STATE_CONFIRMATION_STALE",
++      "STATE_CONFIRMATION_REQUIRED",
++      "LOCK_CONSTRUCTION_OCCUPIED",
++      "LOCK_RESPONSE_ACTIVE",
++      "LOCK_CONTENT_BUSY",
++      "VERSION_REQUIRED",
++      "VERSION_BINDING_MISMATCH",
++      "VERSION_BASELINE_STALE",
++      "CONFIG_MODEL_SELECTION_REQUIRED",
++      "CONFIG_MISSING",
++      "CONFIG_SECRET_UNAVAILABLE",
++      "CONFIG_SOURCE_DISABLED",
++      "CONFIG_CONNECTION_FAILED",
++      "STATE_EVENT_REPLAY_UNAVAILABLE",
++      "STORAGE_FILE_UNAVAILABLE",
++      "STATE_REVISION_CONFLICT",
++      "STATE_REVISION_REQUIRED",
++      "VALIDATION_PAYLOAD_TOO_LARGE",
++      "VALIDATION_UNSUPPORTED_FORMAT",
++      "VALIDATION_FIELD_INVALID",
++      "VALIDATION_UNKNOWN_FIELD",
++      "VALIDATION_FILE_UNREADABLE",
++      "STATE_RESOURCE_LIMIT",
++      "PROVIDER_FAILED",
++      "PROVIDER_UNAVAILABLE",
++      "PROVIDER_TIMEOUT",
++      "STORAGE_INTERNAL_FAILURE"
++    ],
++    "runtime_limits": [
++      "authorization before details",
++      "message/revision/field/URL sanitization",
++      "submission outcome evidence",
++      "action eligibility",
++      "no automatic business rerun"
++    ]
++  }
+ }
+--- before/scripts/check_api_contracts.py
++++ after/scripts/check_api_contracts.py
+@@ -68,7 +68,7 @@
+         assert op['x-phase'] == 'P0'
+         assert op['x-use-case'] and op['x-fr'] and op['x-authorization']
+         assert op['x-version-binding'] in {'not-applicable','bound-object','explicit-or-default-at-creation'}
+-        assert op['x-errors'] == 'markdown-only:04-section-5', 'error schemas are not yet closed'
++        assert op['x-errors'] == '#/components/schemas/PublicError', 'public error reference drift'
+         names = {p['name'] for p in op.get('parameters', [])}
+         required_headers = {p['name'] for p in op.get('parameters', []) if p['in'] == 'header' and p.get('required') is True}
+         assert set(re.findall(r'{([^}]+)}', path)) <= names, path
+@@ -103,6 +103,13 @@
+     bounded(spec)
+     for schema in spec['components']['schemas'].values():
+         Draft202012Validator.check_schema(schema)
++    error_refs = spec['components']['schemas']['PublicError']['oneOf']
++    variants = [spec['components']['schemas'][r['$ref'].rsplit('/', 1)[1]] for r in error_refs]
++    assert sorted(v['properties']['code']['const'] for v in variants) == sorted(coverage['public_errors']['variants']), 'public error coverage drift'
++    for variant in variants:
++        status = str(variant['x-http-status'])
++        response = spec['components']['responses']['PublicError' + status]
++        assert response['content']['application/json']['schema']['$ref'] == '#/components/schemas/ErrorEnvelope' + status
+     assert set(coverage['event_payloads_typed']) == set(spec['x-sse-payloads'])
+ 
+ 
+@@ -144,7 +151,7 @@
+           f"{len(coverage['source_rows'])} inventoried source rows; {len(spec['x-sse-payloads'])}/6 SSE payload types")
+     if not args.baseline:
+         print('COMPATIBILITY NOT CHECKED: no prior reviewed --baseline supplied.')
+-    print('NOT VERIFIED: runtime authorization/state/transactions, error details, TaskView/output and uncovered operations; see coverage.')
++    print('NOT VERIFIED: runtime authorization/state/transactions, runtime error sanitization/action eligibility, TaskView/output and uncovered operations; see coverage.')
+ 
+ 
+ if __name__ == '__main__':
+--- before/scripts/tests/test_public_errors.py
++++ after/scripts/tests/test_public_errors.py
+@@ -0,0 +1,117 @@
++"""A04 requirement examples: fixed expectations from 04/08, not schema-derived inputs."""
++import copy
++import json
++import unittest
++from pathlib import Path
++from test_api_contracts import valid, SPEC_DATA, SCHEMAS
++
++# Explicit normative examples also ensure every published variant is exercised.
++GROUPS = [
++ (400,'validation','VALIDATION_BAD_REQUEST VALIDATION_CURSOR_MISMATCH VALIDATION_CURSOR_EXPIRED'),
++ (401,'auth','AUTH_REQUIRED AUTH_SESSION_INVALID AUTH_ACCOUNT_DISABLED AUTH_INVALID_CREDENTIALS'),
++ (403,'permission','PERMISSION_ADMIN_REQUIRED PERMISSION_CSRF_REJECTED'),
++ (404,'permission','PERMISSION_RESOURCE_UNAVAILABLE'),
++ (409,'state','STATE_OPERATION_NOT_ALLOWED STATE_PROJECT_READ_ONLY STATE_NOT_CANCELLABLE STATE_LAST_ADMIN_REQUIRED STATE_IDEMPOTENCY_CONFLICT STATE_CONFIRMATION_STALE STATE_CONFIRMATION_REQUIRED STATE_EVENT_REPLAY_UNAVAILABLE'),
++ (409,'lock_conflict','LOCK_CONSTRUCTION_OCCUPIED LOCK_RESPONSE_ACTIVE LOCK_CONTENT_BUSY'),
++ (409,'version','VERSION_REQUIRED VERSION_BINDING_MISMATCH VERSION_BASELINE_STALE'),
++ (409,'configuration','CONFIG_MODEL_SELECTION_REQUIRED CONFIG_MISSING CONFIG_SECRET_UNAVAILABLE CONFIG_SOURCE_DISABLED CONFIG_CONNECTION_FAILED'),
++ (410,'storage','STORAGE_FILE_UNAVAILABLE'),(412,'state','STATE_REVISION_CONFLICT'),(428,'state','STATE_REVISION_REQUIRED'),
++ (413,'validation','VALIDATION_PAYLOAD_TOO_LARGE'),(415,'validation','VALIDATION_UNSUPPORTED_FORMAT'),
++ (422,'validation','VALIDATION_FIELD_INVALID VALIDATION_UNKNOWN_FIELD VALIDATION_FILE_UNREADABLE'),
++ (429,'state','STATE_RESOURCE_LIMIT'),(502,'provider','PROVIDER_FAILED'),(503,'provider','PROVIDER_UNAVAILABLE'),(504,'provider','PROVIDER_TIMEOUT'),(500,'storage','STORAGE_INTERNAL_FAILURE')]
++CASES=[(code,status,category) for status,category,codes in GROUPS for code in codes.split()]
++RID='00000000-0000-4000-8000-000000000002'
++def error(code,category):
++ return dict(code=code,category=category,message='资源不可用' if code=='PERMISSION_RESOURCE_UNAVAILABLE' else '操作未完成',retryable=False,details=None,recovery=None)
++def action(name,label): return dict(action=name,label=label)
++
++class PublicErrorTests(unittest.TestCase):
++ def test_er01_every_variant_required_null_types_unknown_and_category(self):
++  published={SCHEMAS[r['$ref'].rsplit('/',1)[1]]['properties']['code']['const'] for r in SCHEMAS['PublicError']['oneOf']}
++  self.assertEqual(published,{c[0] for c in CASES})
++  for code,status,cat in CASES:
++   with self.subTest(code=code):
++    value=error(code,cat); self.assertTrue(valid('PublicError',value))
++    for key in value:
++     missing=copy.deepcopy(value); del missing[key]; self.assertFalse(valid('PublicError',missing),key)
++     wrong=copy.deepcopy(value); wrong[key]=[]; self.assertFalse(valid('PublicError',wrong),key)
++    for change in [{'extra':'private'},{'category':'invented'},{'code':'NEW_UNKNOWN'},{'retryable':True},{'recovery':action('rerun','重新运行')}]:
++     self.assertFalse(valid('PublicError',value|change))
++    envelope={'error':value,'meta':{'request_id':RID}}
++    self.assertTrue(valid('ErrorEnvelope',envelope))
++    self.assertTrue(valid('ErrorEnvelope'+str(status),envelope))
++    self.assertFalse(valid('ErrorEnvelope'+str(404 if status!=404 else 500),envelope))
++    self.assertFalse(valid('ErrorEnvelope',{'error':value,'meta':{}}))
++ def test_er02_unavailable_indistinguishable(self):
++  # Synthetic internal causes map to exactly the same public value. No production mapper claimed.
++  projections=[error('PERMISSION_RESOURCE_UNAVAILABLE','permission') for cause in ['missing','foreign_project','deleted','hidden']]
++  self.assertTrue(all(v==projections[0] for v in projections))
++  for field in ['project_id','exists','resource_url','owner_id','reason']:
++   self.assertFalse(valid('PublicError',projections[0]|{'details':{field:'private-marker'}}))
++  self.assertFalse(valid('PublicError',projections[0]|{'message':'Object exists in another project'}))
++ def test_er03_closed_details_and_sanitization_limit(self):
++  v=error('PROVIDER_FAILED','provider')
++  for field in ['raw_response','sql','stack','api_key','path','value']:
++   self.assertFalse(valid('PublicError',v|{'details':{field:'SYNTHETIC_PRIVATE_MARKER'}}))
++  self.assertTrue(valid('PublicError',v|{'details':{'reason':'authentication'}}))
++  self.assertFalse(valid('PublicError',v|{'details':{'reason':'SYNTHETIC_PRIVATE_MARKER'}}))
++  # Free text cannot be proven sanitized by schema; deliberately keep this limitation visible.
++  self.assertTrue(valid('PublicError',v|{'message':'SYNTHETIC_PRIVATE_MARKER'}))
++ def test_er04_revision_confirmation_and_no_overwrite(self):
++  v=error('STATE_REVISION_CONFLICT','state')
++  details={'current_revision':'r2','resource_url':'/api/v1/projects/'+RID}
++  self.assertTrue(valid('PublicError',v|{'details':details,'recovery':action('reload_resource','重新读取')}))
++  for field in details:
++   bad=details.copy(); del bad[field]; self.assertFalse(valid('PublicError',v|{'details':bad}))
++  for url in ['https://evil.test','/private/secret','/api/v1/../secret','/api/v1/tasks/x?token=secret']:
++   self.assertFalse(valid('PublicError',v|{'details':details|{'resource_url':url}}))
++  for code in ['STATE_CONFIRMATION_REQUIRED','STATE_CONFIRMATION_STALE']:
++   e=error(code,'state'); self.assertTrue(valid('PublicError',e|{'recovery':action('refresh_confirmation','重新查看确认依据')}))
++   self.assertFalse(valid('PublicError',e|{'recovery':action('retry_request','按原请求条件重试')}))
++  self.assertFalse(valid('PublicError',v|{'details':details|{'force':True}}))
++ def test_er05_submission_unknown_and_safe_retry(self):
++  for code,cat in [('STORAGE_INTERNAL_FAILURE','storage'),('PROVIDER_FAILED','provider'),('PROVIDER_TIMEOUT','provider'),('PROVIDER_UNAVAILABLE','provider'),('STATE_RESOURCE_LIMIT','state')]:
++   v=error(code,cat)
++   known=v|{'details':{'outcome':'not_accepted'},'retryable':True,'recovery':action('retry_request','按原请求条件重试')}
++   unknown=v|{'details':{'outcome':'unknown'},'recovery':action('check_result','核查原操作结果')}
++   self.assertTrue(valid('PublicError',known)); self.assertTrue(valid('PublicError',unknown))
++   for bad in [unknown|{'retryable':True},unknown|{'recovery':None},known|{'details':None},known|{'details':{'outcome':'unknown'}},known|{'recovery':None}]:
++    self.assertFalse(valid('PublicError',bad))
++   for forbidden in ['new_key','regenerate','retry_run','reconnect','force']:
++    self.assertFalse(valid('PublicError',unknown|{'recovery':action(forbidden,'执行')}))
++ def test_er06_named_details_and_action_boundaries(self):
++  examples=[('VALIDATION_FIELD_INVALID','validation',{'fields':[{'field':'model_selection.model_id','reason':'required'}]},'correct_request','修正请求'),
++   ('STATE_EVENT_REPLAY_UNAVAILABLE','state',{'status_url':'/api/v1/tasks/'+RID},'reload_task','重新读取状态'),
++   ('CONFIG_CONNECTION_FAILED','configuration',{'reason':'network'},'repair_configuration','检查配置')]
++  for code,cat,details,a,label in examples:
++   v=error(code,cat)|{'details':details,'recovery':action(a,label)}
++   self.assertTrue(valid('PublicError',v))
++   self.assertFalse(valid('PublicError',v|{'details':details|{'private':'marker'}}))
++   self.assertFalse(valid('PublicError',v|{'recovery':action(a,label)|{'url':'https://evil.test'}}))
++   for k in details:
++    bad=details.copy(); del bad[k]; self.assertFalse(valid('PublicError',v|{'details':bad}))
++  for code,cat,a,label in [('AUTH_REQUIRED','auth','reauthenticate','重新认证'),('PERMISSION_CSRF_REJECTED','permission','refresh_csrf','刷新请求凭据'),('VALIDATION_CURSOR_EXPIRED','validation','reload_page','重新读取第一页')]:
++   self.assertTrue(valid('PublicError',error(code,cat)|{'recovery':action(a,label)}))
++  self.assertFalse(valid('ErrorFieldsDetails',{'fields':[]}))
++  self.assertFalse(valid('ErrorFieldsDetails',{'fields':[{'field':'password','reason':'invalid','value':'secret'}]}))
++ def test_er07_shared_carriers_not_task_http_failure(self):
++  e=error('PROVIDER_UNAVAILABLE','provider')
++  self.assertTrue(valid('ErrorEnvelope',{'error':e,'meta':{'request_id':RID}}))
++  self.assertTrue(valid('ErrorPayload',{'error':e}))
++  self.assertTrue(valid('TaskError',e))  # Task.error only; no fabricated complete Task schema.
++  unsafe=e|{'details':{'outcome':'not_accepted'},'retryable':True,'recovery':action('retry_request','按原请求条件重试')}
++  self.assertTrue(valid('PublicError',unsafe))
++  self.assertFalse(valid('TaskError',unsafe))
++  self.assertFalse(valid('ErrorPayload',{'error':unsafe}))
++  self.assertEqual(SPEC_DATA['x-sse-payloads']['error'],'#/components/schemas/ErrorPayload')
++  self.assertNotIn('TaskView',SCHEMAS)
++ def test_er08_existing_requests_success_and_bindings_preserved(self):
++  root=Path(__file__).resolve().parents[2]
++  old=json.loads((root/'docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json').read_text())
++  for name,schema in old['components']['schemas'].items(): self.assertEqual(schema,SCHEMAS[name],name)
++  for path,item in old['paths'].items():
++   for method,op in item.items():
++    updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']; self.assertEqual(op,updated)
++  self.assertEqual(SPEC_DATA['components']['responses']['PublicError429']['headers']['Retry-After']['required'],True)
++
++if __name__=='__main__': unittest.main()
+--- before/docs/design/04_api_contracts.md
++++ after/docs/design/04_api_contracts.md
+@@ -1,7 +1,7 @@
+ # API Contracts 设计
+ 
+-文档版本：v1.11
+-更新日期：2026-10-19
++文档版本：v1.12
++更新日期：2026-10-22
+ 依据文档：[00](00_layers.md)、[01](01_functional_requirements.md)、[02](02_domain_core.md)及其领域附录
+ 
+ ## 1. 范围与维护边界
+@@ -17,7 +17,7 @@
+ 
+ 业务含义服从 01/02，页面职责服从 03。附录不得通过新增字段改变业务规则。R1-A–R4-A 及用户补充已于2026-10-16采纳，见[决策记录](../proposals/api_boundary_redesign_2026-10-16.md)；替换D03严格覆盖与D06独立导出快照，本轮E01–E04已关闭。06/08未细化范围和历史备份不因本次修改整体升格为已定规范；07逻辑持久化、09测试用例及10运行约束以各自现行文档为准，旧SQL草案已删除。
+ 
+-已建立[局部 OpenAPI 机器契约](../../contracts/p0.openapi.json)和[覆盖清单](../../contracts/p0.coverage.json)，维护范围、缺项、可运行检查及兼容规则见[04-03](04-03_machine_contract_governance.md)。本批覆盖请求/成功响应及部分事件payload，不是完整HTTP契约；未生成 SDK、服务端代码或数据库迁移。已迁入结构仅在JSON维护字段，Markdown维护业务语义；未迁入结构继续以本组文档为准，不把缺项补成猜测默认值。
++已建立[局部 OpenAPI 机器契约](../../contracts/p0.openapi.json)和[覆盖清单](../../contracts/p0.coverage.json)，维护范围、缺项、可运行检查及兼容规则见[04-03](04-03_machine_contract_governance.md)。本批覆盖请求/成功响应、公共错误及部分事件payload，不是完整HTTP契约；未生成 SDK、服务端代码或数据库迁移。已迁入结构仅在JSON维护字段，Markdown维护业务语义；未迁入结构继续以本组文档为准，不把缺项补成猜测默认值。
+ 
+ ## 2. P0 范围及后续入口
+ 
+@@ -137,6 +137,35 @@
+ 
+ 附录的专用错误须落在上述 HTTP/category 规则下，使用已有类别前缀；未决业务不得伪装成已生效的新错误语义。Project 删除等异步操作若失去资源可见性，只提供账号治理授权范围内的执行结果，不复原原内容。
+ 
++
++### 5.1 公共错误的安全投影与恢复含义（A04）
++
++字段、必填、可空、长度和组合限制的唯一来源为[机器契约](../../contracts/p0.openapi.json)的 `PublicError`、各 `Error…` 变体、具名 details/recovery、`ErrorEnvelope` 和按状态划分的响应组件。上例只是合法样例，不是另一份字段定义。公共原因映射沿用上表全部错误码；不存在新的 Run 状态或恢复命令。
++
++| 内部原因/判定前提 | 对外投影与恢复语义 |
++| --- | --- |
++| 未认证、会话失效、禁用、凭证不正确 | 相应 AUTH 错误；重新认证建议不自动重发写命令；禁用不会因再次登录解除 |
++| 非管理员调用管理功能；CSRF失败 | 对应权限错误；修复身份或请求凭据不绕过服务端复核 |
++| 对象不存在、跨Project、无权披露、deleted对象 | 统一 PERMISSION_RESOURCE_UNAVAILABLE；固定安全消息，不附归属、存在性、修订、链接或动作。先判可见性，再判状态和幂等结果 |
++| 已授权但状态不允许、只读、不可取消、最后管理员保护 | 对应 STATE 错误；无通用执行建议，保持对象状态 |
++| 已授权的字段/文件/游标问题 | 相应 VALIDATION 错误；只输出约定字段名和安全原因，不输出原值；未知输入字段名须先映射为公开字段路径，不能原样回显任意用户键。重取第一页保留原知识版本意图 |
++| 当前修订失配/缺失 | 分别返回修订冲突/缺修订；仅前者可披露已授权的当前修订与读取引用。刷新只是读取，禁止自动用新修订重交旧修改 |
++| 确认缺失、受理前过期或依据实质改变 | 相应确认错误；重新展示当前依据并取得确认。不扩大替换范围。已受理确认不因原token墙钟到期被重新判失效；同键重放返回原执行事实 |
++| 同键异参；构建/回复/内容互斥 | 分别提示核查原操作或读取已有任务；只有当前可读任务才附状态引用，没有可披露引用时 details/recovery 可空；禁止强制覆盖、换键自动执行 |
++| 版本缺失、绑定错配、基线失效 | 相应 VERSION 错误，读取当前对象依据；非最新不是错误，建议不能自动采用新版本或改绑旧对象 |
++| 模型未选、配置缺失、凭据不可用、来源禁用、连接失败 | 相应 CONFIG 错误；引导检查当前有权管理的配置，不回落其他模型/身份。连接测试原因可区分格式、协议、认证、网络、模型、限流/额度；不得回显Provider响应 |
++| 已授权且文件清理/失效 | STORAGE_FILE_UNAVAILABLE；无替换文件建议，不退回另一版本 |
++| 事件回放过期 | STATE_EVENT_REPLAY_UNAVAILABLE；读取已授权状态快照，按04-02继续显示；不重执行业务 |
++| Provider失败/不可用/超时；内部存储失败；技术资源限制 | 对应 PROVIDER/STORAGE/STATE_RESOURCE_LIMIT；默认不自动重试，内部栈/SQL/路径/响应仅留受控内部诊断；429仍需Retry-After |
++| 已有证据证明命令未受理且未发生外部副作用 | 上述技术失败可给出受约束的请求重试建议；保留原操作、参数、幂等键和版本意图，重验权限/前置及去重有效期。不能据此创建新的业务attempt |
++| 提交或外部执行结果未知 | 技术错误携带结果未知的安全投影，禁止retryable及直接重发建议；先查询已知对象/任务或核查原命令。无可查询ID时也不编造链接。完全断网时无服务器错误信封，UI按同一未知结果规则处理 |
++
++恢复建议只提供显示意图，不执行命令，不代替权限、确认或能力判断；没有合法动作就返回空建议。`retryable`描述原请求的安全传输条件，不能用于判断失败Task可重新生成。已受理失败的Task错误必须保持不可直接重试：同键仍返回原Task，明确新生成是另一次用户操作，按既有内容保护规则执行。P0不增加通用retry/reconnect/rerun。
++
++HTTP拒绝使用按状态分组的错误响应组件；异步失败的Task读取仍可为200，`Task.error`使用约束后的 `TaskError`复用 `PublicError`，不是把Provider的503搬到Task GET状态。SSE error仅复用 `ErrorPayload`，流建立前的HTTP拒绝与流内错误区分；UI根据同一code解释原因，不能以Task状态代替业务对象状态。完整TaskView与SSE事件仍待其他任务。
++
++字符串长度、字段白名单和URL语法只能限制结构，不能证明消息、修订、字段名或引用不泄密。生产投影必须从安全模板/公开字段表构造，并重验引用权限；不能序列化异常对象或依赖黑名单过滤。request_id用于关联内部诊断，不授予其读取权限。上述运行义务不由schema测试冒充完成。
++
+ ## 6. 修订、确认与内容保护
+ 
+ 所有可变资源返回 `revision`（不透明字符串，1–128 字符）。影响该操作语义的变更推进修订；仅下载次数等无关统计不得让人工确认无故失效。读取详情给出 `available_actions`，条目至少含 `action`、`enabled`、`reason_code`（可空）；由应用层计算，调用时仍重验。
+--- before/docs/design/04-01_p0_operation_contracts.md
++++ after/docs/design/04-01_p0_operation_contracts.md
+@@ -1,7 +1,7 @@
+ # API 附录：P0 操作与数据契约
+ 
+-文档版本：v1.6
+-更新日期：2026-10-19
++文档版本：v1.7
++更新日期：2026-10-22
+ 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
+ 适用范围：P0 设计契约；不是实现或验收通过声明。
+ 
+@@ -378,6 +378,8 @@
+ 
+ ### 8.4 必须覆盖的文档/后续实现验收
+ 
++公共错误投影及恢复建议统一见04 §5.1和机器契约PublicError；本表的真实授权、并发和副作用验收不能由A04的结构测试代替。
++
+ | 场景 | 对应契约可判定结果 |
+ | --- | --- |
+ | 并发首位注册/最后管理员治理 | 只一位首位管理员、至少保留一位启用管理员 |
+--- before/docs/design/04-02_transport_task_file_contracts.md
++++ after/docs/design/04-02_transport_task_file_contracts.md
+@@ -1,7 +1,7 @@
+ # API 附录：异步任务、事件传输与文件
+ 
+-文档版本：v1.5
+-更新日期：2026-10-19
++文档版本：v1.6
++更新日期：2026-10-22
+ 适用项目大版本：v1
+ 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
+ 
+@@ -43,7 +43,7 @@
+ | `business_state` | `{target_type,target_id,state,revision}` 或 null；明确归属对象，不把 Task 状态传播为 Session 或整个 Review 状态 |
+ | `waiting_items` | 等待项引用数组，沿用业务契约的确认身份、依据修订与允许动作；无等待项时为空 |
+ | `cancel_requested_at` | RFC3339 时间或 null；技术取消请求事实，不新增领域 cancelling 状态 |
+-| `error` | 主文定义的安全错误对象或 null；不得返回密钥、内部路径、完整日志 |
++| `error` | 机器契约TaskError（受约束的PublicError）或 null；语义见04 §5.1；不得返回密钥、内部路径、完整日志 |
+ | `warnings` | 可展示风险/降级信息数组，元素 `{code,message}` |
+ | `event_cursor` | 不透明游标；对应本次快照已包含的最后一个事件位置 |
+ | `partial_result_ref` | `{type,id,url}` 或 null；本 Task 已保存的累计输出读取引用，可在任务运行或失败/取消后恢复显示；不代表已采纳或成功内容 |
+@@ -267,4 +267,6 @@
+ 
+ 本次修订 v1.4（2026-10-16）：同步 R1-A–R4-A 及人工补充裁决；本轮细则已关闭，实现与运行验收另行跟踪。
+ 
+-本次修订 v1.5（2026-10-19）：四类事件payload转为机器字段来源，明确完整SSE/任务/错误缺项，不宣称传输运行验收。
++本次修订 v1.5（2026-10-19）：当时四类事件payload转为机器字段来源，明确完整SSE/任务/错误缺项，不宣称传输运行验收。
++
++A04：`ErrorPayload`通过`TaskError`复用`PublicError`；Task.error也复用该受约束公共对象，成功/无错误时可空。异步已受理失败不允许直接重试请求的提示；200读取失败Task不改成Provider HTTP错误。完整Task/SSE仍未转写。
+--- before/docs/design/04-03_machine_contract_governance.md
++++ after/docs/design/04-03_machine_contract_governance.md
+@@ -1,21 +1,21 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.1
+-更新日期：2026-10-21
++文档版本：v1.2
++更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+ ## 1. 权威与覆盖边界
+ 
+-01/02 决定业务含义、权限和分期；04/04-01/04-02 维护跨字段、执行与传输语义。[OpenAPI 3.1 JSON](../../contracts/p0.openapi.json)只对其实际包含的具名 schema、请求和成功响应字段提供机器维护来源；没有 schema 的操作继续由 Markdown 维护，不能据此生成宽松 `object` 代用品。结构与业务规则冲突时停止依赖该冲突的代码生成并修正规范，不修改业务去迎合 schema。
++01/02 决定业务含义、权限和分期；04/04-01/04-02 维护跨字段、执行与传输语义。[OpenAPI 3.1 JSON](../../contracts/p0.openapi.json)只对其实际包含的具名 schema、请求、成功响应和公共错误字段提供机器维护来源；没有 schema 的操作继续由 Markdown 维护，不能据此生成宽松 `object` 代用品。结构与业务规则冲突时停止依赖该冲突的代码生成并修正规范，不修改业务去迎合 schema。
+ 
+-本次机器覆盖为 **42 个操作的请求/成功响应结构、另40个操作的仅请求结构、80 个 schema、4 类 SSE payload**，全部为局部覆盖，**没有任何操作被宣称为完整 HTTP 契约或运行验收通过**。公共错误 details/recovery 尚未闭合；SSE 的 payload 验证不等于完整 event/流验证。SDK、服务端模型和路由代码尚未生成。
++本次机器覆盖为 **42 个操作的请求/成功响应结构、另40个操作的仅请求结构、159 个 schema、5 类 SSE payload**，全部为局部覆盖，**没有任何操作被宣称为完整 HTTP 契约或运行验收通过**。A04公共错误42个变体及details/recovery已转写；每个操作的具体错误响应绑定尚未补齐，不能从公共组件推定所有错误适用于每条路由；SSE 的 payload 验证不等于完整 event/流验证。SDK、服务端模型和路由代码尚未生成。
+ 
+ [覆盖清单](../../contracts/p0.coverage.json)保留 04-01 所有操作表行及 04-01/04-02 正文具名 HTTP 路由的源签名。一个表行可含多个方法和路径，因此源行数不是端点数。校验器重新抽取源签名并逐项比较，新增、删除或变更操作行后必须显式更新覆盖，不能悄悄遗漏。三份04规范文件另保留完整SHA-256审核摘要（保守地包含历史及元信息）；任意正文变更会要求重新审查并同步摘要。它检测漂移，不证明Markdown和schema语义等价；不得自动刷新摘要后跳过审查。`typed_operations` 列出请求/成功响应局部覆盖，`request_only_operations` 列出只校验请求的操作；后者没有成功响应schema，不能从缺失推断无正文。`row_coverage` 为每条源行分别列出操作覆盖与剩余项。两类清单列出可消费的机器操作；其余源行不等于已经实现或完成转写。
+ 
+ | 缺项类别 | 已识别范围 | 后续动作 |
+ | --- | --- | --- |
+ | 已定但尚未转写 | 其余配置测试、Construction/Research/Review、知识资产、文件、完整 SSE/累计输出等结构 | 按领域规则机械转写，不能视为新的业务待决或分期变更 |
+-| 设计字段尚未闭合 | Error.details/recovery 安全字段词表；Task 目标类型完整枚举、waiting_items 引用；ConfirmationPreview.affected_items/retained_items | 定义具名字段及允许变体，关联对应用例后再转写；不要猜业务默认 |
++| 设计字段尚未闭合 | Task 目标类型完整枚举、waiting_items 引用；ConfirmationPreview.affected_items/retained_items | 定义具名字段及允许变体，关联对应用例后再转写；不要猜业务默认 |
+ | 实现验证 | 权限、跨 Project 防枚举、Origin/CSRF、状态、修订、确认、去重、原子快照、模型能力范围、SMTP认证类型字段组合、Workspace草稿object/part唯一性等 | 后续实际服务、隔离存储和端到端验收；schema 不能替代 |
+ 
+ 可重定位的本轮Agent限定核对基线见[A01–A03记录](../workorders/a01_a03_design_closure_2026-10-21.md)。它记录Git对象与内容摘要，不提升机器覆盖、不代表人类批准；后续兼容检查从指定Git对象提取旧JSON，不能拿本次修改后的JSON自比。
+@@ -54,3 +54,5 @@
+ 2026-10-19 已执行前三类校验及15项测试；compatibility 的正负例由测试执行。没有既有机器基线，不能声称完成历史版本兼容验收。未执行应用、数据库、真实Provider、SSE回放或端到端验收。依赖固定于独立 requirements，不属于新应用安装入口。
+ 
+ 本次修订 v1.1（2026-10-21）：登记精确基线与审查层级，现有JSON和覆盖指纹未修改。
++
++A04验收命令另含 `python -m unittest discover -s scripts/tests -p 'test_public_errors.py' -v`。当前差异及执行结果见[任务006](../../tasks/006-public-error-recovery-contract.md)；兼容门禁的非零结果保留，定向审查不代替人工接受。
+--- before/docs/design/08_security_permissions.md
++++ after/docs/design/08_security_permissions.md
+@@ -1,7 +1,7 @@
+ # Security & Permissions 设计
+ 
+-文档版本：v1.8
+-更新日期：2026-10-21
++文档版本：v1.9
++更新日期：2026-10-22
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+ ## 1. 设计目标
+@@ -172,3 +172,5 @@
+ v1.7（2026-10-20）：采纳SEC-D01/03简化方案；SEC-D02详细设计独立到08-01，保留待决边界及API接入缺项。
+ 
+ 本次修订（2026-10-21）：同步资料策略Q1–Q4已确认决定与双向立即生效，详细规则在08-01维护；接口与运行验证未完成。
++
++A04公共错误实现边界见04 §5.1：先鉴权再披露修订/任务引用，未知字段名也不原样回显；固定404形态不能替代真实防枚举验证。公共schema只限制字段与组合，任意字符串脱敏及动作资格仍需服务端测试。
+--- before/docs/design/09_quality_observability.md
++++ after/docs/design/09_quality_observability.md
+@@ -1,6 +1,6 @@
+ # 核心架构与功能模块测试设计
+ 
+-文档版本：v1.16
++文档版本：v1.17
+ 更新日期：2026-10-22
+ 依据文档：`00_layers.md`、`01_functional_requirements.md`
+ 
+@@ -190,3 +190,5 @@
+ 本次修订（2026-10-21）：同步P1互联网来源自动分类及内网边界测试入口，不提前运行验收。
+ 
+ 本次修订（2026-10-21）：衔接A01–A03工程/审核入口；未改变业务规则或宣称运行验收通过。
++
++A04公共错误契约的ER-01–08追踪与执行证据见[任务006](../../tasks/006-public-error-recovery-contract.md)。它只验证机器结构、安全样例与兼容差异；ARC-02/03/04/07及SEC-01–05/TTF的授权、事务、并发、内容保护与传输运行断言仍由业务切片执行，不因本次契约测试关闭。
+--- before/tasks/006-public-error-recovery-contract.md
++++ after/tasks/006-public-error-recovery-contract.md
+@@ -1,11 +1,11 @@
+ # Task 006：A04 公共错误与恢复提示契约
+ 
+-文档版本：v1.0
++文档版本：v1.1
+ 更新日期：2026-10-22
+ 
+ ## 1. 目标、授权与下一轮边界
+ 
+-用户于2026-10-22同意从A04推进，并要求新建task、约束下一轮范围。本轮只建立任务单和状态入口；下一轮限于本单的契约设计、机器转写、契约测试及必要文档同步，不启动业务实现。
++用户于2026-10-22同意从A04推进，并要求新建task、约束下一轮范围。建单轮只建立任务单和状态入口；用户随后明确“开始task006”，本执行轮限于本单的契约设计、机器转写、契约测试及必要文档同步，不启动业务实现。
+ 
+ 可观察结果：API、Task和UI的实现者能根据同一公共错误契约，确定安全展示字段、可空值、重试含义与恢复建议；对无权访问对象不暴露存在性，对提交结果未知不建议直接重新生成或换幂等键执行。
+ 
+@@ -90,8 +90,29 @@
+ 
+ 审核者/日期：待人工填写；接受基线/范围：待填写；审核结论：未审核。
+ 
+-当前状态：任务范围已定义；A04设计待开始；机器契约与测试待实现；A04验证未执行；人工接受未记录。本轮建单只做文档检查，实际结果见第7节。
++当前状态：A04公共错误设计及机器契约已交付，契约自动验证通过；兼容门禁预期非零，定向技术审查已记录；人工接受未记录。建单历史证据见第7节，执行轮结果见第8节。
+ 
+ ## 7. 本轮建单验证
+ 
+ 本轮仅新增本任务并同步项目状态；未修改业务规范、机器契约或应用代码。已执行只读文档检查：本任务及项目状态共62个本地引用目标存在；ER-01–08场景齐全；版本、日期及行尾空白检查通过；项目状态的限定 `git diff --check` 通过。未执行应用或契约测试，因本轮未修改这些产物；不将任务规格视为A04已完成。
++
++## 8. 执行轮交付（2026-10-22）
++
++单一审核包：[交付与兼容审查](../docs/workorders/evidence/a04_2026-10-22/review.md)。第2节规范版本表及第4–5节的“待编写/待执行”描述保留为建单输入；当前执行状态由本节和包内日志替代。变更后04/04-01/04-02/04-03/08/09分别为v1.12/v1.7/v1.6/v1.2/v1.9/v1.17。未变更业务规则、原成功响应/请求或应用源码。
++
++| 局部要求 | 已核对规范子条目及既有验收入口 | 可执行场景与当前证据 |
++| --- | --- | --- |
++| ER-01 | 04 §5/5.1；ARC-08 | `test_er01_every_variant_required_null_types_unknown_and_category`：42个变体合法空值、必填/类型/未知字段/错误类别/非法动作/HTTP分类；public-errors.log通过 |
++| ER-02 | FR-008 Project可用性约束、04 §4、08 §3；ARC-02、SEC-01/02、TTF-02/07 | `test_er02_unavailable_indistinguishable`：合成缺失/越权统一形态，禁止私有details及差异消息；通过；真实鉴权待业务切片 |
++| ER-03 | FR-002/007凭据保护、08 §5/12.2、04 §5；SEC-04/05 | `test_er03_closed_details_and_sanitization_limit`：拒绝六类原始诊断字段，安全原因正例；明确自由文本不保证脱敏；通过 |
++| ER-04 | FR-017验收“人工修改不会静默覆盖”“重新生成需确认”、04 §6；ARC-04/07、SEC-03、API-R03/05 | `test_er04_revision_confirmation_and_no_overwrite`：修订/确认动作、引用/缺字段/force反例；通过；已受理确认不因TTL失效按04 §5.1审查，实际执行未验证 |
++| ER-05 | FR-015功能范围“结果未明显示核验中”、04 §7第2–5项；ARC-03、TTF-01 | `test_er05_submission_unknown_and_safe_retry`：五类技术错误的已知未受理/未知结果、组合反例、禁换键和重跑；通过；真实提交与竞争仍未执行 |
++| ER-06 | FR-014/015 P0/P1分期、FR-017确认保护、03-04冲突/恢复交互、04 §5.1 | `test_er06_named_details_and_action_boundaries`及ER-01/05：具名字段、无动作可空、配置/认证/游标建议、不新增执行入口；通过；实际动作资格待实现 |
++| ER-07 | FR-015错误展示与FR-028流式回复、04 §3、04-02 §2/3；ARC-07、TTF-06/13 | `test_er07_shared_carriers_not_task_http_failure`：共享错误、Task/SSE禁止直接请求重试；通过；Task GET 200语义按04-02审查，无完整Task运行验收 |
++| ER-08 | 04-03 §1–3；ARC-08 | `test_er08_existing_requests_success_and_bindings_preserved` + 原`ContractTests`15项：全部旧schema及操作除错误引用外保持相等；通过；兼容门禁83项审查见审核包 |
++
++测试文件为 `scripts/tests/test_public_errors.py`（上述8方法）及 `scripts/tests/test_api_contracts.py`（原15方法，未改断言）。独立契约环境运行命令、退出码和完整日志在审核包；结构检查159 schemas、126源行、42请求/成功局部操作+40仅请求操作、5/6事件payload通过。`--baseline`退出1已保留，不能宣称无差异兼容通过。原成功/请求不变不代表新增错误全部运行安全。
++
++静态可判定要求已执行通过；运行时授权/脱敏、并发与事务、确认生命周期、UI动作执行均不在本单实现范围。逐端点错误响应绑定、完整Task/SSE/ConfirmationPreview仍由覆盖清单跟踪。无新增人类决策问题；下一步为人工审核本包，不自动开始后续任务。审核者、接受范围及基线仍待人工填写。
++
++工作区并行变化：最终摘要核对发现README、task005及若干骨架测试/脚本与开始时不同，具体列表见审核包preservation.json；本任务未写入或回滚这些文件，来源待核实，不纳入A04接受基线。契约相关受审文件及执行证据单独绑定摘要。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.32
++文档版本：v1.34
+ 更新日期：2026-10-22
+ 适用项目大版本：v1
+ 
+@@ -19,8 +19,8 @@
+ 
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+-| 应用实现基础 | 第一批工程骨架已实现；独立审核发现待修问题 | [任务005](../tasks/005-engineering-skeleton.md)：独立API/空闲Worker、前端预览、模块边界、锁文件及检查/构建入口；业务路由、数据库迁移、持久任务、Graph-RAG和生产部署未实现；验证明细见审核单；[独立审核](workorders/skeleton_independent_review_2026-10-22.md)确认2项P2/2项P3待修，未修改实现、未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04已限定下一轮范围、尚未执行，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约及自动验证已交付、待人工审核，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05–A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -35,11 +35,11 @@
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
+-面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；下一轮范围限定为[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)，包含必要机器转写与契约测试，尚未执行；完成后提交审核，不自动启动A05–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
++面向Codex编码与人工审核的执行拆分见[实施前设计小任务清单](workorders/preimplementation_design_tasks_2026-10-21.md)。A/B/H为该清单内任务或决定编号，不取代以下TRACK状态；“实施前”按具体模块限定，不把所有缺口变成全局前置。当前已按用户授权完成A01–A03设计与流程，并启动首批工程骨架（任务005限定范围）；[任务006：A04公共错误与恢复提示契约](../tasks/006-public-error-recovery-contract.md)已交付设计、机器结构及契约测试；原15项及新8项测试方法通过，兼容门禁83项差异已作定向技术审查，保留退出1，人工接受待记录；不自动启动A05–A09或业务编码。A01只恢复TRACK-010中与首批入口有关的核对，不恢复其余全面重整或TRACK-005选型。
+ 
+ | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
+ | --- | --- | --- | --- | --- |
+-| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；仍需补齐机器契约缺项、实现协议并执行运行验收，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
++| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | 机器契约部分完成；应用实现待开始 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；逐端点错误响应绑定及其余机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+ | TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | 延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
+ | TRACK-006 | 内部安全参考的版本管理与受控交付（D07） | 延期 | 工作单 D07 | 明确存储、读者和同步机制；不在本表复制内部正文 |
+ | TRACK-007a | Project资产、上下文与版本快照字段映射 | 逻辑映射已细化；物理字段待落实 | [07 §3–4](design/07_data_persistence.md#3-逻辑记录与字段映射) | 本轮定义最小持久事实/归属与约束；新核心建立后逐项落实实际表字段、索引和测试，不能将逻辑表当作已迁移 |
+@@ -112,3 +112,7 @@
+ 本次修订 v1.32（2026-10-22）：按用户要求安排三位subagent独立审核首批工程骨架；登记架构门禁、Worker测试等待、HTTP状态断言和空文件补丁四项问题。源码与产物摘要入场核验一致，check重跑通过；本轮仅审核与状态登记，未修复实现。
+ 
+ 本次修订 v1.32（2026-10-22）：按用户要求建立任务006，限定下一轮A04设计、机器契约、测试与必要文档同步；本轮仅建单，不启动A04执行、业务编码或延期Graph-RAG选型，不代填既有交付的人工接受。
++
++本次修订（2026-10-22）：按用户授权修复骨架R01–R04并补回归、独立复核；最终隔离基线58后端/15契约/2前端/2浏览器通过。保留原证据和实时并行修改，范围与摘要见任务007及修复收口。
++
++本次修订 v1.34（2026-10-22）：task005已识别覆盖缺口补齐并完成统一复验，需求追踪、当前执行证据、源码快照与审核包已更新；保留并复核入场已有R01–R04修复，保留并行契约改动，不将其归为本任务成果。工程范围提交人工审核，业务验收与其他任务状态不由本次测试推定。

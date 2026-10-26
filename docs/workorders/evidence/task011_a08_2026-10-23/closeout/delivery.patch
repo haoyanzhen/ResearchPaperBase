@@ -1,0 +1,123 @@
+--- before/tasks/011-supplement-processing-contracts.md
++++ after/tasks/011-supplement-processing-contracts.md
+@@ -1,11 +1,11 @@
+ # Task011：A08 补充、解析与候选分析契约
+ 
+-文档版本：v1.0
++文档版本：v1.1
+ 更新日期：2026-10-23
+ 
+ ## 1. 目标与授权
+ 
+-用户2026-10-23原文：“继续按 project-delivery 流程推进 A08，建立任务单，完成契约设计、自验及独立审查，再提交我审核。”唯一授权队列为本任务；按[project-delivery](../.agents/skills/project-delivery/SKILL.md)执行至S4，S5–S7等待真实接受。
++用户2026-10-23原文：“继续按 project-delivery 流程推进 A08，建立任务单，完成契约设计、自验及独立审查，再提交我审核。”唯一授权队列为本任务；按[project-delivery](../.agents/skills/project-delivery/SKILL.md)原授权执行至S4；2026-10-23用户已接受并授权S5–S7，见第9节。
+ 
+ 可观察结果：实现者能明确从无Run补充的接收/准备到候选处理与分析的具名输入、输出、失败去向和修订依据，不把解析成功当确认/发布。范围承接[实施前A08](../docs/workorders/preimplementation_design_tasks_2026-10-21.md#a08-闭合补充与解析服务的类型和状态映射)，关联TRACK-008a/008c/004。纯设计，不转写OpenAPI、实现解析库/DTO/路由/存储/UI，不启动A09或改变P0格式/业务恢复。
+ 
+@@ -60,7 +60,7 @@
+ 
+ ## 6. 人工决定与审核
+ 
+-无新增业务决定。审核重点：独立补充和候选范围分离、元数据/处理/Task状态映射、真实摘要降级与资料无文本、处理/分析修订绑定、格式不降期。人工接受尚未发生；接受仅限本轮设计，机器转写和业务实现另行授权。
++无新增业务决定。审核重点：独立补充和候选范围分离、元数据/处理/Task状态映射、真实摘要降级与资料无文本、处理/分析修订绑定、格式不降期。2026-10-23用户已明确接受；接受仅限本轮设计，机器转写和业务实现另行授权。
+ 
+ ## 7. 单一交付报告
+ 
+@@ -68,4 +68,10 @@
+ 
+ ## 8. 顺序交付检查点
+ 
+-S1/S2/S3已完成；文档自验、15场景追踪、结构/兼容检查及快照校验通过，独立审查R01/R02两项P2与C01已修复并复审闭合。当前S4等待人工审核，S5–S7未开始。受审快照s3-input清单SHA256为`1ac8a7f7e957acc7a80d9f9b010acbaaf6f5b57ac7b95a3f366e2f719597b53f`；交付delivery仅更新本单/报告/状态交接文字，设计和覆盖JSON不变。完整证据见审核包。下一步：真实接受后进入S5–S7；要求修改则回S2并复审。队列仅task011，A09及其他backlog未获授权。
++S1–S7已完成（限定设计交付）。S4接受来源见第9节；S5逐SP复核无新增设计缺口，S6无需修改，S7文档、既有机器结构/兼容及快照检查通过。七份设计、覆盖JSON和OpenAPI与接受基线一致，原独立审查R01/R02及C01闭合继续有效；无受影响的实质变更需要独立复审。当前授权队列耗尽，A09及业务实现未启动，后续需另行授权。
++
++## 9. 人工接受与S5–S7收口
++
++用户2026-10-23原文：“接受 task011 本轮 A08 契约设计交付，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。”接受限定SC01–SC04、SP-01–15设计，绑定[delivery清单](../docs/workorders/evidence/task011_a08_2026-10-23/delivery/source-manifest.json)，SHA256为`e41ec0e4f6a4aec4f28634fa723e4aa8bb1c8676f42f435a276bf91835ee7eb8`。入场192文件与清单完全一致，见[closeout entry](../docs/workorders/evidence/task011_a08_2026-10-23/closeout/entry.json)。
++
++S5/S6判断与S7结果统一见[审核包收口节](../docs/workorders/task011_a08_review_2026-10-23.md#人工接受后的s5s7执行记录)。本次仅更新任务单、审核包和项目状态，原证据保留；机器转写、真实解析器、事务/并发/模型/网络/UI验证仍未实施，TRACK-008a/008c/004运行范围保持开放，不扩大为A05接受或业务验收。
+--- before/docs/workorders/task011_a08_review_2026-10-23.md
++++ after/docs/workorders/task011_a08_review_2026-10-23.md
+@@ -1,11 +1,11 @@
+ # Task011 A08 契约设计审核包
+ 
+-文档版本：v1.0
++文档版本：v1.1
+ 更新日期：2026-10-23
+ 
+ ## 范围与结果
+ 
+-授权、规范与SP-01–15验收规格见[任务单](../../tasks/011-supplement-processing-contracts.md)。本轮SC01–SC04设计，不改变OpenAPI、实现解析器或启动A09；P0格式无缩减。S1/S2/S3完成，当前S4等待人工审核；人工接受及S5–S7未发生。
++授权、规范与SP-01–15验收规格见[任务单](../../tasks/011-supplement-processing-contracts.md)。本轮SC01–SC04设计，不改变OpenAPI、实现解析器或启动A09；P0格式无缩减。2026-10-23用户已限定接受，S1–S7设计交付收口；见末节记录。
+ 
+ [06 A08](../design/06_agent_knowledge_services.md#a08-补充处理与分析具名服务载荷)定义补充输入/结果、文件/文本/定位引用、处理结果分型、分析输入/提案/依据、状态映射和逐格式能力及重试约束。[04-01 A08](../design/04-01_p0_operation_contracts.md#a08-补充详情与处理依据投影)定义安全公开诊断、重复决策、处理/分析依据和元数据草稿assessment。[02-03](../design/02-03_construction_assets_appendix.md)、[05](../design/05_application_use_cases.md)、[05-01](../design/05-01_internal_module_contracts.md)补生产消费与领域边界引用；[04-02](../design/04-02_transport_task_file_contracts.md)连接既有格式/文件/Task规则，[09](../design/09_quality_observability.md)列后续测试层。覆盖JSON仅版本/文档指纹更新，局部机器覆盖未增加。
+ 
+@@ -45,10 +45,34 @@
+ 
+ ## 人工审核
+ 
+-请审核是否接受SC01–SC04及SP-01–15所限定的设计：无Run准备与两个scope边界；失败/歧义/降级的状态映射；元数据草稿和处理/分析的修订/定位依据；P0格式及有限技术重试。建议接受本轮设计后继续S5–S7；如需修订则返回S2并复审。没有新增产品裁决，人工接受尚未发生。
++请审核是否接受SC01–SC04及SP-01–15所限定的设计：无Run准备与两个scope边界；失败/歧义/降级的状态映射；元数据草稿和处理/分析的修订/定位依据；P0格式及有限技术重试。建议接受本轮设计后继续S5–S7；如需修订则返回S2并复审。上述为原S4审核问题；2026-10-23已获用户接受，原文及基线见任务单第9节。
+ 
+ ## 精确内容基线与复验
+ 
+ [受审清单](evidence/task011_a08_2026-10-23/s3-input/source-manifest.json)192文件，SHA256为`1ac8a7f7e957acc7a80d9f9b010acbaaf6f5b57ac7b95a3f366e2f719597b53f`。[交付清单](evidence/task011_a08_2026-10-23/delivery/source-manifest.json)保持相同设计及覆盖JSON，仅任务/报告/状态更新S4交接记录。[完整差异](evidence/task011_a08_2026-10-23/delivery.patch)相对入场工作区，保留所有原有修改。
+ 
+ 复验命令：`python3 docs/workorders/evidence/task011_a08_2026-10-23/check_docs.py`（只写本任务检查证据）；`/tmp/rpb-contract-check/bin/python scripts/check_api_contracts.py --baseline docs/workorders/evidence/task011_a08_2026-10-23/before-openapi.json`；`python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/task011_a08_2026-10-23/delivery`。文档检查10文件、15场景追踪及范围保护通过；没有数据库/Provider副作用。结构检查不能验证新设计或解析能力。
++
++## 人工接受后的S5–S7执行记录
++
++接受原文及绑定范围见[任务单第9节](../../tasks/011-supplement-processing-contracts.md#9-人工接受与s5s7收口)。不扩大到机器转写、解析器能力、业务运行或A05接受。
++
++S5重新按任务单的输入、预期与禁止副作用核对现行设计：
++
++| 场景 | 覆盖复核结果 |
++| --- | --- |
++| SP-01/02 | 无Run/模型的静态准备合法；元数据草稿置信度/缺项/证据、旧候选选择及人工修正有具名规则；同键不重复，未自动确认 |
++| SP-03/04 | 去重限当前Project且不覆盖已发布内容；接收安全拒绝与临时字节处理明确；无授权或格式不符不进入成功受理链 |
++| SP-05/06/07 | 失败保留诊断与安全原文件；新请求重传不变原任务；仅真实摘要可降级，资料无文本拒绝；文本定位绑定修订、无定位不伪造 |
++| SP-08 | 每个既定P0格式均有静态能力和失败样本要求，doc/ppt未降期；不执行宏/脚本/cell，缺解析器仍计实现缺口 |
++| SP-09/10 | 冻结及清理依赖互斥，两写范围不互换；不继承处理确认；文本/人工修订或锁变化拒绝迟到分析，旧人工内容保留 |
++| SP-11/12 | 论文/资料分析分型并绑定最终文本及处理确认；重复提交不增修订；必要静态提取与模型政策/完整依赖校验分流 |
++| SP-13/14/15 | 有限同输入重试、未知先查，不新建恢复入口；仅实际发布成员标published，历史依据不补当前候选；metadata/processing/Task轴独立 |
++
++设计覆盖未发现新增缺口。15场景的真实运行用例仍未建立，09已列隔离持久化、确定并发屏障、真实格式样本与UI验证要求；本轮不以文档复核冒充运行通过。
++
++S6检查单一维护与重复结构：06维护内部提案/定位/状态映射，04-01维护安全公开投影，05/05-01负责提交与消费，02-03/04-02引用领域及传输边界，09负责运行交接。各层用途明确；ProcessingBasis与AnalysisBasis保留不同修订依据，合并会模糊确认关系，故无需简化修改。
++
++S7仅追加接受、状态及执行记录，所有被审设计/机器文件不变；原独立审查闭合有效，无需新的独立设计复审或再次人工接受。文档链接/锚点、版本/日期、范围保护、旧证据保护、OpenAPI结构/入场兼容及接受/最终快照校验结果见[closeout checks](evidence/task011_a08_2026-10-23/closeout/checks.json)；最终192文件内容见[清单](evidence/task011_a08_2026-10-23/closeout/final/source-manifest.json)。
++
++复验命令：`python3 docs/workorders/evidence/task011_a08_2026-10-23/closeout/check_docs.py`；`/tmp/rpb-contract-check/bin/python scripts/check_api_contracts.py --baseline docs/workorders/evidence/task011_a08_2026-10-23/before-openapi.json`；`python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/task011_a08_2026-10-23/closeout/final`。仅本任务证据写入，无数据库/Provider副作用；未运行无关应用测试。当前授权队列已结束。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.52
++文档版本：v1.53
+ 更新日期：2026-10-23
+ 适用项目大版本：v1
+ 
+@@ -23,7 +23,7 @@
+ | --- | --- | --- |
+ | 项目级顺序交付 skill | 已完成；2026-10-23获用户限定人工接受 | [project-delivery](../.agents/skills/project-delivery/SKILL.md)、实施入口和任务模板支持授权队列、恢复检查点及人工节点；[本轮记录](workorders/project_delivery_skill_2026-10-23.md)。已核对三个流程文件与交付快照一致；接受仅限skill及配套文档，跨会话运行未验收，不启动task008或其他未授权业务任务 |
+ | 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计自验及独立复审通过，task011处于S4待人工审核；A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计于2026-10-23获用户限定接受，task011已完成S5–S7收口；A09与业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -47,6 +47,8 @@
+ [task008：A06资料来源与当前政策内部契约](../tasks/008-material-policy-internal-contracts.md) C01–C05已完成设计交付并于2026-10-23获用户限定接受。S5逐IC覆盖复核未发现设计缺口；S6无需修改；S7文档、内容基线及历史证据复验通过，S1–S7已收口。五份设计与已接受快照一致，原独立审查两项P2及C01闭合结论有效；详见[审核包收口记录](workorders/task008_internal_contract_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写、业务代码、真实事务/派发/并发与端到端未实现；TRACK-012c/012d/021运行范围保持开放，A05接受不包含在本次决定中。本任务原授权已收口；后续用户已另行授权task010 A07设计交付，见下项。
+ 
+ [task010：A07 Task等待项、确认预览与事件引用契约](../tasks/010-task-confirmation-event-contracts.md)已获2026-10-23用户限定设计接受，S1–S7完成。S5逐TC复核无新增缺口，S6无需修改，S7文档/结构/基线复验通过；设计与接受快照一致，原独立审查三项P2及C01闭合有效。详见[收口记录](workorders/task010_a07_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写与真实权限/事务/并发/流/UI验证仍开放，不关闭TRACK-004/012运行范围。当前授权队列耗尽，A08/A09及业务实现未启动。
++
++[task011：A08补充、解析与候选分析契约](../tasks/011-supplement-processing-contracts.md)已获2026-10-23用户限定设计接受，S1–S7完成。S5逐SP复核无新增设计缺口，S6无需修改，S7文档/结构/兼容/快照复验通过；七份设计及机器文件与接受基线一致，原独立审查两项P2及C01闭合有效。详见[收口记录](workorders/task011_a08_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写、解析器及真实事务/并发/模型/网络/UI验证仍开放，TRACK-008a/008c/004运行范围未关闭；当前授权队列耗尽，A09及业务实现未启动。
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
+@@ -157,3 +159,5 @@
+ 本次修订 v1.51（2026-10-23）：记录task010 A07限定设计接受及S5–S7收口，仅更新任务/报告/状态，原设计与机器文件不变；后续执行须另行授权。
+ 
+ 本次修订 v1.52（2026-10-23）：用户另行授权[task011 A08](../tasks/011-supplement-processing-contracts.md)补充/解析/分析契约设计、自验及独立审查后提交审核。设计/文档自验通过，独立审查两项P2及C01已修复复审闭合，当前S4等待人工审核；[单一审核包](workorders/task011_a08_review_2026-10-23.md)。机器转写、解析器能力、业务实现仍未完成，TRACK-008a/008c/004保持开放；不启动A09。
++
++本次修订 v1.53（2026-10-23）：记录task011 A08限定接受及S5–S7设计收口，仅更新任务/报告/项目状态，原设计与机器文件不变；后续执行须另行授权。

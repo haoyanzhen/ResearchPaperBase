@@ -1,0 +1,59 @@
++ uv run --locked ruff check src tests ../scripts/check_architecture.py ../scripts/engineering.py ../scripts/verify_skeleton_delivery.py
+All checks passed!
++ uv run --locked ruff format --check src tests ../scripts/check_architecture.py ../scripts/engineering.py ../scripts/verify_skeleton_delivery.py
+35 files already formatted
++ uv run --locked mypy src
+Success: no issues found in 30 source files
++ uv run --locked pytest -q
+..........................                                               [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+26 passed, 1 warning in 1.13s
++ /Users/qingyue/projects/ResearchPaperBase_codex/contracts/.venv/bin/python scripts/check_api_contracts.py
+PASS: 42 request/success partial + 40 request-only operations; 80 schemas; 126 inventoried source rows; 4/6 SSE payload types
+COMPATIBILITY NOT CHECKED: no prior reviewed --baseline supplied.
+NOT VERIFIED: runtime authorization/state/transactions, error details, TaskView/output and uncovered operations; see coverage.
++ /Users/qingyue/projects/ResearchPaperBase_codex/contracts/.venv/bin/python -m unittest discover -s scripts/tests -v
+test_addition_of_independent_schema (test_api_contracts.ContractTests.test_addition_of_independent_schema) ... ok
+test_breaking_and_review_required_changes (test_api_contracts.ContractTests.test_breaking_and_review_required_changes) ... ok
+test_coverage_and_refs_fail_closed (test_api_contracts.ContractTests.test_coverage_and_refs_fail_closed) ... ok
+test_create_defaults_do_not_contaminate_patch (test_api_contracts.ContractTests.test_create_defaults_do_not_contaminate_patch) ... ok
+test_formats_and_model_selection (test_api_contracts.ContractTests.test_formats_and_model_selection) ... ok
+test_inline_schema_and_text_drift_fail (test_api_contracts.ContractTests.test_inline_schema_and_text_drift_fail) ... ok
+test_paper_capability_exact_list (test_api_contracts.ContractTests.test_paper_capability_exact_list) ... ok
+test_patch_requires_revision_and_does_not_default (test_api_contracts.ContractTests.test_patch_requires_revision_and_does_not_default) ... ok
+test_published_contract (test_api_contracts.ContractTests.test_published_contract) ... ok
+test_request_only_does_not_claim_success_schema (test_api_contracts.ContractTests.test_request_only_does_not_claim_success_schema) ... ok
+test_request_unknown_and_null_rejected (test_api_contracts.ContractTests.test_request_unknown_and_null_rejected) ... ok
+test_required_headers_and_nullable_objects_fail_closed (test_api_contracts.ContractTests.test_required_headers_and_nullable_objects_fail_closed) ... ok
+test_response_required_fields (test_api_contracts.ContractTests.test_response_required_fields) ... ok
+test_secret_set_clear_disjoint (test_api_contracts.ContractTests.test_secret_set_clear_disjoint) ... ok
+test_sse_payload_terminal_and_no_business_writes (test_api_contracts.ContractTests.test_sse_payload_terminal_and_no_business_writes) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 4.679s
+
+OK
++ npm run check
+
+> rpb-workspace@1.0.0 check
+> tsc --noEmit
+
++ npm test
+
+> rpb-workspace@1.0.0 test
+> vitest run
+
+
+ RUN  v5.0.5 /Users/qingyue/projects/ResearchPaperBase_codex/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:46:59
+   Duration  726ms (environment 70%, tests 15%, setup 13%, transform 1%, import 1%, worker 1%)
+

@@ -1,0 +1,3 @@
+docs/PROJECT_STATUS.md
+docs/workorders/preimplementation_design_tasks_2026-10-21.md
+tasks/009-workspace-context-plan.md

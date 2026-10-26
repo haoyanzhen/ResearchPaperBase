@@ -1,0 +1,13 @@
+{
+  "backend/src/rpb/modules/project/application/service.py": "c3ed9716b4115d2a96b364527de66c5af2bf0372548abb13664ddd9733b6f37c",
+  "backend/src/rpb/modules/project/application/ports.py": "cd27ddcc56657153698ae17e3a49274e44dcc0489e332f070a828bdb3f2167f4",
+  "backend/src/rpb/adapters/project_commands.py": "558e6226117faed46f70b6fd7f6aa24a01a8ed9ffa96d51206ee3fbdaf34ad69",
+  "backend/src/rpb/api/projects.py": "f33210f8281f5ab0ba84167172e27d58a27f8206ed70886e9f84afe4caf19ffa",
+  "frontend/src/BusinessApp.tsx": "ba4599badb2a7be85b144dee5d0f965e17371eb322793d28ebbea35f847ffb0d",
+  "frontend/src/style.css": "8d713428c88a949e83db4ddfd9b8b9f294760dc79042e6078c0324d76b576f5d",
+  "backend/tests/integration/test_project_list.py": "65f4e8533c8b5719e67a8e2e7b3638786788e531d150f9e97f8eb10fdf4c2ea5",
+  "backend/tests/integration/test_project_hub_browser.py": "e3eede1bbec6e40b5cf5f9cb585c5f12bf55d5c71c9487598126c8654f6fcadb",
+  "scripts/tests/test_public_errors.py": "fb64e4b331d69e7d19e0623b0f897a1604fe4e7ac2076c545d7185ad575a45e2",
+  "contracts/p0.openapi.json": "8350d0ea64a3a5c86bce9477bca8b66f7f3a2eb601ebdabfe6fe36f464b1cc19",
+  "contracts/p0.coverage.json": "99241fd63a61bc561e3d20549f1ea66e3654b069d2dc1fe2f6bd073e8bc5e6a0"
+}

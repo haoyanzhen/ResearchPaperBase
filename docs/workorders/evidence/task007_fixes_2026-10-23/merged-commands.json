@@ -1,0 +1,35 @@
+[
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "log": "merged-structure.txt",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-p",
+      "test_*.py",
+      "-v"
+    ],
+    "log": "merged-tests.txt",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/task007_fixes_2026-10-23/before.openapi.json"
+    ],
+    "log": "merged-compatibility.txt",
+    "exit_code": 1
+  }
+]

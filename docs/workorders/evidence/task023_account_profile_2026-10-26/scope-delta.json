@@ -1,0 +1,70 @@
+{
+  "README.md": {
+    "before": "27407af4a1988d9e567947b53f01d76af94c4f7df1d13f734c21c6cbb61346d5",
+    "after": "89b9602917219e682cb9af2b77dcbb82ce84fc96d58458e7902661c3e3e4d64d"
+  },
+  "backend/migrations/versions/0006_account_profile.py": {
+    "before": null,
+    "after": "0ed664051c172b7c3ed933839677567111d73bc128d2164da16a35799133f451"
+  },
+  "backend/src/rpb/adapters/account.py": {
+    "before": "875fd30f537d2ac22b43e146f38101e52932db86235323cd40c65220874ecfca",
+    "after": "8e2c072882d5f13516afc5d8b78b3e28ed39a945577ea4171dac319bcdddae32"
+  },
+  "backend/src/rpb/adapters/auth.py": {
+    "before": "5001d021b80b34858b32b557c81b59817447d3f5c68fd533e316bd51cfa48c2b",
+    "after": "050c12c7ec85ea9d0f3da5199c34021927024bcf6b1027f01f1d4597e964f815"
+  },
+  "backend/src/rpb/api/account.py": {
+    "before": "2f2348d782f47ca7a871d997bcecb493ec87d4f8a245e69f7c5979292a0a289d",
+    "after": "16d3fb8452085c480e7bbe3de366cd8e56f84fa982da093ff8eaccb1cfc11fd7"
+  },
+  "backend/src/rpb/modules/account_config/application/ports.py": {
+    "before": "63e41710ccbf7690d537367c3c1e89ffc4b4dd796d7f4546b2e656126d2cbc78",
+    "after": "2b862df5ccaccd8935b26808dad9669a9d60b448dd06fdef5ed96db7f1219d65"
+  },
+  "backend/tests/integration/test_account_auth.py": {
+    "before": "10f53a9dc6163c4c9c13e552553b5432567d5f11c4e52787e8643e15d6db5e79",
+    "after": "d2786c411063d9ab172849e41dd3f03083f8961336181a1158f3e88881dcb6cd"
+  },
+  "backend/tests/integration/test_account_profile.py": {
+    "before": null,
+    "after": "aae5f76afacb7903d4705be2165ff90cea1184f9e10101b4d8b1cce99b4fe544"
+  },
+  "backend/tests/integration/test_account_profile_browser.py": {
+    "before": null,
+    "after": "ce344ea6f71cbc54d4f2c25d2db02f06ac6cf3a2595f9404ab6ba5c92b864e20"
+  },
+  "backend/tests/integration/test_account_storage.py": {
+    "before": "2da0200c25fe045a6d8109ebac06ea6ad42f4b1eac41089338adb35309ae672a",
+    "after": "e401b3b83d1881c92df340cd70ec872a5484093b1810179cb4ba3d306c087129"
+  },
+  "backend/tests/integration/test_project_maintenance.py": {
+    "before": "71a6661f109170565e57ac2564040f342e16b7424b25b9c58ac682ff3b928b9a",
+    "after": "eb496b1c41e0edf01bba75edcbcc88143a0a03316bb53ba73803c821feed96e3"
+  },
+  "backend/tests/integration/test_project_storage.py": {
+    "before": "b38cf5f634de7ef47147dae20b464690719a5086924ef6c7a6cafc0facc3d3ea",
+    "after": "8d09eacfe097586196513bae576d58ec3bd0cfa647c0367a45ffe97d2070a4aa"
+  },
+  "docs/PROJECT_STATUS.md": {
+    "before": "86a7511c87f3a8acc1d458046b1a053a98563e44e45eff04d3970e0aca08918e",
+    "after": "cc7ddcecc75324bbfc75b0ed0c8fbe856f5a353a4e7a11e27cf52f90d564f841"
+  },
+  "docs/file_map.md": {
+    "before": "7ffa2427bc60f4b6839dcf1772084fda6168c755a844d94727449ec52126783d",
+    "after": "c5630ad9c69697fa178c7603a8fba9267232c413730df6c1c16537ba2c945021"
+  },
+  "frontend/src/BusinessApp.tsx": {
+    "before": "fcb9defb2d26d03b52ca4aeba24db4f9b72192cafa9607e0f5af06f0e03bc730",
+    "after": "2577d587a34b87ecfe6e5881018bceaa8e902a826e8f46dc86fabda02ff78315"
+  },
+  "tasks/022-project-maintenance.md": {
+    "before": "44a0f293a6241fa0fbeb26c9c578d2725841852357bf3190e083660e0b5ce335",
+    "after": "7aaef26b2247035c02f80fa7a48f416f5d2582baa698d072f722c263662a1a52"
+  },
+  "tasks/023-account-profile.md": {
+    "before": null,
+    "after": "d88cf6e42697019bb3c07fdd6ca5e800909fa027c9834eed78680426c190cc18"
+  }
+}

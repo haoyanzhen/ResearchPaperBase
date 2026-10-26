@@ -1,0 +1,44 @@
+{
+  "stage": "S6 independent follow-up complete",
+  "conclusion": "No remaining blocking findings in task022 PM01–PM07 bounded maintenance scope",
+  "closed": [
+    {
+      "id": "R1",
+      "severity": "P2",
+      "change": "Explicit400/413/415/422/428 validation rejection leaves editable draft; correcting invalid name can save without losing description.",
+      "test": "test_pm07_invalid_edit_can_be_corrected_without_losing_draft"
+    },
+    {
+      "id": "R2",
+      "severity": "P2",
+      "change": "404 after unknown delete readback calls parent onUnavailable, clears project/confirmation and returns list with unavailable message, not false deletion-success claim.",
+      "test": "test_pm07_lost_delete_then_404_clears_unavailable_project"
+    }
+  ],
+  "coverage_followup": [
+    "Same archive key across distinct owned projects succeeds; existing foreign account fails composite-owner FK.",
+    "Deterministic PG blocking covers concurrent archive replay/edit/delete/downgrade, with one durable epoch/audit.",
+    "All lifecycle record nonnull/field constraints, DDL-failure rollback, metadata failure and delete write-point rollback covered.",
+    "Three older test files changed only expected latest head from0004 to0005, plus final exact table-set addition for project_lifecycle_records; assertions remain exact and data-preservation checks unchanged.",
+    "Integration watchdog changed180→300 seconds only; same finally cleanup, demo1800 unchanged."
+  ],
+  "verification": {
+    "initial": "26 passed/1 fixture-preparation failure; failure setup repaired by explicit logout before shared-cookie registration.",
+    "first_followup": "60 passed/211 deselected; one test file changed expected table-set during run, so followed by recheck.",
+    "final_command": "PYTEST_ADDOPTS='-k \"pm or ps02_pair\"' python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin",
+    "final": "61 passed,210 deselected,59.82s",
+    "run_id": "rpb_test_8611470703e04ba291cfdc3e380ce5f8",
+    "server_stopped": true,
+    "root_removed": true,
+    "log": "independent-recheck.log",
+    "hashes": "independent-recheck-before.json",
+    "hash_drift": []
+  },
+  "limitations": [
+    "Reviewer did not independently rerun all271 integration cases; root full regression remains separate evidence.",
+    "No Run/Task/asset implementation exists; active-run termination/asset cleanup not verified or implied.",
+    "Local single-process signing keys reset on process restart; production/shared-key deployment not claimed.",
+    "Lifecycle preview/delete complete success schemas remain outside existing machine subset; runtime assertions use normative04 shapes, not a claim of complete OpenAPI transcription.",
+    "Existing Starlette deprecation warning retained; no real external services tested."
+  ]
+}

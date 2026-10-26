@@ -1,0 +1,962 @@
+--- before/contracts/p0.openapi.json
++++ after/contracts/p0.openapi.json
+@@ -2,7 +2,7 @@
+   "openapi": "3.1.0",
+   "info": {
+     "title": "Research Paper Base P0 typed contract subset",
+-    "version": "1.5.0",
++    "version": "1.6.0",
+     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+   },
+   "servers": [
+@@ -1683,7 +1683,10 @@
+               "type": "string",
+               "minLength": 16,
+               "maxLength": 128,
+-              "pattern": "^[\\x20-\\x7e]+$"
++              "pattern": "^[\\x20-\\x7e]+$",
++              "not": {
++                "pattern": "[^\\x20-\\x7e]"
++              }
+             }
+           }
+         ],
+@@ -1692,6 +1695,7 @@
+             "description": "Success; business prerequisites and runtime checks remain mandatory.",
+             "headers": {
+               "Cache-Control": {
++                "required": true,
+                 "schema": {
+                   "type": "string",
+                   "const": "no-store"
+@@ -1701,7 +1705,8 @@
+                 "schema": {
+                   "type": "string"
+                 },
+-                "description": "Created resource URL."
++                "description": "Created resource URL.",
++                "required": true
+               }
+             },
+             "content": {
+@@ -1713,7 +1718,7 @@
+                       "$ref": "#/components/schemas/ProjectView"
+                     },
+                     "meta": {
+-                      "$ref": "#/components/schemas/IdempotentMeta"
++                      "$ref": "#/components/schemas/ProjectCreateMeta"
+                     }
+                   },
+                   "required": [
+@@ -1725,8 +1730,376 @@
+               }
+             }
+           },
+-          "default": {
+-            "description": "Error envelope and status mapping: 04 section 5. Safe details/recovery vocabulary not yet fully typed; see GAP-ERROR."
++          "400": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope400"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_BAD_REQUEST"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "401": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope401"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "AUTH_REQUIRED",
++                                "AUTH_SESSION_INVALID",
++                                "AUTH_ACCOUNT_DISABLED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "403": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope403"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_CSRF_REJECTED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "404": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope404"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_RESOURCE_UNAVAILABLE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "409": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope409"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_IDEMPOTENCY_CONFLICT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "413": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope413"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_PAYLOAD_TOO_LARGE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "415": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope415"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_UNSUPPORTED_FORMAT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "422": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope422"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_FIELD_INVALID",
++                                "VALIDATION_UNKNOWN_FIELD"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "429": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope429"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_RESOURCE_LIMIT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Retry-After": {
++                "required": true,
++                "description": "Delay seconds before considering original request retry; does not authorize business rerun.",
++                "schema": {
++                  "type": "integer",
++                  "minimum": 0
++                }
++              },
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "500": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope500"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STORAGE_INTERNAL_FAILURE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
+           }
+         },
+         "requestBody": {
+@@ -1738,6 +2111,42 @@
+               }
+             }
+           }
++        },
++        "x-contract-slice": "project-create-b01",
++        "x-error-codes": {
++          "400": [
++            "VALIDATION_BAD_REQUEST"
++          ],
++          "401": [
++            "AUTH_REQUIRED",
++            "AUTH_SESSION_INVALID",
++            "AUTH_ACCOUNT_DISABLED"
++          ],
++          "403": [
++            "PERMISSION_CSRF_REJECTED"
++          ],
++          "404": [
++            "PERMISSION_RESOURCE_UNAVAILABLE"
++          ],
++          "409": [
++            "STATE_IDEMPOTENCY_CONFLICT"
++          ],
++          "413": [
++            "VALIDATION_PAYLOAD_TOO_LARGE"
++          ],
++          "415": [
++            "VALIDATION_UNSUPPORTED_FORMAT"
++          ],
++          "422": [
++            "VALIDATION_FIELD_INVALID",
++            "VALIDATION_UNKNOWN_FIELD"
++          ],
++          "429": [
++            "STATE_RESOURCE_LIMIT"
++          ],
++          "500": [
++            "STORAGE_INTERNAL_FAILURE"
++          ]
+         }
+       }
+     },
+@@ -14356,6 +14765,21 @@
+           }
+         ],
+         "description": "Completed synchronous classification mutation: earliest deduplication expiry is required and non-null. Actual retention is a runtime obligation."
++      },
++      "ProjectCreateMeta": {
++        "allOf": [
++          {
++            "$ref": "#/components/schemas/IdempotentMeta"
++          },
++          {
++            "properties": {
++              "idempotency_expires_at": {
++                "$ref": "#/components/schemas/Time"
++              }
++            }
++          }
++        ],
++        "description": "Synchronous completed creation/replay must disclose a non-null actual retention expiry; >=24h and persisted equality require runtime checks."
+       }
+     },
+     "responses": {
+--- before/contracts/p0.coverage.json
++++ after/contracts/p0.coverage.json
+@@ -1,6 +1,6 @@
+ {
+-  "version": "1.5",
+-  "date": "2026-10-23",
++  "version": "1.6",
++  "date": "2026-10-24",
+   "source_rows": [
+     {
+       "signature": "`CW/search-terms/action-preview`",
+@@ -631,19 +631,19 @@
+       "id": "GAP-ERROR",
+       "kind": "not-yet-transcribed",
+       "scope": "per-operation HTTP error applicability and binding",
+-      "reason": "A04 shared errors are typed; A05 five synchronous operations bind applicable error subsets. Other endpoint errors and complete TaskView remain unbound."
++      "reason": "A04 shared errors, A05 five synchronous subsets and B01 Project.Create subset are typed; other endpoint errors remain unbound."
+     },
+     {
+       "id": "GAP-TASK",
+       "kind": "not-yet-transcribed",
+       "scope": "TaskHandle/TaskView, all asynchronous response operations",
+-      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
++      "reason": "A07 task010 design accepted; machine transcription and runtime verification remain open."
+     },
+     {
+       "id": "GAP-CONFIRM",
+       "kind": "not-yet-transcribed",
+       "scope": "ConfirmationPreview and operations returning confirmations",
+-      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
++      "reason": "A07 task010 design accepted; machine transcription and runtime verification remain open."
+     },
+     {
+       "id": "GAP-REMAINING",
+@@ -832,9 +832,8 @@
+       ]
+     },
+     "Project.Create": {
+-      "status": "request-success-partial",
+-      "gaps": [
+-        "GAP-ERROR",
++      "status": "request-success-errors-partial",
++      "gaps": [
+         "GAP-RUNTIME"
+       ]
+     },
+@@ -1634,7 +1633,7 @@
+       "status": "partial",
+       "typed_operations": {
+         "Project.List": "request-success-partial",
+-        "Project.Create": "request-success-partial"
++        "Project.Create": "request-success-errors-partial"
+       },
+       "remaining": []
+     },
+@@ -2699,5 +2698,45 @@
+       "A08 source discovery in full ingestion/detail DTOs",
+       "runtime authorization, isolation, persistence, UI and end-to-end acceptance"
+     ]
++  },
++  "project_create": {
++    "operation": "Project.Create",
++    "task": "task014",
++    "error_codes": {
++      "400": [
++        "VALIDATION_BAD_REQUEST"
++      ],
++      "401": [
++        "AUTH_REQUIRED",
++        "AUTH_SESSION_INVALID",
++        "AUTH_ACCOUNT_DISABLED"
++      ],
++      "403": [
++        "PERMISSION_CSRF_REJECTED"
++      ],
++      "404": [
++        "PERMISSION_RESOURCE_UNAVAILABLE"
++      ],
++      "409": [
++        "STATE_IDEMPOTENCY_CONFLICT"
++      ],
++      "413": [
++        "VALIDATION_PAYLOAD_TOO_LARGE"
++      ],
++      "415": [
++        "VALIDATION_UNSUPPORTED_FORMAT"
++      ],
++      "422": [
++        "VALIDATION_FIELD_INVALID",
++        "VALIDATION_UNKNOWN_FIELD"
++      ],
++      "429": [
++        "STATE_RESOURCE_LIMIT"
++      ],
++      "500": [
++        "STORAGE_INTERNAL_FAILURE"
++      ]
++    },
++    "scope": "Wire request/success/error binding only; no runtime, persisted command/event payload or HTTP application implemented."
+   }
+ }
+--- before/scripts/check_api_contracts.py
++++ after/scripts/check_api_contracts.py
+@@ -92,6 +92,31 @@
+                 assert schema == {'allOf': expected}, 'material error binding drift'
+             assert op['operationId'] in coverage['material_policy']['operations'], 'material coverage drift'
+             assert coverage['operation_coverage'][op['operationId']]['status'] == 'request-success-errors-partial'
++    # B01 operation binding guard; expected semantic examples live in requirement tests.
++    create = spec['paths']['/projects']['post']
++    assert create.get('x-contract-slice') == 'project-create-b01', 'Project.Create binding missing'
++    codes = coverage['project_create']['error_codes']
++    assert create.get('x-error-codes') == codes, 'Project.Create error inventory drift'
++    assert set(create['responses']) == {'201'} | set(codes), 'Project.Create status drift'
++    assert coverage['operation_coverage']['Project.Create'] == {
++        'status': 'request-success-errors-partial', 'gaps': ['GAP-RUNTIME']}, 'Project.Create coverage drift'
++    for status, response in create['responses'].items():
++        assert response.get('headers', {}).get('Cache-Control') == {
++            'required': True, 'schema': {'type': 'string', 'const': 'no-store'}}, 'Project.Create cache drift'
++        if status != '201':
++            assert response['content']['application/json']['schema'] == {'allOf': [
++                {'$ref': '#/components/schemas/ErrorEnvelope' + status},
++                {'properties': {'error': {'properties': {'code': {'enum': codes[status]}}}}},
++            ]}, 'Project.Create error binding drift'
++    success = create['responses']['201']
++    assert success['headers']['Location'].get('required') is True, 'Project.Create Location drift'
++    assert success['content']['application/json']['schema']['properties']['meta'] == {
++        '$ref': '#/components/schemas/ProjectCreateMeta'}, 'Project.Create expiry binding drift'
++    assert spec['components']['schemas']['ProjectCreateMeta']['allOf'] == [
++        {'$ref': '#/components/schemas/IdempotentMeta'},
++        {'properties': {'idempotency_expires_at': {'$ref': '#/components/schemas/Time'}}},
++    ], 'Project.Create expiry schema drift'
++    assert create['responses']['429']['headers']['Retry-After'] == spec['components']['responses']['PublicError429']['headers']['Retry-After'], 'Project.Create Retry-After drift'
+     assert sorted(ids) == sorted(coverage['typed_operations'] + coverage['request_only_operations']), 'coverage/spec operation mismatch'
+     assert len(coverage['row_coverage']) == len(coverage['source_rows'])
+     for index, row in enumerate(coverage['row_coverage']):
+--- before/scripts/tests/test_project_create_contract.py
++++ after/scripts/tests/test_project_create_contract.py
+@@ -0,0 +1,140 @@
++"""B01 Project.Create wire contract; requirements from 04/04-01, not runtime tests."""
++import copy
++import json
++import unittest
++
++from jsonschema import Draft202012Validator, FormatChecker
++from test_api_contracts import SPEC_DATA, SCHEMAS, COVERAGE, check, compatibility, valid
++from test_public_errors import error, CASES, RID
++
++EXPECTED = {
++    '400': ['VALIDATION_BAD_REQUEST'],
++    '401': ['AUTH_REQUIRED', 'AUTH_SESSION_INVALID', 'AUTH_ACCOUNT_DISABLED'],
++    '403': ['PERMISSION_CSRF_REJECTED'],
++    '404': ['PERMISSION_RESOURCE_UNAVAILABLE'],
++    '409': ['STATE_IDEMPOTENCY_CONFLICT'],
++    '413': ['VALIDATION_PAYLOAD_TOO_LARGE'],
++    '415': ['VALIDATION_UNSUPPORTED_FORMAT'],
++    '422': ['VALIDATION_FIELD_INVALID', 'VALIDATION_UNKNOWN_FIELD'],
++    '429': ['STATE_RESOURCE_LIMIT'],
++    '500': ['STORAGE_INTERNAL_FAILURE'],
++}
++TIME = '2026-10-24T00:00:00Z'
++PROJECT = {'id': RID, 'revision': 'r1', 'created_at': TIME, 'updated_at': TIME,
++           'name': 'Study', 'description': '', 'research_scope': '', 'status': 'active',
++           'default_knowledge_version_id': None, 'last_construction_at': None,
++           'last_activity_at': None, 'permissions': {'access': True, 'use': True, 'delete': True},
++           'available_actions': []}
++
++
++def operation(spec=SPEC_DATA):
++    return spec['paths']['/projects']['post']
++
++
++def accepts(schema, value):
++    return Draft202012Validator(schema | {'components': {'schemas': SCHEMAS}},
++                                format_checker=FormatChecker()).is_valid(value)
++
++
++class ProjectCreateContractTests(unittest.TestCase):
++    def test_pc01_request_boundaries_and_no_owner_status_revision(self):
++        for name in ['A', '中' * 200]:
++            self.assertTrue(valid('ProjectWrite', {'name': name}))
++        for name in ['', ' ', '\n\t', 'x' * 201, None, 1]:
++            self.assertFalse(valid('ProjectWrite', {'name': name}))
++        self.assertFalse(valid('ProjectWrite', {}))
++        for field in ['owner_id', 'status', 'expected_revision', 'force', 'confirmation_token']:
++            self.assertFalse(valid('ProjectWrite', {'name': 'Study', field: 'forged'}))
++        for field in ['description', 'research_scope']:
++            self.assertTrue(valid('ProjectWrite', {'name': 'Study', field: 'x' * 10000}))
++            for value in [None, 1, 'x' * 10001]:
++                self.assertFalse(valid('ProjectWrite', {'name': 'Study', field: value}))
++
++    def test_pc02_headers_and_creation_transport(self):
++        op = operation()
++        self.assertEqual(op['security'], [{'sessionCookie': []}])
++        params = {p['name']: p for p in op['parameters']}
++        self.assertEqual(set(params), {'X-CSRF-Token', 'Idempotency-Key'})
++        for p in params.values():
++            self.assertTrue(p['required']); self.assertEqual(p['in'], 'header')
++        schema = params['Idempotency-Key']['schema']
++        for v in ['a' * 16, 'z' * 128, RID]:
++            self.assertTrue(accepts(schema, v))
++        for v in ['', 'a' * 15, 'z' * 129, '中' * 16, 'a' * 15 + '\n']:
++            self.assertFalse(accepts(schema, v))
++        self.assertTrue(op['requestBody']['required'])
++        self.assertEqual(set(op['requestBody']['content']), {'application/json'})
++        self.assertEqual(op['requestBody']['content']['application/json']['schema'],
++                         {'$ref': '#/components/schemas/ProjectWrite'})
++        self.assertTrue(op['responses']['201']['headers']['Location']['required'])
++
++    def test_pc03_success_meta_requires_real_expiry_and_closed_envelope(self):
++        schema = operation()['responses']['201']['content']['application/json']['schema']
++        good = {'data': PROJECT, 'meta': {'request_id': RID, 'idempotency_expires_at': TIME}}
++        self.assertTrue(accepts(schema, good))
++        self.assertTrue(accepts(schema, good | {'meta': good['meta'] | {'original_request_id': RID}}))
++        for value in [None, 'tomorrow', '2026-10-24T00:00:00+08:00']:
++            self.assertFalse(accepts(schema, good | {'meta': good['meta'] | {'idempotency_expires_at': value}}))
++        for branch, keys in [('meta', ['request_id', 'idempotency_expires_at']),
++                             ('data', ['id', 'revision', 'status', 'permissions'])]:
++            for key in keys:
++                bad = copy.deepcopy(good); del bad[branch][key]
++                self.assertFalse(accepts(schema, bad))
++            bad = copy.deepcopy(good); bad[branch]['unknown'] = True
++            self.assertFalse(accepts(schema, bad))
++        for field in ['data', 'meta']:
++            bad = copy.deepcopy(good); del bad[field]; self.assertFalse(accepts(schema, bad))
++        self.assertFalse(accepts(schema, good | {'task': RID}))
++        # Generic async metadata remains nullable; this operation-specific narrowing is local.
++        self.assertTrue(valid('IdempotentMeta', {'request_id': RID, 'idempotency_expires_at': None}))
++
++    def test_pc04_exact_errors_and_all_unrelated_variants_rejected(self):
++        op = operation()
++        self.assertEqual(op['x-error-codes'], EXPECTED)
++        self.assertEqual(set(op['responses']), {'201'} | set(EXPECTED))
++        for status in EXPECTED:
++            schema = op['responses'][status]['content']['application/json']['schema']
++            for code, actual_status, category in CASES:
++                with self.subTest(status=status, code=code):
++                    value = {'error': error(code, category), 'meta': {'request_id': RID}}
++                    self.assertEqual(accepts(schema, value), code in EXPECTED[status])
++
++    def test_pc05_safe_failure_projection_and_unknown_outcome(self):
++        op = operation()
++        for status, code, cat in [('500', 'STORAGE_INTERNAL_FAILURE', 'storage'),
++                                  ('429', 'STATE_RESOURCE_LIMIT', 'state')]:
++            schema = op['responses'][status]['content']['application/json']['schema']
++            value = {'error': error(code, cat) | {'details': {'outcome': 'unknown'},
++                     'recovery': {'action': 'check_result', 'label': '核查原操作结果'}},
++                     'meta': {'request_id': RID}}
++            self.assertTrue(accepts(schema, value))
++            bad = copy.deepcopy(value); bad['error']['retryable'] = True
++            self.assertFalse(accepts(schema, bad))
++            bad = copy.deepcopy(value); bad['error']['details']['sql'] = 'private'
++            self.assertFalse(accepts(schema, bad))
++
++    def test_pc06_no_store_and_retry_after(self):
++        for status, response in operation()['responses'].items():
++            header = response['headers']['Cache-Control']
++            self.assertTrue(header['required'])
++            self.assertEqual(header['schema'], {'type': 'string', 'const': 'no-store'})
++        retry = operation()['responses']['429']['headers']['Retry-After']
++        self.assertTrue(retry['required'])
++        self.assertTrue(accepts(retry['schema'], 0)); self.assertFalse(accepts(retry['schema'], -1))
++
++    def test_pc07_drift_guard_rejects_missing_or_widened_bindings(self):
++        for mutation in ['response', 'subset', 'cache', 'location', 'coverage', 'expiry']:
++            s = copy.deepcopy(SPEC_DATA); c = json.loads(COVERAGE.read_text()); op = operation(s)
++            if mutation == 'response': del op['responses']['401']
++            elif mutation == 'subset': op['responses']['409']['content']['application/json']['schema'] = {'$ref': '#/components/schemas/ErrorEnvelope409'}
++            elif mutation == 'cache': del op['responses']['201']['headers']['Cache-Control']
++            elif mutation == 'location': op['responses']['201']['headers']['Location']['required'] = False
++            elif mutation == 'coverage': c['operation_coverage']['Project.Create']['status'] = 'request-success-partial'
++            else: op['responses']['201']['content']['application/json']['schema']['properties']['meta'] = {'$ref': '#/components/schemas/IdempotentMeta'}
++            with self.subTest(mutation=mutation), self.assertRaises(AssertionError):
++                check(s, c)
++
++    def test_pc08_existing_operation_change_still_requires_review(self):
++        old = copy.deepcopy(SPEC_DATA)
++        old['paths']['/projects']['post']['responses']['201']['description'] = 'previous'
++        self.assertIn('operation changed/removed: POST /projects', compatibility(old, SPEC_DATA))
+--- before/scripts/tests/test_public_errors.py
++++ after/scripts/tests/test_public_errors.py
+@@ -111,7 +111,19 @@
+   for name,schema in old['components']['schemas'].items(): self.assertEqual(schema,SCHEMAS[name],name)
+   for path,item in old['paths'].items():
+    for method,op in item.items():
+-    updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']; self.assertEqual(op,updated)
++    updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']
++    if (path, method) == ('/projects', 'post'):
++     # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.
++     # Normalize only reviewed deltas, then retain the full historical operation assertion.
++     del updated['x-contract-slice']; del updated['x-error-codes']
++     next(p for p in updated['parameters'] if p['name']=='Idempotency-Key')['schema'].pop('not')
++     for status in ('400','401','403','404','409','413','415','422','429','500'):
++      del updated['responses'][status]
++     updated['responses']['default']=copy.deepcopy(op['responses']['default'])
++     success=updated['responses']['201']
++     del success['headers']['Cache-Control']['required']; del success['headers']['Location']['required']
++     success['content']['application/json']['schema']['properties']['meta']={'$ref':'#/components/schemas/IdempotentMeta'}
++    self.assertEqual(op,updated)
+   self.assertEqual(SPEC_DATA['components']['responses']['PublicError429']['headers']['Retry-After']['required'],True)
+ 
+ if __name__=='__main__': unittest.main()
+--- before/docs/design/04-03_machine_contract_governance.md
++++ after/docs/design/04-03_machine_contract_governance.md
+@@ -1,7 +1,7 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.5
+-更新日期：2026-10-23
++文档版本：v1.6
++更新日期：2026-10-24
+ 适用项目大版本：v1
+ 
+ ## 1. 权威与覆盖边界
+@@ -67,3 +67,7 @@
+ 
+ Task目标/等待引用、ConfirmationPreview影响/保留联合及完整事件信封/citation设计已见04-01 §1.1–1.2、04-02 §2–3，新增字段尚未机器转写，待task010人工审核。现有JSON未修改；覆盖清单仅更新经差异审查的源指纹与缺项说明。设计闭合不消除机器或运行缺口；不提高typed_operations覆盖。A06接缝已限定接受，A05人工接受仍待记录，A04已限定接受；前述历史记录保留原时点。
+ 
++
++## B01 首个机器转写切片（task014）
++
++Project.Create按04 §3/5/7及04-01 §3补具名成功meta和适用错误/响应头，具体字段唯一见JSON。[task014](../../tasks/014-project-create-machine-contract.md)及[审核包](../workorders/task014_b01_review_2026-10-24.md)给出需求反例与兼容方向；并未生成应用或SDK。当前仍为47个请求/成功局部操作、40个仅请求、5/6 SSE payload；新增ProjectCreateMeta后173schema，源行131不变。此操作提高为request-success-errors-partial，运行GAP保留；其他操作覆盖不变。前文A07待审核为历史时点，task010已限定接受，机器转写仍待分片。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.58
++文档版本：v1.59
+ 更新日期：2026-10-24
+ 适用项目大版本：v1
+ 
+@@ -171,3 +171,5 @@
+ 本次修订 v1.57（2026-10-24）：用户授权推进A10，核对已有任务与交付范围；复用[task005](../tasks/005-engineering-skeleton.md) SK-01–09工程切片，已补可执行验收交接，当前82后端/58契约/3前端/2浏览器及构建/干净安装/wheel/空迁移历史通过；独立审查两项文档意见已修正复审闭合，S1–S3完成，当前S4等待人工审核，S5–S7未开始。task004仍为Project创建示例，task009/013仍为独立规划；A10是逐切片类别，本次不完成全项目A10、不启动新业务实现。[本轮审核包](workorders/task005_a10_review_2026-10-24.md)维护当前证据，既有精简代码与并行改动保留。
+ 
+ 本次修订 v1.58（2026-10-24）：用户明确接受task005本轮A10工程骨架限定交付，绑定197文件delivery基线；S5逐SK覆盖复核无新增缺口，S6无需修改，S7文档/差异/完整快照检查通过。仅更新任务、审核包与项目状态，代码/测试/规范未变，原独立复审结论及运行证据继续有效。当前授权队列完成，业务实现和全量A10仍按独立任务推进。
++
++本次修订 v1.59（2026-10-24）：用户授权推进B01并确定首片，建立[task014 Project.Create](../tasks/014-project-create-machine-contract.md)，仅补机器请求边界、201元信息/头及适用错误、契约回归与漂移检查。S1–S3完成：66项契约及结构检查通过，独立复审无剩余阻断项；当前S4等待人工审核，兼容门禁仅POST /projects差异退出1保留供接受，[审核包](workorders/task014_b01_review_2026-10-24.md)记录范围与证据；不启动Project/账号/持久化应用，不关闭TRACK-004及012运行范围，其他B类未自动授权。
+--- before/tasks/014-project-create-machine-contract.md
++++ after/tasks/014-project-create-machine-contract.md
+@@ -0,0 +1,71 @@
++# Task014：B01 Project.Create机器契约切片
++
++文档版本：v1.0
++更新日期：2026-10-24
++
++## 1. 目标与授权
++
++用户原文：“继续按 project-delivery 流程推进 B01，核对已有任务单和契约覆盖，确定首个机器契约转写切片，完成本轮交付、自验及独立审查，再提交我审核。”本轮确定POST /projects（Project.Create）为首片，补请求边界、成功元信息和错误响应的机器表达及契约测试，完成S1–S3后交S4。
++
++复用task004的Project创建语义和T01–T10边界，但task004仍为示例，不在其上冒充应用实现。本单独立负责B01机器层及自身A10规格。task005工程骨架已接受；task006 A04已接受；task007 A05尚待接受且本片不消费；task008/010–012限定设计已接受，本同步新建操作不消费Task/确认预览/SSE/图谱。task009/013仅独立规划。无现有B01执行单与本片重叠。
++
++可观察结果：现有JSON Schema工具接受合法创建请求、201/重放及适用错误，拒绝越界写字段、非法幂等键、同步完成null期限和不适用错误；覆盖清单与静态门禁准确反映范围。不实现账号/Project应用、真实HTTP/存储/并发/SDK，不扩大为全B01或FR-008完成。关联TRACK-004、012a/012e；其运行范围继续开放。
++
++## 2. 依据与基线
++
++已核对AGENTS、[状态](../docs/PROJECT_STATUS.md)、[设计索引](../docs/design/README.md)、[实施入口](../docs/IMPLEMENTATION_ENTRY.md)、[B01/A10](../docs/workorders/preimplementation_design_tasks_2026-10-21.md)、[task004](004-project-create-idempotency-example.md)及04系列。
++
++| 规则 | 操作/所有者与本轮表达 |
++| --- | --- |
++| 01 FR-008；04-01 §3；02 Project/Construction容器 | Project.Create创建Owner为当前主体、默认active；本轮沿ProjectWrite/View，不新增可写Owner/status，不以schema证明容器原子创建。 |
++| 04 §3/5；08当前身份/安全投影 | sessionCookie、CSRF、201/Location/no-store；具名错误状态及安全组件绑定，无权限服务实现。 |
++| 04 §7；05 §3；07 §6.1；task004 T09/T10 | 幂等键16–128可打印ASCII；同步完成到期非null；真实至少24h、持久E一致、重放当前request_id由后续B03验证。 |
++| 04-03及A04 | JSON单一字段来源、错误适用性按操作细分、兼容变化必须定向审核；不扩大其他端点。 |
++
++[入场](../docs/workorders/evidence/task014_b01_2026-10-24/before/source-manifest.json)保存197文件及tar，含未提交/未跟踪内容；[entry](../docs/workorders/evidence/task014_b01_2026-10-24/entry.json)保存授权、HEAD及范围。[旧OpenAPI](../docs/workorders/evidence/task014_b01_2026-10-24/before.openapi.json)来自改动前实际工作树，不用新文件自比，不称全JSON都已人工接受。
++
++## 3. 修改落点与取舍
++
++| 文件 | 职责/边界 |
++| --- | --- |
++| contracts/p0.openapi.json | 仅Project.Create头/成功meta/错误绑定，新增ProjectCreateMeta；通用IdempotentMeta保持允许异步null。 |
++| contracts/p0.coverage.json | 本操作由request-success-partial到request-success-errors-partial，保留GAP-RUNTIME；其余操作不提高覆盖。A07待审核陈旧说明更正为设计已接受/转写未做。 |
++| scripts/check_api_contracts.py | 本片错误/成功绑定、头、期限及覆盖漂移门禁，不削弱既有检查。 |
++| scripts/tests/test_project_create_contract.py | PC-01–08需求正负例与漂移/兼容回归；纯schema，无业务库或外呼。 |
++| scripts/tests/test_public_errors.py | 旧A04快照断言逐项扣除本片已明确变更后继续完整比较；不跳过Project.Create或其他操作。 |
++| 04-03、项目状态、本单与审核包 | 当前覆盖、接受边界、兼容方向、证据和S阶段交接。 |
++
++本片无异步Task/SSE或持久命令载荷，因此事件与schema_version/旧载荷处理不适用于本次wire产物；后续B03持久化命令必须独立版本化，不拿OpenAPI info.version冒充持久schema_version。本轮不生成重复手写DTO和路由；先收口机器结构，后续应用消费时另交适配及运行证据。
++
++## 4. A10验收与需求追踪
++
++| 场景/规范 | 前置、动作和反例 | 观察与禁止副作用 | 可执行测试 |
++| --- | --- | --- | --- |
++| PC-01 / FR-008、04-01 §3 | 合法名称1/200，空白/null/类型/201字符；描述0/10000/10001；Owner/status/修订/force/确认字段 | 合法通过、错误拒绝；不默认填PATCH或调用任何应用 | test_pc01_request_boundaries_and_no_owner_status_revision |
++| PC-02 / 04 §2/3/7 | session/CSRF/幂等头必需；key16/128/UUID及15/129/中文/尾换行；JSON创建与Location | 请求结构及头声明准确；尾换行拒绝；无假HTTP执行 | test_pc02_headers_and_creation_transport |
++| PC-03 / 04 §7.5/6、task004 T10 | 固定ProjectView+本次meta、可选original_request_id；null/非法期限、缺字段/未知字段/Task | 201具名信封且期限非null；异步通用meta仍容许null，不影响其他操作 | test_pc03_success_meta_requires_real_expiry_and_closed_envelope |
++| PC-04 / 04 §5、重放可见性 | 每个本片状态遍历42个公共错误变体 | 仅约定子集通过，不绑定游标/管理员/Provider/版本/修订等无关错误 | test_pc04_exact_errors_and_all_unrelated_variants_rejected |
++| PC-05 / A04未知提交结果 | 500/429 outcome=unknown合法核查；强制retryable与原始SQL字段反例 | 受约束恢复与脱敏结构不放宽；不声称自由文本语义脱敏已实现 | test_pc05_safe_failure_projection_and_unknown_outcome |
++| PC-06 / 04 §3/5 | 全部响应no-store，429 Retry-After 0合法/负数非法 | 头声明必需且值受约束；真实HTTP发送待实现 | test_pc06_no_store_and_retry_after |
++| PC-07 / 04-03 | 深拷贝删401、放宽409子集、移除缓存、Location变可选、覆盖降级或meta回通用 | 检查器必须失败；原JSON字节不被变异测试改写 | test_pc07_drift_guard_rejects_missing_or_widened_bindings |
++| PC-08 / 04-03 | 已有操作改变；另与真实入场JSON比较 | 保守兼容门禁报告需定向审核，禁止抹掉失败改自比 | test_pc08_existing_operation_change_still_requires_review |
++
++上述用例均在scripts/tests/test_project_create_contract.py，执行证据见审核包；场景输入及期望来自规则，错误集合显式列出而非从新schema生成正确答案。无数据库或文件存储写入，无并发屏障需要；测试仅深拷贝内存并读取仓库JSON。真实身份、CSRF、重复/并发/原子容器创建、24h保留、跨主体防重放、request_id与持久到期一致性继续由task004运行场景及后续B02/B03承担，未执行。
++
++## 5. 自验与限制
++
++新增负例先对旧JSON/检查器运行，失败日志red.log保留；补齐后green.log暴露尾换行既有缺陷，局部修复后重跑。全契约回归、结构、文档引用/版本、完整快照和实际入场兼容差异均需检查；具体输出在[审核包](../docs/workorders/task014_b01_review_2026-10-24.md)。只运行独立contracts/.venv，不连接业务/Provider，不运行无关应用测试。源码快照包含未提交/未跟踪文件，证据独立保存。
++
++## 6. 人工审核
++
++审核本操作错误适用性、同步期限收紧、幂等键边界修复和兼容非零差异；不改变既定业务语义。建议接受限定机器层交付后进入S5–S7；修订则回S2/S3。人工接受尚未发生，其他任务与运行验收不代填。
++
++## 7. 单一报告
++
++[task014审核包](../docs/workorders/task014_b01_review_2026-10-24.md)维护实际命令、正负例、兼容方向、独立发现、快照和限制。
++
++## 8. 顺序交付检查点
++
++唯一队列task014，授权见第1节。S1已核对范围、197文件及机器覆盖；S2机器实现及自验已完成，新增8组及全量66项契约测试通过；S3独立复审通过，无剩余阻断项；S4等待人工审核，S5–S7未开始。无运行业务实现授权，下一步等待用户对本片及POST /projects兼容差异的接受或修订决定。
++
++受审s3-input清单SHA256为 `253209a5bd6cc6a526dff1da228f64e638f1879c25daa59ed5ede0acc1eb43b4`（200文件）。最终delivery仅更新本单、审核包及项目状态的交接记录，机器契约/检查器/测试与受审和执行基线一致；完整性及差异见审核包。机器实现及自动自验完成，兼容门禁退出1保留供人工审核；人工接受和业务运行未完成。
+--- before/docs/workorders/task014_b01_review_2026-10-24.md
++++ after/docs/workorders/task014_b01_review_2026-10-24.md
+@@ -0,0 +1,54 @@
++# Task014 B01 Project.Create机器契约审核包
++
++文档版本：v1.0
++更新日期：2026-10-24
++
++## 选择与交付边界
++
++本轮按用户授权选择Project.Create为首个B01机器转写切片，复用task004语义示例，另建[task014](../../tasks/014-project-create-machine-contract.md)明确A10规格。task005是工程骨架，task006/A04公共错误已有接受；Task/确认/SSE和A08/A09类型另属后续，不以本轮完成全B01。完整任务盘点及PC-01–08追踪见任务单。
++
++已有ProjectWrite/View不重新定义；只对POST /projects补201同步非空期限、Location/no-store、幂等键非打印字符拒绝及HTTP错误适用子集。现有Name/描述/权限投影等结构保留，响应不强制active：重放与当前对象生命周期的判断仍按04在运行层实现，不以本片新增状态语义。
++
++## 错误适用性与兼容方向
++
++| 状态 | 适用及依据 |
++| --- | --- |
++| 400 | VALIDATION_BAD_REQUEST，请求格式/必要头无效；不含游标。 |
++| 401 | AUTH_REQUIRED/SESSION_INVALID/ACCOUNT_DISABLED，当前会话；不含登录凭证错误。 |
++| 403 | PERMISSION_CSRF_REJECTED；普通用户创建不是管理员操作。 |
++| 404 | PERMISSION_RESOURCE_UNAVAILABLE，只在原结果已删除/不再可见等重放场景；不披露旧Project。 |
++| 409 | STATE_IDEMPOTENCY_CONFLICT，同键异参；新建无对象修订、确认、知识版本或构建槽。 |
++| 413/415 | VALIDATION_PAYLOAD_TOO_LARGE/UNSUPPORTED_FORMAT，请求体大小与格式拒绝；不引入上传处理。 |
++| 422 | VALIDATION_FIELD_INVALID/UNKNOWN_FIELD；不含文件不可读。 |
++| 429 | STATE_RESOURCE_LIMIT，技术资源保护及Retry-After；不增加产品配额。 |
++| 500 | STORAGE_INTERNAL_FAILURE，受理/存储故障或未知提交结果安全投影。 |
++
++复用A04安全错误组件，没有模型/论文/邮件调用，因此不绑定Provider 502/503/504；没有已有目标修订/确认前置，不绑定412/428及相关409。结构只描述允许投影，不证明运行鉴权、错误选择或无副作用。
++
++实际入场JSON另存[before.openapi.json](evidence/task014_b01_2026-10-24/before.openapi.json)。本轮修改既有POST /projects：请求幂等键排除非打印字符（修复尾换行被`$`接受）；响应meta从通用可null收紧为完成结果非null；必需Location/no-store声明与适用错误状态补全。新增ProjectCreateMeta不改通用IdempotentMeta。保守兼容检查实际退出1，仅报告`operation changed/removed: POST /projects`，见[兼容日志](evidence/task014_b01_2026-10-24/compatibility.log)；非零，必须保留真实结果供人工审核，不称自动兼容通过；其他操作与共享schema应保持字节语义相同。
++
++## 自验与证据
++
++[evidence](evidence/task014_b01_2026-10-24/)保存入场197文件快照、red.log（旧产物负例）、green.log（发现尾换行缺陷）、green-fixed.log、structure.log、all-contracts.log（旧A04快照断言失败）、all-contracts-fixed.log及后续文档/快照结果。命令为仓库根 `contracts/.venv/bin/python -m unittest discover -s scripts/tests -v`、`contracts/.venv/bin/python scripts/check_api_contracts.py`、加 `--baseline docs/workorders/evidence/task014_b01_2026-10-24/before.openapi.json` 的兼容检查。运行无数据库、Provider及业务副作用。
++
++本片是同步wire结构，无异步事件/持久载荷，不建立schema_version或旧载荷迁移；未来命令落库须另行具名版本化。权限、原子创建、真实去重/期限、HTTP头实际发送及模型/端到端未实施。只提高Project.Create的局部覆盖，typed_operations总数不因补错误而增加。
++
++## 独立审查与交接
++
++已委派独立只读subagent自行审阅规范、实际JSON、检查器、测试和反例；最终[独立复审记录](evidence/task014_b01_2026-10-24/independent-review.txt)确认本片符合现行规则，无剩余阻断项。S1–S3已完成，S4等待人工审核，S5–S7未开始。建议审查实际请求/响应方向差异、PC反例和未覆盖项后接受本片；接受尚未发生。
++
++## 自验中发现与处置
++
++旧产物上新增8组测试为2失败/4错误（未绑定错误、头及同步meta），不是假定已通过；首次转写后1失败暴露末尾换行。保持原min/max/pattern，再以`not`排除非打印ASCII，仅修改本操作头，PC-02保留回归。其余端点同类输入边界未在本片修复，后续B01逐操作检查，不扩展当前授权。
++
++首次全量66项仅旧A04全操作快照断言失败。已对Project.Create的特定头、meta、错误和标记增量做明确归一化后继续比较旧操作完整内容；所有其他操作/原schema仍逐项原样比较。新PC测试独立固定请求边界、精确错误集合和信封约束，接管本片新增行为断言；并未跳过历史操作或降低业务要求。
++
++未验证：Location与返回ID实际对应且可查询、首次/重放期限至少24h及等于持久E、当前request_id、会话/CSRF和权限生效、Project/Construction容器/去重真实原子提交、业务响应丢失与并发。没有真实业务写路径，本轮安全字段结构与样例不等于运行脱敏或业务完成。
++
++## 最终核验与受审基线
++
++新增8组及全量66项契约测试通过；[S2检查](evidence/task014_b01_2026-10-24/s2-checks.json)保存文档、结构及兼容实际退出码。结构为47请求/成功局部+40仅请求、173schema、131源行、5/6 SSE payload；不把机器结构数计为业务覆盖。兼容退出1仅POST /projects，具体方向见前表，人工接受前不覆盖原基线。
++
++[s3-input](evidence/task014_b01_2026-10-24/s3-input/source-manifest.json)200文件，manifest SHA256 `253209a5bd6cc6a526dff1da228f64e638f1879c25daa59ed5ede0acc1eb43b4`；独立审查核验归档与工作区完全匹配、既有共享结构和其他操作不变。历史断言修复与尾换行回归已复审通过，未发现剩余阻断项。[范围检查](evidence/task014_b01_2026-10-24/s3-scope-check.json)记录9个授权文件差异。
++
++[最终delivery](evidence/task014_b01_2026-10-24/delivery/source-manifest.json)仅在受审后更新任务单、审核包、项目状态三份交接记录；机器产物及测试不变。[最终检查](evidence/task014_b01_2026-10-24/final-checks.json)记录准确清单摘要、文档及完整快照复验和无漂移结果。无需重跑未变契约测试，保留本轮失败与修复后日志。当前S4待用户接受限定机器交付及定向兼容差异；S5–S7未开始。

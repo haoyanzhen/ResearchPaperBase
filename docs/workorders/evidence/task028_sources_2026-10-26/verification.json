@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-26",
+  "integration": {
+    "passed": 398,
+    "seconds": 388.37,
+    "log": "integration-final.log",
+    "isolated_postgresql": true,
+    "server_stopped": true,
+    "root_removed": true
+  },
+  "backend_unit": 187,
+  "contract_regressions": 68,
+  "frontend_unit": 4,
+  "typechecked_source_files": 58,
+  "check": "check-final.log",
+  "build": "build-final.log",
+  "clean_install": "clean-install-final.log",
+  "external_provider_calls": false,
+  "milestone": "M-P0-06 pending human acceptance",
+  "engineering": "S7 complete"
+}

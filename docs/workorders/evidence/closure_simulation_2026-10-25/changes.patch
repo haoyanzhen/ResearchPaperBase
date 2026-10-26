@@ -1,0 +1,261 @@
+--- before/backend/src/rpb/api/projects.py
++++ after/backend/src/rpb/api/projects.py
+@@ -17,6 +17,11 @@
+     name: Annotated[str, Field(min_length=1, max_length=200)]
+     description: Annotated[str, Field(max_length=10000)] = ""
+     research_scope: Annotated[str, Field(max_length=10000)] = ""
++
++    @field_validator("name", "description", "research_scope", mode="before")
++    @classmethod
++    def trim_text(cls, value: Any) -> Any:
++        return value.strip() if isinstance(value, str) else value
+ 
+     @field_validator("name")
+     @classmethod
+--- before/backend/tests/integration/test_browser_business.py
++++ after/backend/tests/integration/test_browser_business.py
+@@ -400,3 +400,168 @@
+         assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 1
+         assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 1
+     page.close()
++
++
++def test_sim01_auth_rejections_then_correction(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    register_ui(page, base)
++    for identifier in ["BrowserUser", "Nobody"]:
++        page.get_by_label("用户名或邮箱", exact=True).fill(identifier)
++        page.get_by_label("密码", exact=True).fill("incorrect-password")
++        page.get_by_role("button", name="登录账号", exact=True).click()
++        expect(page.get_by_role("alert")).to_have_text("用户名、邮箱或密码不正确。")
++        expect(page.get_by_role("button", name="退出登录")).to_have_count(0)
++    page.get_by_role("button", name="注册", exact=True).click()
++    page.get_by_label("用户名", exact=True).fill("BROWSERUSER")
++    page.get_by_label("邮箱", exact=True).fill("second@example.invalid")
++    page.get_by_label("密码", exact=True).fill(PASSWORD)
++    page.get_by_label("确认密码", exact=True).fill(PASSWORD)
++    page.get_by_role("button", name="创建账号", exact=True).click()
++    expect(page.get_by_role("alert")).to_have_text("用户名或邮箱已被使用。")
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
++    page.get_by_label("用户名", exact=True).fill("SecondUser")
++    page.get_by_role("button", name="创建账号", exact=True).click()
++    expect(page.get_by_role("status")).to_have_text("注册成功，请登录。")
++    login_ui(page, " SECOND@EXAMPLE.INVALID ")
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 2
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 0
++    page.close()
++
++
++@pytest.mark.parametrize("failure", ["before_post", "after_post_read"])
++def test_sim02_network_failure_recovery(browser_app, failure):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    register_ui(page, base)
++    login_ui(page)
++    keys = []
++    page.on(
++        "request",
++        lambda req: (
++            keys.append(req.headers["idempotency-key"])
++            if req.method == "POST" and req.url == base + "/api/v1/projects"
++            else None
++        ),
++    )
++    pattern = "**/api/v1/projects" if failure == "before_post" else "**/api/v1/projects/*"
++    page.route(pattern, lambda route: route.abort("failed"))
++    page.get_by_label("项目名称", exact=True).fill("Network recovery")
++    page.get_by_role("button", name="创建 Project", exact=True).click()
++    expect(page.get_by_role("button", name="用原请求重试")).to_be_enabled()
++    with engine.connect() as conn:
++        expected = 0 if failure == "before_post" else 1
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == expected
++        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == expected
++    page.unroute(pattern)
++    page.reload()
++    expect(page.get_by_role("button", name="用原请求重试")).to_be_enabled()
++    page.get_by_role("button", name="用原请求重试").click()
++    expect(page.get_by_role("heading", name="Network recovery")).to_be_visible()
++    assert len(keys) == 2 and len(set(keys)) == 1
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 1
++        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 1
++    page.close()
++
++
++def test_sim03_storage_unavailable_has_no_write(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    register_ui(page, base)
++    login_ui(page)
++    writes = []
++    page.on(
++        "request",
++        lambda req: (
++            writes.append(req.url)
++            if req.method == "POST" and req.url == base + "/api/v1/projects"
++            else None
++        ),
++    )
++    page.evaluate("""() => { window.originalSetItem = Storage.prototype.setItem;
++        Storage.prototype.setItem = function() { throw new DOMException('blocked'); }; }""")
++    page.get_by_label("项目名称", exact=True).fill("Storage recovered")
++    page.get_by_role("button", name="创建 Project", exact=True).click()
++    expect(page.get_by_role("alert")).to_have_text(
++        "浏览器无法保留待确认请求，请允许本站会话存储后重试。"
++    )
++    expect(page.get_by_label("项目名称", exact=True)).to_be_enabled()
++    assert not writes
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 0
++        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 0
++    page.evaluate("() => { Storage.prototype.setItem = window.originalSetItem; }")
++    page.get_by_role("button", name="创建 Project", exact=True).click()
++    expect(page.get_by_role("heading", name="Storage recovered")).to_be_visible()
++    assert len(writes) == 1
++    page.close()
++
++
++def test_sim04_project_validation_multiple_links_and_literal_text(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    errors = []
++    page.on("pageerror", lambda error: errors.append(str(error)))
++    register_ui(page, base)
++    login_ui(page)
++    page.get_by_label("项目名称", exact=True).fill("   ")
++    page.get_by_role("button", name="创建 Project", exact=True).click()
++    expect(page.get_by_role("alert")).to_be_visible()
++    expect(page.get_by_label("项目名称", exact=True)).to_be_enabled()
++    expect(page.get_by_role("button", name="用原请求重试")).to_have_count(0)
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 0
++        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 0
++    names = ["第一项研究", "第二项研究"]
++    urls = []
++    literal = '<img src=x onerror="window.untrustedExecuted=true">'
++    for name in names:
++        page.get_by_label("项目名称", exact=True).fill(name)
++        page.get_by_label("描述", exact=True).fill(literal)
++        page.get_by_role("button", name="创建 Project", exact=True).click()
++        expect(page.get_by_role("heading", name=name)).to_be_visible()
++        expect(page.get_by_text(literal, exact=True)).to_be_visible()
++        assert page.evaluate("window.untrustedExecuted === undefined")
++        urls.append(page.url)
++        page.get_by_role("link", name="新建项目", exact=True).click()
++        expect(page.get_by_label("项目名称", exact=True)).to_have_value("")
++    for url, name in zip(urls, names, strict=True):
++        page.goto(url)
++        expect(page.get_by_role("heading", name=name)).to_be_visible()
++    page.goto(base + "/workspace?project=00000000-0000-0000-0000-000000000001")
++    expect(page.get_by_role("alert")).to_have_text("资源不可用。")
++    expect(page.get_by_label("项目名称", exact=True)).to_be_enabled()
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 2
++        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 2
++    assert not errors
++    page.close()
++
++
++def test_sim07_inflight_form_blocks_duplicate_submission(browser_app):
++    browser, base, engine, _ = browser_app
++    page = browser.new_page()
++    register_ui(page, base)
++    login_ui(page)
++    posts = []
++
++    def held_request(route):
++        posts.append(route.request.url)
++        expect(page.get_by_role("button", name="处理中…", exact=True)).to_be_disabled()
++        for label in ["项目名称", "描述", "研究范围"]:
++            expect(page.get_by_label(label, exact=True)).to_be_disabled()
++        expect(page.get_by_role("button", name="退出登录")).to_be_disabled()
++        route.continue_()
++
++    page.route("**/api/v1/projects", held_request)
++    page.get_by_label("项目名称", exact=True).fill("Only one in flight")
++    page.get_by_role("button", name="创建 Project", exact=True).click()
++    expect(page.get_by_role("heading", name="Only one in flight")).to_be_visible()
++    assert len(posts) == 1
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(projects)) == 1
++        assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 1
++    page.close()
+--- before/backend/tests/integration/test_project_commands.py
++++ after/backend/tests/integration/test_project_commands.py
+@@ -510,3 +510,35 @@
+     )
+     assert r.status_code == 201
+     assert counts(engine) == (1, 1, 1)
++
++
++@pytest.mark.parametrize(
++    "field,limit", [("name", 200), ("description", 10000), ("research_scope", 10000)]
++)
++def test_sim05_text_length_after_trimming_and_replay(db, field, limit):
++    """04-01 section 1: trim outer whitespace before checking text length."""
++    engine, _ = db
++    c, h = signed_in(engine)
++    body = {"name": "Research", field: " " + "中" * limit + "\n"}
++    response = create(c, h, body)
++    assert response.status_code == 201
++    assert response.json()["data"][field] == "中" * limit
++    replay = create(c, csrf(c), {**body, field: "中" * limit})
++    assert replay.status_code == 201
++    assert replay.json()["data"] == response.json()["data"]
++    assert counts(engine) == (1, 1, 1)
++
++
++def test_sim06_internal_whitespace_preserved(db):
++    engine, _ = db
++    c, h = signed_in(engine)
++    text = "a  b\nc"
++    response = create(
++        c, h, {"name": "  A  B  ", "description": f"\n{text}\t", "research_scope": f" {text} "}
++    )
++    assert response.status_code == 201
++    data = response.json()["data"]
++    assert data["name"] == "A  B"
++    assert data["description"] == data["research_scope"] == text
++    assert c.get(response.headers["location"]).json()["data"] == data
++    assert counts(engine) == (1, 1, 1)
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.66
++文档版本：v1.67
+ 更新日期：2026-10-25
+ 适用项目大版本：v1
+ 
+@@ -37,6 +37,8 @@
+ 本轮现有实现审计与精简已完成代码及自动验证：集中CLI配置拒绝处理、复用检查文件清单、删除等价UI分支；82后端/58契约/3前端/2浏览器、构建及干净安装wheel验证通过。详见[审计记录](workorders/code_cleanup_2026-10-23.md)；保留已有和并行工作区变更，本轮精简代码现已由task005 A10在2026-10-24按SK-01–09独立审查及重新验证，见下述审核包；本轮SK-01–09已获2026-10-24用户限定接受，其他范围不扩大，不代表业务核心验收。
+ 
+ ## 3. 待完成项
++
++2026-10-25按用户要求完成[task020当前闭环操作模拟](../tasks/020-closed-loop-operation-simulation.md)：新增10个场景，发现并修复Project三字段未先去首尾空白再校验长度的缺陷；最终192项真实PG/HTTP/浏览器通过（含17个浏览器参数场景），87后端/66契约/3前端及最终构建通过，独立新增10项通过并复审闭合。原task019历史证据保留，当前验收内容基线见task020；M-P0-01仍待人工验收，不扩展配置/构建业务。
+ 
+ 2026-10-25用户已授权沿既定分期持续迭代至业务决定或下一里程碑。当前批次见[task016](../tasks/016-project-storage.md)：Project/Construction容器存储已工程收口（65项PG17通过，独立P2补测并复审闭合）；[task017账号注册登录](../tasks/017-account-authentication.md)已工程收口：107项真实PG/HTTP通过，独立R1/R1b/R2/R3修复闭合，82后端/66契约/3前端及构建通过。[task018 Project创建与本人读取](../tasks/018-project-create-runtime.md)已工程收口：168项真实PG/HTTP独立通过，原子创建/重放/故障/权限验证、R1/R2及覆盖修复闭合；[task019浏览器闭环](../tasks/019-browser-milestone.md)已完成S1–S7工程收口：最终182项PG/HTTP/真实浏览器通过，87后端/66契约/3前端、构建/干净安装及2项骨架e2e通过；独立179项全套与最终7项影响路径通过，跨账号提交/未知结果恢复/演示中断清理缺陷闭合。**M-P0-01已到，工程已收口，等待人工验收**；按用户“下一里程碑停下”指令暂不推进后续业务。范围仅本地注册登录、创建与读取本人Project及拒绝恢复，不代表生产或完整模块交付。用户身份规则A已落实，01/08已同步，无该项未决阻塞；单一验收包、运行命令及未交付范围见task019。
+ 
+--- before/tasks/019-browser-milestone.md
++++ after/tasks/019-browser-milestone.md
+@@ -1,6 +1,6 @@
+ # Task019：注册登录与Project创建浏览器闭环
+ 
+-文档版本：v1.1
++文档版本：v1.2
+ 更新日期：2026-10-25
+ 
+ ## 1. 授权与里程碑
+@@ -49,6 +49,8 @@
+ 
+ ## 6. M-P0-01单一验收包
+ 
++2026-10-25补充：用户要求的全流程操作模拟及Project文本规范化修复已由[task020](020-closed-loop-operation-simulation.md)承接；当前192项集成及独立新增10项通过，当前内容基线以其delivery快照为准。以下182项及原快照保留为task019历史交付证据，人工验收状态仍为等待。
++
+ 代码、自动验证和独立审查已完成；工程S1–S7已收口，里程碑等待人工验收。最终内容基线为证据目录`delivery/source-manifest.json`与`source.tar.gz`，摘要在`receipt.json`；该包包含所有当前工作区源文件，历史已接受内容不会据此被扩大接受。
+ 
+ 先按[README](../README.md)安装锁定依赖并build；当前机器已验证的演示命令：

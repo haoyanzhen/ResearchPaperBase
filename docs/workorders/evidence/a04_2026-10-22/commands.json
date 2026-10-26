@@ -1,0 +1,50 @@
+[
+  {
+    "name": "structure",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "regression",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-p",
+      "test_api_contracts.py",
+      "-v"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "public-errors",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-p",
+      "test_public_errors.py",
+      "-v"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "compatibility",
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json"
+    ],
+    "exit_code": 1
+  }
+]

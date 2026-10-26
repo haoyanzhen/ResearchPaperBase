@@ -1,0 +1,12 @@
+{
+  "contracts/p0.openapi.json": "2652913408e215e5de7560c1d3e523b403c88c2823a1f7a31eede609aee34acf",
+  "contracts/p0.coverage.json": "172bf78f18cc2e44145eafe44a1bd820ebb2a306e0e2771a3a8b2c66c5d346ba",
+  "scripts/check_api_contracts.py": "e14b30f1069cd69121a420ce4146dea29bb462d6b961694f188af964980fec1b",
+  "scripts/tests/test_public_errors.py": "d17fe48605d5b7671bd8634782170993b79a548df0560fd5aa9f7015dfca2861",
+  "scripts/tests/test_api_contracts.py": "8ce673a3c2c9a63fc3598b18e4c3475d8d5cbd9e10afd80c562b71e561cbdd09",
+  "tasks/006-public-error-recovery-contract.md": "fcaede2816a856fd4738c52fc3fc7f99a56c82f1e9129c908a7c4dd84b8a377c",
+  "docs/PROJECT_STATUS.md": "0430f789e710776d95ebcb9708115b6edf1301a3b560cb8e0ad9b62560f6662c",
+  "scripts/tests/test_public_error_requirements.py": "664c7355f43a594ee92857ee04bfb11cbdd8452e316ac3defaa6677188ab6cf1",
+  "docs/workorders/task006_coverage_closure_2026-10-22.md": "092774659a01cdfc09c1287eb6c99d7ae39f9b22472f0f19810cd0f4f86084f4",
+  "contracts/requirements.txt": "3f10b705081fa81ff1b27a5627f7001b97991a883f3dc684b27fbea8c94bbbd1"
+}

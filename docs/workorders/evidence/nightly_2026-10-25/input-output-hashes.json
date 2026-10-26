@@ -1,0 +1,22 @@
+{
+  "docs/PROJECT_STATUS.md": {
+    "before": "07436a904fe4ceb87994e133bef508eaa0cff1fad6490de8c6a550e46f0425db",
+    "after": "77a6deca4b38baa19d86a78e1e0488b956b28f9758415529ba40294bbd59a3d4"
+  },
+  "docs/design/README.md": {
+    "before": "2fc7ec135d113f06bd14b5450702ffeb16d403d9d8d5647281280cf9f64b2186",
+    "after": "c90e62bd678e4a7d40bae0a72c004956d928a962777f1f9d6bfe53921a969e4a"
+  },
+  "docs/workorders/nightly_maintenance_2026-10-25.md": {
+    "before": null,
+    "after": "ef2bb0183886fa3aa189b78fc493cd0f1eb7ed9d86e2491a562a868f43b7facf"
+  },
+  "docs/workorders/preimplementation_design_tasks_2026-10-21.md": {
+    "before": "b36342e4a1367dc03dedb97e6582ce6ffaf1eae913607162641fddafed06b26a",
+    "after": "3b8cae8d6495f00001b6c318e6208553cc891219fe61ac941e8a738ff878039a"
+  },
+  "tasks/013-human-content-protection-plan.md": {
+    "before": "a6f91cea08e6cf4066544cf5730190df0eef6a4c9ae0ec4aed1d8bb66245c88c",
+    "after": "8a641699ff4328fc7c8798ea3d5e89b87a614b31ce995bce86be6b160bc07033"
+  }
+}

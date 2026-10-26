@@ -1,0 +1,17 @@
+{
+  "checked_documents": [
+    "README.md",
+    "docs/file_map.md",
+    "docs/PROJECT_STATUS.md",
+    "tasks/022-project-maintenance.md",
+    "tasks/023-account-profile.md"
+  ],
+  "broken_relative_links": [],
+  "source_whitespace_errors": [],
+  "final_input_differences": [
+    "docs/PROJECT_STATUS.md",
+    "tasks/023-account-profile.md"
+  ],
+  "note": "Only documentation changed since final-input. Repository git diff --check reports six pre-existing out-of-scope design EOF blank lines, preserved.",
+  "delivery_manifest_sha256": "eb5c427173f8c8bbe0b73cfe1bc67ad54a589ac460786fa9cef712304d2431bc"
+}

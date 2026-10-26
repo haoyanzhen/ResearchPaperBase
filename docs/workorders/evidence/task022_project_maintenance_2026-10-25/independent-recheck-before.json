@@ -1,0 +1,17 @@
+{
+  "backend/src/rpb/modules/project/application/service.py": "c86ba2c8625cff545e1ca892b321188a773da21b1f5ab1d7942ab887b69deac7",
+  "backend/src/rpb/modules/project/application/ports.py": "5fdf2e6e9a68264db1d213f8aeaaeeb73e99b1104fbc93f3b31d7f2d1f0f944e",
+  "backend/src/rpb/adapters/project_commands.py": "ffafbb1b105a2582d6ba063624bc0602d65025243c9b85cfd061d35769e04431",
+  "backend/src/rpb/api/projects.py": "2c94427dc2c5a8156afc81ef2fafd6454264b67942b83b97b678dc9615f39a5d",
+  "backend/src/rpb/bootstrap/business.py": "abcf99734a917305350a0c6763f93fd2bc85d320506aa145a31aa2385015a195",
+  "backend/migrations/versions/0005_project_lifecycle.py": "87fb51d3f4300f663d02c8e94ca6b3598fa9d8414505933ac13e9db15eca03ba",
+  "frontend/src/BusinessApp.tsx": "fcb9defb2d26d03b52ca4aeba24db4f9b72192cafa9607e0f5af06f0e03bc730",
+  "frontend/src/style.css": "83a5e9829e334f260d05a86e5bfa72b0500ed80452c18a779ea797063dda965f",
+  "backend/tests/integration/test_project_maintenance.py": "71a6661f109170565e57ac2564040f342e16b7424b25b9c58ac682ff3b928b9a",
+  "backend/tests/integration/test_project_maintenance_browser.py": "22b71bcc3596f1f7404db19afce2f3f2a565bc103f31ca443f9135a3efeb2368",
+  "backend/tests/integration/conftest.py": "b4bee06a41ac4345e9a919d2d8f4f011c5a52cdc49cafebcd4a05f4e55f5b0f3",
+  "backend/tests/integration/test_account_storage.py": "2da0200c25fe045a6d8109ebac06ea6ad42f4b1eac41089338adb35309ae672a",
+  "backend/tests/integration/test_account_auth.py": "10f53a9dc6163c4c9c13e552553b5432567d5f11c4e52787e8643e15d6db5e79",
+  "backend/tests/integration/test_project_storage.py": "b38cf5f634de7ef47147dae20b464690719a5086924ef6c7a6cafc0facc3d3ea",
+  "scripts/run_storage_tests.py": "bcbc9df245829ff9b80253a5f43d05d2fd6dc2d1e85003493497a4577d2dafc4"
+}

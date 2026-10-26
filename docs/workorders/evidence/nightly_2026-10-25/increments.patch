@@ -1,0 +1,2525 @@
+--- previous/.agents/skills/project-delivery/SKILL.md
++++ current/.agents/skills/project-delivery/SKILL.md
+@@ -1,27 +1,28 @@
+ ---
+ name: project-delivery
+-description: 在 ResearchPaperBase 项目中按授权队列推进或恢复任务交付，组织实现、自验、subagent 独立审查、人工决策、覆盖复核与简化收口。用于执行该交付流程，不用于自动执行项目 backlog。
++description: 在 ResearchPaperBase 项目中按授权队列推进或恢复任务交付，组织实现、自验、subagent 独立审查、覆盖复核、简化与自动工程收口，保留业务决策和里程碑验收。用于执行该交付流程，不用于自动执行项目 backlog。
+ ---
+ 
+ # Project Delivery
+ 
+-文档版本：v1.0
+-更新日期：2026-10-23
++文档版本：v1.1
++更新日期：2026-10-25
+ 
+ ## 入口与职责
+ 
+ 从本文件向上三级定位仓库根目录，不依赖调用时工作目录。先读 [AGENTS](../../../AGENTS.md)、[项目状态](../../../docs/PROJECT_STATUS.md)、[设计索引](../../../docs/design/README.md)、[实施入口](../../../docs/IMPLEMENTATION_ENTRY.md)及当前任务相关规范，检查实际 Git 工作区。保留已有修改。
+ 
+-实施入口第2节是阶段与人工交接规则的唯一维护位置；按其中 S1–S7 顺序执行。使用[任务模板](../../../tasks/example.md)记录实例与检查点，不另建重复状态库。此 skill 是执行指令，不是后台调度器，不保证跨会话自动唤醒或硬性阻止跳步。
++实施入口第2节是工程阶段、业务决策和里程碑验收规则的唯一维护位置；按其中流程v1.7的 S1–S7 顺序执行，取消逐任务人工审阅门禁。使用[任务模板](../../../tasks/example.md)记录实例与检查点，不另建重复状态库。此 skill 是执行指令，不是后台调度器，不保证跨会话自动唤醒或硬性阻止跳步。
+ 
+ ## 执行与恢复
+ 
+ 1. 从用户实际指令确定单任务或批次授权，记录来源、范围、顺序与依赖。调用 skill 本身、任务文件存在、状态表待办或前任务通过均不是下一业务任务的授权。范围不明时仅整理已有信息，提出具体问题，不启动不明范围的实现。
+ 2. 恢复时先读取任务单检查点、授权来源、人工决定和对应内容快照，再比对当前文件（含未提交/未跟踪文件）。缺少授权或证据不能用状态标签补足；保留历史，记录差异，回到最早受影响阶段。不要重置或覆盖其他人的改动。
+-3. 逐阶段执行并在交接、返工、等待、结束前保存检查点。基础测试与需求追踪在首次人工审核前完成；后续覆盖复核不能代替它们。设计/文档任务执行引用、版本与一致性检查，不为凑流程运行无关应用测试。
++3. 逐阶段执行并在交接、返工、等待、结束前保存检查点。基础测试与需求追踪在S2完成；后续覆盖复核不能代替它们。设计/文档任务执行引用、版本与一致性检查，不为凑流程运行无关应用测试。
+ 4. S3 必须委派独立 subagent：提供任务授权、规范、实际产物路径/快照、可运行验证入口及允许副作用；要求自行读文件与反例，不以主 agent 总结作结论。审查者只读、不得启动业务任务或修改共享工作区；输出严重度、位置、需求依据、复现证据和验证限制。主 agent 修复已授权缺陷，再请审查者复核受影响部分。工具不可用时记录未执行，不能以自审替代独立通过。
+-5. S4 人工节点遵循实施入口：准备具体审核包，引用原始用户决定并绑定范围及基线。没有真实决定就保存等待状态，向用户列出问题、证据、选项、建议和仅被阻塞的部分；不反复轮询或把等待超时当作批准。已授权且不依赖决定的准备工作可继续，但不得跳过阶段门槛。
+-6. S5/S6 产生变更后执行 S7 复验及受影响的独立复审；需要人工重新接受时回 S4。简化以保持行为、边界与测试强度为条件，没有收益即记录无需修改，不制造重构任务。
+-7. 当前任务满足 S7 收口条件后，再核对下一任务已有授权及前置。队列耗尽、缺授权、外部依赖不可用或必须人工决策时保存可恢复交接。例行工程修复在授权范围内自主完成；业务规则冲突不得自行裁决。
++5. S4覆盖复核与S5简化后，执行S6最终复验及受影响的独立复审。保持行为、边界与测试强度，没有收益即记录无需修改，不制造重构任务。S7条件满足后自主工程收口，核对下一任务授权与前置并继续，不等待逐任务人工接受。
++6. 业务决策D和里程碑验收M遵循实施入口。S1记录里程碑范围、触发点、场景和后续依赖；尚无约定时提出分组，在首个完整业务成果形成时提交验收，不无限推迟。真正需要决定时，提供具体产物/问题、证据、选项、建议及仅被阻塞的工作；无实际答复保存等待状态，继续独立的已授权工作。常规实现与修复不反复索取批准。
++7. 恢复旧任务必须按实施入口的旧→新阶段映射追加检查点，保留历史接受、待审和执行证据；不能把旧S4当作覆盖已完成，也不能将取消例行门禁解释为业务决定已获批准。全量拆解只建立任务地图，延期或未授权业务不自动执行。
++8. 队列耗尽、缺授权、必需验证/独立审查不可用，或依赖业务决定/里程碑验收时，保存可恢复交接，明确未完成范围。不能以自审、缺项说明或通过测试数量替代必需验证与独立审查。里程碑接受后的变化按实施入口判断补充验收，不把旧接受迁移到新基线。
+ 
+-交付时给出当前阶段、实际变更、验证证据、独立审查结论、人工待决事项及下一步。分列设计、代码、自动验证、人工接受状态；不把本轮文档交付称为业务验收。
++交付时给出当前阶段、实际变更、验证证据、独立审查结论、业务待决事项、里程碑状态及下一步。分列设计、代码、自动验证、工程收口、里程碑人工接受状态；不把文档交付或自动工程收口称为业务验收。
+--- previous/AGENTS.md
++++ current/AGENTS.md
+@@ -2,8 +2,8 @@
+ 
+ Author: haoyanzhen
+ Date:   2026-06-01
+-Updated: 2026-10-22
+-Document version: v1.1
++Updated: 2026-10-25
++Document version: v1.2
+ 
+ This file introduce the main aim and structure of this project.
+ 
+@@ -43,17 +43,18 @@
+ 
+ - Independently complete local implementation, fixes, tests, and necessary documentation updates within the authorized scope. Do not repeatedly ask for confirmation of already authorized work.
+ - Changes to business semantics, permission boundaries, human-content protection, knowledge-version binding, or product phasing require an explicit human decision unless already authorized.
++- A full-project task map is planning, not execution authorization. Continue through an explicitly authorized queue without per-task approval; pause only work dependent on an unresolved business decision or required milestone acceptance.
+ - A deferred item or backlog entry is not execution authorization. If additional scope is needed, explain it and pause only the dependent work while continuing work within scope.
+ - When a decision is needed, present: the question, available evidence, options and their effects, the recommended option, and the work blocked by the decision.
+ 
+ ## Codex delivery principles
+ 
+-- Humans own product decisions and acceptance; Codex owns implementation quality, requirement-oriented tests, verification, and a reviewable delivery within the authorized scope.
++- Humans own business decisions and milestone acceptance; Codex owns implementation quality, requirement-oriented tests, independent review, verification, and engineering closeout within the authorized scope. Per-task human review is not a gate.
+ - Deliver small slices defined by observable behavior, including rejection and failure paths. Make routine engineering choices independently and explain material tradeoffs; do not expand scope through incidental refactoring or backlog work.
+ - Preserve existing working-tree changes. Bind review and verification to the actual artifact, including relevant uncommitted and untracked files, rather than HEAD alone.
+-- Self-review the diff, requirement coverage, critical boundaries, and execution evidence before requesting human review. Fix independently resolvable defects first; do not hand basic debugging or missing verification to the reviewer.
++- Self-review the diff, requirement coverage, critical boundaries, and execution evidence; complete independent review, coverage repair, behavior-preserving simplification, and final verification before engineering closeout. Fix independently resolvable defects without waiting for human review.
+ - Keep design completion, code completion, automated verification, and human acceptance distinct. Never infer human approval from passing checks or claim overall acceptance from a partial slice.
+-- Human review procedure is maintained in the [implementation entry](docs/IMPLEMENTATION_ENTRY.md); task-specific scope, traceability, evidence, and decisions are recorded using the [task template](tasks/example.md), without duplicating those procedures here.
++- Engineering delivery, business decision, and milestone acceptance procedures are maintained in the [implementation entry](docs/IMPLEMENTATION_ENTRY.md); task-specific scope, traceability, evidence, and decisions are recorded using the [task template](tasks/example.md), without duplicating those procedures here.
+ 
+ ## Verification requirements
+ 
+--- previous/README.md
++++ current/README.md
+@@ -1,7 +1,7 @@
+ # Research Paper Base
+ 
+-文档版本：v1.7
+-更新日期：2026-10-23
++文档版本：v1.8
++更新日期：2026-10-25
+ 
+ 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
+ 
+@@ -79,7 +79,13 @@
+ 
+ 浏览器测试针对构建产物，覆盖390/1280宽度、本地导航、键盘入口、无横向溢出和无写请求；不代表业务端到端验收。截图在 `frontend/test-results/`。
+ 
+-`python3 scripts/engineering.py migration-history` 可查看空迁移链。`integration` 和 `alembic upgrade head` 当前明确失败，不连接任何数据库；真实PostgreSQL 17、隔离夹具及第一份业务迁移须随后续存储切片交付。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
++`python3 scripts/engineering.py migration-history` 可查看首条 `0001_account` 迁移。执行真实存储测试：
++
++```bash
++python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
++```
++
++`--postgres-bin` 必须显式指向 PostgreSQL 17 的二进制目录（其他机器替换路径）。命令创建仅 Unix socket 可达的临时实例、独立测试库和非管理员角色；测试内部提交保留到本轮结束，随后停止进程并删除该实例。未传目标的 `integration` 和直接 `alembic upgrade head` 仍拒绝，忽略业务 DATABASE_URL；没有生产迁移入口。默认 `check` 执行无数据库测试，真实存储测试须另行运行且缺目标为失败，不是跳过。Account 仅有存储结构，没有注册、登录或权限服务；[task015](tasks/015-account-storage-migration.md)记录范围与证据。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
+ 
+ 本次修订（2026-10-22）：增加首批工程安装、启停、检查和构建入口；审核结论由人工记录。
+ 
+--- previous/backend/alembic.ini
++++ current/backend/alembic.ini
+@@ -1,3 +1,4 @@
+ [alembic]
+ script_location = %(here)s/migrations
+ prepend_sys_path = %(here)s/src
++path_separator = os
+--- previous/backend/migrations/env.py
++++ current/backend/migrations/env.py
+@@ -1,4 +1,31 @@
+-"""Reserve the single migration chain; no target or business schema is enabled."""
+-raise RuntimeError(
+-    "Migration execution unavailable: isolated target and first schema require a separate slice."
+-)
++"""Migrate only a caller-supplied, verified disposable test connection."""
++
++from alembic import context
++from sqlalchemy import text
++from sqlalchemy.engine import Connection
++
++from rpb.adapters.account import metadata
++
++ERROR = "Migration execution unavailable: verified isolated test connection required"
++try:
++    config = context.config
++except AttributeError:
++    raise RuntimeError(ERROR) from None
++connection = config.attributes.get("connection")
++run_id = config.attributes.get("test_run_id")
++if not isinstance(connection, Connection) or not isinstance(run_id, str):
++    raise RuntimeError(ERROR)
++if connection.dialect.name != "postgresql" or not run_id.startswith("rpb_test_"):
++    raise RuntimeError(ERROR)
++identity = connection.execute(
++    text(
++        "SELECT current_database(), current_user, "
++        "current_setting('rpb.test_run_id', true), "
++        "(SELECT rolsuper OR rolcreatedb OR rolcreaterole FROM pg_roles WHERE rolname=current_user)"
++    )
++).one()
++if tuple(identity) != (run_id, run_id, run_id, False):
++    raise RuntimeError(ERROR)
++context.configure(connection=connection, target_metadata=metadata, compare_type=True)
++with context.begin_transaction():
++    context.run_migrations()
+--- previous/backend/migrations/versions/0001_account.py
++++ current/backend/migrations/versions/0001_account.py
+@@ -0,0 +1,51 @@
++"""Account identity storage only; no registration or governance behavior."""
++
++import sqlalchemy as sa
++from alembic import op
++
++revision = "0001_account"
++down_revision = None
++branch_labels = None
++depends_on = None
++
++
++def upgrade():
++    op.create_table(
++        "accounts",
++        sa.Column("id", sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")),
++        sa.Column("username", sa.Text, nullable=False),
++        sa.Column("email", sa.Text, nullable=False),
++        sa.Column("username_key", sa.Text(collation="C"), nullable=False),
++        sa.Column("email_key", sa.Text(collation="C"), nullable=False),
++        sa.Column("password_hash", sa.Text, nullable=False),
++        sa.Column("enabled", sa.Boolean, nullable=False),
++        sa.Column("is_admin", sa.Boolean, nullable=False),
++        sa.Column("revision", sa.Uuid, nullable=False, server_default=sa.text("gen_random_uuid()")),
++        sa.Column(
++            "created_at",
++            sa.DateTime(timezone=True),
++            nullable=False,
++            server_default=sa.text("CURRENT_TIMESTAMP"),
++        ),
++        sa.Column(
++            "updated_at",
++            sa.DateTime(timezone=True),
++            nullable=False,
++            server_default=sa.text("CURRENT_TIMESTAMP"),
++        ),
++        sa.UniqueConstraint("username_key", name="uq_accounts_username_key"),
++        sa.UniqueConstraint("email_key", name="uq_accounts_email_key"),
++        sa.CheckConstraint("username_key <> ''", name="ck_accounts_username_key"),
++        sa.CheckConstraint("email_key <> ''", name="ck_accounts_email_key"),
++        sa.CheckConstraint("password_hash <> ''", name="ck_accounts_password_hash"),
++    )
++
++
++def downgrade():
++    # Hold the same lock through the emptiness check and DROP; concurrent inserts
++    # must finish before the check or wait until this transaction finishes.
++    op.execute("LOCK TABLE accounts IN ACCESS EXCLUSIVE MODE")
++    # Explicitly refuse data loss. Empty disposable schemas may be rolled back.
++    if op.get_bind().scalar(sa.text("SELECT EXISTS (SELECT 1 FROM accounts)")):
++        raise RuntimeError("Account downgrade refused: accounts contains data")
++    op.drop_table("accounts")
+--- previous/backend/pyproject.toml
++++ current/backend/pyproject.toml
+@@ -22,4 +22,4 @@
+ python_version = "3.14"
+ strict = true
+ [tool.pytest.ini_options]
+-testpaths = ["tests"]
++testpaths = ["tests/unit", "tests/architecture"]
+--- previous/backend/src/rpb/adapters/account.py
++++ current/backend/src/rpb/adapters/account.py
+@@ -0,0 +1,35 @@
++"""Account storage metadata; only Alembic creates tables. No authentication service."""
++
++import sqlalchemy as sa
++
++metadata = sa.MetaData()
++accounts = sa.Table(
++    "accounts",
++    metadata,
++    sa.Column("id", sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")),
++    sa.Column("username", sa.Text, nullable=False),
++    sa.Column("email", sa.Text, nullable=False),
++    sa.Column("username_key", sa.Text(collation="C"), nullable=False),
++    sa.Column("email_key", sa.Text(collation="C"), nullable=False),
++    sa.Column("password_hash", sa.Text, nullable=False),
++    sa.Column("enabled", sa.Boolean, nullable=False),
++    sa.Column("is_admin", sa.Boolean, nullable=False),
++    sa.Column("revision", sa.Uuid, nullable=False, server_default=sa.text("gen_random_uuid()")),
++    sa.Column(
++        "created_at",
++        sa.DateTime(timezone=True),
++        nullable=False,
++        server_default=sa.text("CURRENT_TIMESTAMP"),
++    ),
++    sa.Column(
++        "updated_at",
++        sa.DateTime(timezone=True),
++        nullable=False,
++        server_default=sa.text("CURRENT_TIMESTAMP"),
++    ),
++    sa.UniqueConstraint("username_key", name="uq_accounts_username_key"),
++    sa.UniqueConstraint("email_key", name="uq_accounts_email_key"),
++    sa.CheckConstraint("username_key <> ''", name="ck_accounts_username_key"),
++    sa.CheckConstraint("email_key <> ''", name="ck_accounts_email_key"),
++    sa.CheckConstraint("password_hash <> ''", name="ck_accounts_password_hash"),
++)
+--- previous/backend/tests/conftest.py
++++ current/backend/tests/conftest.py
+@@ -0,0 +1,2 @@
++def pytest_addoption(parser):
++    parser.addoption("--storage-target", help="Explicit disposable cluster fixture descriptor")
+--- previous/backend/tests/integration/conftest.py
++++ current/backend/tests/integration/conftest.py
+@@ -0,0 +1,57 @@
++"""Only consume the per-run unprivileged descriptor; never read DATABASE_URL."""
++
++import json
++import stat
++from pathlib import Path
++
++import pytest
++import sqlalchemy as sa
++from alembic import command
++from alembic.config import Config
++
++ROOT = Path(__file__).resolve().parents[2]
++
++
++@pytest.fixture(scope="session")
++def storage(request):
++    path = request.config.getoption("--storage-target")
++    if not path:
++        pytest.fail("Explicit disposable storage target required; no connection attempted")
++    path = Path(path).resolve(strict=True)
++    data = json.loads(path.read_text())
++    run_id = data["run_id"]
++    assert run_id.startswith("rpb_test_") and len(run_id) == 41
++    assert data["database"] == data["username"] == run_id
++    assert Path(data["host"]).resolve() == path.parent
++    assert path.parent.name.startswith("rpb-db-")
++    assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
++    engine = sa.create_engine(
++        sa.URL.create(
++            "postgresql+psycopg",
++            username=run_id,
++            password=data["password"],
++            database=run_id,
++            query={"host": data["host"], "port": "5432"},
++        ),
++        hide_parameters=True,
++    )
++    cfg = Config(str(ROOT / "alembic.ini"))
++    cfg.attributes["test_run_id"] = run_id
++    try:
++        with engine.begin() as conn:
++            assert conn.scalar(sa.text("SHOW server_version_num"))[:2] == "17"
++            cfg.attributes["connection"] = conn
++            command.upgrade(cfg, "head")  # env validates DB, role, marker, privilege before DDL
++        yield engine, cfg
++    finally:
++        engine.dispose()
++
++
++@pytest.fixture
++def db(storage):
++    engine, cfg = storage
++    with engine.begin() as conn:
++        conn.execute(sa.text("DELETE FROM accounts"))
++    yield engine, cfg
++    with engine.begin() as conn:
++        conn.execute(sa.text("DELETE FROM accounts"))
+--- previous/backend/tests/integration/test_account_storage.py
++++ current/backend/tests/integration/test_account_storage.py
+@@ -0,0 +1,262 @@
++"""B02 storage requirements, real committed transactions and deterministic lock contention."""
++
++import time
++from concurrent.futures import ThreadPoolExecutor
++from datetime import UTC, datetime
++from threading import Event
++from uuid import UUID, uuid4
++
++import pytest
++import sqlalchemy as sa
++from alembic import command
++from alembic.autogenerate import compare_metadata
++from alembic.migration import MigrationContext
++from sqlalchemy.exc import IntegrityError
++
++from rpb.adapters.account import accounts, metadata
++
++
++def values(suffix="one"):
++    return dict(
++        username=f"User {suffix}",
++        email=f"{suffix}@example.invalid",
++        username_key=f"user-{suffix}",
++        email_key=f"{suffix}@example.invalid",
++        password_hash="$test-only$irreversible-placeholder",
++        enabled=True,
++        is_admin=False,
++    )
++
++
++def migrate(engine, cfg, action, revision):
++    with engine.begin() as conn:
++        cfg.attributes["connection"] = conn
++        getattr(command, action)(cfg, revision)
++
++
++def test_ac01_migration_metadata_and_rerun(db):
++    engine, cfg = db
++    with engine.begin() as conn:
++        identity = conn.execute(
++            accounts.insert().values(**values()).returning(accounts.c.id)
++        ).scalar_one()
++    migrate(engine, cfg, "upgrade", "head")
++    with engine.connect() as conn:
++        assert compare_metadata(MigrationContext.configure(conn), metadata) == []
++        assert conn.scalar(sa.select(accounts.c.id)) == identity
++        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0001_account"
++        columns = sa.inspect(conn).get_columns("accounts")
++        assert not {"password", "plaintext_password", "session_token"} & {
++            c["name"] for c in columns
++        }
++        constraints = {c["name"] for c in sa.inspect(conn).get_check_constraints("accounts")}
++        assert constraints == {
++            "ck_accounts_username_key",
++            "ck_accounts_email_key",
++            "ck_accounts_password_hash",
++        }
++
++
++def test_ac02_committed_identity_status_revision_and_utc(db):
++    engine, _ = db
++    with engine.begin() as conn:
++        row = (
++            conn.execute(accounts.insert().values(**values()).returning(accounts)).mappings().one()
++        )
++    assert isinstance(row["id"], UUID) and isinstance(row["revision"], UUID)
++    assert row["created_at"].utcoffset().total_seconds() == 0
++    revision = uuid4()
++    now = datetime.now(UTC)
++    with engine.begin() as conn:
++        conn.execute(
++            accounts.update()
++            .where(accounts.c.id == row["id"])
++            .values(enabled=False, is_admin=True, revision=revision, updated_at=now)
++        )
++    with engine.connect() as conn:
++        changed = conn.execute(sa.select(accounts)).mappings().one()
++        assert changed["id"] == row["id"] and changed["created_at"] == row["created_at"]
++        assert changed["revision"] == revision and changed["updated_at"] == now
++        assert changed["enabled"] is False and changed["is_admin"] is True
++        assert changed["password_hash"] == values()["password_hash"]
++
++
++@pytest.mark.parametrize("field", ["username_key", "email_key"])
++def test_ac03_unique_keys_rollback_whole_transaction(db, field):
++    engine, _ = db
++    with engine.begin() as conn:
++        conn.execute(accounts.insert().values(**values()))
++    with pytest.raises(IntegrityError) as error, engine.begin() as conn:
++        conn.execute(accounts.insert().values(**values("would-rollback")))
++        duplicate = values("two") | {field: values()[field]}
++        conn.execute(accounts.insert().values(**duplicate))
++    assert error.value.orig.sqlstate == "23505"
++    assert error.value.orig.diag.constraint_name == f"uq_accounts_{field}"
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
++
++
++@pytest.mark.parametrize("field", ["username_key", "email_key", "password_hash"])
++@pytest.mark.parametrize("bad", [None, ""])
++def test_ac04_required_storage_keys(db, field, bad):
++    engine, _ = db
++    with pytest.raises(IntegrityError), engine.begin() as conn:
++        conn.execute(accounts.insert().values(**(values() | {field: bad})))
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 0
++
++
++@pytest.mark.parametrize("field", ["username_key", "email_key"])
++def test_ac05_concurrent_duplicate_blocks_then_rejects(db, field):
++    engine, _ = db
++    ready = Event()
++    pids = []
++    with engine.connect() as winner:
++        transaction = winner.begin()
++        winner.execute(accounts.insert().values(**values()))
++        winner_pid = winner.scalar(sa.text("SELECT pg_backend_pid()"))
++
++        def loser():
++            with engine.begin() as conn:
++                pids.append(conn.scalar(sa.text("SELECT pg_backend_pid()")))
++                conn.execute(sa.text("SET LOCAL lock_timeout='8s'"))
++                ready.set()
++                conn.execute(accounts.insert().values(**(values("two") | {field: values()[field]})))
++
++        with ThreadPoolExecutor(max_workers=1) as executor:
++            future = executor.submit(loser)
++            try:
++                assert ready.wait(5)
++                deadline = time.monotonic() + 5
++                with engine.connect() as observer:
++                    while time.monotonic() < deadline:
++                        blockers = observer.scalar(
++                            sa.text("SELECT pg_blocking_pids(:pid)"), {"pid": pids[0]}
++                        )
++                        if winner_pid in blockers:
++                            break
++                        time.sleep(0.01)
++                    else:
++                        pytest.fail("Required unique-key lock interleaving not observed")
++                transaction.commit()
++                with pytest.raises(IntegrityError) as error:
++                    future.result(timeout=10)
++                assert error.value.orig.sqlstate == "23505"
++            finally:
++                if transaction.is_active:
++                    transaction.rollback()
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
++
++
++def test_ac06_downgrade_protects_committed_data_then_empty_roundtrip(db):
++    engine, cfg = db
++    with engine.begin() as conn:
++        conn.execute(accounts.insert().values(**values()))
++    with pytest.raises(RuntimeError, match="contains data"):
++        migrate(engine, cfg, "downgrade", "base")
++    with engine.begin() as conn:
++        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0001_account"
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
++        conn.execute(accounts.delete())
++    migrate(engine, cfg, "downgrade", "base")
++    with engine.connect() as conn:
++        assert not sa.inspect(conn).has_table("accounts")
++    migrate(engine, cfg, "upgrade", "head")
++
++
++def test_ac07_failed_upgrade_atomic_and_retryable(db):
++    engine, cfg = db
++    migrate(engine, cfg, "downgrade", "base")
++
++    def fail_after_create(conn, cursor, statement, parameters, context, executemany):
++        if "CREATE TABLE accounts" in statement:
++            raise RuntimeError("injected failure after physical CREATE")
++
++    sa.event.listen(engine, "after_cursor_execute", fail_after_create)
++    try:
++        with pytest.raises(RuntimeError, match="injected failure"):
++            migrate(engine, cfg, "upgrade", "head")
++    finally:
++        sa.event.remove(engine, "after_cursor_execute", fail_after_create)
++    with engine.connect() as conn:
++        assert not sa.inspect(conn).has_table("accounts")
++        assert conn.scalar(sa.text("SELECT count(*) FROM alembic_version")) == 0
++    migrate(engine, cfg, "upgrade", "head")
++
++
++def test_ac08_wrong_run_marker_refuses_ddl(db):
++    engine, cfg = db
++    original = cfg.attributes["test_run_id"]
++    cfg.attributes["test_run_id"] = "rpb_test_wrong"
++    try:
++        with pytest.raises(RuntimeError, match="verified isolated"):
++            migrate(engine, cfg, "downgrade", "base")
++    finally:
++        cfg.attributes["test_run_id"] = original
++    with engine.connect() as conn:
++        assert sa.inspect(conn).has_table("accounts")
++        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0001_account"
++        privileges = conn.execute(
++            sa.text(
++                "SELECT rolsuper, rolcreatedb, rolcreaterole FROM pg_roles "
++                "WHERE rolname=current_user"
++            )
++        ).one()
++        assert tuple(privileges) == (False, False, False)
++
++
++@pytest.mark.parametrize(
++    "field",
++    ["id", "username", "email", "enabled", "is_admin", "revision", "created_at", "updated_at"],
++)
++def test_ac04_other_required_facts_reject_null(db, field):
++    engine, _ = db
++    with pytest.raises(IntegrityError), engine.begin() as conn:
++        conn.execute(accounts.insert().values(**(values() | {field: None})))
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 0
++
++
++def test_ac06_concurrent_committing_writer_prevents_downgrade(db):
++    """R01: empty-check followed by DROP must not erase a racing committed account."""
++    engine, cfg = db
++    ready = Event()
++    pids = []
++    with engine.connect() as writer:
++        transaction = writer.begin()
++        writer.execute(accounts.insert().values(**values()))
++        writer_pid = writer.scalar(sa.text("SELECT pg_backend_pid()"))
++
++        def downgrade():
++            with engine.begin() as conn:
++                conn.execute(sa.text("SET LOCAL lock_timeout='8s'"))
++                pids.append(conn.scalar(sa.text("SELECT pg_backend_pid()")))
++                cfg.attributes["connection"] = conn
++                ready.set()
++                command.downgrade(cfg, "base")
++
++        with ThreadPoolExecutor(max_workers=1) as executor:
++            future = executor.submit(downgrade)
++            try:
++                assert ready.wait(5)
++                with engine.connect() as observer:
++                    deadline = time.monotonic() + 5
++                    while time.monotonic() < deadline:
++                        blockers = observer.scalar(
++                            sa.text("SELECT pg_blocking_pids(:pid)"), {"pid": pids[0]}
++                        )
++                        if writer_pid in blockers:
++                            break
++                        time.sleep(0.01)
++                    else:
++                        pytest.fail("Required writer/downgrade interleaving not observed")
++                transaction.commit()
++                with pytest.raises(RuntimeError, match="contains data"):
++                    future.result(timeout=10)
++            finally:
++                if transaction.is_active:
++                    transaction.rollback()
++    with engine.connect() as conn:
++        assert conn.scalar(sa.select(sa.func.count()).select_from(accounts)) == 1
++        assert conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0001_account"
+--- previous/backend/tests/integration/test_fixture_cleanup.py
++++ current/backend/tests/integration/test_fixture_cleanup.py
+@@ -0,0 +1,57 @@
++"""Actual cluster cleanup after failed or timed-out child tests, including internal commits."""
++
++import importlib.util
++import json
++import subprocess
++from pathlib import Path
++
++import pytest
++
++ROOT = Path(__file__).resolve().parents[3]
++
++
++@pytest.mark.parametrize("failure", ["exit", "timeout"])
++def test_ac10_child_failure_cleans_real_cluster(request, monkeypatch, capsys, failure):
++    target = json.loads(Path(request.config.getoption("--storage-target")).read_text())
++    spec = importlib.util.spec_from_file_location(
++        "storage_runner", ROOT / "scripts/run_storage_tests.py"
++    )
++    runner = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(runner)
++    original = subprocess.run
++
++    def fail_child(args, **kwargs):
++        if "pytest" in args:
++            # Runner has already committed CREATE ROLE/CREATE DATABASE in real PG.
++            if failure == "timeout":
++                raise subprocess.TimeoutExpired("synthetic test child", 180)
++            return subprocess.CompletedProcess(args, 9)
++        return original(args, **kwargs)
++
++    monkeypatch.setattr(subprocess, "run", fail_child)
++    if failure == "timeout":
++        with pytest.raises(subprocess.TimeoutExpired):
++            runner.run_tests(Path(target["binary_dir"]))
++    else:
++        assert runner.run_tests(Path(target["binary_dir"])) == 9
++    records = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
++    assert records[-1]["run_id"] == records[0]["run_id"]
++    assert records[-1]["server_stopped"] and records[-1]["root_removed"]
++    assert not Path(records[0]["root"]).exists()
++
++
++def test_ac11_child_has_only_test_role_credentials(request):
++    import psycopg
++
++    path = Path(request.config.getoption("--storage-target"))
++    target = json.loads(path.read_text())
++    assert not (path.parent / "admin-password").exists()
++    assert set(target) == {"host", "database", "username", "password", "run_id", "binary_dir"}
++    with pytest.raises(psycopg.OperationalError, match="password authentication failed"):
++        psycopg.connect(
++            host=target["host"],
++            dbname=target["database"],
++            user="fixture_admin",
++            password=target["password"],
++            connect_timeout=5,
++        )
+--- previous/contracts/p0.coverage.json
++++ current/contracts/p0.coverage.json
+@@ -1,6 +1,6 @@
+ {
+-  "version": "1.5",
+-  "date": "2026-10-23",
++  "version": "1.6",
++  "date": "2026-10-24",
+   "source_rows": [
+     {
+       "signature": "`CW/search-terms/action-preview`",
+@@ -631,19 +631,19 @@
+       "id": "GAP-ERROR",
+       "kind": "not-yet-transcribed",
+       "scope": "per-operation HTTP error applicability and binding",
+-      "reason": "A04 shared errors are typed; A05 five synchronous operations bind applicable error subsets. Other endpoint errors and complete TaskView remain unbound."
++      "reason": "A04 shared errors, A05 five synchronous subsets and B01 Project.Create subset are typed; other endpoint errors remain unbound."
+     },
+     {
+       "id": "GAP-TASK",
+       "kind": "not-yet-transcribed",
+       "scope": "TaskHandle/TaskView, all asynchronous response operations",
+-      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
++      "reason": "A07 task010 design accepted; machine transcription and runtime verification remain open."
+     },
+     {
+       "id": "GAP-CONFIRM",
+       "kind": "not-yet-transcribed",
+       "scope": "ConfirmationPreview and operations returning confirmations",
+-      "reason": "A07 task010 defines named fields and variants in 04-01/04-02; human review pending. Machine transcription and runtime verification remain open."
++      "reason": "A07 task010 design accepted; machine transcription and runtime verification remain open."
+     },
+     {
+       "id": "GAP-REMAINING",
+@@ -832,9 +832,8 @@
+       ]
+     },
+     "Project.Create": {
+-      "status": "request-success-partial",
+-      "gaps": [
+-        "GAP-ERROR",
++      "status": "request-success-errors-partial",
++      "gaps": [
+         "GAP-RUNTIME"
+       ]
+     },
+@@ -1634,7 +1633,7 @@
+       "status": "partial",
+       "typed_operations": {
+         "Project.List": "request-success-partial",
+-        "Project.Create": "request-success-partial"
++        "Project.Create": "request-success-errors-partial"
+       },
+       "remaining": []
+     },
+@@ -2699,5 +2698,45 @@
+       "A08 source discovery in full ingestion/detail DTOs",
+       "runtime authorization, isolation, persistence, UI and end-to-end acceptance"
+     ]
++  },
++  "project_create": {
++    "operation": "Project.Create",
++    "task": "task014",
++    "error_codes": {
++      "400": [
++        "VALIDATION_BAD_REQUEST"
++      ],
++      "401": [
++        "AUTH_REQUIRED",
++        "AUTH_SESSION_INVALID",
++        "AUTH_ACCOUNT_DISABLED"
++      ],
++      "403": [
++        "PERMISSION_CSRF_REJECTED"
++      ],
++      "404": [
++        "PERMISSION_RESOURCE_UNAVAILABLE"
++      ],
++      "409": [
++        "STATE_IDEMPOTENCY_CONFLICT"
++      ],
++      "413": [
++        "VALIDATION_PAYLOAD_TOO_LARGE"
++      ],
++      "415": [
++        "VALIDATION_UNSUPPORTED_FORMAT"
++      ],
++      "422": [
++        "VALIDATION_FIELD_INVALID",
++        "VALIDATION_UNKNOWN_FIELD"
++      ],
++      "429": [
++        "STATE_RESOURCE_LIMIT"
++      ],
++      "500": [
++        "STORAGE_INTERNAL_FAILURE"
++      ]
++    },
++    "scope": "Wire request/success/error binding only; no runtime, persisted command/event payload or HTTP application implemented."
+   }
+ }
+--- previous/contracts/p0.openapi.json
++++ current/contracts/p0.openapi.json
+@@ -2,7 +2,7 @@
+   "openapi": "3.1.0",
+   "info": {
+     "title": "Research Paper Base P0 typed contract subset",
+-    "version": "1.5.0",
++    "version": "1.6.0",
+     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+   },
+   "servers": [
+@@ -1683,7 +1683,10 @@
+               "type": "string",
+               "minLength": 16,
+               "maxLength": 128,
+-              "pattern": "^[\\x20-\\x7e]+$"
++              "pattern": "^[\\x20-\\x7e]+$",
++              "not": {
++                "pattern": "[^\\x20-\\x7e]"
++              }
+             }
+           }
+         ],
+@@ -1692,6 +1695,7 @@
+             "description": "Success; business prerequisites and runtime checks remain mandatory.",
+             "headers": {
+               "Cache-Control": {
++                "required": true,
+                 "schema": {
+                   "type": "string",
+                   "const": "no-store"
+@@ -1701,7 +1705,8 @@
+                 "schema": {
+                   "type": "string"
+                 },
+-                "description": "Created resource URL."
++                "description": "Created resource URL.",
++                "required": true
+               }
+             },
+             "content": {
+@@ -1713,7 +1718,7 @@
+                       "$ref": "#/components/schemas/ProjectView"
+                     },
+                     "meta": {
+-                      "$ref": "#/components/schemas/IdempotentMeta"
++                      "$ref": "#/components/schemas/ProjectCreateMeta"
+                     }
+                   },
+                   "required": [
+@@ -1725,8 +1730,376 @@
+               }
+             }
+           },
+-          "default": {
+-            "description": "Error envelope and status mapping: 04 section 5. Safe details/recovery vocabulary not yet fully typed; see GAP-ERROR."
++          "400": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope400"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_BAD_REQUEST"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "401": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope401"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "AUTH_REQUIRED",
++                                "AUTH_SESSION_INVALID",
++                                "AUTH_ACCOUNT_DISABLED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "403": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope403"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_CSRF_REJECTED"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "404": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope404"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "PERMISSION_RESOURCE_UNAVAILABLE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "409": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope409"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_IDEMPOTENCY_CONFLICT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "413": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope413"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_PAYLOAD_TOO_LARGE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "415": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope415"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_UNSUPPORTED_FORMAT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "422": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope422"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "VALIDATION_FIELD_INVALID",
++                                "VALIDATION_UNKNOWN_FIELD"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "429": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope429"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STATE_RESOURCE_LIMIT"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Retry-After": {
++                "required": true,
++                "description": "Delay seconds before considering original request retry; does not authorize business rerun.",
++                "schema": {
++                  "type": "integer",
++                  "minimum": 0
++                }
++              },
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
++          },
++          "500": {
++            "description": "Safe public error; applicability follows 04 and operation preconditions.",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "allOf": [
++                    {
++                      "$ref": "#/components/schemas/ErrorEnvelope500"
++                    },
++                    {
++                      "properties": {
++                        "error": {
++                          "properties": {
++                            "code": {
++                              "enum": [
++                                "STORAGE_INTERNAL_FAILURE"
++                              ]
++                            }
++                          }
++                        }
++                      }
++                    }
++                  ]
++                }
++              }
++            },
++            "headers": {
++              "Cache-Control": {
++                "required": true,
++                "schema": {
++                  "type": "string",
++                  "const": "no-store"
++                }
++              }
++            }
+           }
+         },
+         "requestBody": {
+@@ -1738,6 +2111,42 @@
+               }
+             }
+           }
++        },
++        "x-contract-slice": "project-create-b01",
++        "x-error-codes": {
++          "400": [
++            "VALIDATION_BAD_REQUEST"
++          ],
++          "401": [
++            "AUTH_REQUIRED",
++            "AUTH_SESSION_INVALID",
++            "AUTH_ACCOUNT_DISABLED"
++          ],
++          "403": [
++            "PERMISSION_CSRF_REJECTED"
++          ],
++          "404": [
++            "PERMISSION_RESOURCE_UNAVAILABLE"
++          ],
++          "409": [
++            "STATE_IDEMPOTENCY_CONFLICT"
++          ],
++          "413": [
++            "VALIDATION_PAYLOAD_TOO_LARGE"
++          ],
++          "415": [
++            "VALIDATION_UNSUPPORTED_FORMAT"
++          ],
++          "422": [
++            "VALIDATION_FIELD_INVALID",
++            "VALIDATION_UNKNOWN_FIELD"
++          ],
++          "429": [
++            "STATE_RESOURCE_LIMIT"
++          ],
++          "500": [
++            "STORAGE_INTERNAL_FAILURE"
++          ]
+         }
+       }
+     },
+@@ -14356,6 +14765,21 @@
+           }
+         ],
+         "description": "Completed synchronous classification mutation: earliest deduplication expiry is required and non-null. Actual retention is a runtime obligation."
++      },
++      "ProjectCreateMeta": {
++        "allOf": [
++          {
++            "$ref": "#/components/schemas/IdempotentMeta"
++          },
++          {
++            "properties": {
++              "idempotency_expires_at": {
++                "$ref": "#/components/schemas/Time"
++              }
++            }
++          }
++        ],
++        "description": "Synchronous completed creation/replay must disclose a non-null actual retention expiry; >=24h and persisted equality require runtime checks."
+       }
+     },
+     "responses": {
+--- previous/docs/IMPLEMENTATION_ENTRY.md
++++ current/docs/IMPLEMENTATION_ENTRY.md
+@@ -1,11 +1,11 @@
+ # 新核心设计与审核入口
+ 
+-文档版本：v1.5
+-更新日期：2026-10-24
++文档版本：v1.7
++更新日期：2026-10-25
+ 
+ ## 1. 当前依据
+ 
+-本入口组织Codex任务和人工审核，不新增产品规则。工程交付范围与实际运行状态统一见[项目状态](PROJECT_STATUS.md)；首批工程审核材料见[任务005](../tasks/005-engineering-skeleton.md)。A01–A03为此前设计与流程准备；业务实现仍须有明确任务范围。
++本入口组织Codex工程交付、业务决策和里程碑验收，不新增产品规则。工程交付范围与实际运行状态统一见[项目状态](PROJECT_STATUS.md)；首批工程审核材料见[任务005](../tasks/005-engineering-skeleton.md)。A01–A03为此前设计与流程准备；业务实现仍须有明确任务范围。
+ 
+ 开始任务时读取[AGENTS](../AGENTS.md)、[项目状态](PROJECT_STATUS.md)、[设计索引](design/README.md)和下表对应规范。业务含义与分期以01为最高依据；02及附录展开领域规则；03定义交互；04定义协议；05–10负责各层约束。明确的派生速查错误可按规范更正；真实业务规范冲突只暂停依赖部分并请求裁决，不能按文件更新时间选择规则。
+ 
+@@ -15,40 +15,50 @@
+ | 账号、配置、Project | [01](design/01_functional_requirements.md) FR-001–008适用子条目、[02](design/02_domain_core.md)、[03-01](design/03-01_ui_system_pages_appendix.md)、[04-01](design/04-01_p0_operation_contracts.md)对应操作、[05](design/05_application_use_cases.md)、[07](design/07_data_persistence.md)、[08](design/08_security_permissions.md) | 配置测试字段仍须按08 §12.2校准，不推定已有schema全部闭合 |
+ | 受理与提交 | 04 §7、05 §3/§12、05-01 §2/§4、07 §6、09 ARC-03/04 | 同步命令不创建伪Task/outbox；异步先持久提交再返回 |
+ | 补充、解析、分类 | [02-03](design/02-03_construction_assets_appendix.md)、[03-02](design/03-02_ui_construction_appendix.md)、[04-02](design/04-02_transport_task_file_contracts.md)、[06](design/06_agent_knowledge_services.md)、[08-01](design/08-01_agent_data_access_policy.md)及对应05/07 | 单文件为P0；A05限定字段契约已交付（task007）；A06–A08限定设计已接受，分别见task008/010/011；机器转写与运行验证仍开放，不能用通用metadata接口补洞 |
+-| 发布、研究与综述 | [02-02](design/02-02_construction_versioning_appendix.md)、[03-03](design/03-03_ui_research_review_appendix.md)、[03-04](design/03-04_ui_shared_interactions_appendix.md)、04–09对应章节 | 空版合法、旧对象固定版本；A09首版P0方案已交付、待人工审核，见task012；Memory仍延期 |
++| 发布、研究与综述 | [02-02](design/02-02_construction_versioning_appendix.md)、[03-03](design/03-03_ui_research_review_appendix.md)、[03-04](design/03-04_ui_shared_interactions_appendix.md)、04–09对应章节 | 空版合法、旧对象固定版本；A09首版P0方案已于2026-10-24获限定设计接受并完成S5–S7，见task012；运行实现/评测仍未完成；Memory仍延期 |
+ | HTTP与任务交付 | [04](design/04_api_contracts.md)、04-01/04-02、[04-03](design/04-03_machine_contract_governance.md)、08、09 | 机器契约只约束实际覆盖结构；错误/任务/资料策略缺项按任务收口 |
+ 
+ ## 2. 任务与审核流程
+ 
+-Codex执行原则与测试义务统一见[AGENTS](../AGENTS.md#codex-delivery-principles)及其验证要求；本节维护人工审核与双方交接流程，任务模板只记录本次实例。人工决定产品取舍与最终接受，Codex负责交付质量和验证证据。
++Codex执行原则与测试义务统一见[AGENTS](../AGENTS.md#codex-delivery-principles)及其验证要求；本节是工程阶段、业务决策和里程碑验收规则的唯一维护位置。任务模板和skill记录实例或引用本节，不另设逐任务人工审阅门禁。2026-10-25用户已授权本次流程调整；该授权不扩大任何业务任务范围。
+ 
+-项目级执行入口为 [project-delivery skill](../.agents/skills/project-delivery/SKILL.md)。调用示例：`使用 $project-delivery 推进已授权的任务队列`，或 `使用 $project-delivery 恢复任务X`。调用不增加授权范围；下列阶段用于该流程，新任务采用，旧任务恢复时保留历史并补充检查点，不倒填未执行阶段。
++项目级执行入口为 [project-delivery skill](../.agents/skills/project-delivery/SKILL.md)。调用示例：`使用 $project-delivery 推进已授权的任务队列`，或 `使用 $project-delivery 恢复任务X`。可先全量盘点需求并拆分任务、依赖、验收场景和覆盖缺项，分别标记已授权、待决策与延期；执行仍按已授权队列逐个可观察行为切片推进，不把全量拆解当作全量执行授权。
++
++### 工程阶段（流程版本 v1.7）
+ 
+ | 阶段 | Codex交付及完成条件 | 人工职责 |
+ | --- | --- | --- |
+-| S1 范围与基线 | 明确授权队列、依赖与验收场景，核对规范和实际文件，保存内容基线 | 明确范围；裁决业务冲突 |
+-| S2 实现与自验 | 最小实现、需求追踪与必需验证通过，自审完成；文档任务做文档核验 | 按需澄清，不代替基础调试 |
+-| S3 独立审查 | subagent 阅读实际产物与规范；发现的缺陷修复、复验并复审闭合；缺工具则保持未执行 | 新增范围另行决定 |
+-| S4 人工审查与决策 | 提供单一审核包及精确基线；明确接受所需范围才进入S5；要求修复回S2；仅业务裁决则恢复原阻塞阶段 | 接受、要求修复或裁决，记录来源、范围、基线 |
+-| S5 覆盖性复核 | 按需求重新检查成功、拒绝、失败及适用边界；补缺并运行验证 | 仅裁决标准不明项 |
+-| S6 简化与维护性 | 检查重复、无用抽象与分支；保持业务行为、边界和断言强度；可记录无需修改 | 语义变化另行决定 |
+-| S7 最终复验与收口 | 复验受影响检查、复审后续实质改动，确认最终基线的人工接受仍有效；同步证据和项目状态 | 对审核后产物变化补充接受 |
++| S1 范围与基线 | 明确授权队列、依赖、验收场景及所属里程碑；核对规范和实际文件，保存内容基线 | 既有批次授权可复用；仅处理未决范围或业务规则 |
++| S2 实现与自验 | 从需求推导测试并完成最小实现、必需验证和自审；文档任务做文档核验 | 无例行审批 |
++| S3 独立审查 | subagent自行阅读实际产物、规范与反例；缺陷修复、复验并复审闭合 | 新增业务决定按下节处理 |
++| S4 覆盖性复核 | 重新逐需求检查成功、拒绝、失败及适用边界，补缺并验证；不能替代S2首次测试 | 仅裁决验收标准不明项 |
++| S5 简化与维护性 | 检查重复、无用抽象与分支；保持业务行为、边界和断言强度；无收益记录无需修改 | 语义变化另行决定 |
++| S6 最终复验与复审 | 对S3后实质变化执行受影响检查及独立复审；确认最终产物与证据一致 | 无逐任务补充接受 |
++| S7 工程收口与交接 | 必需检查通过、独立问题闭合、覆盖无未解决必需缺项；保存最终基线、报告和状态，再核对下一项授权及依赖 | 达到里程碑时验收；工程收口不等于人工接受 |
+ 
+ ### 授权、返工与恢复
+ 
+-- 队列必须记录任务ID、顺序、依赖、授权来源和限定范围。批量明确授权可复用，不逐项重问；待办登记、建单、设计批准或前任务验收不构成下一任务的实现授权。部署和外部通信不由本流程自动授权。
+-- 检查点保存在任务单第8节：当前阶段及状态、最近完成阶段、授权来源、产物快照与证据、待决问题、下一动作。每次阶段交接、返工、等待或退出前更新。每个阶段状态为待开始、进行中、等待人工、阻塞、待核验、已完成或不适用（须依据）；不得将S3独立审查或S4人工审核标为不适用来跳过。
+-- 恢复先核对原始授权/决定、快照和实际文件，不能只信“已完成”标签或HEAD。缺失证据则标待核验并回到最早受影响阶段；内容漂移保留旧证据，比较差异后重验/复审，不直接刷新摘要继承批准。并行修改只暂停依赖部分，禁止为匹配旧记录回滚他人工作。
+-- 缺陷返回S2修复，再执行受影响验证和S3复审；业务歧义返回S4决策（可在任意阶段提出），决定到达后恢复被阻塞阶段，不跳过尚未执行的S2/S3。新增需求另列授权。必需验证失败或未执行不得记为通过；真实外部依赖仍遵守AGENTS的隔离与授权要求。
+-- 人工节点无实际答复时保存“等待人工”，交接后等待用户；沉默、超时、subagent建议或自动测试通过均不代表批准。引用真实用户消息/审核记录及日期，可以忠实转录，不伪造审核者。常规工程选择和已授权修复不重复索取批准。
+-- S4之后若交付内容改变，S7必须比较审核基线：代码、契约、测试或规范变化均须复验、按影响独立复审，并将变更后的具体产物回交S4补充接受；不能把旧接受迁移到新摘要。只有追加执行日志、状态或审核记录且未改变被审产物/规则时，可引用原接受，注明差异。不要求因记录接受本身再次审核。再次接受后，无新变化的S5/S6证据可复用，避免无限循环。
+-- 只有所有必需检查通过、独立问题闭合且最终产物人工接受有据，才记为任务收口；否则交付工程结果并明确待审核/阻塞。继续下一项前重新核对其已有授权和依赖。等待期间可做已授权独立准备工作，但不据此宣布当前门槛通过或启动未授权业务任务。
++- 队列记录任务ID、顺序、依赖、授权来源和限定范围。批量明确授权可复用，不逐项重问；待办登记、建单、设计批准或前任务验收不构成下一任务的实现授权。部署和外部通信不由本流程自动授权。
++- 检查点保存在任务单第8节：流程版本、阶段及状态、最近完成阶段、授权来源、产物快照与证据、业务待决项、里程碑状态及下一动作。每次交接、返工、等待或退出前更新。状态可为待开始、进行中、等待人工、阻塞、待核验、已完成或不适用（须依据）；S3独立审查不能标不适用或以自审代替。S5可完成并记录无需修改；S6复用未变产物的有效证据须说明依据。
++- 恢复先核对原始授权/决定、快照和实际文件（含未提交/未跟踪文件），不能只信完成标签或HEAD。缺失证据回到最早受影响阶段；漂移保留旧证据，比较差异后重验/复审，不能直接刷新摘要继承结论。并行修改只暂停依赖部分，禁止回滚他人工作以匹配旧记录。
++- 缺陷返回S2修复，执行受影响验证及独立复审，再检查S4–S6是否仍有效；无变化的有效证据可复用，不机械重跑。必需验证失败或未执行、独立审查不可用、范围内必需覆盖缺项未解决时，不得工程收口；保留具体阻塞、未验证范围和恢复步骤。真实外部依赖仍遵守隔离与授权要求。
++- S3之后代码、契约、测试或规范发生实质变化，S6必须绑定新产物复验及按影响独立复审；单纯追加日志、状态或审查记录且不改变被审规则时可引用原结论，注明差异。无需为了记录审查本身无限复审。
++- 旧流程v1.6及以前的S4是人工审查，S5是覆盖复核，S6是简化，S7是最终收口。恢复时保留原记录，追加新版本检查点：旧S1–S3按证据核对复用，旧S5→新S4，旧S6→新S5，旧S7证据按新S6/S7条件分别核验；旧S4决定归入业务决定或历史接受记录，不映射为新S4完成。仅等待例行人工审阅的任务可在原授权内继续工程阶段；真正未决业务规则或明确里程碑门槛仍保留。不得批量改写历史待审状态或倒填执行证据。
+ 
+-[Project创建幂等示例](../tasks/004-project-create-idempotency-example.md)仅演示填写，不授权编码，也不关闭A04/A10。
++### 业务决策与里程碑验收
+ 
+-### 人工审核要点
++- **业务决策D**可在任意阶段触发：业务语义、权限边界、人工内容保护、知识版本绑定或产品分期的未授权变化，以及范围扩大、旧数据接入/迁移、生产保留政策等未决事项。提交问题、证据、选项及影响、建议和仅被阻塞的工作。按现行已定规则实现或修复不需再次审批；决定到达后恢复受阻阶段，不跳过工程验证。
++- **里程碑验收M**针对可使用的业务成果或用户明确指定的验收点，不默认每个小任务都是里程碑。S1记录所属里程碑ID、范围、验收场景、触发点和依赖它的后续工作；可复用现有约定。若尚无约定，先提出业务成果分组，在首个完整业务成果形成时提交验收；不得因未命名里程碑无限推迟验收。纯流程/文档任务没有独立业务成果且用户未要求人工验收时，记录“不单设里程碑”及理由。
++- 到达里程碑后，先完成相关工程阶段，再提交单一验收包：最终产物基线、任务范围与需求追踪、可复现演示/场景、自动验证和独立审查证据、未验证项及风险。状态记“工程已收口；里程碑待验收”。人工可接受、要求修复或提出新增需求；缺陷在原范围内修复复验，新增需求另行授权。等待期间继续不依赖该验收的已授权任务，不跨越明确验收前置。
++- 没有实际答复时，D/M保持等待人工；沉默、超时、subagent建议或自动测试通过均不代表批准。记录真实用户消息/审核记录、日期、范围与基线。人工节点不反复轮询，保存可恢复交接。
++- 里程碑接受后若相关行为、契约、验收标准或关键边界变化，完成工程复验/复审并提交受影响范围的补充验收；旧接受只对原基线有效。纯记录追加或经复验确认不影响已接受范围的维护改动，记录差异与依据即可，不恢复逐任务人工门禁。
++- 工程收口、业务决定和里程碑接受分别记录；所有任务工程完成不能自动关闭尚待人工验收的里程碑，也不能声称产品已整体接受。
+ 
+-以任务涉及的现行规范为准，逐项选择适用检查；下表只提供审核视角，不新增业务语义。
++[Project创建幂等示例](../tasks/004-project-create-idempotency-example.md)仅演示填写，不授权编码，也不关闭A04/A10；旧示例的人工审核字段按上述恢复规则理解。
++
++### 里程碑人工验收要点
++
++以里程碑涉及的现行规范为准，逐项选择适用检查；下表只提供审核视角，不新增业务语义。
+ 
+ | 审核对象 | 要回答的问题 | 可检查的证据 |
+ | --- | --- | --- |
+--- previous/docs/PROJECT_STATUS.md
++++ current/docs/PROJECT_STATUS.md
+@@ -1,7 +1,7 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.55
+-更新日期：2026-10-24
++文档版本：v1.62
++更新日期：2026-10-25
+ 适用项目大版本：v1
+ 
+ ## 1. 用途与维护规则
+@@ -21,9 +21,9 @@
+ 
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+-| 项目级顺序交付 skill | 已完成；2026-10-23获用户限定人工接受 | [project-delivery](../.agents/skills/project-delivery/SKILL.md)、实施入口和任务模板支持授权队列、恢复检查点及人工节点；[本轮记录](workorders/project_delivery_skill_2026-10-23.md)。已核对三个流程文件与交付快照一致；接受仅限skill及配套文档，跨会话运行未验收，不启动task008或其他未授权业务任务 |
+-| 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+-| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计于2026-10-23获用户限定接受，task011已完成S5–S7收口；A09限定方案设计、自验及独立复审通过，task012当前S4待人工审核；业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
++| 项目级顺序交付 skill | 2026-10-25流程文档工程收口；独立审查通过 | 用户授权取消逐任务人工审阅门禁，保留业务决策与里程碑验收；四份流程文件已同步，文档一致性检查与独立审查/桌面演练通过，证据见[本轮记录](workorders/workflow_autonomy_2026-10-25.md)。不扩大业务任务授权，不改写历史接受；跨会话实际运行效果未验收 |
++| 应用实现基础 | 第一批工程骨架已实现；task005 A10于2026-10-24获限定接受，S1–S7已收口 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程骨架及本轮A10交接已接受；82后端/58契约/3前端/2浏览器、构建/干净安装/锁拒绝/wheel启停/空迁移链通过，独立审查C01/C02闭合。S5无新增覆盖缺口，S6无需修改，S7记录与快照复验通过；[收口记录](workorders/task005_a10_review_2026-10-24.md#人工接受后的s5s7执行记录)。业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；不代表全项目A10或业务验收 |
++| 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计于2026-10-23获用户限定接受，task011已完成S5–S7收口；A09限定方案设计已于2026-10-24获用户接受，task012完成S5–S7设计收口；业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+ | P0 API 与应用编排 | 已同步（设计；实现待开始） | [04](design/04_api_contracts.md)、[操作附录](design/04-01_p0_operation_contracts.md)、[传输附录](design/04-02_transport_task_file_contracts.md)、[05](design/05_application_use_cases.md)；R1-A–R4-A及补充边界已采纳并同步需求/领域/UI/API/应用，见[决策记录](proposals/api_boundary_redesign_2026-10-16.md)；代码未实现 |
+@@ -34,13 +34,15 @@
+ | 项目进度统一入口 | 已完成 | 建立本文，关联历史记录和开放项 |
+ | 08/10与安全交付测试设计 | 已细化（设计；运行未验证） | 08授权/数据流、10配置/交付证据及09 SEC/OPS已同步，见[执行记录](workorders/security_delivery_refinement_2026-10-19.md)；未决政策由TRACK-021/022跟踪，不作为默认规则 |
+ 
+-本轮现有实现审计与精简已完成代码及自动验证：集中CLI配置拒绝处理、复用检查文件清单、删除等价UI分支；82后端/58契约/3前端/2浏览器、构建及干净安装wheel验证通过。详见[审计记录](workorders/code_cleanup_2026-10-23.md)；保留已有和并行工作区变更，尚未记录本轮独立审查或人工接受，不代表业务核心验收。
++本轮现有实现审计与精简已完成代码及自动验证：集中CLI配置拒绝处理、复用检查文件清单、删除等价UI分支；82后端/58契约/3前端/2浏览器、构建及干净安装wheel验证通过。详见[审计记录](workorders/code_cleanup_2026-10-23.md)；保留已有和并行工作区变更，本轮精简代码现已由task005 A10在2026-10-24按SK-01–09独立审查及重新验证，见下述审核包；本轮SK-01–09已获2026-10-24用户限定接受，其他范围不扩大，不代表业务核心验收。
+ 
+ ## 3. 待完成项
+ 
++[task015：B02 Account基础物理模型与首条迁移](../tasks/015-account-storage-migration.md)已按流程v1.7完成S1–S7工程收口，M-B02-01限定人工验收待进行：用户授权选择首片，核对无既有B02执行单；A02持久化方向及已接受A10提供前置。Account基础物理模型/首条迁移、隔离PG17夹具已实现，27项真实存储/82后端/66契约/3前端、构建及干净安装通过；独立审查两项P2（降级竞态/管理员凭据残留）已修复、回归及独立复审通过。Project复合归属、Session、不可变知识修订、业务注册/治理及生产迁移均未交付，TRACK-007a/b/c及008b仍开放。
++
+ FR-017已新增[task013规划](../tasks/013-human-content-protection-plan.md)，区分状态/元数据、编辑接入、覆盖确认和并发提交验收；与task009上下文草稿、FR-035/036专属追溯分开。仅规划，逐需求实现与测试映射仍未完成，TRACK-012a/012d不关闭。
+ 
+-2026-10-24每日整理已核对上次成功基线以来35个源文件增量（含未提交/未跟踪）。上次并行工程修改已由[精简记录](workorders/code_cleanup_2026-10-23.md)及其10月23日测试日志承接，当前源码与该after快照一致；不再列为等待并行复验。当前设计/机器文件与task012交付快照一致；A06–A08接受只绑定各自历史基线，后续A09新增设计仍待接受。详见[本轮整理](workorders/nightly_maintenance_2026-10-24.md)。本轮只检查文档与证据，不重新宣称业务测试通过。
++2026-10-24每日整理已核对上次成功基线以来35个源文件增量（含未提交/未跟踪）。上次并行工程修改已由[精简记录](workorders/code_cleanup_2026-10-23.md)及其10月23日测试日志承接，当前源码与该after快照一致；不再列为等待并行复验。当前设计/机器文件与task012交付快照一致；A06–A08接受只绑定各自历史基线，后续A09新增设计当时待接受，现已于2026-10-24获task012限定接受。详见[本轮整理](workorders/nightly_maintenance_2026-10-24.md)。本轮只检查文档与证据，不重新宣称业务测试通过。
+ 
+ 本次task007测试覆盖独立审计已补8组契约用例，并修复五资料端点48个错误响应遗漏no-store；58项合并契约测试、75项后端回归及结构检查通过。逐项追踪、并行修复归属、兼容门禁非零解释及未覆盖运行需求见[覆盖报告](workorders/task007_coverage_closure_2026-10-23.md)；不代表业务实现或人工接受。
+ 
+@@ -50,7 +52,7 @@
+ 
+ [task010：A07 Task等待项、确认预览与事件引用契约](../tasks/010-task-confirmation-event-contracts.md)已获2026-10-23用户限定设计接受，S1–S7完成。S5逐TC复核无新增缺口，S6无需修改，S7文档/结构/基线复验通过；收口时设计与接受快照一致，原独立审查三项P2及C01在该基线闭合。详见[收口记录](workorders/task010_a07_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写与真实权限/事务/并发/流/UI验证仍开放，不关闭TRACK-004/012运行范围。该轮授权队列当时耗尽；后续A08/A09另有设计授权及交付，见task011/012，业务实现未启动。
+ 
+-[task011：A08补充、解析与候选分析契约](../tasks/011-supplement-processing-contracts.md)已获2026-10-23用户限定设计接受，S1–S7完成。S5逐SP复核无新增设计缺口，S6无需修改，S7文档/结构/兼容/快照复验通过；收口时七份设计及机器文件与接受基线一致，原独立审查两项P2及C01在该基线闭合。详见[收口记录](workorders/task011_a08_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写、解析器及真实事务/并发/模型/网络/UI验证仍开放，TRACK-008a/008c/004运行范围未关闭；该轮授权队列当时耗尽；后续A09设计见task012，当前S4等待人工审核，业务实现未启动。
++[task011：A08补充、解析与候选分析契约](../tasks/011-supplement-processing-contracts.md)已获2026-10-23用户限定设计接受，S1–S7完成。S5逐SP复核无新增设计缺口，S6无需修改，S7文档/结构/兼容/快照复验通过；收口时七份设计及机器文件与接受基线一致，原独立审查两项P2及C01在该基线闭合。详见[收口记录](workorders/task011_a08_review_2026-10-23.md#人工接受后的s5s7执行记录)。机器转写、解析器及真实事务/并发/模型/网络/UI验证仍开放，TRACK-008a/008c/004运行范围未关闭；该轮授权队列当时耗尽；后续A09设计见task012，已获2026-10-24限定接受并收口，业务实现未启动。
+ 
+ 下列顺序是汇总顺序，不新增或改变产品 P0/P1/P2 分期。D01–D08、C01–C08 指 2026-10-16 工作单的编号；历史 D-002 等编号属于另一套记录。
+ 
+@@ -58,12 +60,12 @@
+ 
+ | 编号 | 事项 | 状态 | 涉及文件 / 来源 | 关闭条件 |
+ | --- | --- | --- | --- | --- |
+-| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | A04已人工接受；其余机器契约/应用验收待完成 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证并获2026-10-23用户限定接受，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)已限定修复并复审；[合并态验证](workorders/task006_p2_fixes_2026-10-22.md)45项契约测试及结构检查通过；A05五个同步操作的错误子集已绑定；其余逐端点错误响应绑定及机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
++| TRACK-004 | API 协议实现与验收（原 API-E01–E04 已关闭） | A04及B01 Project.Create限定机器交付已接受；其余契约/应用验收待完成 | [再设计提案](proposals/api_boundary_redesign_2026-10-16.md)、[API 历史工作单](workorders/api_p0_design_review_2026-10-16.md)；01–05/08/09 | 设计已按人工裁决同步；本轮建立有明确覆盖限制的 OpenAPI、清单及静态/兼容检查入口，见[04-03](design/04-03_machine_contract_governance.md)和[主审记录](workorders/agent_contracts_and_downstream_review_2026-10-19.md)；A04公共错误42变体、具名details/recovery及Task/SSE受约束投影已验证并获2026-10-23用户限定接受，见[审核包](workorders/evidence/a04_2026-10-22/review.md)；[独立审核3项P2](workorders/task006_independent_review_2026-10-22.md)已限定修复并复审；[合并态验证](workorders/task006_p2_fixes_2026-10-22.md)45项契约测试及结构检查通过；A05五个同步操作的错误子集已绑定；其余逐端点错误响应绑定及机器契约缺项、协议实现和运行验收仍待完成，尤其空版本、确认终止冲突、入库锁定及追加词预算 |
+ | TRACK-005 | Graph-RAG / Memory 候选方案采纳（D06） | A09首版P0方案已限定恢复；Memory仍延期 | 工作单；[技术调研](design/013-graph-choose.md) | 后续明确选型及采纳范围，回写服务与数据契约；候选内容不能直接作为现行要求 |
+ | TRACK-006 | 内部安全参考的版本管理与受控交付（D07） | 延期 | 工作单 D07 | 明确存储、读者和同步机制；不在本表复制内部正文 |
+ | TRACK-007a | Project资产、上下文与版本快照字段映射 | 逻辑映射已细化；物理字段待落实 | [07 §3–4](design/07_data_persistence.md#3-逻辑记录与字段映射) | 本轮定义最小持久事实/归属与约束；新核心建立后逐项落实实际表字段、索引和测试，不能将逻辑表当作已迁移 |
+-| TRACK-007b | 版本化迁移与约束实现（替代SQL草案修补） | 待开始；逻辑约束已细化 | 07 §3–6；[SQL删除记录](archive/design_retirement_2026-10-19/README.md#3-sql-草案删除记录) | 以单一版本化迁移落实字段、Project复合归属、占槽/提交唯一性及检索词默认；不恢复旧SQL草案 |
+-| TRACK-007c | 数据迁移、回滚及隔离验证 | 方案已细化；运行待开始 | 07 §9、10 §3/5、09 ARC-09 | 选择实际运行环境后验证初始化/升级/故障与恢复，明确测试库及内部commit隔离、实际命令和清理证据；本轮未执行 |
++| TRACK-007b | 版本化迁移与约束实现（替代SQL草案修补） | task015 Account基础迁移已实现待限定验收；其余物理约束待开始 | 07 §3–6；[SQL删除记录](archive/design_retirement_2026-10-19/README.md#3-sql-草案删除记录) | 以单一版本化迁移落实字段、Project复合归属、占槽/提交唯一性及检索词默认；不恢复旧SQL草案 |
++| TRACK-007c | 数据迁移、回滚及隔离验证 | task015新临时库升级/降级拒绝/故障恢复与清理已验证；旧数据及生产恢复未实施 | 07 §9、10 §3/5、09 ARC-09 | 选择实际运行环境后验证初始化/升级/故障与恢复，明确测试库及内部commit隔离、实际命令和清理证据；本轮未执行 |
+ | TRACK-008a | ProjectMaterial 服务契约与解析状态流转 | 服务边界已补充；机器类型及策略待细化 | [领域附录](design/02-02_construction_versioning_appendix.md)、04-01/04-02/05、06 | 06 v1.9 已补接收/纳入、分类解析/分析、确认及失败边界，见[复核记录](workorders/design_05_06_audit_2026-10-19.md#5-授权修订与复核2026-10-19)；仍需具名载荷 schema、处理状态映射和有限重试策略的工程细化，不增加 P0 恢复入口 |
+ | TRACK-008b | ProjectMaterial持久化与发布一致性 | 逻辑设计已细化；物理实现待开始 | 07 §3/5/6；02-02 §10 | 已定义资料/候选/版本闭包和原子提交；迁移与存储实现后验证文件、解析产物、候选锁定和发布失败补偿 |
+ | TRACK-008c | 资料解析/同步实现与验收 | 待开始 | 06–07；04-02；09 | 用 mock 外部依赖验证成功、重复、失败和重试；发布只在完整门槛满足后可见，并记录未覆盖范围 |
+@@ -165,3 +167,17 @@
+ 本次修订 v1.53（2026-10-23）：记录task011 A08限定接受及S5–S7设计收口，仅更新任务/报告/项目状态，原设计与机器文件不变；后续执行须另行授权。
+ 
+ 本次修订 v1.54（2026-10-23）：用户显式授权[task012 A09](../tasks/012-graph-rag-technical-design.md)，H01按仅P0构建/检索/存储方案恢复；设计/文档自验通过，独立审查五项P2已修复并复审闭合；当前S4等待人工接受，S5–S7未开始。[审核包](workorders/task012_a09_review_2026-10-23.md)。Memory/H02/H03不扩展，真实Graph-RAG/存储/模型与运行验收未完成。
++
++本次修订 v1.56（2026-10-24）：用户明确接受[task012 A09](../tasks/012-graph-rag-technical-design.md)本轮技术方案设计；S5逐KG复核无新增设计缺口，S6无需修改，S7文档/结构/基线复验通过，S1–S7完成。技术方案与接受快照一致，五项P2已在原独立复审中闭合；保留入场每日整理差异。本轮仅接受/状态记录，详见[收口记录](workorders/task012_a09_review_2026-10-23.md#人工接受后的s5s7执行记录)。真实模型、SQL/图检索、事务和质量/容量验证仍开放；Memory延期，其他业务任务不自动启动。
++
++本次修订 v1.57（2026-10-24）：用户授权推进A10，核对已有任务与交付范围；复用[task005](../tasks/005-engineering-skeleton.md) SK-01–09工程切片，已补可执行验收交接，当前82后端/58契约/3前端/2浏览器及构建/干净安装/wheel/空迁移历史通过；独立审查两项文档意见已修正复审闭合，S1–S3完成，当前S4等待人工审核，S5–S7未开始。task004仍为Project创建示例，task009/013仍为独立规划；A10是逐切片类别，本次不完成全项目A10、不启动新业务实现。[本轮审核包](workorders/task005_a10_review_2026-10-24.md)维护当前证据，既有精简代码与并行改动保留。
++
++本次修订 v1.58（2026-10-24）：用户明确接受task005本轮A10工程骨架限定交付，绑定197文件delivery基线；S5逐SK覆盖复核无新增缺口，S6无需修改，S7文档/差异/完整快照检查通过。仅更新任务、审核包与项目状态，代码/测试/规范未变，原独立复审结论及运行证据继续有效。当前授权队列完成，业务实现和全量A10仍按独立任务推进。
++
++本次修订 v1.59（2026-10-24）：用户授权推进B01并确定首片，建立[task014 Project.Create](../tasks/014-project-create-machine-contract.md)，仅补机器请求边界、201元信息/头及适用错误、契约回归与漂移检查。S1–S3完成：66项契约及结构检查通过，独立复审无剩余阻断项；当前S4等待人工审核，兼容门禁仅POST /projects差异退出1保留供接受，[审核包](workorders/task014_b01_review_2026-10-24.md)记录范围与证据；不启动Project/账号/持久化应用，不关闭TRACK-004及012运行范围，其他B类未自动授权。
++
++本次修订 v1.60（2026-10-24）：用户明确接受[task014](../tasks/014-project-create-machine-contract.md)本轮B01 Project.Create限定机器交付及所列POST /projects兼容差异。S5逐PC复核无新增缺口，S6无需修改，S7文档/结构/快照及接受基线兼容检查通过，S1–S7完成；原入场兼容退出1按用户决定限定接受并保留历史。机器产物/测试不变，66项契约证据及独立复审仍有效；[收口记录](workorders/task014_b01_review_2026-10-24.md#人工接受后的s5s7执行记录)。真实HTTP、身份/CSRF、持久去重和原子创建未实现，TRACK-004/012运行范围不关闭，其他B类未自动启动。
++
++本次修订 v1.61（2026-10-25）：按用户授权调整工程交付流程，取消逐任务人工审阅门禁，保留业务决策D和里程碑验收M；旧阶段按含义恢复，历史接受记录保持原义。本轮仅流程文档，不启动业务任务。验证及独立审查结果见[本轮记录](workorders/workflow_autonomy_2026-10-25.md)。
++
++本次修订 v1.62（2026-10-25）：B02首片task015完成Account基础存储及迁移、隔离PG17自验与独立复审，按新流程完成工程收口；仅本轮限定验收待用户审核。保留并行v1.61流程修改；不关闭完整Account/Project/知识持久化TRACK，不启动后续未授权任务。
+--- previous/docs/design/04-03_machine_contract_governance.md
++++ current/docs/design/04-03_machine_contract_governance.md
+@@ -1,7 +1,7 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.5
+-更新日期：2026-10-23
++文档版本：v1.6
++更新日期：2026-10-24
+ 适用项目大版本：v1
+ 
+ ## 1. 权威与覆盖边界
+@@ -67,3 +67,7 @@
+ 
+ Task目标/等待引用、ConfirmationPreview影响/保留联合及完整事件信封/citation设计已见04-01 §1.1–1.2、04-02 §2–3，新增字段尚未机器转写，待task010人工审核。现有JSON未修改；覆盖清单仅更新经差异审查的源指纹与缺项说明。设计闭合不消除机器或运行缺口；不提高typed_operations覆盖。A06接缝已限定接受，A05人工接受仍待记录，A04已限定接受；前述历史记录保留原时点。
+ 
++
++## B01 首个机器转写切片（task014）
++
++Project.Create按04 §3/5/7及04-01 §3补具名成功meta和适用错误/响应头，具体字段唯一见JSON。[task014](../../tasks/014-project-create-machine-contract.md)及[审核包](../workorders/task014_b01_review_2026-10-24.md)给出需求反例与兼容方向；并未生成应用或SDK。当前仍为47个请求/成功局部操作、40个仅请求、5/6 SSE payload；新增ProjectCreateMeta后173schema，源行131不变。此操作提高为request-success-errors-partial，运行GAP保留；其他操作覆盖不变。前文A07待审核为历史时点，task010已限定接受，机器转写仍待分片。
+--- previous/docs/workorders/task005_a10_review_2026-10-24.md
++++ current/docs/workorders/task005_a10_review_2026-10-24.md
+@@ -0,0 +1,78 @@
++# Task005 A10 工程切片恢复审核包
++
++文档版本：v1.1
++更新日期：2026-10-24
++
++## 范围与已有任务核对
++
++用户要求继续按project-delivery推进A10、核对已有任务和交付范围、自验与独立审查后提交审核。依据[实施前清单A10](preimplementation_design_tasks_2026-10-21.md#a10-为每个待实现切片填一份可执行验收规格)，A10是每个切片的验收规格，不是统一业务实现阶段。复用[task005](../../tasks/005-engineering-skeleton.md) SK-01–09已有工程行为，补前置/故障/观察/清理与当前运行证据，不新建重复任务单。
++
++| 既有任务 | 本轮处置 |
++| --- | --- |
++| task004 Project创建幂等示例 | 仅示例，T01–T10无应用/真实存储执行；不把它直接升级为已授权业务实现。 |
++| task005 工程骨架 | 唯一本轮任务；SK-01–09实际实现已存在，旧证据不能代替本轮验证。 |
++| task006、task007 | A04接受及A05修复有各自范围；task007早期骨架修复并入当前代码核验，A05接受不代填。 |
++| task008、task010–012 | A06–A09限定设计已接受；本次无业务接口消费，不扩成运行验收。 |
++| task009、task013 | Workspace及人工内容保护规划保持独立；未获本轮实现授权。 |
++
++[入场快照](evidence/task005_a10_2026-10-24/before/source-manifest.json)含196文件及可恢复tar；[授权记录](evidence/task005_a10_2026-10-24/entry.json)保存HEAD及范围。保留已有未提交/未跟踪改动。[10月23日精简](code_cleanup_2026-10-23.md)的CLI配置脱敏集中、工程检查路径复用、UI标题简化及启动回归纳入当前实际代码审查；不将历史82/58/3/2测试数量直接当本轮通过证据。
++
++## 本轮交付与自验
++
++任务单第4.1节按SK逐项补齐执行条件、故障点、具体路径、可观察结果和清理；第7–8节补恢复报告与检查点，项目状态登记限定范围。当前不需要新增业务代码、迁移或机器契约。
++
++执行证据目录为[evidence](evidence/task005_a10_2026-10-24/)。统一check、build、真实浏览器e2e、干净副本安装/锁反例/wheel启停、空迁移history均通过；实际退出码见[execution.json](evidence/task005_a10_2026-10-24/execution.json)。本轮结果为82后端、58契约、3前端、2浏览器；Ruff/格式/mypy/TypeScript及机器结构通过，全部五个工程命令退出0。
++
++## 独立审查及人工交接
++
++S3已委派只读subagent，要求自行核对代码、SK需求、反例及实际证据；最终独立结论见[复审记录](evidence/task005_a10_2026-10-24/independent-review.txt)：S3通过，无剩余阻断项。S2已完成，S3初审发现追踪标注C01：SK-02导入边界原列ARC-02不准确，现已更正为ARC-01并明确身份/Project隔离未覆盖；另有C02：将pytest临时目录改为按其保留策略回收，区分TemporaryDirectory即时清理；两项为证据措辞修订，独立复审均已确认闭合。当前S1–S7完成，2026-10-24用户已限定接受本轮工程交付，收口见末节。
++
++人工审核复现：按README选Python3.14/Node24后运行统一check/build；API只live200/ready503，业务与docs404；Worker默认拒绝、显式idle后Ctrl+C退出；UI两页显示未接入且不可写，390/1280键盘导航；检查第4.1节锁/配置/连接/快照反例及最终日志。安装/wheel仅工程能力，不证明Project创建、真实存储、权限、Task、版本、Graph-RAG或生产恢复。无需新增业务决策；建议审阅本轮限定交付后接受或指出具体修订，2026-10-24已获用户限定接受，详见末节。
++
++## 执行与证据定位
++
++仓库根运行；本机通过 `PATH=/tmp/rpb-skeleton-tools/node_modules/node/bin:/tmp/rpb-skeleton-tools/node_modules/.bin:$PATH` 选择Node24，其他机器按README选择运行时，不把临时路径作为安装要求。Python3.14.4、Node24.22.1、npm11.21.1；准确环境和依赖清单见[versions](evidence/task005_a10_2026-10-24/versions.txt)。
++
++| 命令 | 结果/证据 | 层级与副作用 |
++| --- | --- | --- |
++| python3 scripts/engineering.py check | [check.log](evidence/task005_a10_2026-10-24/check.log)通过 | 静态/单元/契约，连接拒绝spy不等于数据库集成 |
++| python3 scripts/engineering.py build | [build.log](evidence/task005_a10_2026-10-24/build.log)通过 | wheel/sdist及前端产物，无业务配置/迁移 |
++| python3 scripts/engineering.py e2e | [e2e.log](evidence/task005_a10_2026-10-24/e2e.log)通过 | 本地构建预览真实Chromium；仅Shell工程行为 |
++| python3 scripts/verify_skeleton_delivery.py | [clean-delivery.log](evidence/task005_a10_2026-10-24/clean-delivery.log)通过 | 独立临时副本按锁安装，可能访问软件仓库；无数据库/Provider；退出回收API与临时目录 |
++| python3 scripts/engineering.py migration-history | [migration-history.log](evidence/task005_a10_2026-10-24/migration-history.log)通过 | 空历史；integration/upgrade预期拒绝由测试覆盖，不是迁移通过 |
++
++本轮已查看[桌面Projects](evidence/task005_a10_2026-10-24/shell-1280-projects.png)、[桌面设置](evidence/task005_a10_2026-10-24/shell-1280-settings.png)、[窄屏Projects](evidence/task005_a10_2026-10-24/shell-390-projects.png)、[窄屏设置](evidence/task005_a10_2026-10-24/shell-390-settings.png)，未见溢出或遮挡，禁用与未接入提示清晰。Starlette/httpx弃用及Playwright颜色环境警告非阻断，保留原日志不屏蔽。
++
++独立审查绑定完整s3-input快照；最终交付仅补审查/交接状态，实际代码和测试保持本次执行版本。业务实现、真实持久化/并发、身份权限、版本绑定、人工内容、Graph-RAG及部署验证仍未覆盖，不能把本轮SK全部通过表述为全项目A10完成。
++
++## 最终交付基线
++
++[s3-input清单](evidence/task005_a10_2026-10-24/s3-input/source-manifest.json)含197文件，manifest SHA256 `93d1de0efc080c7e6a9b733c0d064cda45e348e7805b2103b78055923849229b`。独立复核快照完整且实际工作树无漂移，核对所有SK规格及本轮运行日志。主agent[范围检查](evidence/task005_a10_2026-10-24/s3-checks.json)确认源码/测试与既有精简快照一致；[文档自验](evidence/task005_a10_2026-10-24/doc-check.json)检查三份文档引用、版本、九场景与范围保护。
++
++[最终delivery](evidence/task005_a10_2026-10-24/delivery/source-manifest.json)仅比受审快照更新三份交接记录，完整性、当前文件摘要、准确差异及manifest SHA256见[最终检查](evidence/task005_a10_2026-10-24/final-checks.json)。代码/测试不变，因此不重复运行相同工程用例。设计验收规格已补、既有代码已复验、自动检查通过；用户已于2026-10-24限定接受，S5–S7执行记录见下节。
++
++## 人工接受后的S5–S7执行记录
++
++用户于2026-10-24明确：“接受 task005 本轮 A10 工程骨架限定交付，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。”接受仅限SK-01–09及本轮A10工程验收交接，基线为delivery清单SHA256 `18d7332dc7ffe53faeb5de39e1898795bcd5ca2b8b5e0dbea735c5ae0d319075`。恢复时197文件逐一匹配，见[接受及入场记录](evidence/task005_a10_2026-10-24/closeout/entry.json)，不把全仓快照中的其他业务设计或历史待审事项一并接受。
++
++S5按第4/4.1节规格重新对照实际断言、当前执行日志和独立复审：
++
++| 场景 | 覆盖复核与证据 |
++| --- | --- |
++| SK-01 | 干净安装构建、两个锁缺失与漂移拒绝、锁字节保护都有可执行断言；check及clean-delivery通过。 |
++| SK-02 | 实际静态导入图及包根/成员/私有近似名/动态导入正负例已覆盖；归ARC-01，ARC-02业务隔离明确未覆盖。 |
++| SK-03 | 默认配置、端口边界、未知/非法设置、两进程拒绝及脱敏断言通过；不允许隐式存储回退。 |
++| SK-04 | 精确live200/ready503、业务404、201变异反例、禁止连接spy及真实wheel网络启停均有证据。 |
++| SK-05 | 默认执行拒绝、idle握手后两种信号、无输出/半行/早退有界回收及无存储活动均已验证。 |
++| SK-06 | 缺/合成连接配置时两入口拒绝、连接次数0、无泄密和空history均覆盖；拒绝不代表数据库集成通过。 |
++| SK-07 | 两页禁用动作、无fetch/业务控件、唯一main及本地返回已验证。 |
++| SK-08 | 1280/390两页键盘焦点、无溢出/异常/业务请求均有浏览器断言和已查看截图。 |
++| SK-09 | 空/二进制/文本完整重构及missing/tampered/extra反例、拒绝覆盖旧输出已验证；pytest保留策略与即时清理分开记录。 |
++
++全部九项及既有58项契约回归证据有效，未发现本切片新增覆盖缺口。业务身份/权限、真实存储/竞争、知识版本和人工内容保护无执行入口，继续保持未实现/未验收，不能以工程拒绝路径替代业务验收。
++
++S6复核启动配置集中处理、工程检查文件清单复用、前端标题简化；无重复业务状态或无用通用端口需删除。健康与就绪分离、idle显式开关、迁移拒绝、架构正负例及快照完整性均有独立需求用途，保留。无需新增修改，不减弱现有断言。
++
++S7仅追加本任务单、本报告和项目状态的接受/执行记录；代码、测试、依赖锁、机器契约、技术规范未变。重新检查三文档链接/锚点、版本、九项追踪和差异范围，验证接受与最终快照完整性及当前文件摘要；[最终检查](evidence/task005_a10_2026-10-24/closeout/checks.json)保存实际命令/结果与摘要，[最终快照](evidence/task005_a10_2026-10-24/closeout/final/source-manifest.json)可恢复本次状态。接受前同日的82后端/58契约/3前端/2浏览器及五项工程命令均对应未变代码，本次复核复用这些证据，没有重新运行全量测试或下载依赖；证据文件摘要保存在最终检查中。
++
++原独立审查C01/C02闭合仍有效；无审核后实质变更需新独立复审或补充接受。S1–S7已完成，当前授权队列耗尽；不自动启动其他A10/B类业务任务、不扩大task007 A05等其他接受范围。上游警告与未锁定契约间接依赖限制沿原报告保留。
+--- previous/docs/workorders/task012_a09_review_2026-10-23.md
++++ current/docs/workorders/task012_a09_review_2026-10-23.md
+@@ -1,7 +1,7 @@
+ # Task012 A09 技术方案审核包
+ 
+-文档版本：v1.0
+-更新日期：2026-10-23
++文档版本：v1.1
++更新日期：2026-10-24
+ 
+ ## 授权与方案
+ 
+@@ -9,7 +9,7 @@
+ 
+ [06 A09](../design/06_agent_knowledge_services.md#a09-首版知识构建与graph-rag方案)定义分块定位、最小图/来源断言、先授权三路召回及图扩展、证据包/预算、完整就绪；[07 A09](../design/07_data_persistence.md#a09-首版向量与图谱持久方案)映射视图/事务/读屏障/回收；00-01/05-01只衔接边界；[09 A09](../design/09_quality_observability.md#a09-graph-rag验收与评测样本)提供固定样本、数值反例、消融与隔离测试分层。013历史建议未改，不作为实施授权。
+ 
+-当前S1–S3完成，S4等待人工审核，S5–S7未开始。机器schema、实际代码、SQL迁移、模型推理和质量评测均未交付。
++当前S1–S7完成；2026-10-24用户已限定接受设计，收口见末节。机器schema、实际代码、SQL迁移、模型推理和质量评测均未交付。
+ 
+ ## S2 场景核验
+ 
+@@ -48,10 +48,33 @@
+ 
+ ## 人工审核
+ 
+-建议接受GR01–GR04及KG-01–18所限定首版方案后继续S5–S7；也可指出具体修订返回S2复审。重点审核技术选择与取舍、图证据/身份/权限、版本就绪/不可变、预算失败与真实评测交接。人工接受尚未发生；设计接受不等于部署或真实Graph-RAG验收。
++建议接受GR01–GR04及KG-01–18所限定首版方案后继续S5–S7；也可指出具体修订返回S2复审。重点审核技术选择与取舍、图证据/身份/权限、版本就绪/不可变、预算失败与真实评测交接。2026-10-24用户已接受本轮限定设计；设计接受不等于部署或真实Graph-RAG验收。
+ 
+ ## 交接基线与复验
+ 
+ 受审[s3-input清单](evidence/task012_a09_2026-10-23/s3-input/source-manifest.json)为194文件，manifest SHA256 `20426cc77965a9762d96fdab9fd147046d079ec490926a8e7f4332d5b033b5a9`。最终[delivery清单](evidence/task012_a09_2026-10-23/delivery/source-manifest.json)仅追加任务单、本报告和项目状态的S4交接记录，方案与受审内容相同；[最终检查](evidence/task012_a09_2026-10-23/final-checks.json)保存清单摘要、差异范围及实际命令/输出。
+ 
+ [S2检查](evidence/task012_a09_2026-10-23/s2-checks.json)和[受审范围检查](evidence/task012_a09_2026-10-23/s3-scope-check.json)保留修复后证据。最终复验使用 `python3 docs/workorders/evidence/task012_a09_2026-10-23/check_docs.py`、`/tmp/rpb-contract-check/bin/python scripts/check_api_contracts.py --baseline docs/workorders/evidence/task012_a09_2026-10-23/before-openapi.json`、`python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence/task012_a09_2026-10-23/delivery`；临时Python环境是本次实际验证环境，后续恢复须重新准备依赖，不能假定它永久存在。
++
++## 人工接受后的S5–S7执行记录
++
++2026-10-24用户原文：“接受 task012 本轮 A09 技术方案设计交付，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。”范围为GR01–GR04及KG-01–18设计，绑定delivery清单SHA256 `28f9c0b4796471c61d397e5a28cd2d34a1e3ea217ff48cb877bdc4ac5646b319`；不接受尚未实施的运行或模型质量。
++
++恢复核验发现IMPLEMENTATION_ENTRY、PROJECT_STATUS及实施前清单已有每日整理记录差异；A09技术规范、任务单、审核包、OpenAPI和覆盖JSON保持已接受内容。具体见[入场记录](evidence/task012_a09_2026-10-23/closeout/entry.json)及[差异](evidence/task012_a09_2026-10-23/closeout/entry-drift.patch)，均保留。入场196文件与原194文件之差记录在entry，不归为本任务成果。
++
++S5逐项重读任务第4节、06 A09、07 A09、09 A09，并核对已有规范边界：
++
++| 覆核场景 | 需求与反例复核结论 |
++| --- | --- |
++| KG-01/02/03 | 输入写资格、确认与空抽取/失败分离、分块定位、身份和有来源断言已覆盖；无文本/跨资产拼接禁止。 |
++| KG-04/05/06/07 | 版本/profile不可变、先允许集合排名、逐来源依赖、反向邻接和图独有召回反例明确；私人桥及元数据伪文字证据均拒绝。 |
++| KG-08/09/10 | 空库/零允许/无命中与故障区分；完整问题和包装计费，模型能力及窗口上限拒绝路径明确。 |
++| KG-11/12/13/14 | 完整读回、短事务发布、取消/编辑/回收竞争、重复、全移除及no_change边界已有可观察断言，未以设计代替真实commit。 |
++| KG-15/16 | 缓存收紧/放宽、派发前撤权、同版引用及整条路径支持预算明确；未新增质量硬门槛。 |
++| KG-17/18 | 方案替换须满足契约，Memory不纳入；真实模型评测、消融和隔离数据/人工标注均明确待执行。 |
++
++18场景均复核，未发现需补充的本轮设计缺口。可执行schema、真实tokenizer/模型、SQL计划/事务、图扩展、容量/质量等仍未实施，沿原TRACK-018/019/012及后续工程任务追踪；不能将本表记为运行测试通过。
++
++S6检查配置身份、来源断言、查询与持久层职责：06维护技术契约，07映射存储，09维护验收规格；支持闭包与版本/政策检查都有独立边界用途。没有能在保持语义和断言强度下获益的必要删减，本轮无需修改方案。
++
++S7复验文档链接/锚点、版本/日期、18场景追踪、既有机器结构/入场兼容和完整快照。当前仅四份接受/状态记录改变，技术规范及机器文件与接受基线相同，原五项P2独立复审结论仍适用，无新的实质变更需独立复审或回S4。最终[清单](evidence/task012_a09_2026-10-23/closeout/final/source-manifest.json)及[检查结果](evidence/task012_a09_2026-10-23/closeout/checks.json)保存执行命令、退出码及精确差异。本单S1–S7完成，后续任务须另有授权。
+--- previous/docs/workorders/task014_b01_review_2026-10-24.md
++++ current/docs/workorders/task014_b01_review_2026-10-24.md
+@@ -0,0 +1,81 @@
++# Task014 B01 Project.Create机器契约审核包
++
++文档版本：v1.1
++更新日期：2026-10-24
++
++## 选择与交付边界
++
++本轮按用户授权选择Project.Create为首个B01机器转写切片，复用task004语义示例，另建[task014](../../tasks/014-project-create-machine-contract.md)明确A10规格。task005是工程骨架，task006/A04公共错误已有接受；Task/确认/SSE和A08/A09类型另属后续，不以本轮完成全B01。完整任务盘点及PC-01–08追踪见任务单。
++
++已有ProjectWrite/View不重新定义；只对POST /projects补201同步非空期限、Location/no-store、幂等键非打印字符拒绝及HTTP错误适用子集。现有Name/描述/权限投影等结构保留，响应不强制active：重放与当前对象生命周期的判断仍按04在运行层实现，不以本片新增状态语义。
++
++## 错误适用性与兼容方向
++
++| 状态 | 适用及依据 |
++| --- | --- |
++| 400 | VALIDATION_BAD_REQUEST，请求格式/必要头无效；不含游标。 |
++| 401 | AUTH_REQUIRED/SESSION_INVALID/ACCOUNT_DISABLED，当前会话；不含登录凭证错误。 |
++| 403 | PERMISSION_CSRF_REJECTED；普通用户创建不是管理员操作。 |
++| 404 | PERMISSION_RESOURCE_UNAVAILABLE，只在原结果已删除/不再可见等重放场景；不披露旧Project。 |
++| 409 | STATE_IDEMPOTENCY_CONFLICT，同键异参；新建无对象修订、确认、知识版本或构建槽。 |
++| 413/415 | VALIDATION_PAYLOAD_TOO_LARGE/UNSUPPORTED_FORMAT，请求体大小与格式拒绝；不引入上传处理。 |
++| 422 | VALIDATION_FIELD_INVALID/UNKNOWN_FIELD；不含文件不可读。 |
++| 429 | STATE_RESOURCE_LIMIT，技术资源保护及Retry-After；不增加产品配额。 |
++| 500 | STORAGE_INTERNAL_FAILURE，受理/存储故障或未知提交结果安全投影。 |
++
++复用A04安全错误组件，没有模型/论文/邮件调用，因此不绑定Provider 502/503/504；没有已有目标修订/确认前置，不绑定412/428及相关409。结构只描述允许投影，不证明运行鉴权、错误选择或无副作用。
++
++实际入场JSON另存[before.openapi.json](evidence/task014_b01_2026-10-24/before.openapi.json)。本轮修改既有POST /projects：请求幂等键排除非打印字符（修复尾换行被`$`接受）；响应meta从通用可null收紧为完成结果非null；必需Location/no-store声明与适用错误状态补全。新增ProjectCreateMeta不改通用IdempotentMeta。保守兼容检查实际退出1，仅报告`operation changed/removed: POST /projects`，见[兼容日志](evidence/task014_b01_2026-10-24/compatibility.log)；非零，必须保留真实结果供人工审核，不称自动兼容通过；其他操作与共享schema应保持字节语义相同。
++
++## 自验与证据
++
++[evidence](evidence/task014_b01_2026-10-24/)保存入场197文件快照、red.log（旧产物负例）、green.log（发现尾换行缺陷）、green-fixed.log、structure.log、all-contracts.log（旧A04快照断言失败）、all-contracts-fixed.log及后续文档/快照结果。命令为仓库根 `contracts/.venv/bin/python -m unittest discover -s scripts/tests -v`、`contracts/.venv/bin/python scripts/check_api_contracts.py`、加 `--baseline docs/workorders/evidence/task014_b01_2026-10-24/before.openapi.json` 的兼容检查。运行无数据库、Provider及业务副作用。
++
++本片是同步wire结构，无异步事件/持久载荷，不建立schema_version或旧载荷迁移；未来命令落库须另行具名版本化。权限、原子创建、真实去重/期限、HTTP头实际发送及模型/端到端未实施。只提高Project.Create的局部覆盖，typed_operations总数不因补错误而增加。
++
++## 独立审查与交接
++
++已委派独立只读subagent自行审阅规范、实际JSON、检查器、测试和反例；最终[独立复审记录](evidence/task014_b01_2026-10-24/independent-review.txt)确认本片符合现行规则，无剩余阻断项。S1–S7已完成，2026-10-24用户已限定接受本片及兼容差异，收口见末节。建议审查实际请求/响应方向差异、PC反例和未覆盖项后接受本片；本轮已于2026-10-24获得用户限定接受，见末节。
++
++## 自验中发现与处置
++
++旧产物上新增8组测试为2失败/4错误（未绑定错误、头及同步meta），不是假定已通过；首次转写后1失败暴露末尾换行。保持原min/max/pattern，再以`not`排除非打印ASCII，仅修改本操作头，PC-02保留回归。其余端点同类输入边界未在本片修复，后续B01逐操作检查，不扩展当前授权。
++
++首次全量66项仅旧A04全操作快照断言失败。已对Project.Create的特定头、meta、错误和标记增量做明确归一化后继续比较旧操作完整内容；所有其他操作/原schema仍逐项原样比较。新PC测试独立固定请求边界、精确错误集合和信封约束，接管本片新增行为断言；并未跳过历史操作或降低业务要求。
++
++未验证：Location与返回ID实际对应且可查询、首次/重放期限至少24h及等于持久E、当前request_id、会话/CSRF和权限生效、Project/Construction容器/去重真实原子提交、业务响应丢失与并发。没有真实业务写路径，本轮安全字段结构与样例不等于运行脱敏或业务完成。
++
++## 最终核验与受审基线
++
++新增8组及全量66项契约测试通过；[S2检查](evidence/task014_b01_2026-10-24/s2-checks.json)保存文档、结构及兼容实际退出码。结构为47请求/成功局部+40仅请求、173schema、131源行、5/6 SSE payload；不把机器结构数计为业务覆盖。兼容退出1仅POST /projects，具体方向见前表，人工接受前不覆盖原基线。
++
++[s3-input](evidence/task014_b01_2026-10-24/s3-input/source-manifest.json)200文件，manifest SHA256 `253209a5bd6cc6a526dff1da228f64e638f1879c25daa59ed5ede0acc1eb43b4`；独立审查核验归档与工作区完全匹配、既有共享结构和其他操作不变。历史断言修复与尾换行回归已复审通过，未发现剩余阻断项。[范围检查](evidence/task014_b01_2026-10-24/s3-scope-check.json)记录9个授权文件差异。
++
++[最终delivery](evidence/task014_b01_2026-10-24/delivery/source-manifest.json)仅在受审后更新任务单、审核包、项目状态三份交接记录；机器产物及测试不变。[最终检查](evidence/task014_b01_2026-10-24/final-checks.json)记录准确清单摘要、文档及完整快照复验和无漂移结果。无需重跑未变契约测试，保留本轮失败与修复后日志。本轮S4已接受限定机器交付及定向兼容差异；S5–S7收口见下节。
++
++## 人工接受后的S5–S7执行记录
++
++2026-10-24用户原文：“接受 task014 本轮 B01 Project.Create 机器契约限定交付及所列兼容差异，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。”绑定200文件delivery清单SHA256 `230a2d99687b18d52a0b1b180a0521c336f8e9ce942e4b4f3fb351879d9915aa`；接受仅限PC-01–08与本报告POST /projects差异，不扩至其他JSON操作、历史待审事项或业务运行。
++
++恢复逐文件核验无漂移，[入场及接受记录](evidence/task014_b01_2026-10-24/closeout/entry.json)保存原始决定、归档摘要与范围。从接受归档提取[accepted.openapi.json](evidence/task014_b01_2026-10-24/closeout/accepted.openapi.json)，SHA256 `57117f10787b72899818cf6829550cc71e77073298ac437fc6d67791cec18dfa`，供后续精确比较；不覆盖before.openapi.json及历史兼容日志。
++
++S5重新核对第4节规则、实际测试及执行证据：
++
++| 场景 | 覆盖结论 |
++| --- | --- |
++| PC-01 | 创建字段名称/描述长度、空白/null/类型及禁止Owner/status/修订/force/确认字段均有正负例，原共享结构不变。 |
++| PC-02 | Cookie/CSRF/幂等声明、16/128边界及非法字符/尾换行、JSON与Location均有断言，尾换行回归保留。 |
++| PC-03 | 同步非空UTC期限、可选original_request_id、信封缺项/未知字段及异步meta仍可null已有正负断言。 |
++| PC-04 | 固定适用状态/code集合与42变体逐状态交叉校验，错误子集不接受无关版本/Provider/管理员等变体。 |
++| PC-05 | 未知结果要求核查且不允许直接重试，原始SQL等额外details拒绝；自由文本及真实投影运行仍未验证。 |
++| PC-06 | 全响应no-store必需及429 Retry-After边界明确；实际HTTP发送不能由结构测试代替。 |
++| PC-07 | 六种绑定/头/覆盖/期限漂移变异均使门禁失败；只修改内存副本。 |
++| PC-08 | 已有操作修改仍触发保守兼容检查；实际旧基线只POST /projects差异，用户已明确接受。 |
++
++本片未发现新增覆盖缺口；全量66项日志及独立复审仍对应当前产物。旧A04操作保护只归一化本片具体差异，仍比较其他字段/操作/共享schema。Location可查询、24h及持久E一致、会话CSRF生效、真实重复/并发/原子提交不在机器层可证明范围，保持GAP-RUNTIME及后续B02/B03跟踪。无持久payload，schema_version/旧载荷处理不适用本片。
++
++S6检查专用meta与通用组件、错误组合与漂移门禁、需求测试和旧快照保护：专用meta避免收紧异步null，错误组件复用保留安全组合，历史断言与新PC测试分别防止范围外漂移和新增行为退化，均有必要用途。没有保持断言强度且明显获益的简化，本轮无需修改实现/测试。
++
++S7本次只更新三份接受/执行记录，机器产物、测试、检查器、规范与接受基线不变；复用同日66项通过及S3结论，不重复全量测试/独立审查。实际重跑结构检查与两基线兼容：对从已接受归档提取的JSON退出0；对原入场JSON仍退出1且仅POST /projects，见[检查输出](evidence/task014_b01_2026-10-24/closeout/compatibility-checks.json)。后者是已接受定向差异，不擦除或称自动兼容通过。
++
++三文档链接/锚点、版本、八场景、范围保护及两快照完整性再次核验；[最终检查](evidence/task014_b01_2026-10-24/closeout/checks.json)保存实际命令、差异和证据摘要，[最终快照](evidence/task014_b01_2026-10-24/closeout/final/source-manifest.json)保存可恢复产物。S1–S7已收口，限定机器交付已接受，运行实现未交付；当前授权队列耗尽，不自动执行其他B类任务。
+--- previous/docs/workorders/workflow_autonomy_2026-10-25.md
++++ current/docs/workorders/workflow_autonomy_2026-10-25.md
+@@ -0,0 +1,46 @@
++# 工程自主收口流程调整
++
++文档版本：v1.0
++更新日期：2026-10-25
++
++## 授权与范围
++
++用户在2026-10-25明确要求：“按你的建议修改工作流，取消逐任务人工审阅门禁，保留业务决策和里程碑验收。同步更新 AGENTS.md、实施入口、project-delivery skill 和任务模板，完成一致性检查及独立审查。”
++
++本轮仅修改这四份流程文件并同步项目状态和本记录；已有业务源码、测试、设计和历史接受记录保留。纯流程文档任务不单设业务里程碑，用户本次未要求额外人工验收。此授权不启动全量任务拆解或业务实现。
++
++## 交付与覆盖
++
++| 要求 | 落点与核验 |
++| --- | --- |
++| 取消逐任务人工门禁 | AGENTS职责边界、实施入口S1–S7、skill执行循环、模板阶段表均以S7工程收口为条件继续已授权队列 |
++| 保留业务决策 | 实施入口D规定触发条件、问题/证据/选项/建议/阻塞范围；模板第6节记录来源 |
++| 保留里程碑验收 | 实施入口M定义范围、场景、触发和后续依赖；首个完整业务成果不能因未命名而无限延期；模板第1/6/8节承接 |
++| 保持工程质量 | S2需求测试、S3独立审查、S4覆盖复核、S5行为保持简化、S6最终复验/复审、S7证据收口；缺必需验证或独立审查不得完成 |
++| 恢复与历史保护 | 明确旧S4及S5–S7映射；只追加检查点，不自动改写待审状态或继承批准 |
++| 授权范围与副作用 | 全量盘点不等于执行授权；延期、业务决策、部署和外部通信边界保持；仅暂停依赖部分 |
++
++## 验证与限制
++
++- 技能校验器首次用系统python3运行因缺PyYAML退出1；随后使用仓库contracts/.venv/bin/python运行通过，不安装依赖。
++- 全工作树git diff --check报告六份已有设计文档的末尾空行；这些文件不属本轮范围，保留原样。限定本轮文件的差异、链接、版本及一致性检查另存证据。
++- 本轮为文档交付，不运行无关应用测试，不宣称业务端到端或跨会话调度行为已验证。
++- 入场五份文件副本保存在[evidence/before](evidence/workflow_2026-10-25/before/)，用于区分本轮改动与既有未提交内容。
++
++## 独立审查与检查点
++
++S1–S7已完成，按实施入口v1.7工程收口；无新增业务决定，不单设业务里程碑。阶段执行证据如下：
++
++| 阶段 | 实际结果 |
++| --- | --- |
++| S1 | 明确文档范围与用户授权，保存五份入场内容；保留已有业务和并行修改 |
++| S2 | 同步四份流程文件；需求到落点见上表；技能校验及限定差异检查通过 |
++| S3 | 独立审查者`/root/workflow_review`自行读取四份产物和入场差异，核对52个相对链接，无需修复问题；[结论及受审摘要](evidence/workflow_2026-10-25/independent-review.json) |
++| S4 | 逐项复核取消门禁、D/M、授权、质量、恢复与历史保护；四场景桌面演练符合规则；无新增文档覆盖缺项 |
++| S5 | 阶段/返工规则集中实施入口，skill引用执行，模板只记录实例；无需额外简化 |
++| S6 | 四份受审产物SHA-256与最终文件一致；仅追加项目状态及本交付记录，未变更受审规则；限定检查复验通过 |
++| S7 | 保存最终证据并同步PROJECT_STATUS；本轮授权完成，不自动启动业务任务 |
++
++[文档检查脚本](evidence/workflow_2026-10-25/check_docs.py)可在仓库根用`python3 docs/workorders/evidence/workflow_2026-10-25/check_docs.py`重跑；[结果](evidence/workflow_2026-10-25/checks.json)记录版本递增、相对链接及锚点、阶段表对齐、限定diff检查和技能校验结果。它验证文档结构，语义结论来自独立审查与上述场景演练。[本轮差异](evidence/workflow_2026-10-25/changes.patch)相对入场副本，不把原有工作区内容计为本轮新增成果。
++
++本轮不宣称人工里程碑接受，也不覆盖旧任务原有待审或历史接受结论；恢复时执行新流程规定。跨会话实际运行效果仍未验证。
+--- previous/scripts/check_api_contracts.py
++++ current/scripts/check_api_contracts.py
+@@ -92,6 +92,31 @@
+                 assert schema == {'allOf': expected}, 'material error binding drift'
+             assert op['operationId'] in coverage['material_policy']['operations'], 'material coverage drift'
+             assert coverage['operation_coverage'][op['operationId']]['status'] == 'request-success-errors-partial'
++    # B01 operation binding guard; expected semantic examples live in requirement tests.
++    create = spec['paths']['/projects']['post']
++    assert create.get('x-contract-slice') == 'project-create-b01', 'Project.Create binding missing'
++    codes = coverage['project_create']['error_codes']
++    assert create.get('x-error-codes') == codes, 'Project.Create error inventory drift'
++    assert set(create['responses']) == {'201'} | set(codes), 'Project.Create status drift'
++    assert coverage['operation_coverage']['Project.Create'] == {
++        'status': 'request-success-errors-partial', 'gaps': ['GAP-RUNTIME']}, 'Project.Create coverage drift'
++    for status, response in create['responses'].items():
++        assert response.get('headers', {}).get('Cache-Control') == {
++            'required': True, 'schema': {'type': 'string', 'const': 'no-store'}}, 'Project.Create cache drift'
++        if status != '201':
++            assert response['content']['application/json']['schema'] == {'allOf': [
++                {'$ref': '#/components/schemas/ErrorEnvelope' + status},
++                {'properties': {'error': {'properties': {'code': {'enum': codes[status]}}}}},
++            ]}, 'Project.Create error binding drift'
++    success = create['responses']['201']
++    assert success['headers']['Location'].get('required') is True, 'Project.Create Location drift'
++    assert success['content']['application/json']['schema']['properties']['meta'] == {
++        '$ref': '#/components/schemas/ProjectCreateMeta'}, 'Project.Create expiry binding drift'
++    assert spec['components']['schemas']['ProjectCreateMeta']['allOf'] == [
++        {'$ref': '#/components/schemas/IdempotentMeta'},
++        {'properties': {'idempotency_expires_at': {'$ref': '#/components/schemas/Time'}}},
++    ], 'Project.Create expiry schema drift'
++    assert create['responses']['429']['headers']['Retry-After'] == spec['components']['responses']['PublicError429']['headers']['Retry-After'], 'Project.Create Retry-After drift'
+     assert sorted(ids) == sorted(coverage['typed_operations'] + coverage['request_only_operations']), 'coverage/spec operation mismatch'
+     assert len(coverage['row_coverage']) == len(coverage['source_rows'])
+     for index, row in enumerate(coverage['row_coverage']):
+--- previous/scripts/engineering.py
++++ current/scripts/engineering.py
+@@ -32,7 +32,9 @@
+             "migration-history",
+         ],
+     )
+-    action = parser.parse_args().action
++    parser.add_argument("--postgres-bin", type=Path)
++    args = parser.parse_args()
++    action = args.action
+     if action == "install":
+         if (
+             not (ROOT / "backend/uv.lock").is_file()
+@@ -66,6 +68,8 @@
+         check_paths = (
+             "src",
+             "tests",
++            "migrations",
++            "../scripts/run_storage_tests.py",
+             "../scripts/check_architecture.py",
+             "../scripts/engineering.py",
+             "../scripts/verify_skeleton_delivery.py",
+@@ -101,9 +105,16 @@
+     elif action == "e2e":
+         run(["npm", "run", "test:e2e"], ROOT / "frontend")
+     elif action == "integration":
+-        raise SystemExit(
+-            "Database integration unavailable: isolated fixture and business schema "
+-            "not implemented. No connection attempted."
++        if args.postgres_bin is None:
++            raise SystemExit(
++                "Database integration unavailable: explicit --postgres-bin required. "
++                "No connection attempted."
++            )
++        backend(
++            "python",
++            "../scripts/run_storage_tests.py",
++            "--postgres-bin",
++            str(args.postgres_bin.resolve()),
+         )
+     elif action == "migration-history":
+         backend("alembic", "history")
+--- previous/scripts/run_storage_tests.py
++++ current/scripts/run_storage_tests.py
+@@ -0,0 +1,163 @@
++"""Create a disposable PostgreSQL 17 cluster, run storage tests, stop and remove it."""
++
++import argparse
++import json
++import os
++import secrets
++import shutil
++import subprocess
++import sys
++import tempfile
++from pathlib import Path
++from uuid import uuid4
++
++import psycopg
++from psycopg import sql
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def run_tests(binary_dir: Path) -> int:
++    binary_dir = binary_dir.resolve(strict=True)
++    env = {
++        k: v
++        for k, v in os.environ.items()
++        if not k.startswith(("PG", "RPB_")) and k != "DATABASE_URL"
++    }
++    version = subprocess.check_output(
++        [str(binary_dir / "postgres"), "--version"], text=True, env=env
++    )
++    if not version.startswith("postgres (PostgreSQL) 17."):
++        raise SystemExit("PostgreSQL 17 binaries required; no connection attempted")
++    root = Path(tempfile.mkdtemp(prefix="rpb-db-", dir="/tmp")).resolve()
++    run_id = "rpb_test_" + uuid4().hex
++    admin_password = secrets.token_hex(32)
++    test_password = secrets.token_hex(32)
++    password_file = root / "admin-password"
++    password_file.write_text(admin_password)
++    password_file.chmod(0o600)
++    data = root / "data"
++    started = False
++    cleaned = False
++
++    def pg(*args: str) -> None:
++        subprocess.run(
++            [str(binary_dir / args[0]), *args[1:]],
++            env=env,
++            check=True,
++            stdout=subprocess.DEVNULL,
++            timeout=60,
++        )
++
++    try:
++        pg(
++            "initdb",
++            "-D",
++            str(data),
++            "-U",
++            "fixture_admin",
++            "-A",
++            "scram-sha-256",
++            "--pwfile",
++            str(password_file),
++            "--no-locale",
++            "-E",
++            "UTF8",
++        )
++        password_file.unlink()  # Never expose fixture administrator credentials to child tests.
++        # No TCP listener; socket and credentials live inside mode-0700 owned root.
++        pg(
++            "pg_ctl",
++            "-D",
++            str(data),
++            "-l",
++            str(root / "postgres.log"),
++            "-o",
++            f"-k {root} -h '' -p 5432 -c timezone=UTC",
++            "-w",
++            "start",
++        )
++        started = True
++        with psycopg.connect(
++            host=str(root),
++            dbname="postgres",
++            user="fixture_admin",
++            password=admin_password,
++            autocommit=True,
++        ) as admin:
++            admin.execute(
++                sql.SQL(
++                    "CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOCREATEDB NOCREATEROLE"
++                ).format(sql.Identifier(run_id), sql.Literal(test_password))
++            )
++            admin.execute(
++                sql.SQL("CREATE DATABASE {} OWNER {}").format(
++                    sql.Identifier(run_id), sql.Identifier(run_id)
++                )
++            )
++            admin.execute(
++                sql.SQL("ALTER DATABASE {} SET rpb.test_run_id = {}").format(
++                    sql.Identifier(run_id), sql.Literal(run_id)
++                )
++            )
++        target = root / "target.json"
++        target.write_text(
++            json.dumps(
++                dict(
++                    host=str(root),
++                    database=run_id,
++                    username=run_id,
++                    password=test_password,
++                    run_id=run_id,
++                    binary_dir=str(binary_dir),
++                )
++            )
++        )
++        target.chmod(0o600)
++        print(
++            json.dumps(
++                dict(
++                    postgres=version.strip(),
++                    run_id=run_id,
++                    root=str(root),
++                    tcp=False,
++                    role_superuser=False,
++                )
++            ),
++            flush=True,
++        )
++        if password_file.exists():
++            raise RuntimeError("Fixture administrator credential cleanup failed")
++        result = subprocess.run(
++            [
++                sys.executable,
++                "-m",
++                "pytest",
++                "tests/integration",
++                "-q",
++                "-s",
++                "--storage-target",
++                str(target),
++            ],
++            cwd=ROOT / "backend",
++            env=env,
++            timeout=180,
++        )
++        return result.returncode
++    finally:
++        # Never erase the directory of a server whose stop could not be verified.
++        if started or (data / "postmaster.pid").exists():
++            pg("pg_ctl", "-D", str(data), "-m", "fast", "-w", "stop")
++        if (data / "postmaster.pid").exists():
++            raise RuntimeError(f"Cleanup incomplete; retained isolated root {root}")
++        shutil.rmtree(root)
++        cleaned = not root.exists()
++        print(
++            json.dumps(dict(run_id=run_id, server_stopped=True, root_removed=cleaned)), flush=True
++        )
++
++
++if __name__ == "__main__":
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--postgres-bin", required=True, type=Path)
++    raise SystemExit(run_tests(parser.parse_args().postgres_bin))
+--- previous/scripts/tests/test_project_create_contract.py
++++ current/scripts/tests/test_project_create_contract.py
+@@ -0,0 +1,140 @@
++"""B01 Project.Create wire contract; requirements from 04/04-01, not runtime tests."""
++import copy
++import json
++import unittest
++
++from jsonschema import Draft202012Validator, FormatChecker
++from test_api_contracts import SPEC_DATA, SCHEMAS, COVERAGE, check, compatibility, valid
++from test_public_errors import error, CASES, RID
++
++EXPECTED = {
++    '400': ['VALIDATION_BAD_REQUEST'],
++    '401': ['AUTH_REQUIRED', 'AUTH_SESSION_INVALID', 'AUTH_ACCOUNT_DISABLED'],
++    '403': ['PERMISSION_CSRF_REJECTED'],
++    '404': ['PERMISSION_RESOURCE_UNAVAILABLE'],
++    '409': ['STATE_IDEMPOTENCY_CONFLICT'],
++    '413': ['VALIDATION_PAYLOAD_TOO_LARGE'],
++    '415': ['VALIDATION_UNSUPPORTED_FORMAT'],
++    '422': ['VALIDATION_FIELD_INVALID', 'VALIDATION_UNKNOWN_FIELD'],
++    '429': ['STATE_RESOURCE_LIMIT'],
++    '500': ['STORAGE_INTERNAL_FAILURE'],
++}
++TIME = '2026-10-24T00:00:00Z'
++PROJECT = {'id': RID, 'revision': 'r1', 'created_at': TIME, 'updated_at': TIME,
++           'name': 'Study', 'description': '', 'research_scope': '', 'status': 'active',
++           'default_knowledge_version_id': None, 'last_construction_at': None,
++           'last_activity_at': None, 'permissions': {'access': True, 'use': True, 'delete': True},
++           'available_actions': []}
++
++
++def operation(spec=SPEC_DATA):
++    return spec['paths']['/projects']['post']
++
++
++def accepts(schema, value):
++    return Draft202012Validator(schema | {'components': {'schemas': SCHEMAS}},
++                                format_checker=FormatChecker()).is_valid(value)
++
++
++class ProjectCreateContractTests(unittest.TestCase):
++    def test_pc01_request_boundaries_and_no_owner_status_revision(self):
++        for name in ['A', '中' * 200]:
++            self.assertTrue(valid('ProjectWrite', {'name': name}))
++        for name in ['', ' ', '\n\t', 'x' * 201, None, 1]:
++            self.assertFalse(valid('ProjectWrite', {'name': name}))
++        self.assertFalse(valid('ProjectWrite', {}))
++        for field in ['owner_id', 'status', 'expected_revision', 'force', 'confirmation_token']:
++            self.assertFalse(valid('ProjectWrite', {'name': 'Study', field: 'forged'}))
++        for field in ['description', 'research_scope']:
++            self.assertTrue(valid('ProjectWrite', {'name': 'Study', field: 'x' * 10000}))
++            for value in [None, 1, 'x' * 10001]:
++                self.assertFalse(valid('ProjectWrite', {'name': 'Study', field: value}))
++
++    def test_pc02_headers_and_creation_transport(self):
++        op = operation()
++        self.assertEqual(op['security'], [{'sessionCookie': []}])
++        params = {p['name']: p for p in op['parameters']}
++        self.assertEqual(set(params), {'X-CSRF-Token', 'Idempotency-Key'})
++        for p in params.values():
++            self.assertTrue(p['required']); self.assertEqual(p['in'], 'header')
++        schema = params['Idempotency-Key']['schema']
++        for v in ['a' * 16, 'z' * 128, RID]:
++            self.assertTrue(accepts(schema, v))
++        for v in ['', 'a' * 15, 'z' * 129, '中' * 16, 'a' * 15 + '\n']:
++            self.assertFalse(accepts(schema, v))
++        self.assertTrue(op['requestBody']['required'])
++        self.assertEqual(set(op['requestBody']['content']), {'application/json'})
++        self.assertEqual(op['requestBody']['content']['application/json']['schema'],
++                         {'$ref': '#/components/schemas/ProjectWrite'})
++        self.assertTrue(op['responses']['201']['headers']['Location']['required'])
++
++    def test_pc03_success_meta_requires_real_expiry_and_closed_envelope(self):
++        schema = operation()['responses']['201']['content']['application/json']['schema']
++        good = {'data': PROJECT, 'meta': {'request_id': RID, 'idempotency_expires_at': TIME}}
++        self.assertTrue(accepts(schema, good))
++        self.assertTrue(accepts(schema, good | {'meta': good['meta'] | {'original_request_id': RID}}))
++        for value in [None, 'tomorrow', '2026-10-24T00:00:00+08:00']:
++            self.assertFalse(accepts(schema, good | {'meta': good['meta'] | {'idempotency_expires_at': value}}))
++        for branch, keys in [('meta', ['request_id', 'idempotency_expires_at']),
++                             ('data', ['id', 'revision', 'status', 'permissions'])]:
++            for key in keys:
++                bad = copy.deepcopy(good); del bad[branch][key]
++                self.assertFalse(accepts(schema, bad))
++            bad = copy.deepcopy(good); bad[branch]['unknown'] = True
++            self.assertFalse(accepts(schema, bad))
++        for field in ['data', 'meta']:
++            bad = copy.deepcopy(good); del bad[field]; self.assertFalse(accepts(schema, bad))
++        self.assertFalse(accepts(schema, good | {'task': RID}))
++        # Generic async metadata remains nullable; this operation-specific narrowing is local.
++        self.assertTrue(valid('IdempotentMeta', {'request_id': RID, 'idempotency_expires_at': None}))
++
++    def test_pc04_exact_errors_and_all_unrelated_variants_rejected(self):
++        op = operation()
++        self.assertEqual(op['x-error-codes'], EXPECTED)
++        self.assertEqual(set(op['responses']), {'201'} | set(EXPECTED))
++        for status in EXPECTED:
++            schema = op['responses'][status]['content']['application/json']['schema']
++            for code, actual_status, category in CASES:
++                with self.subTest(status=status, code=code):
++                    value = {'error': error(code, category), 'meta': {'request_id': RID}}
++                    self.assertEqual(accepts(schema, value), code in EXPECTED[status])
++
++    def test_pc05_safe_failure_projection_and_unknown_outcome(self):
++        op = operation()
++        for status, code, cat in [('500', 'STORAGE_INTERNAL_FAILURE', 'storage'),
++                                  ('429', 'STATE_RESOURCE_LIMIT', 'state')]:
++            schema = op['responses'][status]['content']['application/json']['schema']
++            value = {'error': error(code, cat) | {'details': {'outcome': 'unknown'},
++                     'recovery': {'action': 'check_result', 'label': '核查原操作结果'}},
++                     'meta': {'request_id': RID}}
++            self.assertTrue(accepts(schema, value))
++            bad = copy.deepcopy(value); bad['error']['retryable'] = True
++            self.assertFalse(accepts(schema, bad))
++            bad = copy.deepcopy(value); bad['error']['details']['sql'] = 'private'
++            self.assertFalse(accepts(schema, bad))
++
++    def test_pc06_no_store_and_retry_after(self):
++        for status, response in operation()['responses'].items():
++            header = response['headers']['Cache-Control']
++            self.assertTrue(header['required'])
++            self.assertEqual(header['schema'], {'type': 'string', 'const': 'no-store'})
++        retry = operation()['responses']['429']['headers']['Retry-After']
++        self.assertTrue(retry['required'])
++        self.assertTrue(accepts(retry['schema'], 0)); self.assertFalse(accepts(retry['schema'], -1))
++
++    def test_pc07_drift_guard_rejects_missing_or_widened_bindings(self):
++        for mutation in ['response', 'subset', 'cache', 'location', 'coverage', 'expiry']:
++            s = copy.deepcopy(SPEC_DATA); c = json.loads(COVERAGE.read_text()); op = operation(s)
++            if mutation == 'response': del op['responses']['401']
++            elif mutation == 'subset': op['responses']['409']['content']['application/json']['schema'] = {'$ref': '#/components/schemas/ErrorEnvelope409'}
++            elif mutation == 'cache': del op['responses']['201']['headers']['Cache-Control']
++            elif mutation == 'location': op['responses']['201']['headers']['Location']['required'] = False
++            elif mutation == 'coverage': c['operation_coverage']['Project.Create']['status'] = 'request-success-partial'
++            else: op['responses']['201']['content']['application/json']['schema']['properties']['meta'] = {'$ref': '#/components/schemas/IdempotentMeta'}
++            with self.subTest(mutation=mutation), self.assertRaises(AssertionError):
++                check(s, c)
++
++    def test_pc08_existing_operation_change_still_requires_review(self):
++        old = copy.deepcopy(SPEC_DATA)
++        old['paths']['/projects']['post']['responses']['201']['description'] = 'previous'
++        self.assertIn('operation changed/removed: POST /projects', compatibility(old, SPEC_DATA))
+--- previous/scripts/tests/test_public_errors.py
++++ current/scripts/tests/test_public_errors.py
+@@ -111,7 +111,19 @@
+   for name,schema in old['components']['schemas'].items(): self.assertEqual(schema,SCHEMAS[name],name)
+   for path,item in old['paths'].items():
+    for method,op in item.items():
+-    updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']; self.assertEqual(op,updated)
++    updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']
++    if (path, method) == ('/projects', 'post'):
++     # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.
++     # Normalize only reviewed deltas, then retain the full historical operation assertion.
++     del updated['x-contract-slice']; del updated['x-error-codes']
++     next(p for p in updated['parameters'] if p['name']=='Idempotency-Key')['schema'].pop('not')
++     for status in ('400','401','403','404','409','413','415','422','429','500'):
++      del updated['responses'][status]
++     updated['responses']['default']=copy.deepcopy(op['responses']['default'])
++     success=updated['responses']['201']
++     del success['headers']['Cache-Control']['required']; del success['headers']['Location']['required']
++     success['content']['application/json']['schema']['properties']['meta']={'$ref':'#/components/schemas/IdempotentMeta'}
++    self.assertEqual(op,updated)
+   self.assertEqual(SPEC_DATA['components']['responses']['PublicError429']['headers']['Retry-After']['required'],True)
+ 
+ if __name__=='__main__': unittest.main()
+--- previous/tasks/005-engineering-skeleton.md
++++ current/tasks/005-engineering-skeleton.md
+@@ -1,7 +1,7 @@
+ # Task 005：第一批可验证工程骨架
+ 
+-文档版本：v1.1
+-更新日期：2026-10-22
++文档版本：v1.3
++更新日期：2026-10-24
+ 
+ ## 1. 目标与授权
+ 
+@@ -9,9 +9,11 @@
+ 
+ 可观察结果：审核者能按README安装，在本机启动API、显式空闲Worker与前端预览，运行统一检查和构建；未接入的业务能力明确不可用。
+ 
+-范围：B08工程入口、A10本任务限定验收、模块包边界、进程配置、健康探针、空迁移链与失败保护、前端基础导航及预览。关联ARC-01/02/08/09/10、OPS-01/03的工程子集；不关闭这些用例的完整业务范围。
++范围：B08工程入口、A10本任务限定验收、模块包边界、进程配置、健康探针、空迁移链与失败保护、前端基础导航及预览。关联ARC-01/08/09/10、OPS-01/03的工程子集；不关闭这些用例的完整业务范围。
+ 
+ 不含账号/Project业务实现、持久任务、业务迁移与UoW、文件/密钥适配器、真实PostgreSQL测试夹具、Graph-RAG、模型接入、生产部署。A04–A09、H01–H03维持原边界；本批不消费尚缺公共错误模型的业务接口，不需要先关闭它们。
++
++2026-10-24恢复授权原文：“继续按 project-delivery 流程推进 A10，核对已有任务单和交付范围，完成本轮交付、自验及独立审查，再提交我审核。”A10按切片实例化；本轮复用本单SK-01–09已有工程行为，不新建重复任务、不把它扩成全量P0验收设计。核对当前代码（含10月23日精简修改），补当前验收规格/执行证据与S3审查后提交S4。既有历史结果原样保留；本轮结果以第7–8节及新审核包为准。
+ 
+ ## 2. 当前依据与精确基线
+ 
+@@ -46,12 +48,12 @@
+ 
+ 以下编号仅为本任务的工程子场景，不宣称覆盖对应ARC/OPS的全量业务规则。
+ 
+-当前证据目录为 `docs/workorders/evidence/task005_coverage_2026-10-22/`；下列测试均已执行，完整断言和限制见覆盖修复记录。
++原覆盖修复证据目录为 `docs/workorders/evidence/task005_coverage_2026-10-22/`；下表保留历史追踪，2026-10-24当前运行证据及完整测试路径见第4.1节和本轮审核包。
+ 
+ | 需求与场景 | 输入、预期和禁止副作用 | 可执行测试 / 当前证据 |
+ | --- | --- | --- |
+ | SK-01 / OPS-01 | 干净安装构建成功；前后端锁漂移拒绝且锁字节不变；分别缺任一锁时，在启动安装工具前拒绝，不生成锁、不修改另一锁 | verify_skeleton_delivery.py；test_missing_lock_refuses_before_install_and_preserves_files；check.txt、clean-delivery.txt、build.txt |
+-| SK-02 / ARC-01/02 | 禁止Domain外层、Application HTTP/ORM/具体适配器/跨模块私有领域、Knowledge反向依赖、API绕过应用、archive和动态导入；包根/父包from/成员导入均校验；公开ports合法，ports_private拒绝 | test_boundaries.py全部测试（含包根回归和HTTP/ORM矩阵）；check.txt |
++| SK-02 / ARC-01 | 禁止Domain外层、Application HTTP/ORM/具体适配器/跨模块私有领域、Knowledge反向依赖、API绕过应用、archive和动态导入；包根/父包from/成员导入均校验；公开ports合法，ports_private拒绝 | test_boundaries.py全部测试（含包根回归和HTTP/ORM矩阵）；check.txt |
+ | SK-03 / ARC-08、OPS-01 | 默认配置无隐式存储；1024/65535接受，0/1023/65536/非数字拒绝；外部绑定、production、未知RPB拒绝；API和Worker错误退出且stdout/stderr均不泄漏 | test_config_*、test_invalid_or_unimplemented_configuration_refused、test_process_rejects_configuration_without_leaking_values；check.txt |
+ | SK-04 / ARC-09/10 | live精确200及alive；ready精确503及not_ready；业务GET/POST、文档路由404；安装wheel网络探针与SIGTERM；无数据库连接 | test_probes_and_no_business_routes、test_live_201_mutation_fails_application_contract、test_wheel_network_probe_requires_exact_200、test_api_probes_do_not_connect_with_ambient_business_configuration；check.txt、clean-delivery.txt |
+ | SK-05 / ARC-09 | 默认拒绝；显式idle不就绪、不连接存储；SIGTERM/SIGINT正常退出；无启动输出或半行输出在期限内失败并回收；提前退出可诊断 | test_worker_refuses_task_execution、test_worker_idle_lifecycle、test_worker_missing_startup_signal_times_out_and_is_reaped、test_worker_exit_before_handshake_is_reaped、test_idle_worker_has_no_storage_activity；check.txt |
+@@ -62,6 +64,24 @@
+ | 受影响既有契约工具 | 对当前共享工作区执行结构检查与全部契约回归；并行契约修改保留，不归为task005实现；未提供旧基线，不宣称兼容或运行授权验证 | scripts/tests、check_api_contracts.py；check.txt及verification-inputs.json |
+ 
+ 无业务写路径，业务并发、去重、权限、版本绑定和人工内容保护没有执行入口，本批不以空断言冒充覆盖；仍由TRACK-004/007/008/012/018/019/021跟踪。真实PostgreSQL commit/race验证需后续切片，当前integration明确非零退出。架构检查只分析静态Python导入，不证明未来运行时写入所有权。
++
++### 4.1 A10 当前切片的执行条件与观察（2026-10-24）
++
++当前依据为00-01 v1.2 §3/5/6、09 v1.22 ARC-01/08/09/10及工程隔离、10 v1.8 §2.1/7、03基础Shell规范。本轮仅取“可安装、启动、验证且未实现能力明确不可用”的工程子集；不声称任何完整FR业务已验收。配置所有者为bootstrap；API只有health读端口；Worker无持久写权；UI只改本地页面状态。ARC-02身份与Project隔离及业务存储、账号授权、版本绑定、人工内容与业务竞争无入口，明确不适用本工程切片，相关TRACK继续开放。
++
++| 场景 | 前置/动作与故障点 | 可执行定位（仓库相对路径） | 观察、禁止副作用与清理 |
++| --- | --- | --- | --- |
++| SK-01 | 临时干净副本；安装构建，分别改后端版本/前端依赖制造锁漂移；分别移去一个锁 | scripts/verify_skeleton_delivery.py::main；backend/tests/unit/test_skeleton_requirements.py::test_missing_lock_refuses_before_install_and_preserves_files | 成功产出wheel/静态文件；反例非零且锁字节不变、缺锁不启动安装。TemporaryDirectory只清本次副本；依赖缓存允许保留。 |
++| SK-02 | 参数化非法/合法导入源码，包括包根、父包、私有近似名与动态导入 | backend/tests/architecture/test_boundaries.py 全部用例；scripts/check_architecture.py | 实际源码导入图通过；负例报违规、公开ports正例通过。只AST静态分析，不等于运行写入所有权或任意Python动态行为防护。 |
++| SK-03 | 清除测试子进程RPB配置，按第4节边界设置合成值；API/Worker分别启动 | backend/tests/unit/test_startup.py::test_config_has_no_storage_or_provider_fallback、test_config_valid_boundaries、test_invalid_or_unimplemented_configuration_refused、test_process_rejects_configuration_without_leaking_values、test_app_factory_rejects_invalid_configuration | 配置合法或精确拒绝；CLI退出2、固定脱敏消息，无值泄漏；10秒子进程期限。无持久写入。 |
++| SK-04 | TestClient及已安装wheel实际本地HTTP；注入live=201负例；合成DATABASE_URL+连接拒绝spy | backend/tests/unit/test_startup.py::test_probes_and_no_business_routes；test_review_regressions.py两项探针回归；test_skeleton_requirements.py::test_api_probes_do_not_connect_with_ambient_business_configuration；scripts/verify_skeleton_delivery.py | live=200/alive、ready=503/not_ready；业务/文档404；201必须被测试识别。真实wheel SIGTERM后shutdown complete且回收进程；连接spy为0。 |
++| SK-05 | 默认执行拒绝；idle进程先收到启动握手再发SIGTERM/SIGINT；独立子进程模拟无输出/半行/提前退出 | backend/tests/unit/test_startup.py 的worker五组场景；test_skeleton_requirements.py::test_idle_worker_has_no_storage_activity；process_support.py | 默认退出2，idle明确not ready并正常停；故障等待有界，最终poll非None。握手控制进程先后，不虚构业务锁竞争。连接spy测试不替代真实数据库测试。 |
++| SK-06 | 缺连接与合成DATABASE_URL；迁移/integration入口执行，连接函数全部拒绝；查询迁移history | backend/tests/unit/test_skeleton_requirements.py::test_unavailable_storage_refuses_without_connection；test_startup.py::test_migration_refuses_even_with_business_configuration；scripts/engineering.py migration-history | 明确非零且不回显秘密，连接调用0，history空。拒绝是预期成功断言，不代表迁移能力已验收；无需建/清业务库。 |
++| SK-07 | 渲染Projects/设置，点击禁用动作及本地导航 | frontend/src/App.test.tsx三项 | 唯一main、不可写、无fetch/伪业务记录或管理员入口；测试卸载及恢复spy。无业务账号/数据夹具。 |
++| SK-08 | 已构建前端预览，1280/390；Tab/Enter后两页往返 | frontend/e2e/shell.spec.ts两项 | main聚焦、无溢出/异常、无fetch/xhr/websocket及非GET；四张截图仅工程Shell。Playwright管理本次预览进程；不停止用户其他服务。 |
++| SK-09 | 临时源码含空/二进制/文本；独立篡改manifest为missing/tampered/extra | backend/tests/unit/test_delivery_snapshot.py；scripts/delivery_snapshot.py | 重构文件集合/字节一致，三反例拒绝；旧输出目录拒绝覆盖，仅写pytest管理的tmp_path，按pytest保留策略回收，不宣称退出即时删除。本轮完整快照另核对实际工作树摘要。 |
++
++表内省略目录的test_*.py均位于backend/tests/unit/。对应第4节所有SK需求及受影响机器契约回归；本轮完整命令/结果集中在第7节报告。业务数据并发、授权、版本绑定、内容保护及真实隔离PostgreSQL尚无测试执行入口，不能按“骨架不写入”关闭它们。A04–A09本轮不新增消费；A05未记录接受不会阻塞只含health和预览的本切片，也不能借本切片接受A05。
+ 
+ ## 5. 执行证据与复现
+ 
+@@ -96,4 +116,20 @@
+ 
+ 人工审核建议：先查看本轮覆盖修复记录，复现README命令并查看四张截图；抽查config拒绝路径、health就绪状态、worker默认拒绝、迁移保护、架构反例及锁漂移证据，再确认本批范围是否接受。后续业务切片另行授权，不由通过检查推定。
+ 
+-设计依据：已核对；骨架代码：已实现；自动验证：按第5节逐项记录；人工接受：**待审核**。审核者、日期、接受基线与范围、问题处置由人工结论补录。
++设计依据：已核对；骨架代码：已实现；自动验证：按第5节逐项记录；人工接受：**2026-10-24已获本轮SK-01–09限定接受**，基线及收口见第9节；此前各轮历史证据不倒填批准。
++
++## 7. 本轮单一交付报告（2026-10-24）
++
++[A10恢复审核包](../docs/workorders/task005_a10_review_2026-10-24.md)记录已有任务归属、精简修改承接、实际测试、独立审查和精确基线。本轮补验收交接，不把10月23日既有实现修改归为新增代码。旧报告与人工接受状态保留；当前审核以本次明确基线为准。
++
++## 8. 顺序交付检查点
++
++唯一队列为task005的A10工程子集，授权原文见第1/9节。S1–S7已完成（限定工程交付收口）：S1核对实际基线，S2验证通过，S3独立复审通过且C01/C02闭合，S4于2026-10-24获用户接受，S5逐SK复核无新增缺口，S6无需修改，S7文档/差异/快照复验通过。源码、测试、锁文件和机器契约与接受基线一致。原197文件入场及受审快照保留；本次仅更新任务单、审核包和项目状态的接受/执行记录，最终证据见审核包末节。
++
++当前授权队列已完成；没有待决工程缺陷。其他业务切片、全项目A10、真实存储/权限/并发/版本/人工保护及Graph-RAG不在本次接受范围，仍由原任务和TRACK跟踪；下一任务须有明确授权。
++
++## 9. 人工接受与S5–S7收口（2026-10-24）
++
++用户原文：“接受 task005 本轮 A10 工程骨架限定交付，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。”接受范围为本轮SK-01–09工程骨架及A10验收交接，绑定delivery清单SHA256 `18d7332dc7ffe53faeb5de39e1898795bcd5ca2b8b5e0dbea735c5ae0d319075`（197文件）。恢复逐文件核验无漂移，原独立复审和82后端/58契约/3前端/2浏览器、构建/干净安装/wheel/空迁移链证据仍对应当前代码。
++
++[S5–S7收口记录](../docs/workorders/task005_a10_review_2026-10-24.md#人工接受后的s5s7执行记录)逐项记录覆盖与简化结论，以及本轮文档/快照实际检查。没有代码、测试或规范语义变更，不重复全量工程测试和独立审查，也不因登记接受本身再次要求接受。设计规格、现有工程代码、限定自动验证及人工接受均已完成；业务核心实现与验收未完成。
+--- previous/tasks/012-graph-rag-technical-design.md
++++ current/tasks/012-graph-rag-technical-design.md
+@@ -1,7 +1,7 @@
+ # Task012：A09 首版知识构建与Graph-RAG技术方案
+ 
+-文档版本：v1.0
+-更新日期：2026-10-23
++文档版本：v1.1
++更新日期：2026-10-24
+ 
+ ## 1. 目标与授权
+ 
+@@ -63,7 +63,7 @@
+ 
+ ## 6. 人工审核
+ 
+-H01由本轮显式推进A09授权落实为限定恢复，无其他产品决定。审核重点：首版工程选择、图来源/公共私人混合、固定版本和先过滤、预算故障行为、就绪与回收、真实评测交接。建议接受设计后进入S5–S7；若要求修订则返回S2并复审。人工接受尚未发生，代码/运行/模型质量未交付。
++H01由本轮显式推进A09授权落实为限定恢复，无其他产品决定。审核重点：首版工程选择、图来源/公共私人混合、固定版本和先过滤、预算故障行为、就绪与回收、真实评测交接。建议接受设计后进入S5–S7；若要求修订则返回S2并复审。用户已于2026-10-24限定接受本轮设计，见第9节；代码/运行/模型质量未交付。
+ 
+ ## 7. 单一交付报告
+ 
+@@ -71,4 +71,10 @@
+ 
+ ## 8. 顺序交付检查点
+ 
+-S1–S3已完成：9份文档自验通过，18个场景具备设计追踪；独立审查五项P2已修复并复审通过。当前S4等待用户对本审核包的真实决定，S5–S7未开始。受审快照为s3-input（194文件，manifest SHA256 `20426cc77965a9762d96fdab9fd147046d079ec490926a8e7f4332d5b033b5a9`）；最终delivery仅更新任务单、审核包和项目状态的交接记录，具体完整性及差异证据见审核包。下一步在用户接受后执行S5–S7；要求修订则回S2。队列仅task012；其余backlog/Memory/H02/H03未获新增授权。
++S1–S7已完成（限定设计收口）。2026-10-24用户接受本轮A09设计并授权S5–S7；S5逐KG复核无新增设计缺口，S6无需修改，S7文档/结构/基线复验通过。原五项P2在受审设计基线闭合；本轮仅追加接受与状态记录，技术方案未变。接受与最终快照、命令及未验证范围见审核包收口节。当前授权队列已完成；后续业务实施、Memory、H02/H03及其他backlog未获本轮授权。
++
++## 9. 人工接受与收口
++
++用户原文（2026-10-24）：“接受 task012 本轮 A09 技术方案设计交付，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。”接受范围为GR01–GR04及KG-01–18限定的设计交付，绑定2026-10-23 delivery清单SHA256 `28f9c0b4796471c61d397e5a28cd2d34a1e3ea217ff48cb877bdc4ac5646b319`。真实运行/模型质量不在接受范围。恢复时三份入口/状态文件已有每日整理变更，技术方案未漂移；已保留并记录差异，未把外部记录改动冒充本轮成果。
++
++[S5–S7记录](../docs/workorders/task012_a09_review_2026-10-23.md#人工接受后的s5s7执行记录)是本次收口依据。最终只修改本任务单、审核包、项目状态与实施入口的接受/状态记录；不产生新的规范或测试语义，因此沿用原独立复审及用户接受，无需重复接受记录本身。
+--- previous/tasks/014-project-create-machine-contract.md
++++ current/tasks/014-project-create-machine-contract.md
+@@ -0,0 +1,77 @@
++# Task014：B01 Project.Create机器契约切片
++
++文档版本：v1.1
++更新日期：2026-10-24
++
++## 1. 目标与授权
++
++用户原文：“继续按 project-delivery 流程推进 B01，核对已有任务单和契约覆盖，确定首个机器契约转写切片，完成本轮交付、自验及独立审查，再提交我审核。”本轮确定POST /projects（Project.Create）为首片，补请求边界、成功元信息和错误响应的机器表达及契约测试，完成S1–S3后交S4。
++
++复用task004的Project创建语义和T01–T10边界，但task004仍为示例，不在其上冒充应用实现。本单独立负责B01机器层及自身A10规格。task005工程骨架已接受；task006 A04已接受；task007 A05尚待接受且本片不消费；task008/010–012限定设计已接受，本同步新建操作不消费Task/确认预览/SSE/图谱。task009/013仅独立规划。无现有B01执行单与本片重叠。
++
++可观察结果：现有JSON Schema工具接受合法创建请求、201/重放及适用错误，拒绝越界写字段、非法幂等键、同步完成null期限和不适用错误；覆盖清单与静态门禁准确反映范围。不实现账号/Project应用、真实HTTP/存储/并发/SDK，不扩大为全B01或FR-008完成。关联TRACK-004、012a/012e；其运行范围继续开放。
++
++## 2. 依据与基线
++
++已核对AGENTS、[状态](../docs/PROJECT_STATUS.md)、[设计索引](../docs/design/README.md)、[实施入口](../docs/IMPLEMENTATION_ENTRY.md)、[B01/A10](../docs/workorders/preimplementation_design_tasks_2026-10-21.md)、[task004](004-project-create-idempotency-example.md)及04系列。
++
++| 规则 | 操作/所有者与本轮表达 |
++| --- | --- |
++| 01 FR-008；04-01 §3；02 Project/Construction容器 | Project.Create创建Owner为当前主体、默认active；本轮沿ProjectWrite/View，不新增可写Owner/status，不以schema证明容器原子创建。 |
++| 04 §3/5；08当前身份/安全投影 | sessionCookie、CSRF、201/Location/no-store；具名错误状态及安全组件绑定，无权限服务实现。 |
++| 04 §7；05 §3；07 §6.1；task004 T09/T10 | 幂等键16–128可打印ASCII；同步完成到期非null；真实至少24h、持久E一致、重放当前request_id由后续B03验证。 |
++| 04-03及A04 | JSON单一字段来源、错误适用性按操作细分、兼容变化必须定向审核；不扩大其他端点。 |
++
++[入场](../docs/workorders/evidence/task014_b01_2026-10-24/before/source-manifest.json)保存197文件及tar，含未提交/未跟踪内容；[entry](../docs/workorders/evidence/task014_b01_2026-10-24/entry.json)保存授权、HEAD及范围。[旧OpenAPI](../docs/workorders/evidence/task014_b01_2026-10-24/before.openapi.json)来自改动前实际工作树，不用新文件自比，不称全JSON都已人工接受。
++
++## 3. 修改落点与取舍
++
++| 文件 | 职责/边界 |
++| --- | --- |
++| contracts/p0.openapi.json | 仅Project.Create头/成功meta/错误绑定，新增ProjectCreateMeta；通用IdempotentMeta保持允许异步null。 |
++| contracts/p0.coverage.json | 本操作由request-success-partial到request-success-errors-partial，保留GAP-RUNTIME；其余操作不提高覆盖。A07待审核陈旧说明更正为设计已接受/转写未做。 |
++| scripts/check_api_contracts.py | 本片错误/成功绑定、头、期限及覆盖漂移门禁，不削弱既有检查。 |
++| scripts/tests/test_project_create_contract.py | PC-01–08需求正负例与漂移/兼容回归；纯schema，无业务库或外呼。 |
++| scripts/tests/test_public_errors.py | 旧A04快照断言逐项扣除本片已明确变更后继续完整比较；不跳过Project.Create或其他操作。 |
++| 04-03、项目状态、本单与审核包 | 当前覆盖、接受边界、兼容方向、证据和S阶段交接。 |
++
++本片无异步Task/SSE或持久命令载荷，因此事件与schema_version/旧载荷处理不适用于本次wire产物；后续B03持久化命令必须独立版本化，不拿OpenAPI info.version冒充持久schema_version。本轮不生成重复手写DTO和路由；先收口机器结构，后续应用消费时另交适配及运行证据。
++
++## 4. A10验收与需求追踪
++
++| 场景/规范 | 前置、动作和反例 | 观察与禁止副作用 | 可执行测试 |
++| --- | --- | --- | --- |
++| PC-01 / FR-008、04-01 §3 | 合法名称1/200，空白/null/类型/201字符；描述0/10000/10001；Owner/status/修订/force/确认字段 | 合法通过、错误拒绝；不默认填PATCH或调用任何应用 | test_pc01_request_boundaries_and_no_owner_status_revision |
++| PC-02 / 04 §2/3/7 | session/CSRF/幂等头必需；key16/128/UUID及15/129/中文/尾换行；JSON创建与Location | 请求结构及头声明准确；尾换行拒绝；无假HTTP执行 | test_pc02_headers_and_creation_transport |
++| PC-03 / 04 §7.5/6、task004 T10 | 固定ProjectView+本次meta、可选original_request_id；null/非法期限、缺字段/未知字段/Task | 201具名信封且期限非null；异步通用meta仍容许null，不影响其他操作 | test_pc03_success_meta_requires_real_expiry_and_closed_envelope |
++| PC-04 / 04 §5、重放可见性 | 每个本片状态遍历42个公共错误变体 | 仅约定子集通过，不绑定游标/管理员/Provider/版本/修订等无关错误 | test_pc04_exact_errors_and_all_unrelated_variants_rejected |
++| PC-05 / A04未知提交结果 | 500/429 outcome=unknown合法核查；强制retryable与原始SQL字段反例 | 受约束恢复与脱敏结构不放宽；不声称自由文本语义脱敏已实现 | test_pc05_safe_failure_projection_and_unknown_outcome |
++| PC-06 / 04 §3/5 | 全部响应no-store，429 Retry-After 0合法/负数非法 | 头声明必需且值受约束；真实HTTP发送待实现 | test_pc06_no_store_and_retry_after |
++| PC-07 / 04-03 | 深拷贝删401、放宽409子集、移除缓存、Location变可选、覆盖降级或meta回通用 | 检查器必须失败；原JSON字节不被变异测试改写 | test_pc07_drift_guard_rejects_missing_or_widened_bindings |
++| PC-08 / 04-03 | 已有操作改变；另与真实入场JSON比较 | 保守兼容门禁报告需定向审核，禁止抹掉失败改自比 | test_pc08_existing_operation_change_still_requires_review |
++
++上述用例均在scripts/tests/test_project_create_contract.py，执行证据见审核包；场景输入及期望来自规则，错误集合显式列出而非从新schema生成正确答案。无数据库或文件存储写入，无并发屏障需要；测试仅深拷贝内存并读取仓库JSON。真实身份、CSRF、重复/并发/原子容器创建、24h保留、跨主体防重放、request_id与持久到期一致性继续由task004运行场景及后续B02/B03承担，未执行。
++
++## 5. 自验与限制
++
++新增负例先对旧JSON/检查器运行，失败日志red.log保留；补齐后green.log暴露尾换行既有缺陷，局部修复后重跑。全契约回归、结构、文档引用/版本、完整快照和实际入场兼容差异均需检查；具体输出在[审核包](../docs/workorders/task014_b01_review_2026-10-24.md)。只运行独立contracts/.venv，不连接业务/Provider，不运行无关应用测试。源码快照包含未提交/未跟踪文件，证据独立保存。
++
++## 6. 人工审核
++
++审核本操作错误适用性、同步期限收紧、幂等键边界修复和兼容非零差异；不改变既定业务语义。建议接受限定机器层交付后进入S5–S7；修订则回S2/S3。2026-10-24用户已接受本片及所列兼容差异，见第9节；其他任务与运行验收不代填。
++
++## 7. 单一报告
++
++[task014审核包](../docs/workorders/task014_b01_review_2026-10-24.md)维护实际命令、正负例、兼容方向、独立发现、快照和限制。
++
++## 8. 顺序交付检查点
++
++唯一队列task014，授权见第1/9节。S1–S7已完成（限定机器契约收口）。S1明确范围及入场；S2新增8组/全量66项契约及结构通过；S3独立复审无剩余阻断项；S4用户于2026-10-24接受本轮交付及POST /projects定向兼容差异；S5逐PC复核无新增缺口；S6无需修改；S7文档/结构/快照和接受基线兼容复验通过。机器产物、检查器及测试与已接受基线完全一致，本次仅更新本单、审核包和项目状态的接受/执行记录。
++
++最终基线和证据见审核包收口节；原入场兼容退出1保留，不改写为通过，也不扩大接受为其他操作或整个JSON历史。当前队列已完成，其他B01切片、B02/B03应用及数据库等运行任务未获本轮授权。
++
++## 9. 人工接受与收口（2026-10-24）
++
++用户原文：“接受 task014 本轮 B01 Project.Create 机器契约限定交付及所列兼容差异，继续按 project-delivery 流程完成 S5–S7，更新任务单和项目状态。”接受PC-01–08及审核包所列POST /projects请求/响应方向差异，绑定delivery清单SHA256 `230a2d99687b18d52a0b1b180a0521c336f8e9ce942e4b4f3fb351879d9915aa`（200文件）。恢复核验无漂移；从该归档提取的accepted.openapi.json SHA256为 `57117f10787b72899818cf6829550cc71e77073298ac437fc6d67791cec18dfa`，只作为可重定位比较产物，不代表用户接受其他操作。
++
++[S5–S7记录](../docs/workorders/task014_b01_review_2026-10-24.md#人工接受后的s5s7执行记录)维护逐项覆盖、简化判断、实际检查和最终快照。原66项契约运行证据对应未变代码，复用而非重复测试；本次重跑结构和两份真实基线兼容检查。没有审核后实质改动，无需新独立审查或重复接受记录本身。机器契约、限定自动验证及人工接受已完成；真实HTTP、身份权限、持久化/去重/原子事务仍未实现或验收。
+--- previous/tasks/015-account-storage-migration.md
++++ current/tasks/015-account-storage-migration.md
+@@ -0,0 +1,131 @@
++# Task015：B02 Account基础物理模型与首条迁移
++
++文档版本：v1.0
++更新日期：2026-10-25
++
++## 1. 目标与授权
++
++用户授权：“继续按 project-delivery 流程推进 B02，核对已有任务单和前置依赖，确定首个物理模型与迁移切片，完成本轮交付、自验及独立审查，再提交我审核。”入场按流程v1.6计划S1–S3后交S4；执行中流程更新为v1.7，最终阶段及验收点见第9节；后续任务未授权。
++
++核对tasks/001–014，无B02执行单。task004为示例；task009/013为规划；task014仅Project.Create机器契约。Project.owner依赖Account身份，因此本轮选Account聚合的基础持久记录为先行切片，不建缺失Account外键的Project表。A02逻辑持久化及工程基线有可用规范，task005 A10已限定接受；不依赖A05待接受部分，也不消费A06/A08/A09资料/知识规则。本轮不把A02文档核对冒充整份人工接受。
++
++可观察结果：显式运行隔离PostgreSQL 17测试后，版本化迁移建立Account表，独立连接可读取已提交身份与状态；规范化键重复被数据库拒绝，失败迁移可诊断及重跑，测试进程结束不留临时数据库。关联TRACK-007a/b/c，仅Account基础字段/迁移子集。
++
++不包含注册/登录/会话、首位或最后管理员裁决、账户删除、规范化算法、密码哈希服务、HTTP错误映射、Project及知识资产、生产目标或旧数据迁移。不是FR-001、完整Account聚合或整体B02验收。
++
++## 2. 依据与入场基线
++
++已读AGENTS、PROJECT_STATUS v1.60、设计索引、IMPLEMENTATION_ENTRY v1.6及B02工作清单；需求01 FR-001、领域02 v1.26 Account聚合、03-01账户页、04-01账户操作、05应用顺序、07 v1.13 §3/4/9、08 v1.9 §2、工程基线00-01 §5。
++
++| 规范子条目 | 本轮落实及所有者 |
++| --- | --- |
++| 07 §3身份UUID、不透明revision、UTC时间；Account最小事实 | adapters.account SQLAlchemy元数据；账号身份、原始显示字段、规范化键、hash、enabled/admin、修订、时间。 |
++| 07 §3登录标识唯一；04-01注册重复冲突 | username_key/email_key各自非空唯一，使用C精确比较；物理拒绝与约束名可诊断。规范化及跨用户名/邮箱的歧义解析留注册切片，不自行规定大小写规则。 |
++| 08 §2/FR-001密码不明文保存 | 只有password_hash列，无原密码或会话token列；测试用合成hash占位。数据库Text不能判断字符串是否真实hash，真实哈希及拒绝明文输入须后续认证应用验证，本轮不宣称密码安全端到端完成。 |
++| 07版本化迁移；00-01 §5/AGENTS隔离 | 唯一Alembic链、真实PG17、显式独立实例/库/角色、连接后核验运行标识、内部commit与物理清理；不读取业务连接。 |
++
++入场[200文件快照](../docs/workorders/evidence/task015_b02_2026-10-25/before/source-manifest.json)及同目录source.tar.gz包括所有既有未提交/未跟踪产物；HEAD 7ba2a2c638500eaa43f2137d16a6a0686b663630。此前空迁移链、integration明确拒绝；未恢复旧SQL或旧数据。
++
++## 3. 修改落点与工程选择
++
++- `backend/src/rpb/adapters/account.py`：存储元数据，API DTO不充当ORM对象；无应用接入、无create_all调用。
++- `backend/migrations/versions/0001_account.py`：冻结首版DDL；不导入可变模型；空表可降级，有数据拒绝而保留版本及数据。
++- `backend/migrations/env.py`：只消费显式Connection和运行ID，校验库/角色/标识/非管理员；无从环境创建连接的回退。
++- `scripts/run_storage_tests.py`：临时PG17集群、SCRAM、0700根/0600凭据、无TCP监听；父夹具建库，子测试只获本次非管理员角色；停止失败保留目录供诊断。
++- `scripts/engineering.py`、`backend/pyproject.toml`、conftest：默认无库检查与显式集成分开；缺目标失败；README记录适用命令。
++- 集成测试、任务及状态：逐场景证据，保留所有原有骨架拒绝/无存储测试。
++
++Account可变对象的revision由未来写入者在更新时提供新值；本轮测试其持久性，不宣称已实现CAS/不可复用历史。不可变知识修订和Project复合归属对本表不适用，仍由后续B02切片负责。enabled/is_admin无自动默认，物理存储不代替首位管理员治理。未建立未消费的Repository/UoW抽象。
++
++技术参考：[PostgreSQL initdb](https://www.postgresql.org/docs/17/app-initdb.html)、[Alembic显式共享连接](https://alembic.sqlalchemy.org/en/latest/cookbook.html#sharing-a-connection-across-one-or-more-programmatic-migration-commands)；本项目采用版本化迁移，不采用create_all初始化。
++
++## 4. 验收规格与需求追踪
++
++测试路径统一为`backend/tests/integration/test_account_storage.py`，函数前缀`test_acNN_`对应下表；真实事务、约束及锁，不用SQLite/mock替代。
++
++| 场景/规则 | 动作与可观察结果 | 禁止副作用/屏障 | 证据 |
++| --- | --- | --- | --- |
++| AC01 迁移与索引一致 | 从空库升级，metadata差异为空；重复升级保留已提交数据和revision head；核对列与检查约束 | 不重复建表、不丢数据、不加明文密码列 | integration日志 |
++| AC02 最小事实持久化 | 服务端UUID/修订/UTC；commit后独立连接读更新状态/新修订/时间/合成hash | 不改变创建时间及身份 | 同上 |
++| AC03 登录键唯一/事务 | 分别重复username_key/email_key，SQLSTATE23505及对应具名约束；同事务先写的其他行回滚 | 只留原先已提交行 | 同上 |
++| AC04 必需键/hash | 键/hash的null和空字符串拒绝；其他必需字段显式null拒绝，无持久行 | 无部分提交 | 同上 |
++| AC05 唯一性并发 | 两连接同键；观察pg_blocking_pids确定等待胜者事务后commit；败者23505 | 每种键只产生一行；8秒锁超时防挂起 | 同上 |
++| AC06 降级保护 | 有数据拒绝，版本及行保持；空表down/up成功；真实未提交writer与降级争锁，writer提交后降级拒绝且行保留 | 不自动删账号数据 | 同上 |
++| AC07 故障恢复 | CREATE之后故障注入，表与版本回滚，再upgrade成功 | 不留半迁移 | 同上 |
++| AC08 错误运行标识 | 不匹配ID时拒绝DDL，原表/版本保持；核对角色无super/createDB/createRole | 不误迁移非本轮库 | 同上 |
++| AC11 子测试凭据边界 | `test_fixture_cleanup.py`断言管理员密码文件已删除，descriptor仅测试凭据；测试密码不能登录fixture_admin | 不向子测试交付管理员凭据 | integration-final日志 |
++| AC10 测试失败清理 | `test_fixture_cleanup.py`在真实建库后模拟子测试退出9/超时，两次均停止进程并移除根目录 | 内部建库commit不逃逸清理 | integration日志 |
++| AC09 原骨架受影响边界 | 原test_startup及test_skeleton_requirements保留；默认integration及ambient DATABASE_URL拒绝且无连接；API/Worker保持无DB | 不借存储切片接入业务服务 | backend日志 |
++
++未覆盖：规范化算法及登录歧义、哈希实现、权限、首位管理员并发、CAS、Session、Project归属、不可变修订、端到端；均不在本轮存储规格，不关闭对应项目需求。数据库唯一索引不证明注册完整行为。
++
++## 5. 自验及证据
++
++证据根：`docs/workorders/evidence/task015_b02_2026-10-25/`。当前执行证据：
++
++| 命令（仓库根） | 实际结果/证据 |
++| --- | --- |
++| `python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin` | [integration.log](../docs/workorders/evidence/task015_b02_2026-10-25/integration.log)：PG17.11，初次17通过；唯一库rpb_test_fddddd362eb54f8e9eb7479422fdc70b，server_stopped/root_removed=true。 |
++| `python3 scripts/engineering.py check` | [check.log](../docs/workorders/evidence/task015_b02_2026-10-25/check.log)：ruff/format、mypy、82后端、66契约、3前端全部通过。 |
++| `python3 scripts/engineering.py build` | [build.log](../docs/workorders/evidence/task015_b02_2026-10-25/build.log)：后端wheel/sdist与前端构建通过。 |
++| `python3 scripts/engineering.py migration-history` | 输出单head：base → 0001_account。 |
++
++Node命令使用既有临时Node24工具PATH；后端使用uv --locked及Python3.14。首次ruff发现长行已格式化/修复；最终门禁已通过，修复后的最终复验及流程映射见第9节。
++
++本机原只有PG16且Docker daemon不可用；为符合已定PG17基线执行`brew install postgresql@17`，得到17.11；Homebrew同时更新依赖、初始化默认`/opt/homebrew/var/postgresql@17`但未启动服务，本轮不使用它，也未切换已链接PG16。集成夹具只使用`/tmp/rpb-db-*`新实例；真实测试凭据均为临时生成，无邮件/LLM/Provider请求。安装会留下二进制和Homebrew默认空集群，不将它们误称为测试残留或自行删除。
++
++## 6. 人工审核
++
++无新增业务政策待决；请求接受仅本单AC01–11限定存储交付。审核方式：运行README显式integration命令，观察唯一键/故障断言及最后`server_stopped/root_removed`；检查迁移env与夹具边界，确认范围没有被写成账户业务验收。
++
++设计：已限定；代码：已实现；自动验证：初次与修复复验通过；独立审查：R01/R02已修复并复审通过；人工接受：未收到。原流程阶段已按第9节新流程映射，S1–S7工程已收口，提交用户明确要求的M-B02-01限定验收。
++
++## 7. 单一交付报告
++
++本单为单一审核包。本轮14文件增改包含Account元数据、迁移与安全入口、真实存储测试及任务/状态/命令文档；准确[变更补丁](../docs/workorders/evidence/task015_b02_2026-10-25/changes.patch)、[最终快照](../docs/workorders/evidence/task015_b02_2026-10-25/delivery/source-manifest.json)及第9节复审证据可重定位。已知限制见第1/4/5节；设计、代码和自动验证已完成限定范围，工程已收口，人工接受未收到。
++
++## 8. 入场流程v1.6历史检查点（保留记录，现状见第9节）
++
++| 阶段 | 状态 | 依据 |
++| --- | --- | --- |
++| S1 | 已完成 | 用户授权B02首片；入场200文件快照；选择Account基础持久事实 |
++| S2 | 进行中 | 实现/真实PG初次15用例通过，待最终回归和证据 |
++| S3 | 待开始 | 必须独立subagent只读审查 |
++| S4 | 待开始 | 等待具体审核包，不代填人工接受 |
++| S5–S7 | 待开始 | 依赖S4接受 |
++
++恢复时核对快照和任务记录，不将当前大量未提交内容视为本轮全部变更；只授权本任务，未授权后续backlog。
++
++
++## 9. 流程v1.7恢复、独立审查与最终记录
++
++2026-10-25比对s3-input与before时发现并行流程修改：AGENTS v1.2、skill v1.1、实施入口v1.7、任务模板及workflow_autonomy记录。已重新读取；这些并行修改不计本轮B02成果且完整保留。第8节保留初始v1.6阶段记录；旧S1/S2按证据复用，旧S3继续独立审查；旧S4人工节点改记M-B02-01；旧S5覆盖→新S4，旧S6简化→新S5，旧S7复验拆新S6/S7，均不得倒填完成。
++
++M-B02-01：用户明确要求本轮“再提交我审核”，据此保留限定验收点，范围AC01–11；触发为本轮工程收口。它不是完整注册/Project业务里程碑，不授权下一片；人工接受尚未收到，无业务政策D待决。完整账户注册及Project创建业务验收仍留后续另行授权。
++
++独立审查者`/root/b02_review`只读检查固定[s3-input](../docs/workorders/evidence/task015_b02_2026-10-25/s3-input/source-manifest.json)，manifest SHA256 `071ea5f13fa7dc72c7339c2146020b3ba9b042d8b10f77210c7540695a98ee91`。自行以真实PG17复现两项P2：
++
++| 问题/依据 | 复现证据 | 修复及回归 |
++| --- | --- | --- |
++| R01 降级检查/删除竞态；AC06不删已提交账号 | 检查空后另一连接INSERT commit，原DROP删除表；审查run_id rpb_test_82d1813e052b46b2a020490893efe9c1清理true | 迁移先ACCESS EXCLUSIVE锁表，再在同事务检查及DROP；新增AC06真实writer/downgrade阻塞交错回归。 |
++| R02 管理员初始化凭据可被子测试读；00-01 §5测试仅获本次角色 | 子测试读root/admin-password并成功只读查询superuser；审查run_id rpb_test_394dfd1815a140f79a01335eb99cb215清理true，未输出密码 | initdb后立即unlink；子测试启动前复查；新增AC11文件不可见/descriptor边界/测试密码不能登录管理员。 |
++
++初次integration 17通过未发现以上缺陷，不覆盖最终结论。修复后[integration-final.log](../docs/workorders/evidence/task015_b02_2026-10-25/integration-final.log)记录27项真实存储检查及清理。另用[反例脚本](../docs/workorders/evidence/task015_b02_2026-10-25/verify_regressions.py)在临时源码副本恢复两个缺陷，[mutation日志](../docs/workorders/evidence/task015_b02_2026-10-25/regression-mutations.log)必须识别两项回归失败，工作树不变、临时实例仍清理；证明新增断言能发现原缺陷。
++
++[干净安装日志](../docs/workorders/evidence/task015_b02_2026-10-25/clean-install.log)通过临时副本安装/构建、锁拒绝、默认integration拒绝、已安装wheel的API/Worker启停与清理。此入口没有数据库测试，不冒充存储证据；真实存储另见上项。
++
++| 新阶段 | 当前状态/证据 |
++| --- | --- |
++| S1–S2 | 完成；入场、实现、自验及修复证据如上 |
++| S3 | 完成；复审固定s3-fix，R01/R02闭合，见下方独立结论 |
++| S4 覆盖复核 | 完成；逐AC01–11对照测试断言和最终27项结果；成功、拒绝、故障、重复、锁交错、必需字段、内部commit及清理均有证据。原82项骨架保护保留；权限/版本绑定/人工正文对本片无应用入口，范围外需求明确列存，没有以排除项替代范围内验证。 |
++| S5 简化 | 完成，无需修改。冻结迁移和可变元数据的字段重复保留以保证历史DDL稳定；未引入未使用Repository/UoW，不合并关键并发/故障断言。 |
++| S6 最终复验 | 完成；最终check、27项集成及独立重跑通过；源码与s3-fix一致，构建/干净安装证据对应未变化的包源码可复用；只追加记录，文档引用/版本/差异检查通过。 |
++| S7 工程收口 | 完成；保存delivery快照与receipt、同步项目状态。M-B02-01待人工验收；本轮授权队列耗尽，不启动其他B02片或B03。 |
++
++
++独立复审结论（2026-10-25，`/root/b02_review`）：复审通过，R01/R02闭合，本轮限定范围无剩余阻断问题。审查者核对两项反例日志，自行运行27项集成测试通过；run_id `rpb_test_9752ca3652eb4e42a9531104453ebf29`，server_stopped/root_removed=true。复审manifest SHA256 `bee6a8d5d3d88917387509631463e85bc7d351431386b94ef781d4a1a8f6ab01`；执行前后工作树匹配该基线。审查限制：只验证夹具默认事务隔离级别，未验证其他部署环境/隔离级别；不代表注册、规范化、哈希服务、治理、CAS、Project隔离或生产迁移完成。
++
++[最终check](../docs/workorders/evidence/task015_b02_2026-10-25/check-final.log)再次通过ruff/format、mypy、82后端、66契约、3前端；最终存储27项通过且清理成功。反例日志的2失败/1 teardown错误为故意恢复数据丢失/凭据暴露缺陷的预期结果，不是最终产物失败；整实例仍成功清理。未重跑无关浏览器端到端，未将骨架浏览器结果作为Account业务验收。
++
++[限定文档检查](../docs/workorders/evidence/task015_b02_2026-10-25/document-checks.json)及[复现脚本](../docs/workorders/evidence/task015_b02_2026-10-25/check_delivery.py)核验14个本轮文件、链接、版本日期及受审源码无漂移；并行流程修改单列保留，不计B02成果。最终快照含所有未提交/未跟踪源码，manifest摘要和复验信息保存在[receipt](../docs/workorders/evidence/task015_b02_2026-10-25/receipt.json)，避免自引用摘要。
+--- previous/tasks/example.md
++++ current/tasks/example.md
+@@ -1,9 +1,9 @@
+ # Task 编号与名称
+ 
+-文档版本：v1.3
+-更新日期：2026-10-23
++文档版本：v1.4
++更新日期：2026-10-25
+ 
+-本模板用于一个可观察行为及其拒绝/失败路径。执行与测试原则见[AGENTS](../AGENTS.md#verification-requirements)，协作流程及人工审核要点见[实施入口](../docs/IMPLEMENTATION_ENTRY.md#2-任务与审核流程)；本单只记录任务实例。填写内容不自动授权执行；设计、实现、自动验证与人类审核分别记录。已填写示例见[Project创建幂等](004-project-create-idempotency-example.md)。
++本模板用于一个可观察行为及其拒绝/失败路径。执行与测试原则见[AGENTS](../AGENTS.md#verification-requirements)，工程流程、业务决策及里程碑验收要点见[实施入口](../docs/IMPLEMENTATION_ENTRY.md#2-任务与审核流程)；本单只记录任务实例。填写内容不自动授权执行；设计、实现、自动验证、工程收口与里程碑人工接受分别记录。已填写示例见[Project创建幂等](004-project-create-idempotency-example.md)。
+ 
+ ## 1. 目标与授权
+ 
+@@ -12,6 +12,7 @@
+ - 本次范围：<操作、模块、文件；必要测试和文档同步>。
+ - 不包含：<排除的能力、分期及延期事项>。
+ - 开始条件：<所需A类任务、工程/夹具/契约>；尚缺：<具体项或无>。
++- 所属里程碑：<ID、范围、场景、触发点、依赖验收的后续工作；无约定按实施入口提出分组；不单设须说明依据>。
+ - 关联跟踪：<TRACK及用例ID>；全项目进度只在PROJECT_STATUS汇总。
+ 
+ ## 2. 当前依据与基线
+@@ -60,7 +61,7 @@
+ - 自审与复验：<需求追踪缺项、关键边界、diff与证据一致性检查；发现的问题、修复及受影响重跑结果>。
+ - 未通过/未执行项：<原因、受影响需求、后续命令或待建立入口；全部必需用例通过前不得标记自动验证完成>。
+ 
+-## 6. 人类决定与审核
++## 6. 业务决策与里程碑验收
+ 
+ 无新增业务决定时填“无”，不以审批常规细节阻塞。确需决定时填写：
+ 
+@@ -68,23 +69,23 @@
+ | --- | --- | --- | --- | --- |
+ | <问题> | <可比较选择> | <理由> | <独立工作继续> | <真实来源，不伪造批准> |
+ 
+-按实施入口的人工审核要点填写本次审核包：
++到达里程碑时按实施入口填写验收包；普通任务记录所属里程碑并引用集中报告，不要求逐任务人工接受：
+ 
+ | 适用审核项 | 关键文件/位置与场景 | 复现步骤及预期观察 | 证据引用/限制 |
+ | --- | --- | --- | --- |
+ | <需求、隔离、写入权、绑定、人工保护、一致性或证据；不适用说明原因> | <实际位置> | <可复现步骤；无UI时给API/用例及持久结果> | <第4/5节引用，避免重复报告> |
+ 
+-| 审核者/日期 | 产物基线 | 接受范围与结论 | 问题及类型 | 处置/复验依据 |
++| 里程碑ID、审核者/日期 | 产物基线 | 接受范围与结论 | 问题及类型 | 处置/复验依据 |
+ | --- | --- | --- | --- | --- |
+-| <待人工填写> | <精确内容基线> | <未审核/接受/需修复；注明范围> | <缺陷或新增需求，后者另列授权> | <记录引用> |
++| <里程碑触发时记录真实来源> | <精确内容基线> | <未审核/接受/需修复；注明范围> | <缺陷或新增需求，后者另列授权> | <记录引用> |
+ 
+-交付状态分别填写：设计<状态>；代码<状态>；自动验证<状态>；人工审核<状态>。自动检查不能代填人工批准；不适用项说明原因。
++交付状态分别填写：设计<状态>；代码<状态>；自动验证<状态>；工程收口<状态>；里程碑人工接受<未到触发点/待验收/已接受/需修复/不单设及依据>。自动检查不能代填人工批准；不适用项说明原因。
+ 
+ ## 7. 单一交付报告
+ 
+ 1. 结果与差异：问题、变更文件和行为；必要工程选择及理由。
+ 2. 验证：实际命令/结果、场景与产物；未执行/失败/跳过分列。
+-3. 人工审核：需检查的位置、复现步骤、尚需决定事项。
++3. 独立审查与人工节点：审查发现及闭合证据；业务待决事项；所属里程碑及触发情况，到达时提供验收位置和复现步骤。
+ 4. 风险与后续：未覆盖范围与前置；同步PROJECT_STATUS和证据。
+ 
+ 带版本文档递增v1次版本并更新日期；源码、锁文件和迁移遵循各自规则。不要另写重复的教学报告，必要技术解释放在对应选择处；不把本次设计、样例或检查扩写为整体产品验收。
+@@ -98,9 +99,11 @@
+ | --- | --- | --- | --- |
+ | <本任务及已明确授权的后续任务；待办不得冒充队列> | <原始用户指令/可信记录；未授权写未授权> | <实际完成/接受情况> | <是/否及理由> |
+ 
++- 流程版本：<实施入口v1.7；旧任务须记录旧→新阶段映射及证据核对，不改写历史>。
+ - 当前阶段与状态：<S1–S7；待开始/进行中/等待人工/阻塞/待核验/已完成/不适用及依据>。
+ - 最近完成阶段：<阶段及证据；无则填无>。
+ - 当前内容基线：<文件清单、SHA-256、可恢复快照/准确补丁；含相关未提交和未跟踪文件>。
++- 业务决策D/里程碑M状态：<ID、未到触发点/待决定或验收/已决定或接受/不单设及依据；引用第6节，不以工程收口代替>。
+ - 原始授权与人工决定：<第1/6节引用、用户消息/审核记录及日期、接受范围和基线；未收到则明记>。
+ - 最近恢复核对：<时间、实际文件与记录差异、受影响阶段及处理；缺证据不标通过>。
+ - 等待/阻塞及下一动作：<问题、仅受影响范围、可继续的已授权工作、恢复条件及具体命令/操作>。
+@@ -110,9 +113,9 @@
+ | S1 范围与基线 | 待开始 | <引用> | <依据> |
+ | S2 实现与自验 | 待开始 | <第4/5节> | <依据> |
+ | S3 独立审查 | 待开始 | <审查者、实际输入快照、发现与复审记录> | <不可由自审代替> |
+-| S4 人工审查与决策 | 待开始 | <第6节真实决定> | <不能用测试通过代替> |
+-| S5 覆盖性复核 | 待开始 | <逐需求差异与补测结果> | <缺项处置> |
+-| S6 简化与维护性 | 待开始 | <改动理由或无需修改> | <行为及断言保护> |
+-| S7 最终复验与收口 | 待开始 | <当前产物的复验、独立复审、人工接受> | <审核后变化及补充接受；下一项授权核对> |
++| S4 覆盖性复核 | 待开始 | <逐需求差异与补测结果> | <必需缺项未解决不得收口> |
++| S5 简化与维护性 | 待开始 | <改动理由或无需修改> | <行为及断言保护> |
++| S6 最终复验与复审 | 待开始 | <当前产物的复验及受影响独立复审> | <S3后变化与证据有效性> |
++| S7 工程收口与交接 | 待开始 | <最终基线、报告和状态> | <检查通过、独立问题闭合、覆盖无必需缺项；下一项授权/依赖及里程碑触发核对> |
+ 
+ 阶段历史保留引用，返工时记录旧→新阶段及原因；不要覆盖旧基线或把状态更新当作人工接受。完成检查点后按第7节提供一份交付报告。

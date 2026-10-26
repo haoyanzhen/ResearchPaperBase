@@ -1,0 +1,22 @@
+{
+  "docs/PROJECT_STATUS.md": {
+    "input": "428f49b4bb7cfcf5fd8c6e2a2af0828f79f9b92add44738afbd00b1536264a89",
+    "output": "86a7511c87f3a8acc1d458046b1a053a98563e44e45eff04d3970e0aca08918e"
+  },
+  "docs/design/README.md": {
+    "input": "c90e62bd678e4a7d40bae0a72c004956d928a962777f1f9d6bfe53921a969e4a",
+    "output": "a0c35f52f1dc05166f1a75056bad4e8215f567d2b1010fc8614ea7d2dece1498"
+  },
+  "docs/workorders/preimplementation_design_tasks_2026-10-21.md": {
+    "input": "3b8cae8d6495f00001b6c318e6208553cc891219fe61ac941e8a738ff878039a",
+    "output": "96d2d62f109db048d35750534062c5baa0b4f65507587c24e0d9fe10b9607b51"
+  },
+  "tasks/022-project-maintenance.md": {
+    "input": "574228e41d55e0e4618185e1c282e4232eaa47bb628705c143df156606f9b60c",
+    "output": "44a0f293a6241fa0fbeb26c9c578d2725841852357bf3190e083660e0b5ce335"
+  },
+  "docs/workorders/nightly_maintenance_2026-10-26.md": {
+    "input": null,
+    "output": "8f7ed086c6e9f2474f5d85b2d4bd019c29f51bcd87cd6f0af46139b08cd1aa21"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "task": "017",
+  "status": "S7 engineering complete; M-P0-01 not reached",
+  "manifest_sha256": "30ef457fa83c4e532c01ccc732d9de601e976171626e6ede3f2385ee295cc869",
+  "integration": 107,
+  "independent_review": "R1/R1b/R2/R3 closed; independent107 passed",
+  "checks": "82 backend,66 contracts,3 frontend,static,build passed"
+}

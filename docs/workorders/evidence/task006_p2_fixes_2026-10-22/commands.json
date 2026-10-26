@@ -1,0 +1,27 @@
+[
+  {
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "exit_code": 1
+  },
+  {
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json"
+    ],
+    "exit_code": 1
+  },
+  {
+    "command": [
+      "/tmp/rpb-a04-contract/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/task006_p2_fixes_2026-10-22/before/contracts/p0.openapi.json"
+    ],
+    "exit_code": 1
+  }
+]

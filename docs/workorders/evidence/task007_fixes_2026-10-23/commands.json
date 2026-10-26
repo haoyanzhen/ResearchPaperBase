@@ -1,0 +1,90 @@
+[
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-p",
+      "test_material_policy_review_regressions.py",
+      "-v"
+    ],
+    "log": "regression-before.txt",
+    "exit_code": 1,
+    "result": "4 methods; 8 failures before contract fix"
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-p",
+      "test_material_policy_review_regressions.py",
+      "-v"
+    ],
+    "log": "regression-after.txt",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py"
+    ],
+    "log": "structure.txt",
+    "exit_code": 0
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts/tests",
+      "-p",
+      "test_*.py",
+      "-v"
+    ],
+    "log": "tests.txt",
+    "exit_code": 0,
+    "result": "50 methods passed"
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/task007_fixes_2026-10-23/before.openapi.json"
+    ],
+    "exit_code": 1,
+    "log": "compatibility-before.txt",
+    "difference_lines": 2
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a05_2026-10-22/before.openapi.json"
+    ],
+    "exit_code": 1,
+    "log": "compatibility-a05.txt",
+    "difference_lines": 3
+  },
+  {
+    "command": [
+      "/tmp/rpb-a05-contracts/bin/python",
+      "scripts/check_api_contracts.py",
+      "--baseline",
+      "docs/workorders/evidence/a04_2026-10-22/reviewed-p0.openapi.json"
+    ],
+    "exit_code": 1,
+    "log": "compatibility-original.txt",
+    "difference_lines": 83
+  }
+]

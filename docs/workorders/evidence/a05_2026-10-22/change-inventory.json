@@ -1,0 +1,128 @@
+[
+  {
+    "path": "contracts/p0.coverage.json",
+    "ownership": "A05 plus concurrent task006/task008",
+    "before_sha256": "172bf78f18cc2e44145eafe44a1bd820ebb2a306e0e2771a3a8b2c66c5d346ba",
+    "after_sha256": "1d905f0d4ea5c91ce9690a781ccd57eab1d6751a935a263f967547f2c2fff2cd"
+  },
+  {
+    "path": "contracts/p0.openapi.json",
+    "ownership": "A05 plus concurrent task006/task008",
+    "before_sha256": "2652913408e215e5de7560c1d3e523b403c88c2823a1f7a31eede609aee34acf",
+    "after_sha256": "267a7b46b2c1867d329ebeb156caba8b633158b2f03b0625e561e7421af56190"
+  },
+  {
+    "path": "docs/IMPLEMENTATION_ENTRY.md",
+    "ownership": "A05",
+    "before_sha256": "a29f875cea87ad6d6e898b6084a3e3a9d279da5f233e7f08bd8aca17d51cc722",
+    "after_sha256": "bb9c6ea88f882a6cf1905a94b73c7a3be9afecb9410659fa888844977c143e25"
+  },
+  {
+    "path": "docs/PROJECT_STATUS.md",
+    "ownership": "A05 plus concurrent task006/task008",
+    "before_sha256": "0430f789e710776d95ebcb9708115b6edf1301a3b560cb8e0ad9b62560f6662c",
+    "after_sha256": "a206d15e2b5ea2203c502608b7bc1035ef7a066fd5617b89d104a473874828f3"
+  },
+  {
+    "path": "docs/design/03-01_ui_system_pages_appendix.md",
+    "ownership": "A05",
+    "before_sha256": "e34438c45a7f31810546413af812a8764c80be1e206b4501ef81d94ca2695f55",
+    "after_sha256": "5e1564d2025f89b6596959e24dbb79e13ed7ee4dc27b4f60996c9f74dc747f15"
+  },
+  {
+    "path": "docs/design/03-02_ui_construction_appendix.md",
+    "ownership": "A05",
+    "before_sha256": "97f310385595c2d4b9d8cf1771c7f2748451f27cd6bf35d0501c4b68cec02838",
+    "after_sha256": "d90c8c5e076e2e50aad371557cc57d461217a14c5b7ad9938758672c63310153"
+  },
+  {
+    "path": "docs/design/03-04_ui_shared_interactions_appendix.md",
+    "ownership": "A05",
+    "before_sha256": "a37db4c2dd76f7837f756fa40e814e8b3b202605541e155944c32fbb46365168",
+    "after_sha256": "7f643bb1bb3f0f68c64c016229ae066c4ed37c45e2dfece4d75f76406fa9c07e"
+  },
+  {
+    "path": "docs/design/04-01_p0_operation_contracts.md",
+    "ownership": "A05",
+    "before_sha256": "3a8634e699e286bc10e3ed04279d5c4f9a4ba723b80c625b8a01a34894399bcb",
+    "after_sha256": "b372118043a6301ccfea371bb8406150c3d95a2f34de33013ba13593e663657b"
+  },
+  {
+    "path": "docs/design/04-02_transport_task_file_contracts.md",
+    "ownership": "A05",
+    "before_sha256": "990407413d42294568f1363504bb02dc617bd104ab79b072fd7dedf009039f7e",
+    "after_sha256": "4422ede39693c7ced1a257d8b0f0a05d190f3217886b2617c41af9f4de8ddd8c"
+  },
+  {
+    "path": "docs/design/04-03_machine_contract_governance.md",
+    "ownership": "A05",
+    "before_sha256": "6a3c61aa9a5524f85b83d3f0c359a1e030754d0bfca75be5b7c45808718c15c9",
+    "after_sha256": "875b351533e86776b214dc54d087ef1346af38fc12869d2c1b8d84de18c0c8eb"
+  },
+  {
+    "path": "docs/design/09_quality_observability.md",
+    "ownership": "A05",
+    "before_sha256": "417605be5415efc13c3c2cc88972ef0c6d409951c338e70fcc77eeaf591265db",
+    "after_sha256": "073cbbc03251d5b6d33329ceefca2a6ebc213dbd7c8cc0739580b2627727ad0c"
+  },
+  {
+    "path": "docs/workorders/task006_p2_fixes_2026-10-22.md",
+    "ownership": "concurrent; preserved, not A05 work",
+    "before_sha256": null,
+    "after_sha256": "bf69a790fac74344ac4f3aff7755a2ffeca64e084da2dfcf52d03898880b371a"
+  },
+  {
+    "path": "docs/workorders/task007_a05_review_2026-10-22.md",
+    "ownership": "A05",
+    "before_sha256": null,
+    "after_sha256": "4a8f91e3b6704320d6e8b2983c176f127a9a52a064b4ad09c8ce679df03ccf81"
+  },
+  {
+    "path": "scripts/check_api_contracts.py",
+    "ownership": "A05 plus concurrent task006/task008",
+    "before_sha256": "e14b30f1069cd69121a420ce4146dea29bb462d6b961694f188af964980fec1b",
+    "after_sha256": "8b7b96964e4350b54476f266e7e5408f41a53ebb29d3f6277d36a7c7762d2bc8"
+  },
+  {
+    "path": "scripts/tests/test_material_policy_contracts.py",
+    "ownership": "A05",
+    "before_sha256": null,
+    "after_sha256": "1335df03cd84e13ee6dedd02f7cdc709ca9a76f596fe8269e1d2aea87f373fdd"
+  },
+  {
+    "path": "scripts/tests/test_public_error_requirements.py",
+    "ownership": "concurrent; preserved, not A05 work",
+    "before_sha256": "664c7355f43a594ee92857ee04bfb11cbdd8452e316ac3defaa6677188ab6cf1",
+    "after_sha256": "6cb05e1413189b88428bea470bc30722a3fb0f80cd131d595b39a981b1e42d5c"
+  },
+  {
+    "path": "scripts/tests/test_public_error_review_regressions.py",
+    "ownership": "concurrent; preserved, not A05 work",
+    "before_sha256": "08a41b2a5ba585975ad3c4f131e1606a55ec14f5a2fc1aab3f7fd77533f5daab",
+    "after_sha256": "59a9964a6bb11e26e0f73c5a57d77e1ed8dede575a733054aa792fb311dd41de"
+  },
+  {
+    "path": "scripts/tests/test_public_errors.py",
+    "ownership": "concurrent; preserved, not A05 work",
+    "before_sha256": "d17fe48605d5b7671bd8634782170993b79a548df0560fd5aa9f7015dfca2861",
+    "after_sha256": "1bb0ff71040d7da4a6aa424c2b95b01411d7821df38d1a91a1b2d9ad61e04c7a"
+  },
+  {
+    "path": "tasks/006-public-error-recovery-contract.md",
+    "ownership": "concurrent; preserved, not A05 work",
+    "before_sha256": "fcaede2816a856fd4738c52fc3fc7f99a56c82f1e9129c908a7c4dd84b8a377c",
+    "after_sha256": "1fa929dba89a276361f32a2f2f58a6da167d585a9402e179730afc7c474322b5"
+  },
+  {
+    "path": "tasks/007-skeleton-review-fixes.md",
+    "ownership": "A05",
+    "before_sha256": "fa977d47a0d43864c613f20a49d70789054b220bdaa04db7ff9c407cf02e3071",
+    "after_sha256": "fe7e51de9614ff96c271c72bf9bf4a0ca72a0ac411a0eaf33a8bcac85e6e5c6c"
+  },
+  {
+    "path": "tasks/008-material-policy-internal-contracts.md",
+    "ownership": "concurrent; preserved, not A05 work",
+    "before_sha256": null,
+    "after_sha256": "658957dc5ddf7f3520ab08a598797218bc12ece1555912c3042c310cac41283e"
+  }
+]

@@ -1,0 +1,71 @@
+{
+  "author": "/root/scenario_browser",
+  "date": "2026-10-26",
+  "scope": "Independent actual-user browser journeys; FR001, 03-01 return preserves input, 04 UserPatch, AP01-05",
+  "scenarios": [
+    {
+      "id": "J01",
+      "test": "test_journey_project_draft_survives_successful_profile_save",
+      "expected": "Profile save must preserve project metadata draft; subsequent explicit project save persists both independently."
+    },
+    {
+      "id": "J02",
+      "test": "test_journey_new_email_login_preserves_project_and_old_session",
+      "expected": "Existing authenticated session stays account-bound; former email rejects fresh login, replacement email succeeds and same projects remain visible."
+    },
+    {
+      "id": "J03",
+      "test": "test_journey_occupied_email_is_correctable_without_losing_name",
+      "expected": "Occupied email rejects without losing name draft; correction can succeed without forced readback."
+    },
+    {
+      "id": "J04",
+      "test": "test_journey_lost_write_then_failed_read_does_not_enable_resubmit",
+      "expected": "Committed write response lost, first read fails; draft retained, save disabled until explicit successful read; whole journey emits exactly one PATCH and committed projection stays unchanged."
+    },
+    {
+      "id": "J05",
+      "test": "test_journey_display_name_edit_preserves_saved_email_original",
+      "expected": "Changing display name preserves previously valid email display original including case and outer whitespace."
+    },
+    {
+      "id": "J06",
+      "test": "test_journey_two_tabs_conflict_reload_then_deliberate_new_edit",
+      "expected": "Real two-tab update conflict retains stale draft; explicit load discards it; subsequent deliberately authored edit succeeds."
+    }
+  ],
+  "initial_execution": {
+    "passed": 5,
+    "failed": 1,
+    "log": "browser-initial.log",
+    "failure": "Test locator get_by_label exact failed to match filled textarea; ARIA evidence showed correct value. Switched to textbox role/name, same value and persistence assertions retained."
+  },
+  "first_retry": {
+    "passed": 6,
+    "log": "browser-final.log",
+    "seconds": 16.59
+  },
+  "final_execution": {
+    "command": "PYTEST_ADDOPTS='-k journey' python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin",
+    "passed": 6,
+    "deselected": 308,
+    "seconds": 16.51,
+    "run_id": "rpb_test_aa57730747094f1583d855faa64b84c4",
+    "log": "browser-verified.log",
+    "server_stopped": true,
+    "root_removed": true
+  },
+  "lint": "ruff check/format pass",
+  "product_findings": [],
+  "hashes_after_final_execution": {
+    "backend/tests/integration/test_profile_user_journeys.py": "de441852ba6900d9c4cc1d581c5e73f38cdc757af5539788684bf30bce8e45c5",
+    "frontend/src/BusinessApp.tsx": "2577d587a34b87ecfe6e5881018bceaa8e902a826e8f46dc86fabda02ff78315",
+    "backend/src/rpb/adapters/auth.py": "050c12c7ec85ea9d0f3da5199c34021927024bcf6b1027f01f1d4597e964f815",
+    "backend/src/rpb/api/account.py": "16d3fb8452085c480e7bbe3de366cd8e56f84fa982da093ff8eaccb1cfc11fd7"
+  },
+  "limits": [
+    "Six selected new scenarios only; not the entire project suite.",
+    "No production or external provider/email integration.",
+    "Existing Starlette testclient deprecation warning persists."
+  ]
+}

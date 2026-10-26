@@ -1,0 +1,296 @@
+--- before/contracts/p0.openapi.json
++++ after/contracts/p0.openapi.json
+@@ -2,7 +2,7 @@
+   "openapi": "3.1.0",
+   "info": {
+     "title": "Research Paper Base P0 typed contract subset",
+-    "version": "1.3.0",
++    "version": "1.4.0",
+     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+   },
+   "servers": [
+@@ -7008,10 +7008,10 @@
+                   "type": "object",
+                   "properties": {
+                     "data": {
+-                      "$ref": "#/components/schemas/MaterialClassificationView"
++                      "$ref": "#/components/schemas/MaterialClassificationConfirmedView"
+                     },
+                     "meta": {
+-                      "$ref": "#/components/schemas/Meta"
++                      "$ref": "#/components/schemas/MaterialClassificationMutationMeta"
+                     }
+                   },
+                   "required": [
+@@ -7505,10 +7505,10 @@
+                   "type": "object",
+                   "properties": {
+                     "data": {
+-                      "$ref": "#/components/schemas/MaterialClassificationView"
++                      "$ref": "#/components/schemas/MaterialClassificationConfirmedView"
+                     },
+                     "meta": {
+-                      "$ref": "#/components/schemas/Meta"
++                      "$ref": "#/components/schemas/MaterialClassificationMutationMeta"
+                     }
+                   },
+                   "required": [
+@@ -13946,6 +13946,42 @@
+           "message"
+         ],
+         "additionalProperties": false
++      },
++      "MaterialClassificationConfirmedView": {
++        "allOf": [
++          {
++            "$ref": "#/components/schemas/MaterialClassificationView"
++          },
++          {
++            "properties": {
++              "confirmation_status": {
++                "const": "confirmed"
++              },
++              "confirmation": {
++                "$ref": "#/components/schemas/MaterialClassificationFact"
++              }
++            }
++          }
++        ],
++        "description": "Successful confirm/correct result. Read projection remains able to represent unconfirmed sources."
++      },
++      "MaterialClassificationMutationMeta": {
++        "allOf": [
++          {
++            "$ref": "#/components/schemas/Meta"
++          },
++          {
++            "required": [
++              "idempotency_expires_at"
++            ],
++            "properties": {
++              "idempotency_expires_at": {
++                "$ref": "#/components/schemas/Time"
++              }
++            }
++          }
++        ],
++        "description": "Completed synchronous classification mutation: earliest deduplication expiry is required and non-null. Actual retention is a runtime obligation."
+       }
+     },
+     "responses": {
+--- before/contracts/p0.coverage.json
++++ after/contracts/p0.coverage.json
+@@ -1,6 +1,6 @@
+ {
+-  "version": "1.2",
+-  "date": "2026-10-22",
++  "version": "1.3",
++  "date": "2026-10-23",
+   "source_rows": [
+     {
+       "signature": "`CW/search-terms/action-preview`",
+@@ -666,8 +666,8 @@
+   ],
+   "normative_fingerprints": {
+     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
+-    "04-01_p0_operation_contracts.md": "b372118043a6301ccfea371bb8406150c3d95a2f34de33013ba13593e663657b",
+-    "04-02_transport_task_file_contracts.md": "4422ede39693c7ced1a257d8b0f0a05d190f3217886b2617c41af9f4de8ddd8c"
++    "04-01_p0_operation_contracts.md": "5251a85c3a25b146bb53e19ce916ad2dc9ef23a03679af6dc06d79c854fc92cc",
++    "04-02_transport_task_file_contracts.md": "8c46010a169b7d0c49041d0b92ce032163ca366b2f066f467980222a856f54c8"
+   },
+   "operation_coverage": {
+     "Account.GetCSRF": {
+--- before/scripts/tests/test_material_policy_contracts.py
++++ after/scripts/tests/test_material_policy_contracts.py
+@@ -18,8 +18,8 @@
+     ('get', BASE + '/material-policy', 'MaterialPolicy.Read', None, 'MaterialPolicyView'),
+     ('put', BASE + '/material-policy', 'MaterialPolicy.Update', 'MaterialPolicyWrite', 'MaterialPolicyView'),
+     ('get', BASE + '/material-sources/{source_id}/classification', 'MaterialSource.ReadClassification', None, 'MaterialClassificationView'),
+-    ('post', BASE + '/material-sources/{source_id}/classification/confirm', 'MaterialSource.ConfirmClassification', 'MaterialClassificationWrite', 'MaterialClassificationView'),
+-    ('post', BASE + '/material-sources/{source_id}/classification/correct', 'MaterialSource.CorrectClassification', 'MaterialClassificationWrite', 'MaterialClassificationView'),
++    ('post', BASE + '/material-sources/{source_id}/classification/confirm', 'MaterialSource.ConfirmClassification', 'MaterialClassificationWrite', 'MaterialClassificationConfirmedView'),
++    ('post', BASE + '/material-sources/{source_id}/classification/correct', 'MaterialSource.CorrectClassification', 'MaterialClassificationWrite', 'MaterialClassificationConfirmedView'),
+ ]
+ POLICY = {'user_id': ID, 'project_id': ID, 'mode': 'public_only', 'revision': 'p1', 'risk_acknowledged_at': None}
+ WRITE = {'expected_revision': 'c1', 'content_revision': 'text1', 'classification': 'private', 'basis': 'Owner verified this uploaded source.', 'explicit_confirmation': True}
+@@ -88,9 +88,13 @@
+                 success = op['responses']['200']['content']['application/json']['schema']
+                 self.assertEqual(success['properties']['data']['$ref'], '#/components/schemas/' + res)
+                 fixture = POLICY if res == 'MaterialPolicyView' else VIEW
+-                self.assertTrue(accepts(success, {'data': fixture, 'meta': {'request_id': ID}}))
++                meta = {'request_id': ID}
++                if method == 'post':
++                    fixture = VIEW | {'confirmation_status': 'confirmed', 'confirmation': FACT}
++                    meta['idempotency_expires_at'] = '2026-10-24T01:00:00Z'
++                self.assertTrue(accepts(success, {'data': fixture, 'meta': meta}))
+                 self.assertFalse(accepts(success, {'data': fixture}))
+-                self.assertFalse(accepts(success, {'data': fixture | {'task': {}}, 'meta': {'request_id': ID}}))
++                self.assertFalse(accepts(success, {'data': fixture | {'task': {}}, 'meta': meta}))
+                 self.assertNotIn('202', op['responses'])
+ 
+     def test_nt05_nonreusable_revisions_and_frozen_scope_contract(self):
+--- before/scripts/tests/test_material_policy_review_regressions.py
++++ after/scripts/tests/test_material_policy_review_regressions.py
+@@ -0,0 +1,65 @@
++"""Task007 R01/R02: requirement-derived wire response fixtures, no runtime claims."""
++import copy
++import unittest
++
++from test_material_policy_contracts import BASE, FACT, ID, POLICY, TIME, VIEW, accepts
++from test_api_contracts import SPEC_DATA
++
++CLASSIFICATION = BASE + '/material-sources/{source_id}/classification'
++CONFIRMED = VIEW | {'confirmation_status': 'confirmed', 'confirmation': FACT}
++META = {'request_id': ID, 'idempotency_expires_at': '2026-10-24T01:00:00Z'}
++
++
++def response(path, method):
++    return SPEC_DATA['paths'][path][method]['responses']['200']['content']['application/json']['schema']
++
++
++class MaterialPolicyReviewRegressionTests(unittest.TestCase):
++    def test_r01_each_mutation_requires_confirmed_fact(self):
++        for action in ('confirm', 'correct'):
++            schema = response(CLASSIFICATION + '/' + action, 'post')
++            for classification in ('public', 'private'):
++                good = CONFIRMED | {'classification': classification}
++                with self.subTest(action=action, classification=classification):
++                    self.assertTrue(accepts(schema, {'data': good, 'meta': META}))
++                    self.assertFalse(accepts(schema, {'data': good | {'confirmation_status': 'unconfirmed', 'confirmation': None}, 'meta': META}))
++                    self.assertFalse(accepts(schema, {'data': good | {'confirmation': None}, 'meta': META}))
++                    for key in ('confirmation_status', 'confirmation'):
++                        missing = dict(good)
++                        del missing[key]
++                        self.assertFalse(accepts(schema, {'data': missing, 'meta': META}))
++
++    def test_r02_each_mutation_requires_nonnull_utc_expiry(self):
++        for action in ('confirm', 'correct'):
++            schema = response(CLASSIFICATION + '/' + action, 'post')
++            self.assertTrue(accepts(schema, {'data': CONFIRMED, 'meta': META}))
++            with self.subTest(action=action, expiry='missing'):
++                self.assertFalse(accepts(schema, {'data': CONFIRMED, 'meta': {'request_id': ID}}))
++            for expiry in (None, '', 1, True, {}, [], '2026-10-24', '2026-10-24T09:00:00+08:00', 'not-time'):
++                with self.subTest(action=action, expiry=expiry):
++                    self.assertFalse(accepts(schema, {'data': CONFIRMED, 'meta': META | {'idempotency_expires_at': expiry}}))
++            self.assertTrue(accepts(schema, {'data': CONFIRMED, 'meta': META | {'original_request_id': ID}}))
++
++    def test_r01_r02_read_and_policy_response_scope_preserved(self):
++        for data in (VIEW, CONFIRMED):
++            self.assertTrue(accepts(response(CLASSIFICATION, 'get'), {'data': data, 'meta': {'request_id': ID}}))
++        for method in ('get', 'put'):
++            self.assertTrue(accepts(response(BASE + '/material-policy', method), {'data': POLICY, 'meta': {'request_id': ID}}))
++            self.assertTrue(accepts(response(BASE + '/material-policy', method), {'data': POLICY | {'mode': 'allow_private', 'risk_acknowledged_at': TIME}, 'meta': {'request_id': ID}}))
++
++    def test_r01_r02_nested_fact_and_envelope_protection_preserved(self):
++        for action in ('confirm', 'correct'):
++            schema = response(CLASSIFICATION + '/' + action, 'post')
++            good = {'data': CONFIRMED, 'meta': META}
++            self.assertTrue(accepts(schema, good))
++            for branch in ((), ('data',), ('meta',), ('data', 'confirmation')):
++                bad = copy.deepcopy(good)
++                node = bad
++                for key in branch:
++                    node = node[key]
++                node['allow'] = True
++                self.assertFalse(accepts(schema, bad))
++            for key in ('basis', 'confirmed_by', 'confirmed_at'):
++                bad = copy.deepcopy(good)
++                del bad['data']['confirmation'][key]
++                self.assertFalse(accepts(schema, bad))
+--- before/docs/design/04-01_p0_operation_contracts.md
++++ after/docs/design/04-01_p0_operation_contracts.md
+@@ -1,7 +1,7 @@
+ # API 附录：P0 操作与数据契约
+ 
+-文档版本：v1.8
+-更新日期：2026-10-22
++文档版本：v1.9
++更新日期：2026-10-23
+ 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
+ 适用范围：P0 设计契约；不是实现或验收通过声明。
+ 
+@@ -432,8 +432,8 @@
+ | GET `P/material-policy` | `MaterialPolicy.Read` / 008,017 | 无 → MaterialPolicyView | 本人×Project；active/archived可读，缺记录返回public_only及稳定初始修订、空风险时间；不恢复Workspace授权 |
+ | PUT `P/material-policy` | `MaterialPolicy.Update` / 008,017 | MaterialPolicyWrite → MaterialPolicyView | active Owner；expected_revision指政策记录；allow_private需已展示风险并明确同意，public_only不要求确认；成功返回新修订 |
+ | GET `P/material-sources/{source_id}/classification` | `MaterialSource.ReadClassification` / 008,017 | 无 → MaterialClassificationView | 当前Project具体来源；active/archived可读；不得以DOI或物理哈希跨Project定位授权 |
+-| POST `P/material-sources/{source_id}/classification/confirm` | `MaterialSource.ConfirmClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationView | active Owner；仅unconfirmed；明确选择和依据，在首次模型使用前完成 |
+-| POST `P/material-sources/{source_id}/classification/correct` | `MaterialSource.CorrectClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationView | active Owner；仅confirmed；public放宽必须Owner明确确认及具体公开依据；不更新正文或引用 |
++| POST `P/material-sources/{source_id}/classification/confirm` | `MaterialSource.ConfirmClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationConfirmedView | active Owner；仅unconfirmed；明确选择和依据，在首次模型使用前完成 |
++| POST `P/material-sources/{source_id}/classification/correct` | `MaterialSource.CorrectClassification` / 008,017 | MaterialClassificationWrite → MaterialClassificationConfirmedView | active Owner；仅confirmed；public放宽必须Owner明确确认及具体公开依据；不更新正文或引用 |
+ 
+ ### 10.1 修订、确认及可信来源
+ 
+@@ -441,11 +441,13 @@
+ 
+ 确认/更正请求的expected_revision针对当前分类；content_revision必须匹配该source_id的不可变具体内容。任一失配为412，缺必需修订为428；其他缺字段/非法组合为422。confirm作用于已确认记录、correct作用于未确认记录均409 STATE_OPERATION_NOT_ALLOWED，不以更换入口覆盖人工事实。同键同参按04重放原执行事实，不再执行、不重新检查旧修订制造冲突；同键异参409。PUT响应丢失先GET核查，不自动换修订提交。可见性及归档写保护优先于重放；来源不存在、其他Project、deleted、管理员但非Owner均安全404。
+ 
+-上传初始private/unconfirmed；检索可建议public但仍unconfirmed，建议不构成授权。无分类历史按private/unconfirmed保守投影，保留原事实，禁止批量public。分类确认不等于分析/处理/入库确认，不自动启动后续流水线。安全接收、隔离暂存与必要静态提取先于分类，分类先于任何模型/嵌入外发；私人模式也不能跳过未确认。用户原有合法查看与静态接收不受该开关阻止。
++上传初始private/unconfirmed；检索可建议public但仍unconfirmed，建议不构成授权。无分类历史按private/unconfirmed保守投影，保留原事实，禁止批量public。分类确认不等于分析/处理/入库确认，不自动启动后续流水线。文件及检索/历史来源的安全接收、隔离暂存与必要静态提取先于分类，分类确认先于这些来源的模型/嵌入外发；私人模式也不能跳过未确认。可信本次主动文字按下文例外处理，不增加分类确认步骤。用户原有合法查看与静态接收不受该开关阻止。
+ 
+ basis是针对具体实际内容的非空依据说明，不收凭据或正文；公网URL/DOI/公开摘要不足以证明机构全文公开。服务端必须核验依据及Owner身份，字符串合法不等于证据充分；不充分返回422 VALIDATION_FIELD_INVALID（basis）。confirmed_by/time由服务端写入，LLM不可代填。更新只写当前分类及审计，已发布正文、入库时事实、引用和版本成员不改；普通Project/资产metadata PATCH不得接收这些字段。
+ 
+-`MaterialProvenance`为只读可信投影。current_submission仅由接收当前明确提交的应用入口签发submission_scope_id并绑定操作者、Project及本次命令；客户端不能选择该标记，复制ID不构成授权。后续自动取用同一文字必须投影historical_input且scope为null；上传文件不因主动上传而取得文字例外。derived_content的dependency_status由服务端追踪全部实际输入，complete不代表public；混合私人、缺依赖或unknown不能推定公开。unknown的dependency_status必须unknown；current_submission必须complete。其余类型按实际证据标记，不由引用列表或LLM自评。该投影不替代分类，不提供任意来源注册或授权端点；source_id由既有接收/内容生产链创建并通过详情提供，相关完整详情转写留A08。
++`MaterialProvenance`为只读可信投影。current_submission仅由接收当前明确提交的应用入口签发submission_scope_id并绑定操作者、Project及本次命令；客户端不能选择该标记，复制ID不构成授权。后续自动取用同一文字必须投影historical_input且scope为null；上传文件不因主动上传而取得文字例外。derived_content的dependency_status由服务端追踪全部实际输入，complete不代表public；混合私人、缺依赖或unknown不能推定公开。unknown的dependency_status必须unknown；current_submission必须complete。其余类型按实际证据标记，不由引用列表或LLM自评。可信current_submission对应的本次明确提交文字，可在绑定的当前主体、Project及本次命令范围内直接使用，无需额外分类确认；这不把文字标为public，不改原分类事实，不授权自动读取历史、草稿或其他文件。该例外不适用于上传文件；后续历史/自动取用、派生产物仍按08-01检查分类及全部来源依赖。该投影不是可转移的授权凭据；除上述本次文字例外外不能代替分类确认。不提供任意来源注册或授权端点；source_id由既有接收/内容生产链创建并通过详情提供，相关完整详情转写留A08。
++
++两个分类POST成功data使用 `MaterialClassificationConfirmedView`，meta使用 `MaterialClassificationMutationMeta`；字段约束只在机器schema维护。GET保持 `MaterialClassificationView`，允许显示未确认来源；设置GET/PUT仍使用通用Meta。同步分类写入及同键重放均须返回已确认事实和明确的最早去重失效时间；真实至少24小时保留按04 §7落实，schema不证明保留时长。
+ 
+ ### 10.2 错误、UI和异步对应
+ 
+--- before/docs/design/04-02_transport_task_file_contracts.md
++++ after/docs/design/04-02_transport_task_file_contracts.md
+@@ -1,7 +1,7 @@
+ # API 附录：异步任务、事件传输与文件
+ 
+-文档版本：v1.7
+-更新日期：2026-10-22
++文档版本：v1.8
++更新日期：2026-10-23
+ 适用项目大版本：v1
+ 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
+ 
+@@ -273,4 +273,4 @@
+ 
+ ## A05 分类与传输接缝
+ 
+-安全接收及必要静态提取先于分类确认，模型/嵌入外发必须在确认之后且重验当前政策；资料开关不阻止用户原有合法查看。分类操作、只读来源身份及同步错误矩阵见[04-01 §10](04-01_p0_operation_contracts.md#10-a05-资料设置与来源分类)。它们不返回Task。既有异步执行的必需资料受限复用TaskError/STATE_OPERATION_NOT_ALLOWED，不改变Task GET的200读取成功语义；可见性丧失仍优先安全404。完整TaskView/等待项和来源详情承载未在本次补齐。
++文件及检索/历史来源的安全接收及必要静态提取先于分类确认，其模型/嵌入外发必须在确认之后且重验当前政策；可信本次主动文字在绑定的本次命令内无需额外分类确认，例外不延伸至历史自动取用或上传文件，详见04-01 §10.1；资料开关不阻止用户原有合法查看。分类操作、只读来源身份及同步错误矩阵见[04-01 §10](04-01_p0_operation_contracts.md#10-a05-资料设置与来源分类)。它们不返回Task。既有异步执行的必需资料受限复用TaskError/STATE_OPERATION_NOT_ALLOWED，不改变Task GET的200读取成功语义；可见性丧失仍优先安全404。完整TaskView/等待项和来源详情承载未在本次补齐。
+--- before/docs/design/04-03_machine_contract_governance.md
++++ after/docs/design/04-03_machine_contract_governance.md
+@@ -1,7 +1,7 @@
+ # API 附录：机器契约、覆盖与变更规则
+ 
+-文档版本：v1.3
+-更新日期：2026-10-22
++文档版本：v1.4
++更新日期：2026-10-23
+ 适用项目大版本：v1
+ 
+ ## 1. 权威与覆盖边界
+@@ -60,3 +60,5 @@
+ 2026-10-22 P2修复：回放过期错误要求具名Task状态URL；TaskError排除命令未受理结果；静态检查逐状态核对变体与响应信封成员（含遗漏、额外和重复）。字段仍由JSON单一维护，详见[修复记录](../workorders/task006_p2_fixes_2026-10-22.md)。
+ 
+ A05限定交付见[任务007审核包](../workorders/task007_a05_review_2026-10-22.md)。资料来源投影/提示词汇已具名，但完整来源详情、TaskView承载及可信签发/并发裁决仍待A06–A08；新增字段不构成运行授权。发现模式 `python -m unittest discover -s scripts/tests -p 'test_*.py' -v` 包含全部契约回归。本次兼容对比使用入场实际工作树快照，不称其为人工已接受基线；A04原基线差异仍待人工接受；并行R01–R03修复归属[task006修复包](../workorders/task006_p2_fixes_2026-10-22.md)，本轮合并态回归涵盖其修复，不将其计为A05新增成果。
++
++2026-10-23 task007复审修复：仅收紧分类confirm/correct的成功data及meta，新增两个具名组合schema，保持GET未确认展示和设置GET/PUT契约；回归与兼容方向见[修复复审包](../workorders/task007_fixes_2026-10-23.md)。主动文字例外按08-01既定规则澄清，无新增运行实现。
+--- before/docs/design/03-04_ui_shared_interactions_appendix.md
++++ after/docs/design/03-04_ui_shared_interactions_appendix.md
+@@ -1,7 +1,7 @@
+ # UI 共用面板与交互附录
+ 
+-文档版本：v1.5
+-更新日期：2026-10-22
++文档版本：v1.6
++更新日期：2026-10-23
+ 来源：`03_ui_workspace.md` v1.18 第 9 章；保留 P 编号，按模块拆分。
+ 
+ 本附录与 [UI 主文](03_ui_workspace.md) 具有相同 UI 规范效力；需求含义和分期以 [01](01_functional_requirements.md) 为准，状态与不变量以 [02](02_domain_core.md) 及其专题附录为准。详细交互在本附录单点维护，主文只保留跨模块约束与索引。
+@@ -239,6 +239,6 @@
+ 
+ ## A05 受限资料与历史提示
+ 
+-资料来源面板展示04-01 §10的只读MaterialProvenance，区分本次主动文字、历史自动取用、上传、检索、派生与未知；这些标签不能由用户切换为免检。本次输入例外仅绑定当前提交，历史草稿不能沿用。派生依赖不全、分类未确认或未知来源明确提示，不能以“无引用”显示为公开。
+-
+-MaterialUseNotice词汇供后续受控读取接口消费：私人来源提示“当前设置不允许使用私人资料”；未确认提示先确认分类；未知/依赖不全提示无法证明可用范围；必须使用受限历史时明确阻断，保留历史而不静默剪消息；允许子集检索标注“当前权限限制了可用范围”，不隐式换KnowledgeVersion、不报告为完整知识库没有资料。可跳转已有设置/分类详情，由用户明确操作后沿原合法入口继续；不新增通用retry/rerun。字段载体在A06/A07收口，本次未实现页面。
++资料来源面板展示04-01 §10的只读MaterialProvenance，区分本次主动文字、历史自动取用、上传、检索、派生与未知；这些标签不能由用户切换为免检。可信本次主动文字在当前主体、Project及本次命令范围内使用时，不额外弹分类确认；不据此标为公开或修改原分类。本次输入例外仅绑定当前提交，历史自动取用/草稿及上传文件不能沿用，派生结果仍检查全部来源依赖。派生依赖不全、分类未确认或未知来源明确提示，不能以“无引用”显示为公开。
++
++MaterialUseNotice词汇供后续受控读取接口消费：私人来源提示“当前设置不允许使用私人资料”；文件/检索及历史来源未确认时提示先确认分类；可信本次主动文字按上述例外直接供本任务使用；未知/依赖不全提示无法证明可用范围；必须使用受限历史时明确阻断，保留历史而不静默剪消息；允许子集检索标注“当前权限限制了可用范围”，不隐式换KnowledgeVersion、不报告为完整知识库没有资料。可跳转已有设置/分类详情，由用户明确操作后沿原合法入口继续；不新增通用retry/rerun。字段载体在A06/A07收口，本次未实现页面。

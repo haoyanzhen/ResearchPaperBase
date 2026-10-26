@@ -1,0 +1,168 @@
+--- before/tasks/005-engineering-skeleton.md
++++ after/tasks/005-engineering-skeleton.md
+@@ -1,7 +1,7 @@
+ # Task 005：第一批可验证工程骨架
+ 
+-文档版本：v1.1
+-更新日期：2026-10-22
++文档版本：v1.2
++更新日期：2026-10-24
+ 
+ ## 1. 目标与授权
+ 
+@@ -9,9 +9,11 @@
+ 
+ 可观察结果：审核者能按README安装，在本机启动API、显式空闲Worker与前端预览，运行统一检查和构建；未接入的业务能力明确不可用。
+ 
+-范围：B08工程入口、A10本任务限定验收、模块包边界、进程配置、健康探针、空迁移链与失败保护、前端基础导航及预览。关联ARC-01/02/08/09/10、OPS-01/03的工程子集；不关闭这些用例的完整业务范围。
++范围：B08工程入口、A10本任务限定验收、模块包边界、进程配置、健康探针、空迁移链与失败保护、前端基础导航及预览。关联ARC-01/08/09/10、OPS-01/03的工程子集；不关闭这些用例的完整业务范围。
+ 
+ 不含账号/Project业务实现、持久任务、业务迁移与UoW、文件/密钥适配器、真实PostgreSQL测试夹具、Graph-RAG、模型接入、生产部署。A04–A09、H01–H03维持原边界；本批不消费尚缺公共错误模型的业务接口，不需要先关闭它们。
++
++2026-10-24恢复授权原文：“继续按 project-delivery 流程推进 A10，核对已有任务单和交付范围，完成本轮交付、自验及独立审查，再提交我审核。”A10按切片实例化；本轮复用本单SK-01–09已有工程行为，不新建重复任务、不把它扩成全量P0验收设计。核对当前代码（含10月23日精简修改），补当前验收规格/执行证据与S3审查后提交S4。既有历史结果原样保留；本轮结果以第7–8节及新审核包为准。
+ 
+ ## 2. 当前依据与精确基线
+ 
+@@ -46,12 +48,12 @@
+ 
+ 以下编号仅为本任务的工程子场景，不宣称覆盖对应ARC/OPS的全量业务规则。
+ 
+-当前证据目录为 `docs/workorders/evidence/task005_coverage_2026-10-22/`；下列测试均已执行，完整断言和限制见覆盖修复记录。
++原覆盖修复证据目录为 `docs/workorders/evidence/task005_coverage_2026-10-22/`；下表保留历史追踪，2026-10-24当前运行证据及完整测试路径见第4.1节和本轮审核包。
+ 
+ | 需求与场景 | 输入、预期和禁止副作用 | 可执行测试 / 当前证据 |
+ | --- | --- | --- |
+ | SK-01 / OPS-01 | 干净安装构建成功；前后端锁漂移拒绝且锁字节不变；分别缺任一锁时，在启动安装工具前拒绝，不生成锁、不修改另一锁 | verify_skeleton_delivery.py；test_missing_lock_refuses_before_install_and_preserves_files；check.txt、clean-delivery.txt、build.txt |
+-| SK-02 / ARC-01/02 | 禁止Domain外层、Application HTTP/ORM/具体适配器/跨模块私有领域、Knowledge反向依赖、API绕过应用、archive和动态导入；包根/父包from/成员导入均校验；公开ports合法，ports_private拒绝 | test_boundaries.py全部测试（含包根回归和HTTP/ORM矩阵）；check.txt |
++| SK-02 / ARC-01 | 禁止Domain外层、Application HTTP/ORM/具体适配器/跨模块私有领域、Knowledge反向依赖、API绕过应用、archive和动态导入；包根/父包from/成员导入均校验；公开ports合法，ports_private拒绝 | test_boundaries.py全部测试（含包根回归和HTTP/ORM矩阵）；check.txt |
+ | SK-03 / ARC-08、OPS-01 | 默认配置无隐式存储；1024/65535接受，0/1023/65536/非数字拒绝；外部绑定、production、未知RPB拒绝；API和Worker错误退出且stdout/stderr均不泄漏 | test_config_*、test_invalid_or_unimplemented_configuration_refused、test_process_rejects_configuration_without_leaking_values；check.txt |
+ | SK-04 / ARC-09/10 | live精确200及alive；ready精确503及not_ready；业务GET/POST、文档路由404；安装wheel网络探针与SIGTERM；无数据库连接 | test_probes_and_no_business_routes、test_live_201_mutation_fails_application_contract、test_wheel_network_probe_requires_exact_200、test_api_probes_do_not_connect_with_ambient_business_configuration；check.txt、clean-delivery.txt |
+ | SK-05 / ARC-09 | 默认拒绝；显式idle不就绪、不连接存储；SIGTERM/SIGINT正常退出；无启动输出或半行输出在期限内失败并回收；提前退出可诊断 | test_worker_refuses_task_execution、test_worker_idle_lifecycle、test_worker_missing_startup_signal_times_out_and_is_reaped、test_worker_exit_before_handshake_is_reaped、test_idle_worker_has_no_storage_activity；check.txt |
+@@ -62,6 +64,24 @@
+ | 受影响既有契约工具 | 对当前共享工作区执行结构检查与全部契约回归；并行契约修改保留，不归为task005实现；未提供旧基线，不宣称兼容或运行授权验证 | scripts/tests、check_api_contracts.py；check.txt及verification-inputs.json |
+ 
+ 无业务写路径，业务并发、去重、权限、版本绑定和人工内容保护没有执行入口，本批不以空断言冒充覆盖；仍由TRACK-004/007/008/012/018/019/021跟踪。真实PostgreSQL commit/race验证需后续切片，当前integration明确非零退出。架构检查只分析静态Python导入，不证明未来运行时写入所有权。
++
++### 4.1 A10 当前切片的执行条件与观察（2026-10-24）
++
++当前依据为00-01 v1.2 §3/5/6、09 v1.22 ARC-01/08/09/10及工程隔离、10 v1.8 §2.1/7、03基础Shell规范。本轮仅取“可安装、启动、验证且未实现能力明确不可用”的工程子集；不声称任何完整FR业务已验收。配置所有者为bootstrap；API只有health读端口；Worker无持久写权；UI只改本地页面状态。ARC-02身份与Project隔离及业务存储、账号授权、版本绑定、人工内容与业务竞争无入口，明确不适用本工程切片，相关TRACK继续开放。
++
++| 场景 | 前置/动作与故障点 | 可执行定位（仓库相对路径） | 观察、禁止副作用与清理 |
++| --- | --- | --- | --- |
++| SK-01 | 临时干净副本；安装构建，分别改后端版本/前端依赖制造锁漂移；分别移去一个锁 | scripts/verify_skeleton_delivery.py::main；backend/tests/unit/test_skeleton_requirements.py::test_missing_lock_refuses_before_install_and_preserves_files | 成功产出wheel/静态文件；反例非零且锁字节不变、缺锁不启动安装。TemporaryDirectory只清本次副本；依赖缓存允许保留。 |
++| SK-02 | 参数化非法/合法导入源码，包括包根、父包、私有近似名与动态导入 | backend/tests/architecture/test_boundaries.py 全部用例；scripts/check_architecture.py | 实际源码导入图通过；负例报违规、公开ports正例通过。只AST静态分析，不等于运行写入所有权或任意Python动态行为防护。 |
++| SK-03 | 清除测试子进程RPB配置，按第4节边界设置合成值；API/Worker分别启动 | backend/tests/unit/test_startup.py::test_config_has_no_storage_or_provider_fallback、test_config_valid_boundaries、test_invalid_or_unimplemented_configuration_refused、test_process_rejects_configuration_without_leaking_values、test_app_factory_rejects_invalid_configuration | 配置合法或精确拒绝；CLI退出2、固定脱敏消息，无值泄漏；10秒子进程期限。无持久写入。 |
++| SK-04 | TestClient及已安装wheel实际本地HTTP；注入live=201负例；合成DATABASE_URL+连接拒绝spy | backend/tests/unit/test_startup.py::test_probes_and_no_business_routes；test_review_regressions.py两项探针回归；test_skeleton_requirements.py::test_api_probes_do_not_connect_with_ambient_business_configuration；scripts/verify_skeleton_delivery.py | live=200/alive、ready=503/not_ready；业务/文档404；201必须被测试识别。真实wheel SIGTERM后shutdown complete且回收进程；连接spy为0。 |
++| SK-05 | 默认执行拒绝；idle进程先收到启动握手再发SIGTERM/SIGINT；独立子进程模拟无输出/半行/提前退出 | backend/tests/unit/test_startup.py 的worker五组场景；test_skeleton_requirements.py::test_idle_worker_has_no_storage_activity；process_support.py | 默认退出2，idle明确not ready并正常停；故障等待有界，最终poll非None。握手控制进程先后，不虚构业务锁竞争。连接spy测试不替代真实数据库测试。 |
++| SK-06 | 缺连接与合成DATABASE_URL；迁移/integration入口执行，连接函数全部拒绝；查询迁移history | backend/tests/unit/test_skeleton_requirements.py::test_unavailable_storage_refuses_without_connection；test_startup.py::test_migration_refuses_even_with_business_configuration；scripts/engineering.py migration-history | 明确非零且不回显秘密，连接调用0，history空。拒绝是预期成功断言，不代表迁移能力已验收；无需建/清业务库。 |
++| SK-07 | 渲染Projects/设置，点击禁用动作及本地导航 | frontend/src/App.test.tsx三项 | 唯一main、不可写、无fetch/伪业务记录或管理员入口；测试卸载及恢复spy。无业务账号/数据夹具。 |
++| SK-08 | 已构建前端预览，1280/390；Tab/Enter后两页往返 | frontend/e2e/shell.spec.ts两项 | main聚焦、无溢出/异常、无fetch/xhr/websocket及非GET；四张截图仅工程Shell。Playwright管理本次预览进程；不停止用户其他服务。 |
++| SK-09 | 临时源码含空/二进制/文本；独立篡改manifest为missing/tampered/extra | backend/tests/unit/test_delivery_snapshot.py；scripts/delivery_snapshot.py | 重构文件集合/字节一致，三反例拒绝；旧输出目录拒绝覆盖，仅写pytest管理的tmp_path，按pytest保留策略回收，不宣称退出即时删除。本轮完整快照另核对实际工作树摘要。 |
++
++表内省略目录的test_*.py均位于backend/tests/unit/。对应第4节所有SK需求及受影响机器契约回归；本轮完整命令/结果集中在第7节报告。业务数据并发、授权、版本绑定、内容保护及真实隔离PostgreSQL尚无测试执行入口，不能按“骨架不写入”关闭它们。A04–A09本轮不新增消费；A05未记录接受不会阻塞只含health和预览的本切片，也不能借本切片接受A05。
+ 
+ ## 5. 执行证据与复现
+ 
+@@ -97,3 +117,13 @@
+ 人工审核建议：先查看本轮覆盖修复记录，复现README命令并查看四张截图；抽查config拒绝路径、health就绪状态、worker默认拒绝、迁移保护、架构反例及锁漂移证据，再确认本批范围是否接受。后续业务切片另行授权，不由通过检查推定。
+ 
+ 设计依据：已核对；骨架代码：已实现；自动验证：按第5节逐项记录；人工接受：**待审核**。审核者、日期、接受基线与范围、问题处置由人工结论补录。
++
++## 7. 本轮单一交付报告（2026-10-24）
++
++[A10恢复审核包](../docs/workorders/task005_a10_review_2026-10-24.md)记录已有任务归属、精简修改承接、实际测试、独立审查和精确基线。本轮补验收交接，不把10月23日既有实现修改归为新增代码。旧报告与人工接受状态保留；当前审核以本次明确基线为准。
++
++## 8. 顺序交付检查点
++
++唯一队列为task005的A10工程子集，授权原文见第1节。S1已完成：核对196文件入场快照、现有代码及task004/005/006–013边界；S2自验已完成，82后端/58契约/3前端/2浏览器及构建/干净安装/wheel/空迁移链通过；S3独立复审通过，C01验收编号与C02临时目录表述均闭合；S4等待人工审核，S5–S7未开始。入场[清单](../docs/workorders/evidence/task005_a10_2026-10-24/before/source-manifest.json)包含未提交/未跟踪产物。下一步等待用户对本轮具体交付的决定；接受后进入S5–S7，要求修订则返回S2；不自动推进业务B类或全量A10。
++
++本轮受审s3-input共197文件，manifest SHA256 `93d1de0efc080c7e6a9b733c0d064cda45e348e7805b2103b78055923849229b`。最终delivery与受审方案/代码一致，仅更新本单、审核包及项目状态的交接记录；核验见报告。本轮尚无人工接受，不沿用其他任务的接受决定。
+--- before/docs/workorders/task005_a10_review_2026-10-24.md
++++ after/docs/workorders/task005_a10_review_2026-10-24.md
+@@ -0,0 +1,52 @@
++# Task005 A10 工程切片恢复审核包
++
++文档版本：v1.0
++更新日期：2026-10-24
++
++## 范围与已有任务核对
++
++用户要求继续按project-delivery推进A10、核对已有任务和交付范围、自验与独立审查后提交审核。依据[实施前清单A10](preimplementation_design_tasks_2026-10-21.md#a10-为每个待实现切片填一份可执行验收规格)，A10是每个切片的验收规格，不是统一业务实现阶段。复用[task005](../../tasks/005-engineering-skeleton.md) SK-01–09已有工程行为，补前置/故障/观察/清理与当前运行证据，不新建重复任务单。
++
++| 既有任务 | 本轮处置 |
++| --- | --- |
++| task004 Project创建幂等示例 | 仅示例，T01–T10无应用/真实存储执行；不把它直接升级为已授权业务实现。 |
++| task005 工程骨架 | 唯一本轮任务；SK-01–09实际实现已存在，旧证据不能代替本轮验证。 |
++| task006、task007 | A04接受及A05修复有各自范围；task007早期骨架修复并入当前代码核验，A05接受不代填。 |
++| task008、task010–012 | A06–A09限定设计已接受；本次无业务接口消费，不扩成运行验收。 |
++| task009、task013 | Workspace及人工内容保护规划保持独立；未获本轮实现授权。 |
++
++[入场快照](evidence/task005_a10_2026-10-24/before/source-manifest.json)含196文件及可恢复tar；[授权记录](evidence/task005_a10_2026-10-24/entry.json)保存HEAD及范围。保留已有未提交/未跟踪改动。[10月23日精简](code_cleanup_2026-10-23.md)的CLI配置脱敏集中、工程检查路径复用、UI标题简化及启动回归纳入当前实际代码审查；不将历史82/58/3/2测试数量直接当本轮通过证据。
++
++## 本轮交付与自验
++
++任务单第4.1节按SK逐项补齐执行条件、故障点、具体路径、可观察结果和清理；第7–8节补恢复报告与检查点，项目状态登记限定范围。当前不需要新增业务代码、迁移或机器契约。
++
++执行证据目录为[evidence](evidence/task005_a10_2026-10-24/)。统一check、build、真实浏览器e2e、干净副本安装/锁反例/wheel启停、空迁移history均通过；实际退出码见[execution.json](evidence/task005_a10_2026-10-24/execution.json)。本轮结果为82后端、58契约、3前端、2浏览器；Ruff/格式/mypy/TypeScript及机器结构通过，全部五个工程命令退出0。
++
++## 独立审查及人工交接
++
++S3已委派只读subagent，要求自行核对代码、SK需求、反例及实际证据；最终独立结论见[复审记录](evidence/task005_a10_2026-10-24/independent-review.txt)：S3通过，无剩余阻断项。S2已完成，S3初审发现追踪标注C01：SK-02导入边界原列ARC-02不准确，现已更正为ARC-01并明确身份/Project隔离未覆盖；另有C02：将pytest临时目录改为按其保留策略回收，区分TemporaryDirectory即时清理；两项为证据措辞修订，独立复审均已确认闭合。当前S1–S3完成，S4等待人工审核，S5–S7未开始。
++
++人工审核复现：按README选Python3.14/Node24后运行统一check/build；API只live200/ready503，业务与docs404；Worker默认拒绝、显式idle后Ctrl+C退出；UI两页显示未接入且不可写，390/1280键盘导航；检查第4.1节锁/配置/连接/快照反例及最终日志。安装/wheel仅工程能力，不证明Project创建、真实存储、权限、Task、版本、Graph-RAG或生产恢复。无需新增业务决策；建议审阅本轮限定交付后接受或指出具体修订，人工接受尚未发生。
++
++## 执行与证据定位
++
++仓库根运行；本机通过 `PATH=/tmp/rpb-skeleton-tools/node_modules/node/bin:/tmp/rpb-skeleton-tools/node_modules/.bin:$PATH` 选择Node24，其他机器按README选择运行时，不把临时路径作为安装要求。Python3.14.4、Node24.22.1、npm11.21.1；准确环境和依赖清单见[versions](evidence/task005_a10_2026-10-24/versions.txt)。
++
++| 命令 | 结果/证据 | 层级与副作用 |
++| --- | --- | --- |
++| python3 scripts/engineering.py check | [check.log](evidence/task005_a10_2026-10-24/check.log)通过 | 静态/单元/契约，连接拒绝spy不等于数据库集成 |
++| python3 scripts/engineering.py build | [build.log](evidence/task005_a10_2026-10-24/build.log)通过 | wheel/sdist及前端产物，无业务配置/迁移 |
++| python3 scripts/engineering.py e2e | [e2e.log](evidence/task005_a10_2026-10-24/e2e.log)通过 | 本地构建预览真实Chromium；仅Shell工程行为 |
++| python3 scripts/verify_skeleton_delivery.py | [clean-delivery.log](evidence/task005_a10_2026-10-24/clean-delivery.log)通过 | 独立临时副本按锁安装，可能访问软件仓库；无数据库/Provider；退出回收API与临时目录 |
++| python3 scripts/engineering.py migration-history | [migration-history.log](evidence/task005_a10_2026-10-24/migration-history.log)通过 | 空历史；integration/upgrade预期拒绝由测试覆盖，不是迁移通过 |
++
++本轮已查看[桌面Projects](evidence/task005_a10_2026-10-24/shell-1280-projects.png)、[桌面设置](evidence/task005_a10_2026-10-24/shell-1280-settings.png)、[窄屏Projects](evidence/task005_a10_2026-10-24/shell-390-projects.png)、[窄屏设置](evidence/task005_a10_2026-10-24/shell-390-settings.png)，未见溢出或遮挡，禁用与未接入提示清晰。Starlette/httpx弃用及Playwright颜色环境警告非阻断，保留原日志不屏蔽。
++
++独立审查绑定完整s3-input快照；最终交付仅补审查/交接状态，实际代码和测试保持本次执行版本。业务实现、真实持久化/并发、身份权限、版本绑定、人工内容、Graph-RAG及部署验证仍未覆盖，不能把本轮SK全部通过表述为全项目A10完成。
++
++## 最终交付基线
++
++[s3-input清单](evidence/task005_a10_2026-10-24/s3-input/source-manifest.json)含197文件，manifest SHA256 `93d1de0efc080c7e6a9b733c0d064cda45e348e7805b2103b78055923849229b`。独立复核快照完整且实际工作树无漂移，核对所有SK规格及本轮运行日志。主agent[范围检查](evidence/task005_a10_2026-10-24/s3-checks.json)确认源码/测试与既有精简快照一致；[文档自验](evidence/task005_a10_2026-10-24/doc-check.json)检查三份文档引用、版本、九场景与范围保护。
++
++[最终delivery](evidence/task005_a10_2026-10-24/delivery/source-manifest.json)仅比受审快照更新三份交接记录，完整性、当前文件摘要、准确差异及manifest SHA256见[最终检查](evidence/task005_a10_2026-10-24/final-checks.json)。代码/测试不变，因此不重复运行相同工程用例。设计验收规格已补、既有代码已复验、自动检查通过、人工接受待决定；S5–S7尚未开始。
+--- before/docs/PROJECT_STATUS.md
++++ after/docs/PROJECT_STATUS.md
+@@ -1,6 +1,6 @@
+ # 项目进度与待完成项
+ 
+-文档版本：v1.56
++文档版本：v1.57
+ 更新日期：2026-10-24
+ 适用项目大版本：v1
+ 
+@@ -22,7 +22,7 @@
+ | 范围 | 状态 | 当前事实与证据 |
+ | --- | --- | --- |
+ | 项目级顺序交付 skill | 已完成；2026-10-23获用户限定人工接受 | [project-delivery](../.agents/skills/project-delivery/SKILL.md)、实施入口和任务模板支持授权队列、恢复检查点及人工节点；[本轮记录](workorders/project_delivery_skill_2026-10-23.md)。已核对三个流程文件与交付快照一致；接受仅限skill及配套文档，跨会话运行未验收，不启动task008或其他未授权业务任务 |
+-| 应用实现基础 | 第一批工程骨架已实现；task005覆盖补齐并复验，待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
++| 应用实现基础 | 第一批工程骨架已实现；task005 A10当前复验及独立审查通过，S4待人工审核 | [任务005](../tasks/005-engineering-skeleton.md) SK-01–09工程范围已补齐已识别测试缺口；包根依赖、有限等待、精确HTTP状态及完整快照修复已复验，详见[覆盖修复审核包](workorders/task005_coverage_closure_2026-10-22.md)。75后端/23契约/3前端及2浏览器用例通过，干净安装构建、锁拒绝、wheel启停和空迁移链通过；业务路由、真实存储/持久任务/Graph-RAG/生产部署仍未实现；未记人工接受 |
+ | 实施前设计与审核准备 | A01–A03已交付；A03复审R01已补齐（设计/文档核验；待人类审核） | [交付与基线](workorders/a01_a03_design_closure_2026-10-21.md)：[2026-10-22复审](workorders/a01_a03_review_2026-10-22.md)确认A01/A02方案合理，A03示例R01已补T09/T10及需求追踪（仅设计）；当前依据/限定速查更正、[工程基线](design/00-01_engineering_baseline.md)、任务模板及单行为示例；A04公共错误契约已完成并于2026-10-23获用户验收通过（限定task006范围）；3项P2已关闭，最终证据及接受基线见任务006第11节，见[任务006](../tasks/006-public-error-recovery-contract.md)；A05限定契约已交付；[独立审核](workorders/task007_independent_review_2026-10-23.md)两项P2及C01已修复/澄清，50方法与三位subagent复审通过；[修复包](workorders/task007_fixes_2026-10-23.md)，A05人工接受待记录；A06内部契约C01–C05于2026-10-23获用户限定接受，S5–S7已完成（设计收口）；A07设计于2026-10-23获用户限定接受，S5–S7已收口；A08设计于2026-10-23获用户限定接受，task011已完成S5–S7收口；A09限定方案设计已于2026-10-24获用户接受，task012完成S5–S7设计收口；业务实现未启动；工程骨架A10范围见任务005，相关TRACK业务运行验收仍开放 |
+ | 00–03 主设计对齐 | 已完成（设计） | [工作单第 6 节](workorders/design_alignment_00_03_2026-10-16.md) 记录 00 v1.3、01 v1.45、02 v1.17、03 v1.17；落实暂停占槽、分期、Review 默认接受及相关一致性修订 |
+ | 本轮设计审查 | 已完成（文档检查） | [审查记录](workorders/design_alignment_00_03_review_2026-10-16.md) 无阻断问题，保留 R01/R02；该记录不构成实现验收 |
+@@ -34,7 +34,7 @@
+ | 项目进度统一入口 | 已完成 | 建立本文，关联历史记录和开放项 |
+ | 08/10与安全交付测试设计 | 已细化（设计；运行未验证） | 08授权/数据流、10配置/交付证据及09 SEC/OPS已同步，见[执行记录](workorders/security_delivery_refinement_2026-10-19.md)；未决政策由TRACK-021/022跟踪，不作为默认规则 |
+ 
+-本轮现有实现审计与精简已完成代码及自动验证：集中CLI配置拒绝处理、复用检查文件清单、删除等价UI分支；82后端/58契约/3前端/2浏览器、构建及干净安装wheel验证通过。详见[审计记录](workorders/code_cleanup_2026-10-23.md)；保留已有和并行工作区变更，尚未记录本轮独立审查或人工接受，不代表业务核心验收。
++本轮现有实现审计与精简已完成代码及自动验证：集中CLI配置拒绝处理、复用检查文件清单、删除等价UI分支；82后端/58契约/3前端/2浏览器、构建及干净安装wheel验证通过。详见[审计记录](workorders/code_cleanup_2026-10-23.md)；保留已有和并行工作区变更，本轮精简代码现已由task005 A10在2026-10-24按SK-01–09独立审查及重新验证，见下述审核包；人工接受仍待决定，不代表业务核心验收。
+ 
+ ## 3. 待完成项
+ 
+@@ -167,3 +167,5 @@
+ 本次修订 v1.54（2026-10-23）：用户显式授权[task012 A09](../tasks/012-graph-rag-technical-design.md)，H01按仅P0构建/检索/存储方案恢复；设计/文档自验通过，独立审查五项P2已修复并复审闭合；当前S4等待人工接受，S5–S7未开始。[审核包](workorders/task012_a09_review_2026-10-23.md)。Memory/H02/H03不扩展，真实Graph-RAG/存储/模型与运行验收未完成。
+ 
+ 本次修订 v1.56（2026-10-24）：用户明确接受[task012 A09](../tasks/012-graph-rag-technical-design.md)本轮技术方案设计；S5逐KG复核无新增设计缺口，S6无需修改，S7文档/结构/基线复验通过，S1–S7完成。技术方案与接受快照一致，五项P2已在原独立复审中闭合；保留入场每日整理差异。本轮仅接受/状态记录，详见[收口记录](workorders/task012_a09_review_2026-10-23.md#人工接受后的s5s7执行记录)。真实模型、SQL/图检索、事务和质量/容量验证仍开放；Memory延期，其他业务任务不自动启动。
++
++本次修订 v1.57（2026-10-24）：用户授权推进A10，核对已有任务与交付范围；复用[task005](../tasks/005-engineering-skeleton.md) SK-01–09工程切片，已补可执行验收交接，当前82后端/58契约/3前端/2浏览器及构建/干净安装/wheel/空迁移历史通过；独立审查两项文档意见已修正复审闭合，S1–S3完成，当前S4等待人工审核，S5–S7未开始。task004仍为Project创建示例，task009/013仍为独立规划；A10是逐切片类别，本次不完成全项目A10、不启动新业务实现。[本轮审核包](workorders/task005_a10_review_2026-10-24.md)维护当前证据，既有精简代码与并行改动保留。
