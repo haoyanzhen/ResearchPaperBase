@@ -1,6 +1,7 @@
 """Run from any directory. External services and business environments are never inferred."""
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
@@ -29,6 +30,7 @@ def main() -> None:
             "ui",
             "e2e",
             "integration",
+            "demo",
             "migration-history",
         ],
     )
@@ -70,6 +72,7 @@ def main() -> None:
             "tests",
             "migrations",
             "../scripts/run_storage_tests.py",
+            "../scripts/run_business_demo.py",
             "../scripts/check_architecture.py",
             "../scripts/engineering.py",
             "../scripts/verify_skeleton_delivery.py",
@@ -104,17 +107,36 @@ def main() -> None:
         run(["npm", "run", "dev"], ROOT / "frontend")
     elif action == "e2e":
         run(["npm", "run", "test:e2e"], ROOT / "frontend")
-    elif action == "integration":
+    elif action in {"integration", "demo"}:
         if args.postgres_bin is None:
             raise SystemExit(
                 "Database integration unavailable: explicit --postgres-bin required. "
                 "No connection attempted."
+            )
+        if action == "demo":
+            # Replace the wrappers so terminal SIGINT reaches one supervisor and
+            # its API child without uv forwarding a second interrupt mid-cleanup.
+            interpreter = subprocess.check_output(
+                ["uv", "run", "--locked", "python", "-c", "import sys; print(sys.executable)"],
+                cwd=ROOT / "backend",
+                text=True,
+            ).strip()
+            os.execv(
+                interpreter,
+                [
+                    interpreter,
+                    str(ROOT / "scripts/run_storage_tests.py"),
+                    "--postgres-bin",
+                    str(args.postgres_bin.resolve()),
+                    "--demo",
+                ],
             )
         backend(
             "python",
             "../scripts/run_storage_tests.py",
             "--postgres-bin",
             str(args.postgres_bin.resolve()),
+            *(["--demo"] if action == "demo" else []),
         )
     elif action == "migration-history":
         backend("alembic", "history")

@@ -1,11 +1,11 @@
 # Research Paper Base
 
-文档版本：v1.8
+文档版本：v1.10
 更新日期：2026-10-25
 
 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
 
-当前交付范围与验证结果见[项目状态](docs/PROJECT_STATUS.md)和[第一批骨架审核单](tasks/005-engineering-skeleton.md)。以下命令用于本地工程骨架；业务功能、持久任务和知识库尚未接入。
+当前交付范围与验证结果见[项目状态](docs/PROJECT_STATUS.md)和[第一批骨架审核单](tasks/005-engineering-skeleton.md)。默认api/ui命令保留无库工程预览；注册登录和Project创建/本人读取已有独立本地演示入口，见下方M-P0-01。持久任务和知识构建尚未接入。
 
 ## 当前入口
 
@@ -79,13 +79,13 @@ python3 scripts/engineering.py e2e
 
 浏览器测试针对构建产物，覆盖390/1280宽度、本地导航、键盘入口、无横向溢出和无写请求；不代表业务端到端验收。截图在 `frontend/test-results/`。
 
-`python3 scripts/engineering.py migration-history` 可查看首条 `0001_account` 迁移。执行真实存储测试：
+`python3 scripts/engineering.py migration-history` 可查看 `0001_account → 0002_project → 0003_auth_sessions → 0004_project_commands` 单链。执行真实存储测试：
 
 ```bash
 python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
 ```
 
-`--postgres-bin` 必须显式指向 PostgreSQL 17 的二进制目录（其他机器替换路径）。命令创建仅 Unix socket 可达的临时实例、独立测试库和非管理员角色；测试内部提交保留到本轮结束，随后停止进程并删除该实例。未传目标的 `integration` 和直接 `alembic upgrade head` 仍拒绝，忽略业务 DATABASE_URL；没有生产迁移入口。默认 `check` 执行无数据库测试，真实存储测试须另行运行且缺目标为失败，不是跳过。Account 仅有存储结构，没有注册、登录或权限服务；[task015](tasks/015-account-storage-migration.md)记录范围与证据。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
+`--postgres-bin` 必须显式指向 PostgreSQL 17 的二进制目录（其他机器替换路径）。命令创建仅 Unix socket 可达的临时实例、独立测试库和非管理员角色；测试内部提交保留到本轮结束，随后停止进程并删除该实例。未传目标的 `integration` 和直接 `alembic upgrade head` 仍拒绝，忽略业务 DATABASE_URL；没有生产迁移入口。默认 `check` 执行无数据库测试，真实存储测试须另行运行且缺目标为失败，不是跳过。[task015](tasks/015-account-storage-migration.md)记录最初Account存储范围；后续[task017](tasks/017-account-authentication.md)/[task018](tasks/018-project-create-runtime.md)提供显式装配的注册登录、当前会话及Project创建/本人读取；完整账号治理、Project生命周期与生产迁移未交付。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
 
 本次修订（2026-10-22）：增加首批工程安装、启停、检查和构建入口；审核结论由人工记录。
 
@@ -100,3 +100,20 @@ python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence
 ```
 
 验证检查归档文件集合和每份内容摘要；修改源码后须生成新基线，旧交付记录保留。创建命令中的路径是新基线示例；本次实际基线位置见任务007。
+
+
+## M-P0-01 本地业务闭环
+
+需先按以上命令安装锁定依赖、构建前端。真实浏览器验证使用Python Playwright（dev依赖）：
+
+```bash
+uv run --project backend playwright install chromium
+python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
+python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@17/bin
+```
+
+最后一条在 `http://127.0.0.1:8765/workspace` 提供独立临时演示，最长30分钟；Ctrl-C退出，API停止后清理本轮数据库。不是持久开发库，不会保存演示输入；不读取DATABASE_URL，不连接Homebrew默认业务集群。端口被占用时启动失败并清理，不终止其他进程。`demo`需要现有frontend/dist；修改前端后先build，不自动使用旧源码冒充新产物。集成测试同样消费构建产物，执行前应先build。
+
+演示步骤：注册（含确认密码）→用用户名或邮箱登录→创建Project→按项目链接刷新读取→退出。第二账号打开第一账号的项目链接应显示“资源不可用”。创建响应丢失时，刷新可恢复按用户隔离的待确认请求，只在点击“用原请求重试”后重放原键，不自动提交。显式退出清除本地待确认输入；会话失效时隐藏但保留原请求，同一账号重新登录后可用原键核查结果，不自动改键重发。密码不进入浏览器存储。
+
+当前界面未提供Project列表、配置、治理、Project修改/归档/删除、知识构建等后续功能。默认根路径工程预览不等于业务入口；本片以/workspace和显式demo为验收对象。完整范围、测试证据及人工验收状态见[单一里程碑包](tasks/019-browser-milestone.md)。

@@ -17,7 +17,7 @@ from psycopg import sql
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run_tests(binary_dir: Path) -> int:
+def run_tests(binary_dir: Path, demo: bool = False) -> int:
     binary_dir = binary_dir.resolve(strict=True)
     env = {
         k: v
@@ -37,7 +37,6 @@ def run_tests(binary_dir: Path) -> int:
     password_file.write_text(admin_password)
     password_file.chmod(0o600)
     data = root / "data"
-    started = False
     cleaned = False
 
     def pg(*args: str) -> None:
@@ -47,6 +46,7 @@ def run_tests(binary_dir: Path) -> int:
             check=True,
             stdout=subprocess.DEVNULL,
             timeout=60,
+            start_new_session=True,  # PostgreSQL cleanup is owned by this supervisor.
         )
 
     try:
@@ -77,7 +77,6 @@ def run_tests(binary_dir: Path) -> int:
             "-w",
             "start",
         )
-        started = True
         with psycopg.connect(
             host=str(root),
             dbname="postgres",
@@ -128,8 +127,15 @@ def run_tests(binary_dir: Path) -> int:
         )
         if password_file.exists():
             raise RuntimeError("Fixture administrator credential cleanup failed")
-        result = subprocess.run(
+        child = (
             [
+                sys.executable,
+                str(ROOT / "scripts/run_business_demo.py"),
+                "--target",
+                str(target),
+            ]
+            if demo
+            else [
                 sys.executable,
                 "-m",
                 "pytest",
@@ -138,26 +144,33 @@ def run_tests(binary_dir: Path) -> int:
                 "-s",
                 "--storage-target",
                 str(target),
-            ],
-            cwd=ROOT / "backend",
-            env=env,
-            timeout=180,
+            ]
         )
+        # subprocess.run waits for/kills the sole child before the database cleanup.
+        result = subprocess.run(child, cwd=ROOT / "backend", env=env, timeout=1800 if demo else 180)
         return result.returncode
     finally:
         # Never erase the directory of a server whose stop could not be verified.
-        if started or (data / "postmaster.pid").exists():
+        if (data / "postmaster.pid").exists():
             pg("pg_ctl", "-D", str(data), "-m", "fast", "-w", "stop")
         if (data / "postmaster.pid").exists():
             raise RuntimeError(f"Cleanup incomplete; retained isolated root {root}")
         shutil.rmtree(root)
         cleaned = not root.exists()
         print(
-            json.dumps(dict(run_id=run_id, server_stopped=True, root_removed=cleaned)), flush=True
+            json.dumps(dict(run_id=run_id, server_stopped=True, root_removed=cleaned)),
+            flush=True,
         )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--postgres-bin", required=True, type=Path)
-    raise SystemExit(run_tests(parser.parse_args().postgres_bin))
+    parser.add_argument(
+        "--demo", action="store_true", help="30-minute disposable loopback browser demo"
+    )
+    args = parser.parse_args()
+    try:
+        raise SystemExit(run_tests(args.postgres_bin, demo=args.demo))
+    except KeyboardInterrupt:
+        raise SystemExit(130) from None
