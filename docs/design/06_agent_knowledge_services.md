@@ -1,7 +1,7 @@
 # Agent & Knowledge Services 设计
 
-文档版本：v1.14
-更新日期：2026-10-23
+文档版本：v1.15
+更新日期：2026-10-26
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 资料分类与派生内容策略见[08-01](08-01_agent_data_access_policy.md)。补充/候选、嵌入、检索和历史上下文均有接入点，不能仅过滤文件下载；Q1–Q4已确认，后续读取/外发/提交均核验当前政策；扩权不重做步骤，收紧不静默剪历史。Provider访问与当前凭据解析遵循08 §12已确认规则，具体网络/认证实现仍需验证。
@@ -108,7 +108,8 @@ ResolveEvidence 按当前授权/Project 范围→绑定版本成员→不可变�
 
 检索词管理支持 Project 主题生成建议词、用户编辑、检索词级数据源策略和自动更新开关。新生成或新增检索词默认 `auto_update_enabled=true`；用户后续修改自动更新开关是在该默认态上调整。手动 Run 使用本次 selected 检索词；自动 Run 使用 `auto_update_enabled=true` 的检索词。
 
-多源检索支持 arXiv、OpenAlex、Semantic Scholar、ADS 和后续扩展 Provider。Provider 返回统一候选结构，不把 SDK 原始对象泄漏到应用层。数据源失败应分类为缺失配置、密钥失效、限流、连接失败、权限过期或 Provider 不可用。
+多源检索支持 arXiv、OpenAlex、Semantic Scholar、ADS 和后续扩展 Provider。Provider 返回统一候选结构，不把 SDK 原始对象泄漏到应用层。
+检索使用数据源配置的服务/API入口；具体论文、网页及文件地址随结果来源线索返回，获取/解析按资源地址执行，不能从配置base_url推定文件位置或抓取整个站点。数据源失败应分类为缺失配置、密钥失效、限流、连接失败、权限过期或 Provider 不可用。
 
 论文去重使用全局论文身份归一化，评分包含主题相关性、来源质量、时间新鲜度、摘要匹配度。资料按 Project 内归一化标题及 content_format/相似格式组识别重复或疑似重复，记录 MaterialDeduplicationDecision/MaterialScreeningDecision，不套用论文身份或强制作者、年份、语言、provider。标题归一化及轻量元数据遵循 [02-03 §5](02-03_construction_assets_appendix.md#5-手动补充与资产边界)。两类候选均保留人工调整和误合并修正依据；手动 Run 确认筛选后才能进入下载解析，自动 Run 仅按 P1 安全自动确认策略处理。
 
@@ -344,3 +345,5 @@ CandidateWriteScope下先冻结BuildProfile，构建清单为完整目标集合�
 
 发布流程：应用保存隔离产物→封存不可变视图→读回核验/保护→短事务重验Project/槽/attempt/当前政策/候选/确认/基线→原子登记版本、清单、默认指针、Run结果和outbox。不能在事务内LLM推理。取消/治理/编辑先提交则proof失效；响应丢失先查唯一发布决定；发布后依赖故障报同版不可用，不回退/拼接。具体首版存储约束见07 A09，实施测试见09 A09。
 
+
+本次修订（2026-10-26）：按用户决定分离数据源检索服务入口与具体资源地址；本次决定不涉及通用抓站支持及范围，具体文件地址不作为配置入口。

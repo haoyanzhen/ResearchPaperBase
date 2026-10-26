@@ -9752,7 +9752,8 @@
           },
           "base_url": {
             "type": "string",
-            "maxLength": 2048
+            "maxLength": 2048,
+            "description": "检索服务/API入口，由已实现的Provider适配器解释；具体论文、网页或文件地址属于检索结果或手动补充资料，不属于数据源配置。"
           },
           "enabled": {
             "type": "boolean",
@@ -9808,7 +9809,8 @@
           },
           "base_url": {
             "type": "string",
-            "maxLength": 2048
+            "maxLength": 2048,
+            "description": "检索服务/API入口，由已实现的Provider适配器解释；具体论文、网页或文件地址属于检索结果或手动补充资料，不属于数据源配置。"
           },
           "enabled": {
             "type": "boolean"
@@ -9875,7 +9877,8 @@
           },
           "base_url": {
             "type": "string",
-            "maxLength": 2048
+            "maxLength": 2048,
+            "description": "检索服务/API入口，由已实现的Provider适配器解释；具体论文、网页或文件地址属于检索结果或手动补充资料，不属于数据源配置。"
           },
           "enabled": {
             "type": "boolean",

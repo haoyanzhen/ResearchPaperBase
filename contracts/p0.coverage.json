@@ -666,7 +666,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "307f9fc74df06924aacce63dc76c2b5aafa9a84ac4d0561b16d396df8964be8b",
+    "04-01_p0_operation_contracts.md": "98c4e2ea49231e21dfce80ea97b0fe3eae6dce5f02c31ebc0d74c5235b0b1566",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {

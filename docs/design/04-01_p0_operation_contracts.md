@@ -1,6 +1,6 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.15
+文档版本：v1.16
 更新日期：2026-10-26
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
@@ -103,6 +103,7 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 - `LLMView`（字段见机器schema）。
 - `ModelSelection`（字段见机器schema）；模型名 1–200。`ModelOption`（字段见机器schema）。
 - `SourceWrite`（字段见机器schema）；enabled 默认 true；速率为正数或 null 表示按 Provider 适配默认，不能越过平台限制。新增其他 provider 须先有实现的能力注册，不以任意字符串宣称支持。
+`base_url`仅表示该适配器的检索服务/API入口；不是某份文件地址，也不因填入搜索网页URL就获得API能力。具体资源地址沿候选/SourceRef及手动补充协议承载，不在SourceWrite中新增文件地址字段。
 - `SourceView`（字段见机器schema）。匿名源允许无密钥，api_key 模式缺密钥不能测试成功或被解析为可用。
 - `ConnectionTest`（字段见机器schema）；非 LLM 的 models 为空。任务型测试先返回 TaskRef，再由结果链接读取此结构。
 - `SMTPWrite`（字段见机器schema）；端口 1–65535，认证字段按 auth_type 校验，GET 只返回 SecretView。
@@ -548,3 +549,5 @@ MetadataCandidate增加必填`assessment:MetadataDraftAssessment`：`{confidence
 
 
 本次修订（2026-10-26）：落实task025用户决定，P0个人/系统LLM无启停开关；发现/手填只提供待测项，当前配置/凭据修订下逐模型显式测试成功才可选择。扩展参数方向B另行调研，不将方案或机器缺项视为已实现。
+
+本次修订（2026-10-26）：按用户决定分离数据源检索服务入口与具体资源地址；本次决定不涉及通用抓站支持及范围，具体文件地址不作为配置入口。
