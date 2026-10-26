@@ -9,6 +9,7 @@ accounts = sa.Table(
     sa.Column("id", sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")),
     sa.Column("username", sa.Text, nullable=False),
     sa.Column("email", sa.Text, nullable=False),
+    sa.Column("display_name", sa.Text),
     sa.Column("username_key", sa.Text(collation="C"), nullable=False),
     sa.Column("email_key", sa.Text(collation="C"), nullable=False),
     sa.Column("password_hash", sa.Text, nullable=False),
@@ -29,6 +30,9 @@ accounts = sa.Table(
     ),
     sa.UniqueConstraint("username_key", name="uq_accounts_username_key"),
     sa.UniqueConstraint("email_key", name="uq_accounts_email_key"),
+    sa.CheckConstraint(
+        "display_name IS NULL OR length(display_name) <= 200", name="ck_accounts_display_name"
+    ),
     sa.CheckConstraint("username_key <> ''", name="ck_accounts_username_key"),
     sa.CheckConstraint("email_key <> ''", name="ck_accounts_email_key"),
     sa.CheckConstraint("password_hash <> ''", name="ck_accounts_password_hash"),

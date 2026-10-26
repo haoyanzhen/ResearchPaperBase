@@ -1,7 +1,7 @@
 # Research Paper Base
 
-文档版本：v1.12
-更新日期：2026-10-25
+文档版本：v1.13
+更新日期：2026-10-26
 
 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
 
@@ -79,7 +79,7 @@ python3 scripts/engineering.py e2e
 
 浏览器测试针对构建产物，覆盖390/1280宽度、本地导航、键盘入口、无横向溢出和无写请求；不代表业务端到端验收。截图在 `frontend/test-results/`。
 
-`python3 scripts/engineering.py migration-history` 可查看 `0001_account → 0002_project → 0003_auth_sessions → 0004_project_commands` 单链。执行真实存储测试：
+`python3 scripts/engineering.py migration-history` 可查看 `0001_account → 0002_project → 0003_auth_sessions → 0004_project_commands → 0005_project_lifecycle → 0006_account_profile` 单链。执行真实存储测试：
 
 ```bash
 python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
@@ -119,3 +119,5 @@ python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@
 登录后可在“我的项目”查看本人项目（默认每页20项），点击名称进入，返回列表或退出重登后重新找回；归档项目标为只读，已删除项目不显示，管理员也不列出他人项目。列表失败可重试，游标失效可回第一页。
 
 当前active项目可编辑名称/描述/研究范围，或经预览、勾选风险确认后归档/软删除。归档后只读且不提供解除归档或删除入口；软删除保留存储记录但不再允许进入。编辑冲突保留草稿，不自动以新修订覆盖；结果未知先核查，归档可核查同一原请求。当前未提供配置、账号治理、私人资产物理清理、知识构建等后续功能。默认根路径工程预览不等于业务入口；以/workspace和显式demo为验收对象。原认证/创建闭环已获限定接受，见[task019](tasks/019-browser-milestone.md)；Project Hub已获M-P0-02限定接受，见[task021](tasks/021-project-hub.md)。本批维护新增范围、验证与M-P0-03验收包见[task022](tasks/022-project-maintenance.md)。
+
+个人资料维护入口见[task023](tasks/023-account-profile.md)：登录后点击“个人资料”，修改邮箱或显示名并保存，刷新后仍可读取。邮箱登录键遵守既有去空格/忽略大小写规则，展示保留原文；显示名可清空。用户名、权限和密码不通过此入口更改。遇到并发修改或提交结果未知，先显式核查当前资料；不会自动重发旧草稿。自动验证与M-P0-04验收状态以任务单为准。

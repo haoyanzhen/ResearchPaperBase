@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection, Engine
@@ -156,7 +156,7 @@ class AccountStore:
                 "is_admin",
             )
         }
-        result["display_name"] = None
+        result["display_name"] = row["display_name"]
         result["last_login_at"] = conn.scalar(
             sa.select(sa.func.max(sessions.c.created_at)).where(sessions.c.account_id == account_id)
         )
@@ -251,7 +251,11 @@ class AccountStore:
                 .mappings()
                 .first()
             )
-            if not current or current["password_hash"] != row["password_hash"]:
+            if (
+                not current
+                or current["password_hash"] != row["password_hash"]
+                or key(identifier) not in {current["username_key"], current["email_key"]}
+            ):
                 raise AccountError("AUTH_INVALID_CREDENTIALS", 401)
             self._user(conn, row["id"])
             conn.execute(
@@ -276,3 +280,37 @@ class AccountStore:
             if row["account_id"] is None:
                 raise AccountError("AUTH_REQUIRED", 401)
             return self._user(conn, row["account_id"])
+
+    def update_self(
+        self, token: str, csrf: str, revision: str | None, changes: dict[str, Any]
+    ) -> dict[str, Any]:
+        with self.authorized_connection(token, csrf) as (conn, actor):
+            current = self._user(conn, actor)
+            if revision is None:
+                raise AccountError("STATE_REVISION_REQUIRED", 428)
+            if revision != str(current["revision"]):
+                raise AccountError("STATE_REVISION_CONFLICT", 412)
+            if "email" in changes:
+                normalized = key(changes["email"])
+                if conn.scalar(
+                    sa.select(
+                        sa.exists().where(
+                            accounts.c.id != actor,
+                            sa.or_(
+                                accounts.c.username_key == normalized,
+                                accounts.c.email_key == normalized,
+                            ),
+                        )
+                    )
+                ):
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+            values = {k: v for k, v in changes.items() if current[k] != v}
+            if values:
+                if "email" in values:
+                    values["email_key"] = key(values["email"])
+                conn.execute(
+                    accounts.update()
+                    .where(accounts.c.id == actor)
+                    .values(**values, revision=uuid4(), updated_at=datetime.now(UTC))
+                )
+            return self._user(conn, actor)

@@ -419,8 +419,10 @@ def test_pm06_migration_data_preserved_and_downgrade_guard(db):
     engine, cfg = db
     c, h, p, url = subject(engine)
     migrate(engine, cfg, "downgrade", "0004_project_commands")
-    assert c.get(url).json()["data"] == p
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(projects.c.name)) == p["name"]
     migrate(engine, cfg, "upgrade", "head")
+    assert c.get(url).json()["data"] == p
     with engine.connect() as conn:
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
     archive(c, h, url, confirmed(preview(c, h, url, p).json()["data"]))
@@ -586,8 +588,10 @@ def test_pm06_upgrade_ddl_failure_rolls_back_and_retry(db):
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
             == "0004_project_commands"
         )
-    assert c.get(url).json()["data"] == p
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(projects.c.name)) == p["name"]
     migrate(engine, cfg, "upgrade", "head")
+    assert c.get(url).json()["data"] == p
     with engine.connect() as conn:
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
 

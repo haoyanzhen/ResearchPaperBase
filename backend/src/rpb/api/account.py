@@ -33,6 +33,30 @@ class Register(BaseModel):
         return value
 
 
+class UserPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    expected_revision: Annotated[str | None, Field(min_length=1, max_length=128)] = None
+    email: Annotated[str | None, Field(max_length=254)] = None
+    display_name: Annotated[str | None, Field(max_length=200)] = None
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def trim(cls, value: Any) -> Any:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("email", "expected_revision", mode="before")
+    @classmethod
+    def nonnull(cls, value: Any) -> Any:
+        if value is None:
+            raise ValueError("null is not supported")
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def email_format(cls, value: str) -> str:
+        return Register.valid_email(value)
+
+
 class Login(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     identifier: str
@@ -125,5 +149,23 @@ def router_for(service: AccountService, secure: bool) -> APIRouter:
         if not token(request):
             raise AccountError("AUTH_REQUIRED", 401)
         return envelope(request, service.store.read_self(token(request)))
+
+    @router.patch("/me")
+    def update_self(
+        body: UserPatch,
+        request: Request,
+        x_csrf_token: Annotated[str | None, Header()] = None,
+    ) -> dict[str, Any]:
+        if not token(request):
+            raise AccountError("AUTH_REQUIRED", 401)
+        return envelope(
+            request,
+            service.store.update_self(
+                token(request),
+                write_guard(request, x_csrf_token),
+                body.expected_revision,
+                body.model_dump(exclude_unset=True, exclude={"expected_revision"}),
+            ),
+        )
 
     return router

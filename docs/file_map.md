@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.20 · 2026-10-25（Project基础维护入口登记）
+**文档版本**：v1.21 · 2026-10-26（个人资料维护入口登记）
 **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
 
 ## 当前目录
@@ -154,3 +154,5 @@
 
 
 本次修订 v1.20（2026-10-25）：新增[task022](../tasks/022-project-maintenance.md)、`backend/migrations/versions/0005_project_lifecycle.py`（确认审计与归档回执）、`backend/tests/integration/test_project_maintenance.py`（真实PG/HTTP维护与并发/迁移）和`backend/tests/integration/test_project_maintenance_browser.py`（编辑/确认/故障恢复真实浏览器）。未交付范围仍在PROJECT_STATUS及任务单维护。
+
+本次修订 v1.21（2026-10-26）：新增[task023](../tasks/023-account-profile.md)、`backend/migrations/versions/0006_account_profile.py`、`backend/tests/integration/test_account_profile.py`及`test_account_profile_browser.py`，分别承接可空显示名迁移、真实事务/身份规则与浏览器恢复验证。状态见任务单。

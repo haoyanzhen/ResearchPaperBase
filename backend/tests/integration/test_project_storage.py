@@ -34,19 +34,21 @@ def pair(conn, owner_id, **overrides):
 
 def test_ps01_upgrade_existing_account_and_metadata(db):
     engine, cfg = db
+    old_columns = [column for column in accounts.c if column.name != "display_name"]
     migrate(engine, cfg, "downgrade", "0001_account")
     with engine.begin() as conn:
         oid = owner(conn)
-        before = conn.execute(sa.select(accounts)).one()
+        before = conn.execute(sa.select(*old_columns)).one()
     migrate(engine, cfg, "upgrade", "head")
     migrate(engine, cfg, "upgrade", "head")
     with engine.connect() as conn:
-        assert conn.execute(sa.select(accounts)).one() == before
+        assert conn.execute(sa.select(*old_columns)).one() == before
+        assert conn.scalar(sa.select(accounts.c.display_name)) is None
         assert conn.scalar(sa.select(accounts.c.id)) == oid
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0005_project_lifecycle"
+            == "0006_account_profile"
         )
 
 
@@ -187,7 +189,7 @@ def test_ps05_populated_downgrade_refused_empty_preserves_account(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0005_project_lifecycle"
+            == "0006_account_profile"
         )
         conn.execute(cw.delete())
         conn.execute(projects.delete())
@@ -266,7 +268,7 @@ def test_ps06_committing_writer_blocks_destructive_downgrade(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0005_project_lifecycle"
+            == "0006_account_profile"
         )
 
 

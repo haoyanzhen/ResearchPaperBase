@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
-type User = { id: string; username: string; is_admin: boolean };
+type User = { id: string; revision: string; username: string; email: string; display_name: string | null; is_admin: boolean };
 type Project = { id: string; revision: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null; last_construction_at: string | null; last_activity_at: string | null };
 type ProjectInput = { name: string; description: string; research_scope: string };
 class ApiError extends Error {
@@ -124,6 +124,38 @@ function ProjectMaintenance({ project, actor, onChange, onDeleted, onUnavailable
   </section>;
 }
 
+function Profile({ user, onChange, onAuthFailure, onBusy }: { user: User; onChange: (u: User) => void; onAuthFailure: (e: unknown) => void; onBusy: (value: boolean) => void }) {
+  const [email, setEmail] = useState(user.email);
+  const [name, setName] = useState(user.display_name ?? '');
+  const [working, setWorking] = useState(false);
+  const [uncertain, setUncertain] = useState(false);
+  const [message, setMessage] = useState('');
+  async function run(save: boolean) {
+    setWorking(true); onBusy(true); setMessage('');
+    try {
+      const current = save
+        ? await post<User>('/api/v1/me', { expected_revision: user.revision, email, display_name: name || null }, undefined, user.id, 'PATCH')
+        : await json<User>('/api/v1/me');
+      if (current.id !== user.id) throw new ApiError(401, 'AUTH_SESSION_INVALID', '登录账号已变化。');
+      onChange(current); setEmail(current.email); setName(current.display_name ?? ''); setUncertain(false); setMessage(save ? '个人资料已保存。' : '已加载当前资料。');
+    } catch (reason) {
+      if (reason instanceof ApiError && (reason.status === 401 || reason.code === 'PERMISSION_CSRF_REJECTED')) onAuthFailure(reason);
+      else if (reason instanceof ApiError && [400, 409, 413, 415, 422, 428].includes(reason.status)) setMessage(reason.status === 409 ? '邮箱已被使用，请换一个邮箱。' : '输入未通过校验，请修正后保存。');
+      else { setMessage('资料可能已变化或提交结果未知。草稿已保留，请核查当前资料。'); setUncertain(true); }
+    } finally { setWorking(false); onBusy(false); }
+  }
+  return <section className="form-card" aria-label="个人资料" aria-busy={working}>
+    <h2>个人资料</h2><p>用户名：{user.username}</p>
+    {message && <p role="status">{message}</p>}
+    <form onSubmit={e => { e.preventDefault(); void run(true); }}>
+      <label>个人邮箱<input type="email" required maxLength={254} value={email} disabled={working} onChange={e => setEmail(e.target.value)} /></label>
+      <label>显示名<input maxLength={200} value={name} disabled={working} onChange={e => setName(e.target.value)} /></label>
+      <div className="list-pages"><button disabled={working || uncertain} type="submit">保存个人资料</button><button type="button" disabled={working} onClick={() => { setEmail(user.email); setName(user.display_name ?? ''); }}>取消资料编辑</button></div>
+    </form>
+    {uncertain && <button disabled={working} onClick={() => void run(false)}>核查并加载当前资料（放弃草稿）</button>}
+  </section>;
+}
+
 function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (error: unknown) => void }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
@@ -162,6 +194,7 @@ function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (
 
 export function BusinessApp() {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -192,7 +225,7 @@ export function BusinessApp() {
   }
   function clearPrivate(discardPending = false) {
     try { if (discardPending) for (const key of Object.keys(sessionStorage)) if (key.startsWith('rpb:create:')) sessionStorage.removeItem(key); } catch { /* Authentication state must clear even when storage is unavailable. */ }
-    setUser(null); setProject(null); setPending(null); setName(''); setDescription(''); setScope('');
+    setUser(null); setProfile(false); setProject(null); setPending(null); setName(''); setDescription(''); setScope('');
     setPassword(''); setConfirmation(''); setShowPassword(false);
     window.history.replaceState(null, '', '/workspace');
   }
@@ -267,12 +300,14 @@ export function BusinessApp() {
 
   return <div className="app business">
     <a className="skip" href="#content">跳到内容</a>
-    <header><a className="brand" href="/workspace">Research Paper Base</a>{user && <div className="account-bar"><span>{user.username}</span><button disabled={busy} onClick={() => void logout()}>退出登录</button></div>}</header>
+    <header><a className="brand" href="/workspace">Research Paper Base</a>{user && <div className="account-bar"><span>{user.display_name || user.username}</span><button disabled={busy} onClick={() => setProfile(!profile)}>{profile ? '返回项目' : '个人资料'}</button><button disabled={busy} onClick={() => void logout()}>退出登录</button></div>}</header>
     <main id="content" tabIndex={-1} aria-busy={busy}>
       <p className="eyebrow">你的研究，始于一个问题</p>
-      <h1>{user ? '研究项目' : mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
+      <h1>{user ? profile ? '账户设置' : '研究项目' : mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
       {notice && <p className="notice" role="status">{notice}</p>}
       {error && <p className="error" role="alert">{error}</p>}
+      {user && <div hidden={!profile}><Profile key={user.id} user={user} onChange={setUser} onAuthFailure={explain} onBusy={setBusy} /></div>}
+      <div hidden={!!user && profile}>
       {user && !project && !busy && <ProjectList key={user.id} actor={user.id} onAuthFailure={explain} />}
       {!user ? <section className="form-card auth-card" aria-label="账号认证">
         <div className="auth-tabs"><button disabled={busy} aria-pressed={mode === 'login'} onClick={() => { setMode('login'); setError(''); setConfirmation(''); }}>登录</button><button disabled={busy} aria-pressed={mode === 'register'} onClick={() => { setMode('register'); setError(''); setPassword(''); }}>注册</button></div>
@@ -303,6 +338,7 @@ export function BusinessApp() {
           <button className="primary" type="submit" disabled={busy}>{busy ? '处理中…' : pending ? '用原请求重试' : '创建 Project'}</button>
         </form>
       </section>}
+      </div>
     </main>
   </div>;
 }
