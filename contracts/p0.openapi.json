@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
   },
   "servers": [
@@ -1598,7 +1598,18 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "description": "Optional UI identity guard. Reject with AUTH_SESSION_INVALID when the authenticated account differs; never grants access.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],

@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Header, Request, Response
+from fastapi import APIRouter, Header, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -72,6 +72,27 @@ def router_for(service: ProjectService, origin: str) -> APIRouter:
             "meta": {
                 "request_id": request.state.request_id,
                 "idempotency_expires_at": wire(expires),
+            },
+        }
+
+    @router.get("")
+    def list_projects(
+        request: Request,
+        page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+        cursor: Annotated[str | None, Query(max_length=2048)] = None,
+        x_expected_actor: Annotated[UUID | None, Header()] = None,
+    ) -> dict[str, Any]:
+        if set(request.query_params) - {"page_size", "cursor"}:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        items, next_cursor = service.list_projects(
+            token(request), page_size, cursor, x_expected_actor
+        )
+        return {
+            "data": {"items": wire(items)},
+            "meta": {
+                "request_id": request.state.request_id,
+                "next_cursor": next_cursor,
+                "has_more": next_cursor is not None,
             },
         }
 

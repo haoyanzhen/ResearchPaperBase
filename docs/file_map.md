@@ -1,6 +1,6 @@
 # 项目文件功能目录
 
-**文档版本**：v1.18 · 2026-10-21（A01–A03工程与审核准备）
+**文档版本**：v1.19 · 2026-10-25（Project Hub入口登记）
 **维护规则**：新增或删除文件时同步更新；历史文档中的原路径仅作来源记录。
 
 ## 当前目录
@@ -11,10 +11,10 @@
 - `docs/archive/design_retirement_2026-10-19/`：12历史原文、当前去向及SQL删除记录。
 - `contracts/`、`scripts/check_api_contracts.py`：局部机器契约与独立静态验证，不是应用实现。
 - `archive/maybe_useful/`：唯一留存的代码候选与离线测试；没有应用入口。
-- `tasks/`、`docs/VibeCodingRecord/`、本地 `auto-check/`：历史任务/学习资料。
+- `tasks/`：当前及历史任务；`docs/VibeCodingRecord/`、本地 `auto-check/`：学习与历史资料。
 - `AGENTS.md`、`LICENSE`：项目约束与许可。
 
-旧 `backend/`、`frontend/`、`e2e/` 及本地依赖环境已删除。未启动新核心实现。
+旧 `backend/`、`frontend/`、`e2e/` 及旧依赖环境已删除；当前同名backend/frontend为重建的新核心。实现与验证状态以[PROJECT_STATUS](PROJECT_STATUS.md)为准。
 
 ## docs/ — 契约文档
 
@@ -148,3 +148,6 @@
 本次修订 v1.17（2026-10-21）：登记实施前设计任务清单入口，不改变现行规范或已有执行状态。
 
 本次修订 v1.18（2026-10-21）：登记实施入口、工程基线、A01–A03证据；任务模板见[tasks/example.md](../tasks/example.md)，示例见[tasks/004](../tasks/004-project-create-idempotency-example.md)，基线证据见[证据目录](workorders/evidence/a01_a03_2026-10-21/README.md)。
+
+
+本次修订 v1.19（2026-10-25）：登记本轮新增[task021](../tasks/021-project-hub.md)、`backend/tests/integration/test_project_list.py`（本人分页/权限/失败）与`backend/tests/integration/test_project_hub_browser.py`（真实浏览器列表/恢复/身份时序）。运行代码为`backend/src/rpb/`与`frontend/src/`，业务演示由`scripts/run_business_demo.py`装配；工程命令见[README](../README.md)。纠正顶部退役后“未启动实现”的过期描述，不改写历史证据。

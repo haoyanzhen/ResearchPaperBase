@@ -9,7 +9,7 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.engine import Connection
+from sqlalchemy.engine import Connection, RowMapping
 
 from rpb.adapters.auth import AccountStore
 from rpb.adapters.auth import metadata as metadata
@@ -102,6 +102,24 @@ class Transaction:
         )
         if not row or row["status"] == "deleted":
             raise AccountError("PERMISSION_RESOURCE_UNAVAILABLE", 404)
+        return self.project_view(row)
+
+    def list_projects(
+        self, limit: int, boundary: tuple[datetime, UUID] | None
+    ) -> list[dict[str, Any]]:
+        query = sa.select(projects).where(
+            projects.c.owner_id == self.actor_id, projects.c.status != "deleted"
+        )
+        if boundary is not None:
+            query = query.where(
+                sa.tuple_(projects.c.created_at, projects.c.id)
+                < sa.tuple_(sa.literal(boundary[0]), sa.literal(boundary[1]))
+            )
+        query = query.order_by(projects.c.created_at.desc(), projects.c.id.desc()).limit(limit)
+        return [self.project_view(row) for row in self.conn.execute(query).mappings()]
+
+    @staticmethod
+    def project_view(row: RowMapping) -> dict[str, Any]:
         result = {
             n: row[n]
             for n in (

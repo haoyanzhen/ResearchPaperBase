@@ -1,6 +1,6 @@
 {
-  "version": "1.6",
-  "date": "2026-10-24",
+  "version": "1.7",
+  "date": "2026-10-25",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -666,7 +666,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "d7563787508e297bcab467b8c425dc8e2a21299cedd43612c83d87393267d43c",
+    "04-01_p0_operation_contracts.md": "1da4fc2cef5008addd86c3226f9b3bf608d4d27ea4eba9f2f114980588de85c8",
     "04-02_transport_task_file_contracts.md": "728862966bf2f797bab15a8de3ee0a4cc2bec9291e0fdb262eda65252a0da738"
   },
   "operation_coverage": {

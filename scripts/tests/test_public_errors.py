@@ -123,6 +123,15 @@ class PublicErrorTests(unittest.TestCase):
      success=updated['responses']['201']
      del success['headers']['Cache-Control']['required']; del success['headers']['Location']['required']
      success['content']['application/json']['schema']['properties']['meta']={'$ref':'#/components/schemas/IdempotentMeta'}
+    if (path, method) == ('/projects', 'get'):
+     # task021 owns the bounded cursor and optional actor consistency guard.
+     # Assert the precise additions before normalizing for the historical check.
+     guard=next(p for p in updated['parameters'] if p['name']=='X-Expected-Actor')
+     self.assertEqual(guard['in'],'header'); self.assertFalse(guard['required'])
+     self.assertEqual(guard['schema'],{'type':'string','format':'uuid'})
+     updated['parameters'].remove(guard)
+     cursor=next(p for p in updated['parameters'] if p['name']=='cursor')
+     self.assertEqual(cursor['schema'].pop('maxLength'),2048)
     self.assertEqual(op,updated)
   self.assertEqual(SPEC_DATA['components']['responses']['PublicError429']['headers']['Retry-After']['required'],True)
 

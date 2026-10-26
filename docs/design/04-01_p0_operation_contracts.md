@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.11
-更新日期：2026-10-23
+文档版本：v1.12
+更新日期：2026-10-25
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -162,6 +162,8 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 | POST `P/cleanup-confirm` | `Project.Cleanup` / 008 | RevCommand+Confirmation → CommandResult | 重新检查影响范围及当前写资格，撤销后续写入或安全终止；不可清理不假装成功 |
 | GET `P/workspace` | `Workspace.Open` / 011,013 | 无 → WorkspaceView | 无效记录安全回退并给原因；不恢复为写权限 |
 | PUT `P/workspace/context` | `Workspace.SaveContext` / 013 | WorkspaceContextWrite → `{revision,saved_at}` | 用户+Project 隔离；active 可保存，archived 只读取服务端上下文，未提交输入可本地保留 |
+
+Project.List可携带可选`X-Expected-Actor` UUID请求头，作为浏览器当前显示账号的一致性断言；与已认证主体不符返回401 `AUTH_SESSION_INVALID`，不能凭该头选择Owner或获得权限。列表当前仅支持page_size/cursor；固定非deleted范围与created_at/id降序，不接受未声明筛选或排序。
 
 Workspace 草稿保存不是章节/检索词内容保存；业务写入必须调用所属对象命令。恢复旧草稿时保留 base_revision，保存时重新做并发校验。
 

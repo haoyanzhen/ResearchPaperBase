@@ -1,7 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 type User = { id: string; username: string; is_admin: boolean };
-type Project = { id: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null };
+type Project = { id: string; name: string; description: string; research_scope: string; status: string; default_knowledge_version_id: string | null; last_construction_at: string | null; last_activity_at: string | null };
 type ProjectInput = { name: string; description: string; research_scope: string };
 class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
@@ -15,11 +15,14 @@ const messages: Record<string, string> = {
   STATE_OPERATION_NOT_ALLOWED: '用户名或邮箱已被使用。',
   PERMISSION_CSRF_REJECTED: '会话校验失败，请刷新后重试。',
 };
-async function json<T>(url: string, init?: RequestInit): Promise<T> {
+async function envelope<T>(url: string, init?: RequestInit): Promise<{ data: T; meta: { next_cursor: string | null; has_more: boolean } }> {
   const response = await fetch(url, { credentials: 'same-origin', ...init });
   const value = await response.json();
   if (!response.ok) throw new ApiError(response.status, value.error?.code ?? 'UNKNOWN', value.error?.message ?? '请求未完成。');
-  return value.data as T;
+  return value;
+}
+async function json<T>(url: string, init?: RequestInit): Promise<T> {
+  return (await envelope<T>(url, init)).data;
 }
 async function post<T>(path: string, body: unknown, key?: string, expectedActor?: string): Promise<T> {
   const csrf = await json<{ csrf_token: string }>('/api/v1/auth/csrf');
@@ -30,6 +33,42 @@ async function post<T>(path: string, body: unknown, key?: string, expectedActor?
     if (current.id !== expectedActor) throw new ApiError(401, 'AUTH_SESSION_INVALID', '登录账号已变化，请重新确认。');
   }
   return json<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: JSON.stringify(body) });
+}
+
+function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (error: unknown) => void }) {
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+  const [items, setItems] = useState<Project[]>([]);
+  const [next, setNext] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [failure, setFailure] = useState('');
+  const onFailure = useRef(onAuthFailure);
+  onFailure.current = onAuthFailure;
+  useEffect(() => {
+    let alive = true;
+    const controller = new AbortController();
+    setLoading(true); setItems([]); setNext(null); setFailure('');
+    const query = new URLSearchParams({ page_size: '20' });
+    if (cursor) query.set('cursor', cursor);
+    void envelope<{ items: Project[] }>(`/api/v1/projects?${query}`, {
+      signal: controller.signal, headers: { 'X-Expected-Actor': actor },
+    }).then(result => {
+      if (alive) { setItems(result.data.items); setNext(result.meta.next_cursor); }
+    }).catch(reason => {
+      if (!alive) return;
+      if (reason instanceof ApiError && reason.status === 401) onFailure.current(reason);
+      else setFailure(reason instanceof ApiError && reason.code.startsWith('VALIDATION_CURSOR_')
+        ? '列表位置已失效，请返回第一页。' : '项目列表读取失败，请重试。');
+    }).finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; controller.abort(); };
+  }, [actor, cursor, reload]);
+  return <section className="form-card project-list" aria-label="我的项目" aria-busy={loading}>
+    <div className="project-heading"><h2>我的项目</h2><button disabled={loading} onClick={() => { setCursor(null); setReload(n => n + 1); }}>刷新列表</button></div>
+    {loading ? <p>正在读取项目…</p> : failure ? <div><p role="alert">{failure}</p><button onClick={() => setReload(n => n + 1)}>重试列表</button></div> : items.length === 0 ? <p className="hint">还没有可显示的项目，可在下方创建。</p> : <ul>
+      {items.map(item => <li key={item.id}><a href={`/workspace?project=${encodeURIComponent(item.id)}`}>{item.name}</a><span className="badge">{item.status === 'active' ? '进行中' : '已归档 · 只读'}</span><p className="preserve">{item.description || '未填写描述'}</p><p className="hint">{item.default_knowledge_version_id ? '已有知识版本' : '尚无知识版本'} · 最近构建：{item.last_construction_at ?? '暂无'} · 最近活动：{item.last_activity_at ?? '暂无'}</p></li>)}
+    </ul>}
+    <div className="list-pages">{cursor && <button disabled={loading} onClick={() => setCursor(null)}>返回第一页</button>}{next && <button disabled={loading} onClick={() => setCursor(next)}>下一页</button>}</div>
+  </section>;
 }
 
 export function BusinessApp() {
@@ -145,6 +184,7 @@ export function BusinessApp() {
       <h1>{user ? '研究项目' : mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
       {notice && <p className="notice" role="status">{notice}</p>}
       {error && <p className="error" role="alert">{error}</p>}
+      {user && !project && !busy && <ProjectList key={user.id} actor={user.id} onAuthFailure={explain} />}
       {!user ? <section className="form-card auth-card" aria-label="账号认证">
         <div className="auth-tabs"><button disabled={busy} aria-pressed={mode === 'login'} onClick={() => { setMode('login'); setError(''); setConfirmation(''); }}>登录</button><button disabled={busy} aria-pressed={mode === 'register'} onClick={() => { setMode('register'); setError(''); setPassword(''); }}>注册</button></div>
         <form onSubmit={event => void authenticate(event)}>
@@ -157,7 +197,7 @@ export function BusinessApp() {
           <button className="primary" disabled={busy} type="submit">{busy ? '处理中…' : mode === 'register' ? '创建账号' : '登录账号'}</button>
         </form>
       </section> : project ? <section className="form-card project-card" aria-label="当前项目">
-        <div className="project-heading"><span className="badge">{project.status === 'active' ? '进行中' : '已归档 · 只读'}</span><a href="/workspace">新建项目</a></div>
+        <div className="project-heading"><span className="badge">{project.status === 'active' ? '进行中' : '已归档 · 只读'}</span><a href="/workspace">我的项目</a><a href="/workspace">新建项目</a></div>
         <h2>{project.name}</h2>
         <h3>研究描述</h3><p className="preserve">{project.description || '未填写'}</p>
         <h3>研究范围</h3><p className="preserve">{project.research_scope || '未填写'}</p>
