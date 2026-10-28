@@ -73,7 +73,10 @@ def test_pc01_create_read_real_atomic_facts(db):
     with engine.connect() as conn:
         assert conn.scalar(sa.select(projects.c.owner_id)) == conn.scalar(sa.select(accounts.c.id))
         assert conn.scalar(sa.select(cw.c.project_id)) == UUID(data["id"])
-        assert not {"tasks", "outbox", "knowledge_versions", "construction_runs"} & set(
+        from rpb.adapters.run_tables import runs
+
+        assert conn.scalar(sa.select(sa.func.count()).select_from(runs)) == 0
+        assert not {"tasks", "outbox", "knowledge_versions"} & set(
             sa.inspect(conn).get_table_names()
         )
 

@@ -25,9 +25,17 @@ class TermsClient(TestClient):
         if (
             len(parts) > 3
             and parts[1] == "projects"
-            and parts[3] in {"construction-workspace", "material-policy", "material-sources"}
+            and parts[3]
+            in {
+                "construction-workspace",
+                "material-policy",
+                "material-sources",
+                "construction-runs",
+            }
         ):
             parts[2] = "{project_id}"
+            if "construction-runs" in parts and len(parts) > 4:
+                parts[4] = "{run_id}"
             if "material-sources" in parts:
                 parts[4] = "{source_id}"
             if "search-terms" in parts and len(parts) > 5 and parts[5] != "generate":
@@ -631,7 +639,8 @@ def test_st08_nonempty_migration_downgrade_refused_and_project_cleanup_cascades(
         migrate(engine, db[1], "downgrade", "0012_platform_mail")
     with engine.begin() as conn:
         assert (
-            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0013_search_terms"
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+            == "0014_construction_runs"
         )
         conn.execute(
             sa.text("DELETE FROM project_create_commands WHERE project_id=:id"),

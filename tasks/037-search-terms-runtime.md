@@ -7,7 +7,7 @@
 
 流程v1.8；第1节授权有效，D-CW-01 A已接受，无新增业务待决。当前S7工程已收口，S1–S6完成；独立后端/UI复审问题均闭合。M-P0-11已于2026-10-28获人工接受，Git提交按第9节核对。task038并行流程文档修改完整保留。
 
-本轮证据：[目录](../docs/workorders/evidence/task037_search_terms_2026-10-28/)、[独立结论](../docs/workorders/evidence/task037_search_terms_2026-10-28/independent-review.json)。review01为360文件中途基线，最终基线见[delivery快照](../docs/workorders/evidence/task037_search_terms_2026-10-28/delivery/)。恢复先看第4/5节；全套560通过2失败，均为测试清单/清理适配；最终74项全部通过，497未变场景复用有效通过证据。最终check/build及文档核验通过，不把失败日志称为全绿。下一动作：按第9节记录接受及本地提交，再继续下一阶段。
+本轮证据：[目录](../docs/workorders/evidence/task037_search_terms_2026-10-28/)、[独立结论](../docs/workorders/evidence/task037_search_terms_2026-10-28/independent-review.json)。review01为360文件中途基线，最终基线见[delivery快照](../docs/workorders/evidence/task037_search_terms_2026-10-28/delivery/)。恢复先看第4/5节；全套560通过2失败，均为测试清单/清理适配；最终74项全部通过，497未变场景复用有效通过证据。最终check/build及文档核验通过，不把失败日志称为全绿。本地提交`3e5349e`已完成；下一阶段及当前决定点见[task039](039-construction-retrieval-gate.md)，不要重复提交。
 
 ## 1. 授权与目标
 
@@ -63,3 +63,5 @@ D-CW-01 A已决。检索词候选API、来源注册生产链接入是现行规�
 用户原话：“ok，通过M-P0-11，继续实现下一阶段，直到里程碑进度或遇到未明确设计”。接受限定于本片验收包；入场核对delivery全部361文件，0漂移。历史待验收文字保留为当时状态；本次未重跑历史业务测试。
 
 本地提交包含M-P0-11产物与必要前置：task029/031/033/035分别已获M-P0-07/08/09/10接受（各任务接受节），其未提交代码是本片依赖，明确纳入本次清单，不称为本次新验收或分别追补历史提交。task038已授权并工程收口的流程记录随必要文档纳入；不包含下一阶段业务代码。按delivery清单逐路径暂存，检查暂存区、内容摘要和diff；证据目录单独保留工作区，不夹带历史运行截图。接受快照与提交清单见[本轮目录](../docs/workorders/evidence/task039_construction_retrieval_gate_2026-10-28/)。提交SHA在后续检查点记录，不循环amend。
+
+本地提交完成：`3e5349e90bb54241c5b5026b35be3475c144124b`，111个明确源文件/文档路径；暂存区提交后为空，提交树逐文件与暂存前实际内容一致。3份被忽略的本地.gitignore未纳入；历史证据和运行截图仍保留工作区。提交后的SHA记录为纯交接追加，不amend。下一阶段见[task039](039-construction-retrieval-gate.md)。

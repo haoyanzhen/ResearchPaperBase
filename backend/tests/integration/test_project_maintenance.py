@@ -237,7 +237,9 @@ def test_pm03_preview_has_exact_effects_and_no_business_writes(db, action):
         "blocked_reasons",
     }
     assert value["target"] == {"type": "project", "id": p["id"]}
-    assert value["subject_revision"] == value["impact_revision"] == p["revision"]
+    assert value["subject_revision"] == p["revision"]
+    assert str(UUID(value["impact_revision"])) == value["impact_revision"]
+    assert second.json()["data"]["impact_revision"] == value["impact_revision"]
     assert value["affected_items"] == value["blocked_reasons"] == []
     assert value["knowledge_version_id"] is value["candidate_revision"] is None
     assert {i["scope"] for i in value["retained_items"]} == {

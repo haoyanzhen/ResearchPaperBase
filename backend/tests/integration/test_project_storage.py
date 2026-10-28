@@ -47,7 +47,8 @@ def test_ps01_upgrade_existing_account_and_metadata(db):
         assert conn.scalar(sa.select(accounts.c.id)) == oid
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
         assert (
-            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0013_search_terms"
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+            == "0014_construction_runs"
         )
 
 
@@ -75,6 +76,8 @@ def test_ps02_pair_commits_defaults_and_independent_read(db):
             "projects",
             "construction_workspaces",
             "construction_term_states",
+            "construction_runs",
+            "construction_run_commands",
             "alembic_version",
             "auth_sessions",
             "project_create_commands",
@@ -218,7 +221,8 @@ def test_ps05_populated_downgrade_refused_empty_preserves_account(db):
     with engine.begin() as conn:
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
-            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0013_search_terms"
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+            == "0014_construction_runs"
         )
         conn.execute(cw.delete())
         conn.execute(projects.delete())
@@ -296,7 +300,8 @@ def test_ps06_committing_writer_blocks_destructive_downgrade(db):
     with engine.connect() as conn:
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
-            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0013_search_terms"
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+            == "0014_construction_runs"
         )
 
 

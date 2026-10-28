@@ -130,6 +130,7 @@ class AdminAccountStore:
                 "source_configs",
                 "source_tasks",
                 "llm_selections",
+                "construction_runs",
             ):
                 table = metadata.tables[name]
                 columns = [
@@ -435,6 +436,12 @@ class AdminAccountStore:
                     .where(projects.c.owner_id == target_id)
                     .values(authority_epoch=projects.c.authority_epoch + 1)
                 )
+                from rpb.adapters.runs import cancel_project_runs
+
+                for project_id in conn.scalars(
+                    sa.select(projects.c.id).where(projects.c.owner_id == target_id)
+                ):
+                    cancel_project_runs(conn, project_id)
             if action in {"disable", "delete", "revoke_admin"}:
                 for name in (
                     ("system_llm_tasks", "system_source_tasks", "smtp_tasks")

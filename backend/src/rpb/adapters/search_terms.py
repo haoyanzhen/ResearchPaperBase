@@ -203,7 +203,7 @@ class TermStore:
             ),
             "auto_update_enabled": state["auto_update_enabled"],
             "scheduler_available": False,
-            "occupying_run_id": None,
+            "occupying_run_id": state.get("occupying_run_id"),
             "pending_supplement_count": 0,
             "pending_revision_count": 0,
             "topic_source": source_for(project),
@@ -381,6 +381,15 @@ class TermStore:
             state = load(conn, project)
             term_id = str(data.get("term_id", ""))
             if operation == "workspace":
+                from rpb.adapters.run_tables import runs
+
+                occupying = conn.scalar(
+                    sa.select(runs.c.id).where(
+                        runs.c.project_id == project["id"],
+                        runs.c.status.in_(["running", "waiting_user"]),
+                    )
+                )
+                state["occupying_run_id"] = str(occupying) if occupying else None
                 return self.workspace(state, project)
             if operation == "list_terms":
                 values = sorted(

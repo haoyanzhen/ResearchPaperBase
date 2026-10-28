@@ -140,7 +140,7 @@ class ProjectService:
             "action": action,
             "target": {"type": "project", "id": payload["project"]},
             "subject_revision": payload["revision"],
-            "impact_revision": payload["revision"],
+            "impact_revision": payload["impact_revision"],
             "knowledge_version_id": None,
             "candidate_revision": None,
             "risks": [{"id": risk, "message": message}],
@@ -148,12 +148,28 @@ class ProjectService:
             .isoformat()
             .replace("+00:00", "Z"),
             "confirmation_token": signed,
-            "affected_items": [],
+            "affected_items": [
+                {
+                    "kind": "execution_revocation",
+                    "object": {
+                        "type": "construction_run",
+                        "id": item["id"],
+                        "revision": item["revision"],
+                        "project_id": payload["project"],
+                        "read_url": (
+                            f"/api/v1/projects/{payload['project']}/construction-runs/{item['id']}"
+                        ),
+                    },
+                    "attempt_id": item["attempt_id"],
+                    "reason": "项目归档或删除将取消活动构建。",
+                }
+                for item in payload["construction_impact"]
+            ],
             "retained_items": [
                 {
                     "kind": "protected_scope",
                     "scope": "existing_content",
-                    "reason": "保留项目已有记录，本操作不物理清理资产。",
+                    "reason": "保留项目历史记录；活动构建被取消，纯机器候选正文清理。",
                 },
                 {
                     "kind": "protected_scope",
@@ -181,7 +197,14 @@ class ProjectService:
             current = tx.read_project(identity)
             self.require_active(current)
             self.require_revision(current, revision)
+            impact = tx.construction_impact(identity)
             payload = {
+                "construction_impact": impact,
+                "impact_revision": str(
+                    UUID(
+                        hashlib.sha256(json.dumps(impact, sort_keys=True).encode()).hexdigest()[:32]
+                    )
+                ),
                 "scope": "project-lifecycle-v1",
                 "id": str(uuid4()),
                 "actor": str(tx.actor_id),
@@ -241,6 +264,8 @@ class ProjectService:
                     payload["action"],
                 ) != ("project-lifecycle-v1", str(tx.actor_id), str(identity), revision, action):
                     raise ValueError("binding")
+                if payload["construction_impact"] != tx.construction_impact(identity):
+                    raise ValueError("impact changed")
                 if payload["expires"] <= self.clock().timestamp():
                     raise ValueError("expired")
             except ValueError, TypeError, KeyError, binascii.Error, UnicodeError:

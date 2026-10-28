@@ -5196,11 +5196,79 @@
               "maxLength": 128,
               "pattern": "^[\\x20-\\x7e]+$"
             }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
           }
         ],
         "responses": {
-          "default": {
-            "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
+          "200": {
+            "description": "Manual paper retrieval slice; no scoring, publication or automatic scheduling.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrievalCommandResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
           }
         },
         "requestBody": {
@@ -5213,7 +5281,7 @@
             }
           }
         },
-        "x-coverage": "request-only"
+        "x-coverage": "request-success-errors-partial"
       }
     },
     "/projects/{project_id}/research-sessions/{session_id}/messages": {
@@ -10684,6 +10752,693 @@
           },
           "500": {
             "$ref": "#/components/responses/PublicError500"
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/construction-runs": {
+      "get": {
+        "operationId": "Construction.ListRuns",
+        "x-use-case": "Construction.ListRuns",
+        "x-fr": [
+          "FR-014",
+          "FR-015",
+          "FR-021"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Manual paper retrieval slice; no scoring, publication or automatic scheduling.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/RetrievalRunView"
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          }
+        }
+      },
+      "post": {
+        "operationId": "Construction.Start",
+        "x-use-case": "Construction.Start",
+        "x-fr": [
+          "FR-014",
+          "FR-015",
+          "FR-021"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128,
+              "pattern": "^[\\x20-\\x7e]+$"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Manual paper retrieval slice; no scoring, publication or automatic scheduling.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Location": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrievalCommandResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetrievalRunStart"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}": {
+      "get": {
+        "operationId": "Construction.ReadRun",
+        "x-use-case": "Construction.ReadRun",
+        "x-fr": [
+          "FR-014",
+          "FR-015",
+          "FR-021"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Manual paper retrieval slice; no scoring, publication or automatic scheduling.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrievalRunView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/candidates": {
+      "get": {
+        "operationId": "Construction.ReadCandidates",
+        "x-use-case": "Construction.ReadCandidates",
+        "x-fr": [
+          "FR-014",
+          "FR-015",
+          "FR-021"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Manual paper retrieval slice; no scoring, publication or automatic scheduling.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/RetrievalCandidate"
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/input-revisions": {
+      "get": {
+        "operationId": "Construction.ReadInputRevisions",
+        "x-use-case": "Construction.ReadInputRevisions",
+        "x-fr": [
+          "FR-014",
+          "FR-015",
+          "FR-021"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Manual paper retrieval slice; no scoring, publication or automatic scheduling.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "$ref": "#/components/schemas/Revision"
+                              },
+                              "source_revision": {
+                                "type": "null"
+                              },
+                              "created_at": {
+                                "$ref": "#/components/schemas/Time"
+                              },
+                              "reason": {
+                                "const": "initial"
+                              },
+                              "input_snapshot": {
+                                "$ref": "#/components/schemas/RetrievalSnapshot"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "source_revision",
+                              "created_at",
+                              "reason",
+                              "input_snapshot"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
           }
         }
       }
@@ -19390,7 +20145,14 @@
             "const": false
           },
           "occupying_run_id": {
-            "type": "null"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "pending_supplement_count": {
             "const": 0
@@ -19498,7 +20260,15 @@
             ]
           },
           "rate_limit_per_minute": {
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "reason_code": {
             "type": "string"
@@ -19546,6 +20316,1288 @@
           "rejected",
           "valid",
           "reason_code"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalWindow": {
+        "type": "object",
+        "properties": {
+          "published_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_until": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "published_from",
+          "published_until"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalRunStart": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "const": "retrieval"
+          },
+          "selected_terms": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/SelectedTerm"
+            }
+          },
+          "supplement_ids": {
+            "type": "array",
+            "maxItems": 0,
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "retrieval_range": {
+            "$ref": "#/components/schemas/RetrievalWindow"
+          },
+          "result_limit_per_source": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "model_selection": {
+            "$ref": "#/components/schemas/ModelSelection"
+          },
+          "graph_mode": {
+            "enum": [
+              "incremental",
+              "rebuild"
+            ]
+          }
+        },
+        "required": [
+          "selected_terms",
+          "retrieval_range",
+          "result_limit_per_source",
+          "model_selection"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalSourceRef": {
+        "type": "object",
+        "properties": {
+          "source_kind": {
+            "const": "provider"
+          },
+          "provider_config_ref": {
+            "$ref": "#/components/schemas/TermSourceRef"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplement_id": {
+            "type": "null"
+          },
+          "search_term_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retrieved_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "source_kind",
+          "provider_config_ref",
+          "url",
+          "supplement_id",
+          "search_term_id",
+          "retrieved_at"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalSnapshot": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "const": "retrieval"
+          },
+          "selected_terms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "term_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "confirmed_revision": {
+                  "$ref": "#/components/schemas/Revision"
+                },
+                "content": {
+                  "$ref": "#/components/schemas/SearchTermWrite"
+                }
+              },
+              "required": [
+                "term_id",
+                "confirmed_revision",
+                "content"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "supplement_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "pending_revision_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "retrieval_range": {
+            "$ref": "#/components/schemas/RetrievalWindow"
+          },
+          "result_limit_per_source": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "resolved_sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_kind": {
+                  "const": "provider"
+                },
+                "provider_config_ref": {
+                  "$ref": "#/components/schemas/TermSourceRef"
+                },
+                "url": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "supplement_id": {
+                  "type": "null"
+                },
+                "search_term_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "retrieved_at": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "source_kind",
+                "provider_config_ref",
+                "url",
+                "supplement_id",
+                "search_term_id",
+                "retrieved_at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "graph_mode": {
+            "enum": [
+              "incremental",
+              "rebuild"
+            ]
+          },
+          "base_knowledge_version_id": {
+            "type": "null"
+          },
+          "frozen_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        },
+        "required": [
+          "mode",
+          "selected_terms",
+          "supplement_ids",
+          "pending_revision_ids",
+          "retrieval_range",
+          "result_limit_per_source",
+          "resolved_sources",
+          "graph_mode",
+          "base_knowledge_version_id",
+          "frozen_at"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalRuntimeConfig": {
+        "type": "object",
+        "properties": {
+          "model_selection": {
+            "$ref": "#/components/schemas/ModelSelection"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ModelParameters"
+          },
+          "config_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "resolved_source_config_revisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "config_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/Revision"
+                }
+              },
+              "required": [
+                "config_id",
+                "revision"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "captured_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        },
+        "required": [
+          "model_selection",
+          "parameters",
+          "config_revision",
+          "resolved_source_config_revisions",
+          "captured_at"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalCandidate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "kind": {
+            "const": "paper"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "authors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "year": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9999
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "abstract": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "doi": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "arxiv_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "authors",
+              "year",
+              "abstract",
+              "doi",
+              "arxiv_id",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "source_kind": {
+                "const": "provider"
+              },
+              "provider_config_ref": {
+                "$ref": "#/components/schemas/TermSourceRef"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "supplement_id": {
+                "type": "null"
+              },
+              "search_term_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "retrieved_at": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "source_kind",
+              "provider_config_ref",
+              "url",
+              "supplement_id",
+              "search_term_id",
+              "retrieved_at"
+            ],
+            "additionalProperties": false
+          },
+          "screening": {
+            "type": "object",
+            "properties": {
+              "score": {
+                "type": "null"
+              },
+              "score_scale": {
+                "type": "null"
+              },
+              "valid": {
+                "type": "null"
+              },
+              "threshold_source": {
+                "type": "null"
+              },
+              "reason": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "score",
+              "score_scale",
+              "valid",
+              "threshold_source",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "kind",
+          "metadata",
+          "source",
+          "screening"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalSourceResult": {
+        "type": "object",
+        "properties": {
+          "term_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "source": {
+            "enum": [
+              "user",
+              "system"
+            ]
+          },
+          "config_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "skipped"
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skipped_date": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limited": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "term_id",
+          "source",
+          "config_id",
+          "count",
+          "status",
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "RunSourceResolution": {
+        "type": "object",
+        "properties": {
+          "executable": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "term_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TermSourceOption"
+                  }
+                },
+                "rejected": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TermSourceOption"
+                  }
+                }
+              },
+              "required": [
+                "term_id",
+                "sources",
+                "rejected"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "term_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "resolution": {
+                  "type": "object",
+                  "properties": {
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TermSourceOption"
+                      }
+                    },
+                    "rejected": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/components/schemas/TermSourceOption"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "reason_code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "reason_code"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "reason_code": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "sources",
+                    "rejected",
+                    "valid"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "term_id",
+                "resolution"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "executable",
+          "failed",
+          "valid"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalTaskView": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "attempt_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "operation_id": {
+            "const": "Construction.Start"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "construction_run"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "execution_status": {
+            "enum": [
+              "queued",
+              "running",
+              "waiting_user",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "status_url": {
+            "type": "string"
+          },
+          "events_url": {
+            "type": "string"
+          },
+          "cancel_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "search_term"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "const": "retrieval"
+          },
+          "business_state": {
+            "enum": [
+              "queued",
+              "running",
+              "waiting_user",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "waiting_items": {
+            "type": "array",
+            "maxItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "construction_step"
+                },
+                "subject": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "waiting_item"
+                    },
+                    "id": {
+                      "$ref": "#/components/schemas/ID"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                "subject_revision": {
+                  "$ref": "#/components/schemas/Revision"
+                },
+                "owner": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "construction_run"
+                    },
+                    "id": {
+                      "$ref": "#/components/schemas/ID"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                "read_url": {
+                  "type": "string"
+                },
+                "allowed_actions": {
+                  "type": "array",
+                  "maxItems": 0,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "subject",
+                "subject_revision",
+                "owner",
+                "read_url",
+                "allowed_actions"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "cancel_requested_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "event_cursor": {
+            "type": "string"
+          },
+          "partial_result_ref": {
+            "type": "null"
+          },
+          "target_location": {
+            "type": "object",
+            "properties": {
+              "parent_type": {
+                "const": "project"
+              },
+              "parent_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "read_url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "parent_type",
+              "parent_id",
+              "read_url"
+            ],
+            "additionalProperties": false
+          },
+          "material_use_notices": {
+            "type": "array",
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_id",
+          "operation_id",
+          "target",
+          "project_id",
+          "knowledge_version_id",
+          "execution_status",
+          "status_url",
+          "events_url",
+          "cancel_url",
+          "result_refs",
+          "revision",
+          "created_at",
+          "updated_at",
+          "started_at",
+          "finished_at",
+          "stage",
+          "business_state",
+          "waiting_items",
+          "cancel_requested_at",
+          "error",
+          "warnings",
+          "event_cursor",
+          "partial_result_ref",
+          "target_location",
+          "material_use_notices"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalRunView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "waiting_user",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "phase": {
+            "const": "retrieval"
+          },
+          "base_knowledge_version_id": {
+            "type": "null"
+          },
+          "published_knowledge_version_id": {
+            "type": "null"
+          },
+          "completion": {
+            "type": "null"
+          },
+          "input_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrievalSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "config_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrievalRuntimeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_input_revision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Revision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate_revision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Revision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate_version": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "preparing",
+                      "discarded"
+                    ]
+                  },
+                  "revision": {
+                    "$ref": "#/components/schemas/Revision"
+                  },
+                  "closing_reason": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "const": "cancelled"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "revision",
+                  "closing_reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "kind": {
+                  "const": "retrieval"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "result_summary": {
+                  "type": "object",
+                  "properties": {
+                    "candidate_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RetrievalSourceResult"
+                      }
+                    },
+                    "resolution": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/RunSourceResolution"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "candidate_count",
+                    "sources",
+                    "resolution"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TaskError"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "state",
+                "result_summary",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "waiting_items": {
+            "type": "array",
+            "maxItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/RetrievalWaiting"
+            }
+          },
+          "task": {
+            "$ref": "#/components/schemas/RetrievalTaskView"
+          },
+          "available_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActionAvailability"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "created_at",
+          "updated_at",
+          "status",
+          "phase",
+          "base_knowledge_version_id",
+          "published_knowledge_version_id",
+          "completion",
+          "input_snapshot",
+          "config_snapshot",
+          "effective_input_revision",
+          "candidate_revision",
+          "candidate_version",
+          "steps",
+          "waiting_items",
+          "task",
+          "available_actions"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalCommandResult": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/RetrievalRunView"
+          },
+          "task": {
+            "$ref": "#/components/schemas/RetrievalTaskView"
+          }
+        },
+        "required": [
+          "run",
+          "task"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalConfirmation": {
+        "type": "object",
+        "properties": {
+          "confirmation_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "action": {
+            "const": "confirm_retrieval"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "waiting_item"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "subject_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "impact_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "candidate_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "risks": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "confirmation_token": {
+            "type": "string"
+          },
+          "affected_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "retained_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "blocked_reasons": {
+            "type": "array",
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "confirmation_id",
+          "action",
+          "target",
+          "subject_revision",
+          "impact_revision",
+          "knowledge_version_id",
+          "candidate_revision",
+          "risks",
+          "expires_at",
+          "confirmation_token",
+          "affected_items",
+          "retained_items",
+          "blocked_reasons"
+        ],
+        "additionalProperties": false
+      },
+      "RetrievalWaiting": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "kind": {
+            "const": "retrieval"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "maxItems": 0,
+            "items": {
+              "type": "string"
+            }
+          },
+          "confirmation": {
+            "$ref": "#/components/schemas/RetrievalConfirmation"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "revision",
+          "allowed_actions",
+          "confirmation"
         ],
         "additionalProperties": false
       }

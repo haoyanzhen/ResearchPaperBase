@@ -1,6 +1,6 @@
 # 项目进度与待完成项
 
-文档版本：v1.93
+文档版本：v1.96
 更新日期：2026-10-28
 适用项目大版本：v1
 
@@ -15,8 +15,8 @@
 | 范围 | 当前状态及限定证据 |
 | --- | --- |
 | 交付流程 | [task038](../tasks/038-workflow-efficiency.md)落实用户2026-10-28授权：减少重复上下文、按有效基线增量审查、里程碑人工接受后提交Git；文档工程收口、246链接/锚点检查及独立审查通过；不扩大业务授权 |
-| 当前业务切片 | [task037](../tasks/037-search-terms-runtime.md)检索词生成审核/长期管理S1–S7工程收口，M-P0-11已于2026-10-28获人工接受（task037第9节，交付361文件无漂移），见[验收包](workorders/task037_search_terms_delivery_2026-10-28.md)；最终受影响74项通过，497未变场景复用全套首轮通过证据，check/build及独立复审通过。D-CW-01 A已按[task036第9节](../tasks/036-construction-design-gate.md#9-d-cw-01-a接受与恢复2026-10-27)同步；真实Run/完整FR020与资料链未交付 |
-| 最近业务里程碑 | M-P0-10已获限定人工接受，见[task035第12节](../tasks/035-smtp-security-runtime.md#12-m-p0-10人工接受2026-10-27)及[验收报告](workorders/task035_smtp_security_delivery_2026-10-26.md)。历史531项基线验证和差异补验不表示本轮重新运行；真实供应商/生产未验收 |
+| 当前业务切片 | D-CW-02 A已由用户明确选择，设计同步；[task040](../tasks/040-construction-runtime.md)完成M-P0-12手动启动/四论文源检索至等待限定切片，S1–S7工程收口、独立审查通过；[验收包](workorders/task040_construction_delivery_2026-10-28.md)待人工接受。最终受影响80项通过、未变511项复用全量通过证据，check/build通过；无真实Provider线上验收。评分后续按已定0–10、≥7规则；完整FR021/022仍未交付 |
+| 最近业务里程碑 | M-P0-11于2026-10-28获人工接受，361文件交付基线无漂移，已本地提交`3e5349e`（含明确列出的已接受前置，未push）；见[task037第9节](../tasks/037-search-terms-runtime.md#9-m-p0-11人工接受与提交范围2026-10-28)及[验收包](workorders/task037_search_terms_delivery_2026-10-28.md)。历史74项最终复验、497项复用及check/build/独立复审证据本轮未重跑；真实Run/完整FR020–022与生产未验收 |
 | 已交付业务基础 | 账号注册登录、本人Project与基础维护、个人/系统LLM和论文源配置、管理员账号治理、SMTP及基础安全已有局部交付；接受范围分别见[task019](../tasks/019-browser-milestone.md)、[task022](../tasks/022-project-maintenance.md)、[task026](../tasks/026-llm-parameter-runtime.md)、[task028](../tasks/028-personal-source-runtime.md)、[task029](../tasks/029-admin-accounts.md)、[task031](../tasks/031-system-llm-runtime.md)、[task033](../tasks/033-system-source-runtime.md)、[task035](../tasks/035-smtp-security-runtime.md)。不代表完整FR或当前工作区重新验收 |
 | 设计及工程基础 | A01–A10历史设计/骨架及限定接受见[历史快照](workorders/project_status_history_2026-10-28.md#2-当前进度概览)；现行规范入口为[设计索引](design/README.md)。旧应用仅保留archive候选片段；旧测试不能验收新核心 |
 | 尚未交付的整体能力 | 真实Construction检索/解析/分析及知识版本发布、Research Session、Review Run、Graph-RAG运行闭环和生产部署仍未整体交付；Memory及其他延期范围保持原分期。当前不提供整体完成百分比 |

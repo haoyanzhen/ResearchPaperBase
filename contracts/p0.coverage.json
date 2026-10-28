@@ -1,5 +1,5 @@
 {
-  "version": "1.13",
+  "version": "1.14",
   "date": "2026-10-28",
   "source_rows": [
     {
@@ -613,7 +613,13 @@
     "Construction.ConfirmTerm",
     "Construction.DiscardTerm",
     "Construction.GenerateTerms",
-    "Construction.SourceOptions"
+    "Construction.SourceOptions",
+    "Construction.ListRuns",
+    "Construction.Start",
+    "Construction.ReadRun",
+    "Construction.ReadCandidates",
+    "Construction.ReadInputRevisions",
+    "Construction.Cancel"
   ],
   "request_only_operations": [
     "Admin.TestSystemSource",
@@ -626,7 +632,6 @@
     "Construction.ScoreCandidates",
     "Construction.GenerateAnalysis",
     "Construction.ConfirmStep",
-    "Construction.Cancel",
     "Research.SendMessage",
     "Research.CancelResponse",
     "Research.ContinueWithoutEvidence",
@@ -697,7 +702,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "a4dc010918d46389c6910e6cd097c8e8030c7629b3b8bef059e658e07deab5a2",
+    "04-01_p0_operation_contracts.md": "96d0930153a9824b100c638e21a186f3f1abe438b8d2b7bd8a5cd53c0ccda3b7",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -1128,11 +1133,10 @@
       ]
     },
     "Construction.Cancel": {
-      "status": "request-only",
+      "status": "request-success-errors-partial",
+      "scope": "M-P0-12 manual paper retrieval; no scoring/publication/non-paper provider",
       "gaps": [
-        "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-REMAINING"
+        "Remaining Construction capabilities and full candidate transport"
       ]
     },
     "Research.SendMessage": {
@@ -1427,6 +1431,41 @@
       "status": "request-success-errors-partial",
       "gaps": [
         "GAP-RUNTIME"
+      ]
+    },
+    "Construction.ListRuns": {
+      "status": "request-success-errors-partial",
+      "scope": "M-P0-12 manual paper retrieval; no scoring/publication/non-paper provider",
+      "gaps": [
+        "Remaining Construction capabilities and full candidate transport"
+      ]
+    },
+    "Construction.Start": {
+      "status": "request-success-errors-partial",
+      "scope": "M-P0-12 manual paper retrieval; no scoring/publication/non-paper provider",
+      "gaps": [
+        "Remaining Construction capabilities and full candidate transport"
+      ]
+    },
+    "Construction.ReadRun": {
+      "status": "request-success-errors-partial",
+      "scope": "M-P0-12 manual paper retrieval; no scoring/publication/non-paper provider",
+      "gaps": [
+        "Remaining Construction capabilities and full candidate transport"
+      ]
+    },
+    "Construction.ReadCandidates": {
+      "status": "request-success-errors-partial",
+      "scope": "M-P0-12 manual paper retrieval; no scoring/publication/non-paper provider",
+      "gaps": [
+        "Remaining Construction capabilities and full candidate transport"
+      ]
+    },
+    "Construction.ReadInputRevisions": {
+      "status": "request-success-errors-partial",
+      "scope": "M-P0-12 manual paper retrieval; no scoring/publication/non-paper provider",
+      "gaps": [
+        "Remaining Construction capabilities and full candidate transport"
       ]
     }
   },
@@ -3082,5 +3121,16 @@
       "Construction.SourceOptions"
     ],
     "scope": "M-P0-11; no actual retrieval/run snapshots or schedule"
+  },
+  "construction_retrieval": {
+    "operations": [
+      "Construction.ListRuns",
+      "Construction.Start",
+      "Construction.ReadRun",
+      "Construction.ReadCandidates",
+      "Construction.ReadInputRevisions",
+      "Construction.Cancel"
+    ],
+    "scope": "manual retrieval and cancel only; no full FR completion"
   }
 }

@@ -110,6 +110,26 @@ class Transaction:
     ) -> None:
         self.conn, self.actor_id, self.construction = conn, actor_id, construction
 
+    def construction_impact(self, identity: UUID) -> list[dict[str, Any]]:
+        from rpb.adapters.run_tables import runs
+
+        return [
+            {
+                "id": str(row["id"]),
+                "revision": str(row["revision"]),
+                "status": row["status"],
+                "attempt_id": row["payload"]["attempt_id"],
+            }
+            for row in self.conn.execute(
+                sa.select(runs.c.id, runs.c.revision, runs.c.status, runs.c.payload)
+                .where(
+                    runs.c.project_id == identity,
+                    runs.c.status.in_(["queued", "running", "waiting_user"]),
+                )
+                .order_by(runs.c.id)
+            ).mappings()
+        ]
+
     def update_metadata(
         self, identity: UUID, data: dict[str, str], now: datetime
     ) -> dict[str, Any]:
@@ -141,6 +161,9 @@ class Transaction:
             .mappings()
             .one()
         )
+        from rpb.adapters.runs import cancel_project_runs
+
+        cancel_project_runs(self.conn, identity)
         return self.project_view(row)
 
     def find_lifecycle(self, identity: UUID, key: str) -> dict[str, Any] | None:

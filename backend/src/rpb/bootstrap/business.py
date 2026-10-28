@@ -17,6 +17,7 @@ from rpb.adapters.configuration_tasks import ConfigurationTasks
 from rpb.adapters.construction import ConstructionInitializer
 from rpb.adapters.llm import LLMStore
 from rpb.adapters.project_commands import ProjectUnitOfWork
+from rpb.adapters.runs import RunStore
 from rpb.adapters.search_terms import TermStore
 from rpb.adapters.security import SecurityStore
 from rpb.adapters.smtp import SMTPStore
@@ -25,6 +26,7 @@ from rpb.api.account import router_for
 from rpb.api.admin_accounts import router_for as admin_router
 from rpb.api.llm import router_for as llm_router
 from rpb.api.projects import router_for as projects_router
+from rpb.api.runs import router_for as runs_router
 from rpb.api.search_terms import router_for as terms_router
 from rpb.api.security import router_for as security_router
 from rpb.api.smtp import router_for as smtp_router
@@ -69,13 +71,19 @@ def create_business_app(
     )
     terms = TermStore(account, encryption_key)
     app.state.term_store = terms
+    run_store = RunStore(terms)
+    app.state.run_store = run_store
+    app.include_router(runs_router(TermService(run_store, origin)))
     app.include_router(terms_router(TermService(terms, origin)))
     sources = SourceStore(account, encryption_key)
     app.include_router(sources_router(LLMService(sources, origin)))
     app.include_router(
         llm_router(
             LLMService(
-                ConfigurationTasks(LLMStore(account, encryption_key), sources, smtp, terms), origin
+                ConfigurationTasks(
+                    LLMStore(account, encryption_key), sources, smtp, terms, run_store
+                ),
+                origin,
             )
         )
     )

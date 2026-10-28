@@ -1,0 +1,98 @@
+"""Manual Construction retrieval HTTP boundary."""
+
+from typing import Any
+from uuid import UUID
+
+from fastapi import APIRouter, Request, Response
+
+from rpb.modules.account_config.application.ports import AccountError
+from rpb.modules.construction.application.terms import TermService
+
+
+def router_for(service: TermService) -> APIRouter:
+    router = APIRouter(prefix="/api/v1/projects/{project_id}/construction-runs")
+
+    def call(
+        request: Request, project_id: UUID, operation: str, data: Any = None, write: bool = False
+    ) -> Any:
+        value = service.call(
+            operation,
+            request.cookies.get("rpb_session", ""),
+            request.headers.get("origin"),
+            request.headers.get("x-csrf-token"),
+            str(project_id),
+            {**(data or {}), **({"_request_id": request.state.request_id} if write else {})},
+            request.headers.get("idempotency-key"),
+            write,
+            request.headers.get("x-expected-actor"),
+        )
+        meta = {"request_id": request.state.request_id}
+        if write:
+            meta["idempotency_expires_at"] = value["expires_at"]
+            if value["original_request_id"] != request.state.request_id:
+                meta["original_request_id"] = value["original_request_id"]
+            value = value["value"]
+        if operation in {"list_runs", "candidates", "input_revisions"}:
+            cursor = value.pop("next_cursor")
+            meta.update(next_cursor=cursor, has_more=cursor is not None)
+        return {"data": value, "meta": meta}
+
+    @router.get("")
+    def listing(
+        request: Request, project_id: UUID, page_size: int = 20, cursor: str | None = None
+    ) -> Any:
+        if set(request.query_params) - {"page_size", "cursor"}:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        return call(request, project_id, "list_runs", {"page_size": page_size, "cursor": cursor})
+
+    @router.post("", status_code=202)
+    def start(request: Request, response: Response, project_id: UUID, body: dict[str, Any]) -> Any:
+        value = call(request, project_id, "start", body, True)
+        response.headers["Location"] = value["data"]["task"]["status_url"]
+        return value
+
+    @router.get("/{run_id}")
+    def read(request: Request, project_id: UUID, run_id: UUID) -> Any:
+        return call(request, project_id, "read_run", {"run_id": str(run_id)})
+
+    @router.get("/{run_id}/candidates")
+    def candidates(
+        request: Request,
+        project_id: UUID,
+        run_id: UUID,
+        page_size: int = 20,
+        cursor: str | None = None,
+    ) -> Any:
+        if set(request.query_params) - {"page_size", "cursor"}:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        return call(
+            request,
+            project_id,
+            "candidates",
+            {"run_id": str(run_id), "page_size": page_size, "cursor": cursor},
+        )
+
+    @router.get("/{run_id}/input-revisions")
+    def inputs(
+        request: Request,
+        project_id: UUID,
+        run_id: UUID,
+        page_size: int = 20,
+        cursor: str | None = None,
+    ) -> Any:
+        if set(request.query_params) - {"page_size", "cursor"}:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        return call(
+            request,
+            project_id,
+            "input_revisions",
+            {"run_id": str(run_id), "page_size": page_size, "cursor": cursor},
+        )
+
+    @router.post("/{run_id}/cancel")
+    def cancel(request: Request, project_id: UUID, run_id: UUID, body: dict[str, Any]) -> Any:
+        if "run_id" in body:
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        return call(request, project_id, "cancel", {**body, "run_id": str(run_id)}, True)
+
+    return router

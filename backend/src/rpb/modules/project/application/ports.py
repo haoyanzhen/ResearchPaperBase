@@ -11,6 +11,8 @@ class ProjectTransaction(Protocol):
     actor_id: UUID
     construction: ConstructionInitializer
 
+    def construction_impact(self, identity: UUID) -> list[dict[str, Any]]: ...
+
     def update_metadata(
         self, identity: UUID, data: dict[str, str], now: datetime
     ) -> dict[str, Any]: ...

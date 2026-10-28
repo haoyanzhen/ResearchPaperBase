@@ -161,7 +161,8 @@ def test_mi04_smtp_audit_failure_and_downgrade_preserve_committed_config(mail, d
         command.downgrade(db[1], "0011_system_sources")
     with db[0].connect() as conn:
         assert (
-            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0013_search_terms"
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
+            == "0014_construction_runs"
         )
     assert a.get(BASE).json()["data"] == row
 

@@ -1,7 +1,7 @@
 # Domain 附录：Construction 资产入库
 
-文档版本：v1.6
-更新日期：2026-10-27
+文档版本：v1.7
+更新日期：2026-10-28
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义 Construction 的检索词、候选论文与资料、去重筛选、手动补充、文本处理和分析确认的业务对象与不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -93,6 +93,7 @@ Construction 不变量：
 - 论文去重、评分、筛选和人工修正必须形成 DeduplicationDecision 或 PaperScreeningDecision；评分阈值来源、去重依据、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选论文和操作者。
 - Project 资料去重、评分、筛选和人工修正必须形成 MaterialDeduplicationDecision 或 MaterialScreeningDecision；标题归一化、`content_format_group`、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选资料和操作者。
 - 用户确认筛选结果后，候选论文和候选资料才能进入下载解析流程。
+- 自动评分按FR-022 D-CW-02 A：0–10综合分、系统默认阈值7、score≥7初判有效；记录三方面理由、尺度、阈值来源和模型依据。评分失败保持未判定，不写伪0分；人工修改/确认不能被重新评分静默覆盖。
 
 ## 5. 手动补充与资产边界
 

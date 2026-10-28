@@ -1,6 +1,6 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.21
+文档版本：v1.22
 更新日期：2026-10-28
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
@@ -218,6 +218,7 @@ M-P0-11工程细化：生成只追加候选，不提供覆盖已有词的分支�
 
 ### 4.1.1 候选、修订与输入快照的最小结构
 
+- D-CW-02 A：P0初始评分尺度固定0–10、系统默认阈值7、score≥7初判有效；阈值和来源、理论/技术/Project相关性理由及模型依据应可读可追溯。失败保持未判定，不伪造0分；人工调整和覆盖保护沿原命令。具体新增机器字段随评分实现转写，不把本次设计同步称为运行交付。
 - `ScreeningView={score:number|null,score_scale:{min:number,max:number}|null,valid:boolean|null,threshold_source:string|null,reason:string|null}`；未评分时score/scale为null，已有评分须在公开scale范围内；确认前valid可空。候选与正式资产复用此投影，正式资产只展示其版本固化值。
 - `PaperMetadata={doi:string|null,arxiv_id:string|null,title:string,authors:string[],year:integer|null,abstract:string|null,url:string|null}`；年份1–9999，title必需，authors可空。`MaterialMetadata={title:string,content_format:string,primary_source:SourceRef}`，格式必须为04-02支持列表。
 - `DraftPaperMetadata` 具有 PaperMetadata 的同名字段，但 title/其他未知标量允许null、authors默认[]；`DraftMaterialMetadata={title:string|null,content_format:string|null,primary_source:SourceRef|null}`。仅元数据草稿使用宽松结构，确认与正式资产按所需字段校验。

@@ -171,6 +171,16 @@ class PublicErrorTests(unittest.TestCase):
      self.assertEqual(guard, {'name':'X-Expected-Actor','in':'header','required':False,'schema':{'$ref':'#/components/schemas/ID'}})
      updated['parameters'].remove(guard)
      updated['responses']=copy.deepcopy(op['responses']); updated['x-coverage']=op['x-coverage']
+    if (path, method) == ('/projects/{project_id}/construction-runs/{run_id}/cancel', 'post'):
+     self.assertEqual(updated['requestBody'], op['requestBody'])
+     self.assertEqual(updated['responses']['200']['content']['application/json']['schema']['properties']['data'], {'$ref':'#/components/schemas/RetrievalCommandResult'})
+     self.assertEqual(set(updated['responses']), {'200','400','401','403','404','409','412','413','415','422','428','500'})
+     for status in ['400','401','403','404','409','412','413','415','422','428','500']:
+      self.assertEqual(updated['responses'][status], {'$ref':'#/components/responses/PublicError'+status})
+     guard=next(p for p in updated['parameters'] if p['name']=='X-Expected-Actor')
+     self.assertEqual(guard, {'name':'X-Expected-Actor','in':'header','required':False,'schema':{'$ref':'#/components/schemas/ID'}})
+     updated['parameters'].remove(guard)
+     updated['responses']=copy.deepcopy(op['responses']); updated['x-coverage']=op['x-coverage']
     if (path, method) == ('/projects', 'post'):
      # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.
      # Normalize only reviewed deltas, then retain the full historical operation assertion.
