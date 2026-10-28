@@ -20,6 +20,8 @@ from rpb.adapters.auth import AccountStore
 from rpb.adapters.llm import LLMStore
 from rpb.adapters.llm_provider import HTTPProvider
 from rpb.adapters.llm_worker import LLMWorker
+from rpb.adapters.search_term_worker import TermProvider, TermWorker
+from rpb.adapters.smtp_worker import SMTPWorker
 from rpb.adapters.source_provider import SourceProvider
 from rpb.adapters.source_worker import SourceWorker
 from rpb.adapters.sources import SourceStore
@@ -105,13 +107,32 @@ def main() -> None:
     stopped = Event()
     worker = LLMWorker(LLMStore(AccountStore(engine), key), HTTPProvider())
 
+    system_worker = LLMWorker(LLMStore(AccountStore(engine), key, system=True), HTTPProvider())
     source_worker = SourceWorker(SourceStore(AccountStore(engine), key), SourceProvider())
+
+    system_source_worker = SourceWorker(
+        SourceStore(AccountStore(engine), key, system=True), SourceProvider()
+    )
+
+    smtp_worker = SMTPWorker(app.state.smtp_store)
+    term_worker = TermWorker(app.state.term_store, TermProvider())
 
     def work() -> None:
         while not stopped.is_set():
             llm_work = worker.run_once()
             source_work = source_worker.run_once()
-            if not (llm_work or source_work):
+            system_work = system_worker.run_once()
+            system_source_work = system_source_worker.run_once()
+            smtp_work = smtp_worker.run_once()
+            term_work = term_worker.run_once()
+            if not (
+                llm_work
+                or source_work
+                or system_work
+                or system_source_work
+                or smtp_work
+                or term_work
+            ):
                 stopped.wait(0.5)
 
     thread = Thread(target=work, daemon=True)

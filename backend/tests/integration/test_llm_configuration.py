@@ -560,8 +560,7 @@ def test_lc20_populated_migration_refuses_and_preserves_secrets(llm, db):
         after = conn.scalar(sa.select(configs.c.secret_ciphertext))
         assert after == ciphertext and Fernet(key).decrypt(after) == b"SENSITIVE-KEY-123"
         assert (
-            conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0008_source_configuration"
+            conn.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0013_search_terms"
         )
 
 

@@ -8,7 +8,8 @@ const defaults: Record<string, string> = {arxiv: 'https://export.arxiv.org/api',
 const fresh = (): Draft => ({name: '', provider: 'arxiv', base_url: defaults.arxiv, access_mode: 'anonymous', enabled: true, rate: '', secret: '', clearSecret: false});
 const draftFor = (c: Config): Draft => ({name: c.name, provider: c.provider, base_url: c.base_url, access_mode: c.access_mode, enabled: c.enabled, rate: c.rate_limit_per_minute === null ? '' : String(c.rate_limit_per_minute), secret: '', clearSecret: false});
 function errorText(e: unknown) { const value = e as {status?: number}; if (value.status === 412) return '配置已被其他操作修改。草稿保留，请核查当前内容。'; if ([400, 422].includes(value.status ?? 0)) return '输入未通过校验，请检查数据源类型、访问模式、地址和速率。'; return '请求结果尚未确认，请核查当前状态。'; }
-export function SourceSettings({ api: baseApi, pageApi: basePageApi, write, actor, onChange, onBusy, onAuthFailure }: { api: API; pageApi: <T>(url: string, init?: RequestInit) => Promise<{ data: T; meta: {next_cursor: string | null; has_more: boolean} }>; write: Write; actor: string; onChange: () => void; onBusy: (v: boolean) => void; onAuthFailure: (e: unknown) => void }) {
+export function SourceSettings({ api: baseApi, pageApi: basePageApi, write, actor, onChange, onBusy, onAuthFailure, system = false }: { system?: boolean; api: API; pageApi: <T>(url: string, init?: RequestInit) => Promise<{ data: T; meta: {next_cursor: string | null; has_more: boolean} }>; write: Write; actor: string; onChange: () => void; onBusy: (v: boolean) => void; onAuthFailure: (e: unknown) => void }) {
+  const base = system ? "/api/v1/admin/data-source-configs" : "/api/v1/me/data-source-configs";
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const api: API = (url, init) => baseApi(url, { ...init, headers: { ...init?.headers, 'X-Expected-Actor': actor } });
@@ -25,7 +26,7 @@ export function SourceSettings({ api: baseApi, pageApi: basePageApi, write, acto
   const [consent, setConsent] = useState(false);
   const [task, setTask] = useState<Task | null>(null);
   const [testDetails, setTestDetails] = useState<{reason_code: string | null; access_mode: string} | null>(null);
-  async function listing() { const all: Config[] = []; let cursor: string | null = null; do { const page: {data: {items: Config[]}; meta: {next_cursor: string | null; has_more: boolean}} = await pageApi<{items: Config[]}>('/api/v1/me/data-source-configs?page_size=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); all.push(...page.data.items); cursor = page.meta.has_more ? page.meta.next_cursor : null; } while (cursor); setConfigs(all); }
+  async function listing() { const all: Config[] = []; let cursor: string | null = null; do { const page: {data: {items: Config[]}; meta: {next_cursor: string | null; has_more: boolean}} = await pageApi<{items: Config[]}>(base + '?page_size=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); all.push(...page.data.items); cursor = page.meta.has_more ? page.meta.next_cursor : null; } while (cursor); setConfigs(all); }
   useEffect(() => { void listing().catch(e => { if (alive.current) onAuthFailure(e); setMessage('配置列表读取失败。'); }); }, [actor]);
   function enter(c: Config | null) { setSelected(c); setDraft(c ? draftFor(c) : fresh()); setDirty(false); setSwitchTo(undefined); setUncertain(false); setPending(null); setTask(null); setTestDetails(null); setConsent(false); setMessage(''); }
   function switchConfig(c: Config | null) { if (dirty || uncertain || pending) setSwitchTo(c); else enter(c); }
@@ -45,24 +46,24 @@ export function SourceSettings({ api: baseApi, pageApi: basePageApi, write, acto
     let payload: unknown;
     try { payload = body(); } catch { setMessage('速率必须为正整数，留空使用数据源默认。'); return; }
     await run(async () => {
-      const command = pending ?? { key: crypto.randomUUID(), path: '/api/v1/me/data-source-configs', body: payload };
+      const command = pending ?? { key: crypto.randomUUID(), path: base, body: payload };
       if (!selected) setPending(command);
-      const result = await write<Config>(selected ? '/api/v1/me/data-source-configs/' + selected.id : command.path, selected ? payload : command.body, selected ? undefined : command.key, actor, selected ? 'PATCH' : 'POST');
+      const result = await write<Config>(selected ? base + '/' + selected.id : command.path, selected ? payload : command.body, selected ? undefined : command.key, actor, selected ? 'PATCH' : 'POST');
       setTask(null); setTestDetails(null); setSelected(result); setDraft(draftFor(result)); setDirty(false); setPending(null); setUncertain(false); setMessage('配置已保存；保存不会调用外部服务。'); setConsent(false); await listing(); onChange(); if (next !== undefined) enter(next);
     }, true);
   }
   async function loadCurrent() {
     await run(async () => {
-      if (pending && pending.path !== '/api/v1/me/data-source-configs') { const restored = await write<Task>(pending.path, pending.body, pending.key, actor); setTask(restored); setPending(null); setUncertain(false); }
+      if (pending && pending.path !== base) { const restored = await write<Task>(pending.path, pending.body, pending.key, actor); setTask(restored); setPending(null); setUncertain(false); }
       else if (pending) { const restored = await write<Config>(pending.path, pending.body, pending.key, actor); enter(restored); }
-      else if (selected) { try { enter(await api<Config>('/api/v1/me/data-source-configs/' + selected.id)); } catch (e) { if ((e as {status?: number}).status === 404) enter(null); else throw e; } }
+      else if (selected) { try { enter(await api<Config>(base + '/' + selected.id)); } catch (e) { if ((e as {status?: number}).status === 404) enter(null); else throw e; } }
       await listing(); onChange();
     });
   }
   async function start() {
     if (!selected) return;
     await run(async () => {
-      const command = pending ?? { key: crypto.randomUUID(), path: '/api/v1/me/data-source-configs/' + selected.id + '/test', body: {} };
+      const command = pending ?? { key: crypto.randomUUID(), path: base + '/' + selected.id + '/test', body: {} };
       setTestDetails(null); setPending(command); const started = await write<Task>(command.path, command.body, command.key, actor); setTask(started); setPending(null); setUncertain(false);
     }, true);
   }
@@ -70,11 +71,11 @@ export function SourceSettings({ api: baseApi, pageApi: basePageApi, write, acto
     if (!task) return;
     await run(async () => {
       const current = await api<Task>(task.status_url); setTask(current);
-      if (['succeeded', 'failed'].includes(current.execution_status)) { if (current.result_refs.length) { const result = await api<{payload: {reason_code: string | null; access_mode: string}}>(current.result_refs[0].url); setTestDetails(result.payload); } setMessage(current.execution_status === 'succeeded' ? '连接测试成功。' : '操作失败：' + current.error?.code); if (selected) { const latest = await api<Config>('/api/v1/me/data-source-configs/' + selected.id); if (latest.revision !== selected.revision) { setMessage('配置已被其他操作修改。草稿保留，请核查当前内容。'); setUncertain(true); setTask(null); setTestDetails(null); } else { setSelected(previous => previous ? { ...previous, connection_status: latest.connection_status, last_test_at: latest.last_test_at } : previous); } } await listing(); onChange(); }
+      if (['succeeded', 'failed'].includes(current.execution_status)) { if (current.result_refs.length) { const result = await api<{payload: {reason_code: string | null; access_mode: string}}>(current.result_refs[0].url); setTestDetails(result.payload); } setMessage(current.execution_status === 'succeeded' ? '连接测试成功。' : '操作失败：' + current.error?.code); if (selected) { const latest = await api<Config>(base + '/' + selected.id); if (latest.revision !== selected.revision) { setMessage('配置已被其他操作修改。草稿保留，请核查当前内容。'); setUncertain(true); setTask(null); setTestDetails(null); } else { setSelected(previous => previous ? { ...previous, connection_status: latest.connection_status, last_test_at: latest.last_test_at } : previous); } } await listing(); onChange(); }
     });
   }
-  return <section className="form-card" aria-label="数据源设置" aria-busy={busy}><h2>个人数据源配置{selected ? ' / ' + selected.name : ' / 新增'}</h2>
-    <p>配置只供本人使用。检索服务入口与具体文件地址分开；保存不调用外部服务。</p>
+  return <section className="form-card" aria-label={system ? "系统数据源设置" : "数据源设置"} aria-busy={busy}><h2>{system ? "系统数据源配置" : "个人数据源配置"}{selected ? ' / ' + selected.name : ' / 新增'}</h2>
+    <p>{system ? "系统配置由管理员维护，供缺少对应Provider个人配置时使用。" : "个人可分别配置arXiv、OpenAlex、Semantic Scholar、ADS；同Provider优先使用个人配置。"}检索服务入口与具体文件地址分开；保存不调用外部服务。</p>
     {message && <p role="alert">{message}</p>}
     <div className="list-pages"><button disabled={busy} onClick={() => switchConfig(null)}>新增数据源配置</button><button disabled={busy} onClick={() => void run(listing)}>刷新数据源列表</button>{configs.map(c => <button key={c.id} disabled={busy} onClick={() => switchConfig(c)}>{c.name} · {c.enabled ? '启用' : '禁用'}</button>)}</div>
     {switchTo !== undefined && <div role="group" aria-label="未保存修改"><p>有未保存或未核实的修改。</p><button disabled={busy || uncertain || !!pending} onClick={() => void save(switchTo)}>保存并切换</button><button disabled={busy || uncertain || !!pending} onClick={() => enter(switchTo)}>放弃并切换</button><button disabled={busy} onClick={() => setSwitchTo(undefined)}>留在当前配置</button></div>}
@@ -96,7 +97,7 @@ export function SourceSettings({ api: baseApi, pageApi: basePageApi, write, acto
       {pending && <button disabled={busy} onClick={() => void loadCurrent()}>核查同一请求</button>}
       {task && <div role="status">任务状态：{task.execution_status}<button disabled={busy} onClick={() => void poll()}>刷新数据源测试状态</button></div>}
       {testDetails && <div aria-label="数据源测试详情"><p>诊断：{testDetails.reason_code ?? '成功'}</p><p>访问模式：{testDetails.access_mode}</p></div>}
-      <button disabled={busy || dirty || uncertain || !!pending} onClick={() => { if (window.confirm('删除此数据源配置？已保存任务快照保持原义。')) void run(async () => { await write('/api/v1/me/data-source-configs/' + selected.id + '?expected_revision=' + selected.revision, undefined, undefined, actor, 'DELETE'); enter(null); await listing(); onChange(); }, true); }}>删除数据源配置</button>
+      <button disabled={busy || dirty || uncertain || !!pending} onClick={() => { if (window.confirm('删除此数据源配置？已保存任务快照保持原义。')) void run(async () => { await write(base + '/' + selected.id + '?expected_revision=' + selected.revision, undefined, undefined, actor, 'DELETE'); enter(null); await listing(); onChange(); }, true); }}>删除数据源配置</button>
     </div>}
   </section>;
 }

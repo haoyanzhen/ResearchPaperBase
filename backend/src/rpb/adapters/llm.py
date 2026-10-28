@@ -13,6 +13,8 @@ import sqlalchemy as sa
 from cryptography.fernet import Fernet
 from sqlalchemy.engine import Connection
 
+from rpb.adapters import system_llm_tables
+from rpb.adapters.account import accounts
 from rpb.adapters.auth import AccountStore
 from rpb.adapters.llm_tables import audit, commands, configs, selections, tasks
 from rpb.modules.account_config.application.ports import AccountError
@@ -62,7 +64,14 @@ def require_revision(actual: Any, supplied: Any) -> None:
 
 
 class LLMStore:
-    def __init__(self, account: AccountStore, encryption_key: bytes | None = None) -> None:
+    def __init__(
+        self, account: AccountStore, encryption_key: bytes | None = None, *, system: bool = False
+    ) -> None:
+        self.system = system
+        self.configs = system_llm_tables.configs if system else configs
+        self.tasks = system_llm_tables.tasks if system else tasks
+        self.commands = system_llm_tables.commands if system else commands
+        self.audit = system_llm_tables.audit if system else audit
         self.account = account
         self.cipher = Fernet(encryption_key) if encryption_key else None
 
@@ -88,13 +97,27 @@ class LLMStore:
                 if held is not None:
                     conn.execute(sa.text("SELECT pg_advisory_unlock(:key)"), {"key": held})
 
+    def permitted_actor(self, conn: Connection, actor: UUID) -> bool:
+        row = conn.execute(sa.select(accounts).where(accounts.c.id == actor)).mappings().first()
+        return bool(row and row["enabled"] and (not self.system or row["is_admin"]))
+
+    def owner_filter(self, table: sa.Table, actor: UUID) -> Any:
+        return sa.true() if self.system else table.c.owner_id == actor
+
+    def selectable_options(self, conn: Connection, actor: UUID) -> list[dict[str, Any]]:
+        personal = self.options(conn, actor)
+        if self.system:
+            return personal
+        # Only safe ModelOption fields cross the platform/private boundary.
+        return personal + LLMStore(self.account, system=True).options(conn, actor)
+
     def config(self, conn: Connection, actor: UUID, identity: str) -> dict[str, Any]:
         row = (
             conn.execute(
-                sa.select(configs).where(
-                    configs.c.id == uuid_value(identity),
-                    configs.c.owner_id == actor,
-                    configs.c.deleted.is_(False),
+                sa.select(self.configs).where(
+                    self.configs.c.id == uuid_value(identity),
+                    self.owner_filter(self.configs, actor),
+                    self.configs.c.deleted.is_(False),
                 )
             )
             .mappings()
@@ -107,8 +130,8 @@ class LLMStore:
     def task(self, conn: Connection, actor: UUID, identity: str) -> dict[str, Any]:
         row = (
             conn.execute(
-                sa.select(tasks).where(
-                    tasks.c.id == uuid_value(identity), tasks.c.owner_id == actor
+                sa.select(self.tasks).where(
+                    self.tasks.c.id == uuid_value(identity), self.owner_filter(self.tasks, actor)
                 )
             )
             .mappings()
@@ -124,7 +147,9 @@ class LLMStore:
     ) -> list[dict[str, Any]]:
         rows = (
             conn.execute(
-                sa.select(configs).where(configs.c.owner_id == actor, configs.c.deleted.is_(False))
+                sa.select(self.configs).where(
+                    self.owner_filter(self.configs, actor), self.configs.c.deleted.is_(False)
+                )
             )
             .mappings()
             .all()
@@ -136,14 +161,14 @@ class LLMStore:
             latest: dict[str, Any] = {}
             jobs = (
                 conn.execute(
-                    sa.select(tasks)
+                    sa.select(self.tasks)
                     .where(
-                        tasks.c.config_id == config["id"],
-                        tasks.c.config_revision == config["revision"],
-                        tasks.c.credential_revision == config["credential_revision"],
-                        tasks.c.state.in_(["succeeded", "failed"]),
+                        self.tasks.c.config_id == config["id"],
+                        self.tasks.c.config_revision == config["revision"],
+                        self.tasks.c.credential_revision == config["credential_revision"],
+                        self.tasks.c.state.in_(["succeeded", "failed"]),
                     )
-                    .order_by(tasks.c.created_at, tasks.c.id)
+                    .order_by(self.tasks.c.created_at, self.tasks.c.id)
                 )
                 .mappings()
                 .all()
@@ -157,10 +182,13 @@ class LLMStore:
             for name, valid in latest.items():
                 output.append(
                     {
-                        "source": "user",
+                        "source": "system" if self.system else "user",
                         "config_id": str(config["id"]),
                         "model_id": name,
-                        "label": config["data"]["name"] + " / " + name,
+                        "label": ("系统 / " if self.system else "个人 / ")
+                        + config["data"]["name"]
+                        + " / "
+                        + name,
                         "available": bool(valid and config["secret_ciphertext"]),
                         "unavailable_reason": None
                         if valid and config["secret_ciphertext"]
@@ -173,15 +201,15 @@ class LLMStore:
         opts = self.options(conn, actor, str(row["id"]))
         tested = (
             conn.execute(
-                sa.select(tasks)
+                sa.select(self.tasks)
                 .where(
-                    tasks.c.config_id == row["id"],
-                    tasks.c.config_revision == row["revision"],
-                    tasks.c.credential_revision == row["credential_revision"],
-                    tasks.c.operation == "test",
-                    tasks.c.state.in_(["succeeded", "failed"]),
+                    self.tasks.c.config_id == row["id"],
+                    self.tasks.c.config_revision == row["revision"],
+                    self.tasks.c.credential_revision == row["credential_revision"],
+                    self.tasks.c.operation == "test",
+                    self.tasks.c.state.in_(["succeeded", "failed"]),
                 )
-                .order_by(tasks.c.created_at.desc(), tasks.c.id.desc())
+                .order_by(self.tasks.c.created_at.desc(), self.tasks.c.id.desc())
                 .limit(1)
             )
             .mappings()
@@ -216,10 +244,15 @@ class LLMStore:
         return {
             "task_id": identity,
             "attempt_id": str(row["attempt_id"]),
-            "operation_id": "Config.TestLLM"
-            if row["operation"] == "test"
-            else "Config.RefreshModels",
-            "target": {"type": "user_llm_config", "id": str(row["config_id"])},
+            "operation_id": (
+                "Admin.TestSystemLLM" if row["operation"] == "test" else "Admin.RefreshSystemModels"
+            )
+            if self.system
+            else ("Config.TestLLM" if row["operation"] == "test" else "Config.RefreshModels"),
+            "target": {
+                "type": "system_llm_config" if self.system else "user_llm_config",
+                "id": str(row["config_id"]),
+            },
             "project_id": None,
             "knowledge_version_id": None,
             "execution_status": row["state"],
@@ -249,7 +282,10 @@ class LLMStore:
             "target_location": {
                 "parent_type": None,
                 "parent_id": None,
-                "read_url": "/api/v1/me/llm-configs/" + str(row["config_id"]),
+                "read_url": (
+                    "/api/v1/admin/llm-configs/" if self.system else "/api/v1/me/llm-configs/"
+                )
+                + str(row["config_id"]),
             },
             "material_use_notices": [],
         }
@@ -356,6 +392,8 @@ class LLMStore:
         with self.account.authorized_connection(token, csrf) as (conn, actor):
             if expected_actor is not None and expected_actor != str(actor):
                 raise AccountError("AUTH_SESSION_INVALID", 401)
+            if self.system and not self.permitted_actor(conn, actor):
+                raise AccountError("PERMISSION_RESOURCE_UNAVAILABLE", 404)
             row = (
                 self.config(conn, actor, target)
                 if target and operation not in {"task", "result", "events"}
@@ -365,9 +403,12 @@ class LLMStore:
                 items = [
                     self.view(conn, actor, dict(x))
                     for x in conn.execute(
-                        sa.select(configs)
-                        .where(configs.c.owner_id == actor, configs.c.deleted.is_(False))
-                        .order_by(configs.c.created_at, configs.c.id)
+                        sa.select(self.configs)
+                        .where(
+                            self.owner_filter(self.configs, actor),
+                            self.configs.c.deleted.is_(False),
+                        )
+                        .order_by(self.configs.c.created_at, self.configs.c.id)
                     ).mappings()
                 ]
                 cursor = data.get("cursor")
@@ -388,7 +429,7 @@ class LLMStore:
                 assert row is not None
                 return self.view(conn, actor, row)
             if operation == "options":
-                return {"items": self.options(conn, actor)}
+                return {"items": self.selectable_options(conn, actor)}
             if operation in {"selection", "select"}:
                 selected = (
                     conn.execute(sa.select(selections).where(selections.c.owner_id == actor))
@@ -407,7 +448,7 @@ class LLMStore:
                     if selection is not None and not any(
                         x["available"]
                         and {k: x[k] for k in ("source", "config_id", "model_id")} == selection
-                        for x in self.options(conn, actor)
+                        for x in self.selectable_options(conn, actor)
                     ):
                         raise AccountError("CONFIG_CONNECTION_FAILED", 409)
                     revision = str(uuid4())
@@ -426,7 +467,7 @@ class LLMStore:
                 valid = selection is not None and any(
                     x["available"]
                     and {k: x[k] for k in ("source", "config_id", "model_id")} == selection
-                    for x in self.options(conn, actor)
+                    for x in self.selectable_options(conn, actor)
                 )
                 return {
                     "revision": revision,
@@ -457,12 +498,12 @@ class LLMStore:
                 ):
                     raise AccountError("VALIDATION_BAD_REQUEST", 400)
                 lookup = sa.and_(
-                    commands.c.owner_id == actor,
-                    commands.c.operation == operation,
-                    commands.c.target == (target or ""),
-                    commands.c.key == key,
+                    self.commands.c.owner_id == actor,
+                    self.commands.c.operation == operation,
+                    self.commands.c.target == (target or ""),
+                    self.commands.c.key == key,
                 )
-                previous = conn.execute(sa.select(commands).where(lookup)).mappings().first()
+                previous = conn.execute(sa.select(self.commands).where(lookup)).mappings().first()
                 if previous:
                     self.config(conn, actor, str(previous["config_id"]))
                     if previous["fingerprint"] != fingerprint:
@@ -490,15 +531,17 @@ class LLMStore:
                     "updated_at": now,
                 }
                 if row:
-                    conn.execute(configs.update().where(configs.c.id == identity).values(**updates))
+                    conn.execute(
+                        self.configs.update().where(self.configs.c.id == identity).values(**updates)
+                    )
                 else:
                     conn.execute(
-                        configs.insert().values(
+                        self.configs.insert().values(
                             id=identity, owner_id=actor, created_at=now, **updates
                         )
                     )
                 conn.execute(
-                    audit.insert().values(
+                    self.audit.insert().values(
                         id=uuid4(),
                         owner_id=actor,
                         config_id=identity,
@@ -514,7 +557,7 @@ class LLMStore:
                 require_revision(row["revision"], data.get("expected_revision"))
                 deletion_revision = uuid4()
                 conn.execute(
-                    audit.insert().values(
+                    self.audit.insert().values(
                         id=uuid4(),
                         owner_id=actor,
                         config_id=row["id"],
@@ -525,8 +568,8 @@ class LLMStore:
                     )
                 )
                 conn.execute(
-                    configs.update()
-                    .where(configs.c.id == row["id"])
+                    self.configs.update()
+                    .where(self.configs.c.id == row["id"])
                     .values(
                         deleted=True,
                         secret_ciphertext=None,
@@ -556,7 +599,7 @@ class LLMStore:
                 job_id = uuid4()
                 task_revision = uuid4()
                 conn.execute(
-                    tasks.insert().values(
+                    self.tasks.insert().values(
                         id=job_id,
                         owner_id=actor,
                         config_id=identity,
@@ -577,7 +620,7 @@ class LLMStore:
                 raise AccountError("VALIDATION_FIELD_INVALID", 422)
             if operation in {"create", "test", "refresh"}:
                 conn.execute(
-                    commands.insert().values(
+                    self.commands.insert().values(
                         owner_id=actor,
                         operation=operation,
                         target=target or "",

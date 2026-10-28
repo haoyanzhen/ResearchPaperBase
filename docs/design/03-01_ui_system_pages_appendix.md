@@ -1,6 +1,6 @@
 # UI 系统页面附录
 
-文档版本：v1.4
+文档版本：v1.6
 更新日期：2026-10-26
 来源：`03_ui_workspace.md` v1.18 第 9 章；保留 P 编号，按模块拆分。
 
@@ -333,25 +333,26 @@ P10b 与 P06b 使用一致的 LLM 配置实例编辑结构，但配置作用域�
 
 #### P10d 管理员 / SMTP
 
+2026-10-26用户决定D-SMTP-01 A：P0维护一套系统SMTP，按04-01/04-02的稳定单例身份读取、保存及测试连接。首次未配置时显示空表单；不提供多Profile列表、添加、启停、主备切换或删除操作。
+
 ```text
-┌────────────────────────────────────────────────────────────────────────────┐
-│ Admin / SMTP                                                 Avatar       │
-├──────────────────┬──────────────────────┬─────────────────────────────────┤
-│ Users            │ SMTP Profiles        │ SMTP Editor / Primary SMTP      │
-│ LLM              │ + 添加               │ 发件邮箱                         │
-│ Sources          │ ┌──────────────────┐ │ Server / Host                   │
-│ SMTP             │ │ > Primary   ok  │ │ Port                            │
-│ Security         │ │ Backup    off   │ │ Encryption [选择 ▼]             │
-│                  │ └──────────────────┘ │ Auth Type  [选择 ▼]             │
-│                  │                      │ 认证凭据                         │
-│                  │                      │ Username（按认证方式显示）        │
-│                  │                      │ Secret / API Key / Token [👁]    │
-│                  │                      │ [测试发送] [保存] [删除]        │
-│                  │                      │ 测试结果 / 失败原因              │
-└──────────────────┴──────────────────────┴─────────────────────────────────┘
+Admin / SMTP
+管理员侧栏                 系统 SMTP
+Users / LLM / Sources      发件邮箱
+SMTP / Security            Server / Host、Port
+                           Encryption [None / SSL-TLS / STARTTLS]
+                           Auth Type [None / Password / Token / API Key]
+                           Username（按认证方式显示）
+                           凭据（仅当前输入可显示，已保存值脱敏）
+                           [测试连接] [保存]
+                           测试结果 / 失败原因
 ```
 
-P10d 的 `Encryption` 明确连接加密方式，可选 None、SSL-TLS、STARTTLS。`Auth Type` 可选 None、Password、Token、API Key，并决定认证凭据区域的字段：None 不显示凭据；Password 显示 Username + Password；Token 显示 Username（按服务要求）+ Token；API Key 显示 API Key，Username 隐藏或可选。`API Key` 类型支持发件邮箱、server 和 API key 即可认证的邮件服务。
+D-SMTP-02已选择B：保留四类认证，不缩减为None/Password。None不需要认证凭据；Password使用用户名与服务允许的密码类凭据（包括按该机制使用的授权码/应用专用密码），不代表必须使用邮箱登录密码。Token和API Key按受支持服务的明确认证机制和字段映射实现；不能将任意Token/API Key统一当作密码或猜测用户名。首批服务已由用户确定为QQ邮箱、163邮箱、Gmail、Microsoft 365、SendGrid；具体映射与OAuth生命周期按task034第10节继续细化，四个UI选项不构成任意邮件服务兼容承诺。凭据加密、脱敏及不返回已保存明文按08执行。
+
+2026-10-26用户决定D-SMTP-03 A：Gmail/Microsoft 365采用应用管理OAuth授权和自动刷新。Token模式展示OAuth应用配置（client ID、必要client secret、Microsoft租户）、配置的SMTP账号、连接状态及“连接账号/重新授权”操作；由部署方注册OAuth应用，管理员显式授权，后端保管与按需刷新凭据。前端不提供已保存access/refresh token明文读取，也不以手工填写短期access token作为已交付的自动刷新方案。无法刷新时提示重新授权，保留原配置身份，不自动切换邮箱或认证方式。授权完成只表示获得凭据，仍通过显式SMTP连接测试判断当前连接结果。详细执行边界见04-01配置章节及[task034第11节](../../tasks/034-smtp-security-design-gate.md#11-d-smtp-03接受与oauth执行边界)。
+
+测试只验证连接及认证，不发送邮件，沿用04-01与09的P0规则。用户通知和实际邮件链路仍P1。决定来源与剩余设计项见[task034第9节](../../tasks/034-smtp-security-design-gate.md#9-2026-10-26人工决定与恢复)。
 
 #### P10e 管理员 / Security
 

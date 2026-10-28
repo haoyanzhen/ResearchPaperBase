@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.17
-更新日期：2026-10-26
+文档版本：v1.21
+更新日期：2026-10-28
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -113,7 +113,7 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 
 ### 2.2 操作表
 
-2026-10-26已决语义：LLM无enabled写入/读取业务字段；`ModelOption.available`仅在当前配置/凭据修订下该模型最小测试成功时为true，列表发现/手填不等于可用。新选择/新启动检查此条件；既有任务遵循08 §12.3。配置级connection_status不能替代逐模型事实。下面两个LLM测试入口及机器schema仍是待校准的旧字段覆盖：空请求不能表达待测model_id，结果尚不能完整表达测试对象修订。实现前须一次补齐个人/系统待测模型、修订绑定及结果投影，保留TaskRef/持久结果协议；本次只同步已决业务含义，不宣称机器覆盖已完成。参数扩展方向B的具体schema待调研收敛。
+2026-10-26已决语义：个人/系统LLM无enabled字段；发现或手填只产生待测候选，当前配置/凭据修订下逐模型显式最小测试成功才可选择。测试请求为`{model_id!}`，刷新请求为`{}`；测试结果绑定模型、配置修订及凭据修订，使用持久TaskRef/结果协议。个人投影LLMTaskView与系统投影SystemLLMTaskView分别约束Config.*和Admin.*身份；系统任务仅当前管理员可读，普通用户只读取安全ModelOption。参数规则见04-04；旧选择失效提示修复，不自动替换。已有任务凭据更新仍按08 §12.3。机器覆盖范围以覆盖清单为准，不以局部投影宣称完整Task/SSE契约已覆盖。
 
 
 | 方法/路径 | 用例 ID / FR | 请求 → 响应 | 前置与失败 |
@@ -139,13 +139,29 @@ TaskWaitingRef的subject_revision是被引用实体的revision，确认对象的
 | POST `/admin/users/{user_id}/reset-password` | `Admin.ResetPassword` / 005 | RevCommand+Confirmation → `{reset_completed:true,password_disclosed:boolean,operation_id:ID,new_password?:string}` | 新执行仅本次返回新密码、no-store；同键重放只返回 reset_completed=true、password_disclosed=false、operation_id，不再次重置、不重放密码 |
 | DELETE `/admin/users/{user_id}` | `Admin.DeleteUser` / 005 | expected_revision、confirmation_token query → CommandResult | P0 普通用户；删除相关私人数据，保留共享身份及他人数据；运行中禁止后续写入或安全终止；终结按 D04 A，原终态保持，清理失败独立呈现 |
 | GET/POST `/admin/llm-configs`；GET/PATCH/DELETE `/admin/llm-configs/{config_id}` | `Admin.ManageSystemLLM` / 006 | 对应 LLM 类型 → 对应 LLMView/列表/删除结果 | 与个人结构相同，scope 固定 system，限管理员 |
-| POST `/admin/llm-configs/{config_id}/test`、`/models/refresh` | `Admin.TestSystemLLM/RefreshSystemModels` / 006 | `{}` → TaskRef | 不暴露系统密钥 |
+| POST `/admin/llm-configs/{config_id}/test`、`/models/refresh` | `Admin.TestSystemLLM/RefreshSystemModels` / 006 | 测试`{model_id!}`、刷新`{}` → TaskRef | 当前管理员读系统任务；不暴露系统密钥 |
 | GET/POST `/admin/data-source-configs`；GET/PATCH/DELETE `/admin/data-source-configs/{config_id}` | `Admin.ManageSystemSources` / 006 | 对应 Source 类型 → 对应 SourceView/列表/删除结果 | 仅系统配置 |
 | POST `/admin/data-source-configs/{config_id}/test` | `Admin.TestSystemSource` / 006 | `{}` → TaskRef | 连接验证，不启动构建 |
 | GET/PUT `/admin/smtp-config` | `Admin.ReadSMTP/SaveSMTP` / 006 | 无/SMTPWrite+RevCommand → 脱敏SMTP配置+revision | 只保存平台发送能力，不提前实现用户通知 P1 |
 | POST `/admin/smtp-config/test` | `Admin.TestSMTPConnection` / 006 | `{}` → TaskRef | P0 测试连接/认证，不隐式发送真实邮件 |
+| POST `/admin/smtp-config/oauth/start` | `Admin.StartSMTPOAuth` / 006 | `{expected_revision}`+幂等键 → `{authorization_url,expires_at}` | 显式管理员会话绑定授权，不将授权链接写日志 |
+| GET `/admin/smtp-config/oauth/callback` | `Admin.CompleteSMTPOAuth` / 006 | `state,code或error` → 303本地安全状态页 | 校验会话/权限/修订/一次性state；不回显code/token，不发送邮件 |
 | GET/PUT `/admin/security-config` | `Admin.ReadSecurity/SaveSecurity` / 006 | 无/SecurityWrite+RevCommand → SecurityWrite+revision | 不接受 P1/P2 管理字段 |
 
+
+Security执行规格：连接测试超时仅控制LLM模型发现/逐模型显式测试、Source和SMTP连接测试，不改写个人配置或扩展到业务Run。LLM实际预算取配置timeout_seconds和系统测试上限的较小值；测试内OAuth刷新共用该次预算，授权回调采用独立有限技术超时。每次测试执行固定已解析的安全设置修订/预算，后续测试重新解析；不追溯改写已完成结果。
+
+connection_retry_count只允许重试能证明尚未提交任何应用请求的连接建立失败，最多该次数；无证据则不重试。不重试认证拒绝、权限/配置失效、已提交结果未知、可能收费的模型请求或Worker租约过期；OAuth授权码交换/刷新提交结果未知同样不能盲目重放。每次外发重新检查当前权限/配置资格，退避仍受总预算和租约约束。该限制不新增P0业务重试入口。
+
+诊断采用固定字段白名单：minimal为关联ID、阶段、状态和安全错误分类；standard可增加耗时、内部尝试次数及脱敏协议类别。两级均不得含密钥、OAuth code/token、业务正文、物理路径或Provider原始错误，不扩大管理员读取私人配置/任务的权限。配置快照保留期只清理独立可清理诊断，不删任务输入/结果引用、冻结配置、人工确认或审计；清理须有资格判断和测试证据，不能仅按创建时间级联删除Task。
+
+SMTP OAuth补充（2026-10-26，D-SMTP-03 A已批准）：Gmail/Microsoft 365的Token模式由应用处理管理员显式授权及自动刷新；部署方注册OAuth应用，管理员维护client ID/必要client secret/Microsoft租户配置。不得把单个secret输入的现有机器结构解释为完整OAuth契约。实施时须增补应用配置、授权开始/回调和连接状态的机器结构及用例，沿用系统SMTP单例，不新增Profile集合。凭据使用独立加密存储和脱敏视图，access/refresh token不进入Task输入、业务快照、日志或前端响应。
+
+授权开始须绑定当前管理员会话、SMTP配置身份/修订、Provider和预登记回调；回调校验一次性state、期限、PKCE及当前管理员资格，拒绝切号、重复/过期、配置已修改及Provider不匹配的回调，不覆盖其他管理员的新配置。授权/令牌URL由明确Provider适配提供，不接受任意回调跳转或任意Token端点。授权码与token交换的敏感响应不写入普通日志；回调完成后跳转到不含code/state的本地状态页。保存配置不隐式触发授权或连接测试。
+
+按需刷新绑定原Provider、OAuth应用与SMTP账号；并发刷新需串行或等价提交保护，轮换后的refresh token与修订原子保存，旧响应不能覆盖新凭据。同绑定下自动刷新属于凭据更新，不改冻结业务配置；更换Provider、应用、租户、SMTP账号或认证模式后旧授权不可作为新绑定凭据。refresh失败分为暂时不可用和需重新授权，返回安全原因；不能换用其他邮箱/模式，不能因授权成功直接标记SMTP测试成功。执行与结果提交仍检查当前权限及任务资格；撤销管理员资格不得被回调或迟到刷新恢复。P0只执行配置授权与SMTP连接/认证测试，不发送邮件。
+
+上述为已批准能力的执行约束；机器schema、运行端点、存储及验收测试尚未实现，不以本文新增文字声明其已交付。授权/刷新外部服务默认mock；真实OAuth应用注册、账号授权或发信不由本次本地实现授权自动执行。
 
 单例初始化：`GET /me/model-selection` 必须返回已初始化的 revision，首次 selection=null、valid=false。`GET /admin/smtp-config` 返回 `{revision,configured:false,config:null}` 直到首次保存，配置后 `{revision,configured:true,config:脱敏SMTPView}`；`GET /admin/security-config` 返回 `{revision,configured:boolean,effective:SecurityWrite}`，首次使用部署默认值（连接超时30秒、自动连接重试0次、诊断快照保留30天、diagnostic_scope=minimal）且 configured=false。保留天数仅用于可清理诊断快照；历史Run复现必需的冻结配置、人工确认和引用依赖不得据此删除，具体清理仍受领域保留规则约束。相应 PUT 返回同一读取结构，使首次保存无需猜测 revision；初始化不创建任何密钥，SecretView.configured=false、hint=null。
 
@@ -179,7 +195,7 @@ Workspace 草稿保存不是章节/检索词内容保存；业务写入必须调
 
 - `SourcePolicy={mode:all_resolvable|selected!,source_refs?:{source:user|system,config_id:ID}[]}`；all_resolvable 禁止 source_refs，selected 必须非空。
 - `SearchTermWrite={query:string!,keywords?:string[],synonyms?:string[],exclusions?:string[],rationale?:string,coverage?:string,source_policy?:SourcePolicy,auto_update_enabled?:boolean}`；字符串数组每项1–200、最多100项；缺省数组空，理由/覆盖空串，source_policy 默认 all_resolvable，auto_update_enabled 默认 true。
-- `SearchTermView=Resource+SearchTermWrite+{content_state:string,confirmed_revision:Revision|null,confirmed_at:Time|null}`；不存在独立 enabled 字段。
+- `SearchTermView=Resource+SearchTermWrite+{status:candidate|accepted,content_state:agent_draft|manual_edit|manual_confirm,confirmed_revision:Revision|null,confirmed_at:Time|null,modified_by:ID|null,modified_at:Time,confirmations:ConfirmationPreview[],source_dependencies?:TermSourceDependencies}`；不存在独立 enabled 字段。
 - `ConstructionWorkspaceView=Resource+{auto_update_enabled:boolean,scheduler_available:boolean,occupying_run_id:ID|null,pending_supplement_count:integer,pending_revision_count:integer}`；P0 scheduler_available=false。
 - `SupplementCreate={kind:paper|material!,source:{type:doi|arxiv_id|url!,value:string!},title?:string}`；paper 可 DOI/arXiv/URL，material 只 URL；单文件使用下表 upload。`SupplementView=Resource+{kind,source,title:string|null,content_format:string|null,metadata_candidates:MetadataCandidate[],resolution_status:pending|resolved|ambiguous|failed,confirmation_status:unconfirmed|confirmed,inclusion_status:pending|processing|published,assigned_run_id:ID|null,published_version_id:ID|null,error:TaskError|null}`；未解析不伪造 title/format，ambiguous 必须用户选择。
 - `SupplementPatch={expected_revision!,title?:string,selected_candidate_id?:ID,source_note?:string,metadata?:{doi?:string|null,arxiv_id?:string|null,title?:string,authors?:string[],year?:integer|null}}`；metadata 仅 paper；source_note为1–10000字符的人工来源说明，供关键元数据不足时确认依据；资料不强制作者/年份/语言/provider。
@@ -195,6 +211,10 @@ Workspace 草稿保存不是章节/检索词内容保存；业务写入必须调
 - `CandidatePatch={expected_revision!,metadata?:部分PaperMetadata或MaterialMetadata,screening?:{score?:number,valid?:boolean,reason:string!},analysis?:PaperAnalysis或MaterialAnalysis}`；metadata 限 SupplementPatch 已允许字段，资料仅标题/格式识别修正；修改使依赖下游结果失效，不改变启动配置。
 - `IngestionPreview={revision:Revision,base_knowledge_version_id:ID|null,valid_papers:ID[],valid_materials:ID[],skipped:object[],failed:object[],degraded:object[],non_knowledge_items:object[],risks:object[],waiting_item:WaitingItem}`。
 
+
+M-P0-11工程细化：生成只追加候选，不提供覆盖已有词的分支；确认候选即接受进入长期列表，批量动作按逐词命令执行，遇到冲突停止并保留已完成项。`query`为1–10000字符，rationale/coverage最多10000字符；来源引用最多100项且去重。确认快照另冻结修改来源、修改人/时间，确认token绑定主体、Project、词及修订，有效期10分钟，跨应用实例可验证。弃用后幂等重放只返回最小DiscardedTermView，不再返回候选正文。
+
+本片WorkspaceView增加 `topic_source:MaterialSourceIdentity` 与最近20项 `generation_tasks:TermGenerationTaskView[]`。已保存的Project名称/描述/研究范围按其内容修订注册historical_input来源，默认private/unconfirmed；用户显式分类后再按本人Project政策决定Agent资格。本次追加文字绑定actor、Project和生成任务ID的current_submission；派生词记录完整主题来源修订和本次提交scope。任务的受理、派发、提交记录当前政策/分类修订及判定（不含正文/凭据），业务输入另外冻结。权限放宽不自动重做已失败任务，未知外呼结果不得自动重发。任务只经通用Task/SSE读取，成功返回词引用，不生成KnowledgeVersion。
 
 ### 4.1.1 候选、修订与输入快照的最小结构
 
@@ -220,6 +240,8 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 | GET/POST `CW/search-terms` | `Construction.ListTerms/AddTerm` / 020 | 分页/SearchTermWrite → List<SearchTermView>/SearchTermView | 新建为未确认；手工输入与生成同等可追溯 |
 | GET/PATCH/DELETE `CW/search-terms/{term_id}` | `Construction.ReadTerm/EditTerm/DeleteTerm` / 020 | 无/部分SearchTermWrite+RevCommand/修订query → SearchTermView/SearchTermView/204无正文 | 不修改历史 Run 快照；实质编辑清除当前确认有效性 |
 | POST `CW/search-terms/generate` | `Construction.GenerateTerms` / 020 | `{expected_revision!,model_selection!,additional_requirements?:string,confirmation_token?:string,acknowledged_risk_ids:string[]!}` → TaskRef | 已有人工内容的覆盖需具体授权，否则保留原内容 |
+| GET `CW/source-options` | `Construction.SourceOptions` / 020 | 无 → `{sources:TermSourceOption[],rejected:TermSourceOption[],valid:boolean,reason_code:string|null}` | 仅当前主体可见配置的安全投影，无凭据；拒绝项保留原因，不替换显式选择 |
+| POST `CW/search-terms/{term_id}/discard` | `Construction.DiscardTerm` / 020 | RevCommand → `{id,revision,status:discarded,discarded_at:Time}` | 仅候选；删除候选正文，仅保留归一化查询摘要及必要幂等回执 |
 | POST `CW/search-terms/{term_id}/confirm` | `Construction.ConfirmTerm` / 020 | RevCommand+Confirmation → SearchTermView | 详情confirmations提供当前确认token；保存确认快照，不自动启动 Run |
 | GET/POST `CW/supplements` | `Construction.ListSupplements/SubmitSupplement` / 023 | 分页/SupplementCreate → List<SupplementView>/`{supplement:SupplementView,task:TaskRef}` | 返回202；接收不等于入库 |
 | POST `CW/supplements/upload` | `Construction.UploadSupplement` / 023,024 | multipart `file!,kind:paper\|material!,title?` → `{supplement:SupplementView,task:TaskRef}` | 单文件；格式/大小按04-02；paper仅PDF |
@@ -231,7 +253,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 | GET `CW/pending-revisions` | `Construction.ListPendingRevisions` / 023,026 | 分页 → List<PendingRevisionView> | 只读已受理关联移除记录，无独立 POST；不能重复绑定其他构建 |
 | POST `CW/association-clear-preview` | `Construction.PreviewClearAssociations` / 023,026 | RevCommand+AssociationSelection → AssociationRemovalPreview | 单条/多条/全部统一预览；绑定实际成员及修订、基线、冲突构建，不物理清理 |
 | POST `CW/association-clear-confirm` | `Construction.ClearAssociations` / 023,026 | RevCommand+Confirmation → `{run:ConstructionRunView,task:TaskRef,pending_revisions:PendingRevisionView[]}`（202） | 一次确认授权已列明冲突构建安全终止及自动创建 revision_only 移除构建；无需再启动或再确认入库；发布后生效 |
-| GET/POST `P/construction-runs` | `Construction.ListRuns/Start` / 014,020–026 | 分页/ConstructionStart → List<ConstructionRunView>/`{run:ConstructionRunView,task:TaskRef}` | 按 mode 校验已确认输入及实际需要的模型/来源；排队不占槽，取得槽后冻结最新基线；revision_only 不检索；有意全移除可发布空版本 |
+| GET/POST `P/construction-runs` | `Construction.ListRuns/Start` / 014,020–026 | 分页/ConstructionStart → List<ConstructionRunView>/`{run:ConstructionRunView,task:TaskRef}` | 按 mode 校验已确认输入及实际需要的模型/来源；retrieval来源采用D-CW-01 A逐词部分继续，selected失效整词拒绝，全部不可执行不受理，失败项随输入保存且可诊断；排队不占槽，取得槽后冻结最新基线；revision_only 不检索；有意全移除可发布空版本 |
 | GET `CR` | `Construction.ReadRun` / 014–016 | 无 → ConstructionRunView | 历史读取与当前配置分离 |
 | GET `CR/input-revisions` | `Construction.ReadInputRevisions` / 022 | 分页 → List<InputRevisionView> | 同 Run 初始及显式修订记录，按 created_at ASC；只读，不创建输入修订 |
 | POST `CR/append-search-terms` | `Construction.AppendSearchTerms` / 022 | `{expected_revision!,selected_terms:{term_id:ID,confirmed_revision:Revision}[]!,reason:string!}` → `{run:ConstructionRunView,task:TaskRef}`（202） | 非空且仅追加新已确认词；筛选等待阶段、剩余预算及冻结来源检查；建立输入修订，保留原人工选择 |

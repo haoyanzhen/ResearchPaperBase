@@ -51,6 +51,29 @@ def storage(request):
 def db(storage):
     engine, cfg = storage
     with engine.begin() as conn:
+        for table in (
+            "security_diagnostics",
+            "security_audit",
+            "security_configs",
+            "smtp_oauth_handshakes",
+            "smtp_audit",
+            "smtp_tasks",
+            "smtp_commands",
+            "smtp_configs",
+            "system_source_audit",
+            "system_source_tasks",
+            "system_source_commands",
+            "system_source_configs",
+            "system_llm_audit",
+            "system_llm_tasks",
+            "system_llm_commands",
+            "system_llm_configs",
+            "account_action_previews",
+            "account_governance_audit",
+            "account_reset_commands",
+            "account_cleanup_records",
+        ):
+            conn.execute(sa.text(f"DELETE FROM {table}"))
         conn.execute(sa.text("DELETE FROM project_lifecycle_records"))
         conn.execute(sa.text("DELETE FROM project_create_commands"))
         conn.execute(sa.text("DELETE FROM auth_sessions"))
@@ -60,6 +83,29 @@ def db(storage):
         conn.execute(sa.text("DELETE FROM source_dispatch_limits"))
     yield engine, cfg
     with engine.begin() as conn:
+        for table in (
+            "security_diagnostics",
+            "security_audit",
+            "security_configs",
+            "smtp_oauth_handshakes",
+            "smtp_audit",
+            "smtp_tasks",
+            "smtp_commands",
+            "smtp_configs",
+            "system_source_audit",
+            "system_source_tasks",
+            "system_source_commands",
+            "system_source_configs",
+            "system_llm_audit",
+            "system_llm_tasks",
+            "system_llm_commands",
+            "system_llm_configs",
+            "account_action_previews",
+            "account_governance_audit",
+            "account_reset_commands",
+            "account_cleanup_records",
+        ):
+            conn.execute(sa.text(f"DELETE FROM {table}"))
         conn.execute(sa.text("DELETE FROM project_lifecycle_records"))
         conn.execute(sa.text("DELETE FROM project_create_commands"))
         conn.execute(sa.text("DELETE FROM auth_sessions"))

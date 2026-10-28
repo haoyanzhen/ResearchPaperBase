@@ -1,6 +1,6 @@
 {
-  "version": "1.9",
-  "date": "2026-10-26",
+  "version": "1.13",
+  "date": "2026-10-28",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -131,6 +131,14 @@
       "use_cases": "`Admin.TestSMTPConnection` / 006"
     },
     {
+      "signature": "POST `/admin/smtp-config/oauth/start`",
+      "use_cases": "`Admin.StartSMTPOAuth` / 006"
+    },
+    {
+      "signature": "GET `/admin/smtp-config/oauth/callback`",
+      "use_cases": "`Admin.CompleteSMTPOAuth` / 006"
+    },
+    {
       "signature": "GET/PUT `/admin/security-config`",
       "use_cases": "`Admin.ReadSecurity/SaveSecurity` / 006"
     },
@@ -185,6 +193,14 @@
     {
       "signature": "POST `CW/search-terms/generate`",
       "use_cases": "`Construction.GenerateTerms` / 020"
+    },
+    {
+      "signature": "GET `CW/source-options`",
+      "use_cases": "`Construction.SourceOptions` / 020"
+    },
+    {
+      "signature": "POST `CW/search-terms/{term_id}/discard`",
+      "use_cases": "`Construction.DiscardTerm` / 020"
     },
     {
       "signature": "POST `CW/search-terms/{term_id}/confirm`",
@@ -577,17 +593,32 @@
     "MaterialSource.CorrectClassification",
     "Config.TestLLM",
     "Config.RefreshModels",
-    "Config.TestSource"
-  ],
-  "request_only_operations": [
+    "Config.TestSource",
+    "Admin.PreviewAccountAction",
+    "Admin.UpdateAccount",
+    "Admin.ResetPassword",
+    "Admin.DeleteUser",
     "Admin.TestSystemLLM",
     "Admin.RefreshSystemModels",
-    "Admin.TestSystemSource",
     "Admin.TestSMTPConnection",
+    "Admin.StartSMTPOAuth",
+    "Admin.CompleteSMTPOAuth",
+    "Construction.ReadWorkspace",
+    "Construction.SaveConfig",
+    "Construction.ListTerms",
+    "Construction.AddTerm",
+    "Construction.ReadTerm",
+    "Construction.EditTerm",
+    "Construction.DeleteTerm",
+    "Construction.ConfirmTerm",
+    "Construction.DiscardTerm",
+    "Construction.GenerateTerms",
+    "Construction.SourceOptions"
+  ],
+  "request_only_operations": [
+    "Admin.TestSystemSource",
     "Project.Archive",
     "Project.Cleanup",
-    "Construction.SaveConfig",
-    "Construction.ConfirmTerm",
     "Construction.ConfirmSupplement",
     "Construction.ClearAssociations",
     "Construction.AppendSearchTerms",
@@ -666,7 +697,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "41b7642d43ac8b4c456ad8aa1113cf4aaea6c0f23e73a712967478420650b7a6",
+    "04-01_p0_operation_contracts.md": "a4dc010918d46389c6910e6cd097c8e8030c7629b3b8bef059e658e07deab5a2",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -985,35 +1016,31 @@
       ]
     },
     "Admin.TestSystemLLM": {
-      "status": "request-only",
+      "status": "request-success-partial",
       "gaps": [
         "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-RUNTIME"
       ]
     },
     "Admin.RefreshSystemModels": {
-      "status": "request-only",
+      "status": "request-success-partial",
       "gaps": [
         "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-RUNTIME"
       ]
     },
     "Admin.TestSystemSource": {
-      "status": "request-only",
+      "status": "request-success-partial",
       "gaps": [
         "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-RUNTIME"
       ]
     },
     "Admin.TestSMTPConnection": {
-      "status": "request-only",
+      "status": "request-success-partial",
       "gaps": [
-        "GAP-ERROR",
         "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-ERROR"
       ]
     },
     "Project.Archive": {
@@ -1033,19 +1060,15 @@
       ]
     },
     "Construction.SaveConfig": {
-      "status": "request-only",
+      "status": "request-success-errors-partial",
       "gaps": [
-        "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-REMAINING"
+        "GAP-RUNTIME"
       ]
     },
     "Construction.ConfirmTerm": {
-      "status": "request-only",
+      "status": "request-success-errors-partial",
       "gaps": [
-        "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-REMAINING"
+        "GAP-RUNTIME"
       ]
     },
     "Construction.ConfirmSupplement": {
@@ -1309,6 +1332,102 @@
       "gaps": [
         "GAP-RUNTIME"
       ]
+    },
+    "Admin.PreviewAccountAction": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.UpdateAccount": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.ResetPassword": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.DeleteUser": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-ERROR",
+        "GAP-RUNTIME"
+      ]
+    },
+    "Admin.StartSMTPOAuth": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-RUNTIME",
+        "GAP-ERROR"
+      ]
+    },
+    "Admin.CompleteSMTPOAuth": {
+      "status": "request-success-partial",
+      "gaps": [
+        "GAP-RUNTIME",
+        "GAP-ERROR"
+      ]
+    },
+    "Construction.ReadWorkspace": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.ListTerms": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.AddTerm": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.ReadTerm": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.EditTerm": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.DeleteTerm": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.DiscardTerm": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.GenerateTerms": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.SourceOptions": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
     }
   },
   "row_coverage": [
@@ -1517,44 +1636,76 @@
     {
       "source_row_index": 22,
       "status": "not-typed",
-      "typed_operations": {},
+      "typed_operations": {
+        "Admin.PreviewAccountAction": [
+          "request",
+          "success"
+        ]
+      },
       "remaining": [
         {
           "use_case_or_route": "Admin.PreviewAccountAction",
-          "gap": "GAP-CONFIRM"
+          "gaps": [
+            "GAP-ERROR",
+            "GAP-RUNTIME"
+          ]
         }
       ]
     },
     {
       "source_row_index": 23,
       "status": "not-typed",
-      "typed_operations": {},
+      "typed_operations": {
+        "Admin.UpdateAccount": [
+          "request",
+          "success"
+        ]
+      },
       "remaining": [
         {
           "use_case_or_route": "Admin.UpdateAccount",
-          "gap": "GAP-REMAINING"
+          "gaps": [
+            "GAP-ERROR",
+            "GAP-RUNTIME"
+          ]
         }
       ]
     },
     {
       "source_row_index": 24,
       "status": "not-typed",
-      "typed_operations": {},
+      "typed_operations": {
+        "Admin.ResetPassword": [
+          "request",
+          "success"
+        ]
+      },
       "remaining": [
         {
           "use_case_or_route": "Admin.ResetPassword",
-          "gap": "GAP-REMAINING"
+          "gaps": [
+            "GAP-ERROR",
+            "GAP-RUNTIME"
+          ]
         }
       ]
     },
     {
       "source_row_index": 25,
       "status": "not-typed",
-      "typed_operations": {},
+      "typed_operations": {
+        "Admin.DeleteUser": [
+          "request",
+          "success"
+        ]
+      },
       "remaining": [
         {
           "use_case_or_route": "Admin.DeleteUser",
-          "gap": "GAP-REMAINING"
+          "gaps": [
+            "GAP-ERROR",
+            "GAP-RUNTIME"
+          ]
         }
       ]
     },
@@ -1574,8 +1725,8 @@
       "source_row_index": 27,
       "status": "partial",
       "typed_operations": {
-        "Admin.TestSystemLLM": "request-only",
-        "Admin.RefreshSystemModels": "request-only"
+        "Admin.TestSystemLLM": "request-success-partial",
+        "Admin.RefreshSystemModels": "request-success-partial"
       },
       "remaining": []
     },
@@ -1595,7 +1746,7 @@
       "source_row_index": 29,
       "status": "partial",
       "typed_operations": {
-        "Admin.TestSystemSource": "request-only"
+        "Admin.TestSystemSource": "request-success-partial"
       },
       "remaining": []
     },
@@ -1612,12 +1763,26 @@
       "source_row_index": 31,
       "status": "partial",
       "typed_operations": {
-        "Admin.TestSMTPConnection": "request-only"
+        "Admin.TestSMTPConnection": "request-success-partial"
       },
       "remaining": []
     },
     {
-      "source_row_index": 32,
+      "typed_operations": {
+        "Admin.StartSMTPOAuth": "request-success-partial"
+      },
+      "remaining": [],
+      "source_row_index": 32
+    },
+    {
+      "typed_operations": {
+        "Admin.CompleteSMTPOAuth": "request-success-partial"
+      },
+      "remaining": [],
+      "source_row_index": 33
+    },
+    {
+      "source_row_index": 34,
       "status": "partial",
       "typed_operations": {
         "Admin.ReadSecurity": "request-success-partial",
@@ -1626,7 +1791,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 33,
+      "source_row_index": 35,
       "status": "partial",
       "typed_operations": {
         "Project.List": "request-success-partial",
@@ -1635,7 +1800,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 34,
+      "source_row_index": 36,
       "status": "partial",
       "typed_operations": {
         "Project.Read": "request-success-partial",
@@ -1644,7 +1809,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 35,
+      "source_row_index": 37,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1655,7 +1820,7 @@
       ]
     },
     {
-      "source_row_index": 36,
+      "source_row_index": 38,
       "status": "partial",
       "typed_operations": {
         "Project.Archive": "request-only"
@@ -1663,7 +1828,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 37,
+      "source_row_index": 39,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1674,7 +1839,7 @@
       ]
     },
     {
-      "source_row_index": 38,
+      "source_row_index": 40,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1685,7 +1850,7 @@
       ]
     },
     {
-      "source_row_index": 39,
+      "source_row_index": 41,
       "status": "partial",
       "typed_operations": {
         "Project.Cleanup": "request-only"
@@ -1693,7 +1858,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 40,
+      "source_row_index": 42,
       "status": "partial",
       "typed_operations": {
         "Workspace.Open": "request-success-partial"
@@ -1701,7 +1866,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 41,
+      "source_row_index": 43,
       "status": "partial",
       "typed_operations": {
         "Workspace.SaveContext": "request-success-partial"
@@ -1709,60 +1874,62 @@
       "remaining": []
     },
     {
-      "source_row_index": 42,
+      "source_row_index": 44,
       "status": "partial",
       "typed_operations": {
-        "Construction.SaveConfig": "request-only"
+        "Construction.ReadWorkspace": [
+          "request",
+          "success",
+          "public-errors"
+        ],
+        "Construction.SaveConfig": [
+          "request",
+          "success",
+          "public-errors"
+        ]
       },
       "remaining": [
         {
           "use_case_or_route": "Construction.ReadWorkspace",
-          "gap": "GAP-REMAINING"
-        }
-      ]
-    },
-    {
-      "source_row_index": 43,
-      "status": "not-typed",
-      "typed_operations": {},
-      "remaining": [
-        {
-          "use_case_or_route": "Construction.ListTerms",
-          "gap": "GAP-REMAINING"
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
         },
         {
-          "use_case_or_route": "Construction.AddTerm",
-          "gap": "GAP-REMAINING"
-        }
-      ]
-    },
-    {
-      "source_row_index": 44,
-      "status": "not-typed",
-      "typed_operations": {},
-      "remaining": [
-        {
-          "use_case_or_route": "Construction.ReadTerm",
-          "gap": "GAP-REMAINING"
-        },
-        {
-          "use_case_or_route": "Construction.EditTerm",
-          "gap": "GAP-REMAINING"
-        },
-        {
-          "use_case_or_route": "Construction.DeleteTerm",
-          "gap": "GAP-REMAINING"
+          "use_case_or_route": "Construction.SaveConfig",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
         }
       ]
     },
     {
       "source_row_index": 45,
-      "status": "not-typed",
-      "typed_operations": {},
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ListTerms": [
+          "request",
+          "success",
+          "public-errors"
+        ],
+        "Construction.AddTerm": [
+          "request",
+          "success",
+          "public-errors"
+        ]
+      },
       "remaining": [
         {
-          "use_case_or_route": "Construction.GenerateTerms",
-          "gap": "GAP-REMAINING"
+          "use_case_or_route": "Construction.ListTerms",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        },
+        {
+          "use_case_or_route": "Construction.AddTerm",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
         }
       ]
     },
@@ -1770,12 +1937,121 @@
       "source_row_index": 46,
       "status": "partial",
       "typed_operations": {
-        "Construction.ConfirmTerm": "request-only"
+        "Construction.ReadTerm": [
+          "request",
+          "success",
+          "public-errors"
+        ],
+        "Construction.EditTerm": [
+          "request",
+          "success",
+          "public-errors"
+        ],
+        "Construction.DeleteTerm": [
+          "request",
+          "success",
+          "public-errors"
+        ]
       },
-      "remaining": []
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ReadTerm",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        },
+        {
+          "use_case_or_route": "Construction.EditTerm",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        },
+        {
+          "use_case_or_route": "Construction.DeleteTerm",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        }
+      ]
     },
     {
       "source_row_index": 47,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.GenerateTerms": [
+          "request",
+          "success",
+          "public-errors"
+        ]
+      },
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.GenerateTerms",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        }
+      ]
+    },
+    {
+      "status": "partial",
+      "typed_operations": {
+        "Construction.SourceOptions": [
+          "request",
+          "success",
+          "public-errors"
+        ]
+      },
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.SourceOptions",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        }
+      ],
+      "source_row_index": 48
+    },
+    {
+      "status": "partial",
+      "typed_operations": {
+        "Construction.DiscardTerm": [
+          "request",
+          "success",
+          "public-errors"
+        ]
+      },
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.DiscardTerm",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        }
+      ],
+      "source_row_index": 49
+    },
+    {
+      "source_row_index": 50,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ConfirmTerm": [
+          "request",
+          "success",
+          "public-errors"
+        ]
+      },
+      "remaining": [
+        {
+          "use_case_or_route": "Construction.ConfirmTerm",
+          "gaps": [
+            "GAP-RUNTIME"
+          ]
+        }
+      ]
+    },
+    {
+      "source_row_index": 51,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1790,7 +2066,7 @@
       ]
     },
     {
-      "source_row_index": 48,
+      "source_row_index": 52,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1801,7 +2077,7 @@
       ]
     },
     {
-      "source_row_index": 49,
+      "source_row_index": 53,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1816,7 +2092,7 @@
       ]
     },
     {
-      "source_row_index": 50,
+      "source_row_index": 54,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1827,7 +2103,7 @@
       ]
     },
     {
-      "source_row_index": 51,
+      "source_row_index": 55,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1838,7 +2114,7 @@
       ]
     },
     {
-      "source_row_index": 52,
+      "source_row_index": 56,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1849,7 +2125,7 @@
       ]
     },
     {
-      "source_row_index": 53,
+      "source_row_index": 57,
       "status": "partial",
       "typed_operations": {
         "Construction.ConfirmSupplement": "request-only"
@@ -1857,7 +2133,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 54,
+      "source_row_index": 58,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1868,7 +2144,7 @@
       ]
     },
     {
-      "source_row_index": 55,
+      "source_row_index": 59,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1879,7 +2155,7 @@
       ]
     },
     {
-      "source_row_index": 56,
+      "source_row_index": 60,
       "status": "partial",
       "typed_operations": {
         "Construction.ClearAssociations": "request-only"
@@ -1887,7 +2163,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 57,
+      "source_row_index": 61,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1902,7 +2178,7 @@
       ]
     },
     {
-      "source_row_index": 58,
+      "source_row_index": 62,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1913,7 +2189,7 @@
       ]
     },
     {
-      "source_row_index": 59,
+      "source_row_index": 63,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1924,7 +2200,7 @@
       ]
     },
     {
-      "source_row_index": 60,
+      "source_row_index": 64,
       "status": "partial",
       "typed_operations": {
         "Construction.AppendSearchTerms": "request-only"
@@ -1932,7 +2208,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 61,
+      "source_row_index": 65,
       "status": "partial",
       "typed_operations": {
         "Construction.ReplaceCandidateSource": "request-only"
@@ -1940,7 +2216,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 62,
+      "source_row_index": 66,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1951,7 +2227,7 @@
       ]
     },
     {
-      "source_row_index": 63,
+      "source_row_index": 67,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1962,7 +2238,7 @@
       ]
     },
     {
-      "source_row_index": 64,
+      "source_row_index": 68,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -1973,7 +2249,7 @@
       ]
     },
     {
-      "source_row_index": 65,
+      "source_row_index": 69,
       "status": "partial",
       "typed_operations": {
         "Construction.ScoreCandidates": "request-only"
@@ -1981,7 +2257,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 66,
+      "source_row_index": 70,
       "status": "partial",
       "typed_operations": {
         "Construction.GenerateAnalysis": "request-only"
@@ -1989,7 +2265,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 67,
+      "source_row_index": 71,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2000,7 +2276,7 @@
       ]
     },
     {
-      "source_row_index": 68,
+      "source_row_index": 72,
       "status": "partial",
       "typed_operations": {
         "Construction.ConfirmStep": "request-only"
@@ -2008,7 +2284,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 69,
+      "source_row_index": 73,
       "status": "partial",
       "typed_operations": {
         "Construction.Cancel": "request-only"
@@ -2016,7 +2292,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 70,
+      "source_row_index": 74,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2031,7 +2307,7 @@
       ]
     },
     {
-      "source_row_index": 71,
+      "source_row_index": 75,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2042,7 +2318,7 @@
       ]
     },
     {
-      "source_row_index": 72,
+      "source_row_index": 76,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2057,7 +2333,7 @@
       ]
     },
     {
-      "source_row_index": 73,
+      "source_row_index": 77,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2068,7 +2344,7 @@
       ]
     },
     {
-      "source_row_index": 74,
+      "source_row_index": 78,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2079,7 +2355,7 @@
       ]
     },
     {
-      "source_row_index": 75,
+      "source_row_index": 79,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2090,7 +2366,7 @@
       ]
     },
     {
-      "source_row_index": 76,
+      "source_row_index": 80,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2101,7 +2377,7 @@
       ]
     },
     {
-      "source_row_index": 77,
+      "source_row_index": 81,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2116,7 +2392,7 @@
       ]
     },
     {
-      "source_row_index": 78,
+      "source_row_index": 82,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2127,7 +2403,7 @@
       ]
     },
     {
-      "source_row_index": 79,
+      "source_row_index": 83,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2138,7 +2414,7 @@
       ]
     },
     {
-      "source_row_index": 80,
+      "source_row_index": 84,
       "status": "partial",
       "typed_operations": {
         "Research.SendMessage": "request-only"
@@ -2146,7 +2422,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 81,
+      "source_row_index": 85,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2157,7 +2433,7 @@
       ]
     },
     {
-      "source_row_index": 82,
+      "source_row_index": 86,
       "status": "partial",
       "typed_operations": {
         "Research.CancelResponse": "request-only"
@@ -2165,7 +2441,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 83,
+      "source_row_index": 87,
       "status": "partial",
       "typed_operations": {
         "Research.ContinueWithoutEvidence": "request-only"
@@ -2173,7 +2449,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 84,
+      "source_row_index": 88,
       "status": "partial",
       "typed_operations": {
         "Research.FixRange": "request-only"
@@ -2181,7 +2457,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 85,
+      "source_row_index": 89,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2192,7 +2468,7 @@
       ]
     },
     {
-      "source_row_index": 86,
+      "source_row_index": 90,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2203,7 +2479,7 @@
       ]
     },
     {
-      "source_row_index": 87,
+      "source_row_index": 91,
       "status": "partial",
       "typed_operations": {
         "Review.Create": "request-only"
@@ -2216,7 +2492,7 @@
       ]
     },
     {
-      "source_row_index": 88,
+      "source_row_index": 92,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2227,7 +2503,7 @@
       ]
     },
     {
-      "source_row_index": 89,
+      "source_row_index": 93,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2242,7 +2518,7 @@
       ]
     },
     {
-      "source_row_index": 90,
+      "source_row_index": 94,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2253,7 +2529,7 @@
       ]
     },
     {
-      "source_row_index": 91,
+      "source_row_index": 95,
       "status": "partial",
       "typed_operations": {
         "Review.ReviewOutline": "request-only"
@@ -2261,7 +2537,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 92,
+      "source_row_index": 96,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2276,7 +2552,7 @@
       ]
     },
     {
-      "source_row_index": 93,
+      "source_row_index": 97,
       "status": "partial",
       "typed_operations": {
         "Review.GenerateOutline": "request-only"
@@ -2284,7 +2560,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 94,
+      "source_row_index": 98,
       "status": "partial",
       "typed_operations": {
         "Review.ConfirmOutline": "request-only"
@@ -2292,7 +2568,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 95,
+      "source_row_index": 99,
       "status": "partial",
       "typed_operations": {
         "Review.EditChapter": "request-only"
@@ -2305,7 +2581,7 @@
       ]
     },
     {
-      "source_row_index": 96,
+      "source_row_index": 100,
       "status": "partial",
       "typed_operations": {
         "Review.GenerateChapter": "request-only"
@@ -2313,7 +2589,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 97,
+      "source_row_index": 101,
       "status": "partial",
       "typed_operations": {
         "Review.ReviewChapter": "request-only"
@@ -2321,7 +2597,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 98,
+      "source_row_index": 102,
       "status": "partial",
       "typed_operations": {
         "Review.ConfirmChapter": "request-only"
@@ -2329,7 +2605,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 99,
+      "source_row_index": 103,
       "status": "partial",
       "typed_operations": {
         "Review.ResolveChapterIssue": "request-only"
@@ -2337,7 +2613,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 100,
+      "source_row_index": 104,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2348,7 +2624,7 @@
       ]
     },
     {
-      "source_row_index": 101,
+      "source_row_index": 105,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2359,7 +2635,7 @@
       ]
     },
     {
-      "source_row_index": 102,
+      "source_row_index": 106,
       "status": "partial",
       "typed_operations": {
         "Review.ReviewFinal": "request-only"
@@ -2367,7 +2643,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 103,
+      "source_row_index": 107,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2378,7 +2654,7 @@
       ]
     },
     {
-      "source_row_index": 104,
+      "source_row_index": 108,
       "status": "partial",
       "typed_operations": {
         "Review.EditFinal": "request-only"
@@ -2386,7 +2662,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 105,
+      "source_row_index": 109,
       "status": "partial",
       "typed_operations": {
         "Review.RegenerateFinalComponents": "request-only"
@@ -2394,7 +2670,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 106,
+      "source_row_index": 110,
       "status": "partial",
       "typed_operations": {
         "Review.ResolveFinalIssue": "request-only"
@@ -2402,7 +2678,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 107,
+      "source_row_index": 111,
       "status": "partial",
       "typed_operations": {
         "Review.RejectFinal": "request-only"
@@ -2410,7 +2686,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 108,
+      "source_row_index": 112,
       "status": "partial",
       "typed_operations": {
         "Review.Complete": "request-only"
@@ -2418,7 +2694,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 109,
+      "source_row_index": 113,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2429,7 +2705,7 @@
       ]
     },
     {
-      "source_row_index": 110,
+      "source_row_index": 114,
       "status": "partial",
       "typed_operations": {
         "Review.CancelGeneration": "request-only"
@@ -2437,7 +2713,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 111,
+      "source_row_index": 115,
       "status": "partial",
       "typed_operations": {
         "Review.FixRange": "request-only"
@@ -2445,7 +2721,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 112,
+      "source_row_index": 116,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2456,7 +2732,7 @@
       ]
     },
     {
-      "source_row_index": 113,
+      "source_row_index": 117,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2472,7 +2748,7 @@
         "MaterialPolicy.Read": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 114
+      "source_row_index": 118
     },
     {
       "status": "partial",
@@ -2480,7 +2756,7 @@
         "MaterialPolicy.Update": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 115
+      "source_row_index": 119
     },
     {
       "status": "partial",
@@ -2488,7 +2764,7 @@
         "MaterialSource.ReadClassification": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 116
+      "source_row_index": 120
     },
     {
       "status": "partial",
@@ -2496,7 +2772,7 @@
         "MaterialSource.ConfirmClassification": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 117
+      "source_row_index": 121
     },
     {
       "status": "partial",
@@ -2504,10 +2780,10 @@
         "MaterialSource.CorrectClassification": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 118
+      "source_row_index": 122
     },
     {
-      "source_row_index": 119,
+      "source_row_index": 123,
       "status": "partial",
       "typed_operations": {
         "Config.ReadSelection": "request-success-partial"
@@ -2515,7 +2791,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 120,
+      "source_row_index": 124,
       "status": "partial",
       "typed_operations": {
         "Admin.ReadSMTP": "request-success-partial"
@@ -2523,7 +2799,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 121,
+      "source_row_index": 125,
       "status": "partial",
       "typed_operations": {
         "Admin.ReadSecurity": "request-success-partial"
@@ -2531,7 +2807,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 122,
+      "source_row_index": 126,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2542,7 +2818,7 @@
       ]
     },
     {
-      "source_row_index": 123,
+      "source_row_index": 127,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2553,7 +2829,7 @@
       ]
     },
     {
-      "source_row_index": 124,
+      "source_row_index": 128,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2564,7 +2840,7 @@
       ]
     },
     {
-      "source_row_index": 125,
+      "source_row_index": 129,
       "status": "partial",
       "typed_operations": {
         "Task.ReadConnectionResult": "request-success-partial"
@@ -2572,7 +2848,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 126,
+      "source_row_index": 130,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2583,7 +2859,7 @@
       ]
     },
     {
-      "source_row_index": 127,
+      "source_row_index": 131,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2594,7 +2870,7 @@
       ]
     },
     {
-      "source_row_index": 128,
+      "source_row_index": 132,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2605,7 +2881,7 @@
       ]
     },
     {
-      "source_row_index": 129,
+      "source_row_index": 133,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2616,7 +2892,7 @@
       ]
     },
     {
-      "source_row_index": 130,
+      "source_row_index": 134,
       "status": "partial",
       "typed_operations": {
         "System.ReadCapabilities": "request-success-partial"
@@ -2764,5 +3040,47 @@
       "non-paper adapters",
       "real cloud service compatibility"
     ]
+  },
+  "admin_accounts": {
+    "task": "task029",
+    "scope": [
+      "Account-only confirmation preview",
+      "Account update/reset/delete request and success",
+      "Runtime governed cleanup and one-time password disclosure"
+    ],
+    "remaining": [
+      "Other confirmation variants",
+      "Per-operation error applicability",
+      "Future asset cleanup adapters"
+    ]
+  },
+  "system_llm": {
+    "task": "task031",
+    "scope": [
+      "System LLM test/refresh 202 projection",
+      "Shared LLM write/view and safe model options"
+    ],
+    "remaining": [
+      "per-operation error bindings",
+      "general task/event envelope",
+      "real cloud compatibility",
+      "Agent consumers"
+    ]
+  },
+  "search_terms": {
+    "operations": [
+      "Construction.ReadWorkspace",
+      "Construction.SaveConfig",
+      "Construction.ListTerms",
+      "Construction.AddTerm",
+      "Construction.ReadTerm",
+      "Construction.EditTerm",
+      "Construction.DeleteTerm",
+      "Construction.ConfirmTerm",
+      "Construction.DiscardTerm",
+      "Construction.GenerateTerms",
+      "Construction.SourceOptions"
+    ],
+    "scope": "M-P0-11; no actual retrieval/run snapshots or schedule"
   }
 }

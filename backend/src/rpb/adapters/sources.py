@@ -9,20 +9,33 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
+from rpb.adapters import source_tables, system_source_tables
+from rpb.adapters.auth import AccountStore
 from rpb.adapters.llm import LLMStore, event_record, public_error, require_revision, uuid_value
-from rpb.adapters.source_tables import audit, commands, configs, tasks
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.account_config.domain.sources import SourceError, validate_source
 
 
 class SourceStore(LLMStore):
+    def __init__(
+        self, account: AccountStore, encryption_key: bytes | None = None, *, system: bool = False
+    ) -> None:
+        super().__init__(account, encryption_key, system=system)
+        tables = system_source_tables if system else source_tables
+        self.configs, self.tasks, self.commands, self.audit = (
+            tables.configs,
+            tables.tasks,
+            tables.commands,
+            tables.audit,
+        )
+
     def config(self, conn: Connection, actor: UUID, identity: str) -> dict[str, Any]:
         row = (
             conn.execute(
-                sa.select(configs).where(
-                    configs.c.id == uuid_value(identity),
-                    configs.c.owner_id == actor,
-                    configs.c.deleted.is_(False),
+                sa.select(self.configs).where(
+                    self.configs.c.id == uuid_value(identity),
+                    self.owner_filter(self.configs, actor),
+                    self.configs.c.deleted.is_(False),
                 )
             )
             .mappings()
@@ -35,8 +48,8 @@ class SourceStore(LLMStore):
     def task(self, conn: Connection, actor: UUID, identity: str) -> dict[str, Any]:
         row = (
             conn.execute(
-                sa.select(tasks).where(
-                    tasks.c.id == uuid_value(identity), tasks.c.owner_id == actor
+                sa.select(self.tasks).where(
+                    self.tasks.c.id == uuid_value(identity), self.owner_filter(self.tasks, actor)
                 )
             )
             .mappings()
@@ -50,15 +63,19 @@ class SourceStore(LLMStore):
     def view(self, conn: Connection, actor: UUID, row: dict[str, Any]) -> dict[str, Any]:
         tested = (
             conn.execute(
-                sa.select(tasks)
+                sa.select(self.tasks)
                 .where(
-                    tasks.c.config_id == row["id"],
-                    tasks.c.config_revision == row["revision"],
-                    tasks.c.credential_revision == row["credential_revision"],
-                    tasks.c.operation == "test",
-                    tasks.c.state.in_(["succeeded", "failed"]),
+                    self.tasks.c.config_id == row["id"],
+                    self.tasks.c.config_revision == row["revision"],
+                    self.tasks.c.credential_revision == row["credential_revision"],
+                    self.tasks.c.operation == "test",
+                    self.tasks.c.state.in_(["succeeded", "failed"]),
+                    sa.or_(
+                        self.tasks.c.error.is_(None),
+                        self.tasks.c.error != "PERMISSION_RESOURCE_UNAVAILABLE",
+                    ),
                 )
-                .order_by(tasks.c.created_at.desc(), tasks.c.id.desc())
+                .order_by(self.tasks.c.created_at.desc(), self.tasks.c.id.desc())
                 .limit(1)
             )
             .mappings()
@@ -92,8 +109,11 @@ class SourceStore(LLMStore):
         return {
             "task_id": identity,
             "attempt_id": str(row["attempt_id"]),
-            "operation_id": "Config.TestSource",
-            "target": {"type": "user_data_source_config", "id": str(row["config_id"])},
+            "operation_id": "Admin.TestSystemSource" if self.system else "Config.TestSource",
+            "target": {
+                "type": "system_data_source_config" if self.system else "user_data_source_config",
+                "id": str(row["config_id"]),
+            },
             "project_id": None,
             "knowledge_version_id": None,
             "execution_status": row["state"],
@@ -123,7 +143,12 @@ class SourceStore(LLMStore):
             "target_location": {
                 "parent_type": None,
                 "parent_id": None,
-                "read_url": "/api/v1/me/data-source-configs/" + str(row["config_id"]),
+                "read_url": (
+                    "/api/v1/admin/data-source-configs/"
+                    if self.system
+                    else "/api/v1/me/data-source-configs/"
+                )
+                + str(row["config_id"]),
             },
             "material_use_notices": [],
         }
@@ -147,6 +172,8 @@ class SourceStore(LLMStore):
         with self.account.authorized_connection(token, csrf) as (conn, actor):
             if expected_actor is not None and expected_actor != str(actor):
                 raise AccountError("AUTH_SESSION_INVALID", 401)
+            if not self.permitted_actor(conn, actor):
+                raise AccountError("PERMISSION_RESOURCE_UNAVAILABLE", 404)
             row = (
                 self.config(conn, actor, target)
                 if target and operation not in {"task", "result", "events"}
@@ -156,9 +183,12 @@ class SourceStore(LLMStore):
                 items = [
                     self.view(conn, actor, dict(x))
                     for x in conn.execute(
-                        sa.select(configs)
-                        .where(configs.c.owner_id == actor, configs.c.deleted.is_(False))
-                        .order_by(configs.c.created_at.desc(), configs.c.id.desc())
+                        sa.select(self.configs)
+                        .where(
+                            self.owner_filter(self.configs, actor),
+                            self.configs.c.deleted.is_(False),
+                        )
+                        .order_by(self.configs.c.created_at.desc(), self.configs.c.id.desc())
                     ).mappings()
                 ]
                 cursor = data.get("cursor")
@@ -201,12 +231,12 @@ class SourceStore(LLMStore):
                 ):
                     raise AccountError("VALIDATION_BAD_REQUEST", 400)
                 lookup = sa.and_(
-                    commands.c.owner_id == actor,
-                    commands.c.operation == operation,
-                    commands.c.target == (target or ""),
-                    commands.c.key == key,
+                    self.commands.c.owner_id == actor,
+                    self.commands.c.operation == operation,
+                    self.commands.c.target == (target or ""),
+                    self.commands.c.key == key,
                 )
-                previous = conn.execute(sa.select(commands).where(lookup)).mappings().first()
+                previous = conn.execute(sa.select(self.commands).where(lookup)).mappings().first()
                 if previous:
                     self.config(conn, actor, str(previous["config_id"]))
                     if previous["fingerprint"] != fingerprint:
@@ -234,15 +264,17 @@ class SourceStore(LLMStore):
                     "updated_at": now,
                 }
                 if row:
-                    conn.execute(configs.update().where(configs.c.id == identity).values(**updates))
+                    conn.execute(
+                        self.configs.update().where(self.configs.c.id == identity).values(**updates)
+                    )
                 else:
                     conn.execute(
-                        configs.insert().values(
+                        self.configs.insert().values(
                             id=identity, owner_id=actor, created_at=now, **updates
                         )
                     )
                 conn.execute(
-                    audit.insert().values(
+                    self.audit.insert().values(
                         id=uuid4(),
                         owner_id=actor,
                         config_id=identity,
@@ -258,7 +290,7 @@ class SourceStore(LLMStore):
                 require_revision(row["revision"], data.get("expected_revision"))
                 deletion_revision = uuid4()
                 conn.execute(
-                    audit.insert().values(
+                    self.audit.insert().values(
                         id=uuid4(),
                         owner_id=actor,
                         config_id=row["id"],
@@ -269,8 +301,8 @@ class SourceStore(LLMStore):
                     )
                 )
                 conn.execute(
-                    configs.update()
-                    .where(configs.c.id == row["id"])
+                    self.configs.update()
+                    .where(self.configs.c.id == row["id"])
                     .values(
                         deleted=True,
                         secret_ciphertext=None,
@@ -285,7 +317,7 @@ class SourceStore(LLMStore):
                 job_id = uuid4()
                 task_revision = uuid4()
                 conn.execute(
-                    tasks.insert().values(
+                    self.tasks.insert().values(
                         id=job_id,
                         owner_id=actor,
                         config_id=identity,
@@ -305,7 +337,7 @@ class SourceStore(LLMStore):
                 raise AccountError("VALIDATION_FIELD_INVALID", 422)
             if operation in {"create", "test"}:
                 conn.execute(
-                    commands.insert().values(
+                    self.commands.insert().values(
                         owner_id=actor,
                         operation=operation,
                         target=target or "",

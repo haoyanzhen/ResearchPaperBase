@@ -4,6 +4,7 @@ import hashlib
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime, timedelta
+from time import monotonic
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -15,7 +16,14 @@ from rpb.adapters.account import accounts
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
 from rpb.adapters.llm import event_record
 from rpb.adapters.llm_provider import ProviderFailure
-from rpb.adapters.source_tables import configs, dispatch_limits, tasks
+from rpb.adapters.security import (
+    execute_test,
+    prune_diagnostics,
+    read_policy,
+    record_diagnostic,
+    test_config,
+)
+from rpb.adapters.source_tables import dispatch_limits
 from rpb.adapters.sources import SourceStore
 from rpb.modules.account_config.domain.parameters import ParameterError
 from rpb.modules.account_config.domain.sources import PROVIDERS
@@ -36,14 +44,16 @@ class SourceWorker:
     def __init__(self, store: SourceStore, provider: Provider) -> None:
         self.store, self.provider = store, provider
 
-    def pacing_scope(self, job: dict[str, Any]) -> str:
+    @staticmethod
+    def pacing_scope(job: dict[str, Any], *, system: bool = False) -> str:
         data = job["input"]
+        owner = "system" if system else str(job["owner_id"])
         if data["provider"] == "arxiv":
-            return "arxiv-user:" + str(job["owner_id"])
+            return "arxiv-user:" + owner
         url = urlsplit(data["base_url"])
         endpoint = f"{url.hostname}:{url.port or (443 if url.scheme == 'https' else 80)}"
         return hashlib.sha256(
-            (str(job["owner_id"]) + ":" + data["provider"] + ":" + endpoint).encode()
+            (owner + ":" + data["provider"] + ":" + endpoint).encode()
         ).hexdigest()
 
     @contextmanager
@@ -53,7 +63,7 @@ class SourceWorker:
                 (
                     "arxiv-public"
                     if job["input"]["provider"] == "arxiv"
-                    else self.pacing_scope(job)
+                    else self.pacing_scope(job, system=self.store.system)
                 ).encode()
             ).digest()[:8],
             signed=True,
@@ -75,16 +85,18 @@ class SourceWorker:
             conn.execute(
                 sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK}
             )
-            actor = conn.execute(
-                sa.select(accounts.c.enabled).where(accounts.c.id == job["owner_id"])
-            ).scalar()
+            actor = self.store.permitted_actor(conn, job["owner_id"])
             config = (
-                conn.execute(sa.select(configs).where(configs.c.id == job["config_id"]))
+                conn.execute(
+                    sa.select(self.store.configs).where(self.store.configs.c.id == job["config_id"])
+                )
                 .mappings()
                 .first()
             )
             current = (
-                conn.execute(sa.select(tasks).where(tasks.c.id == job["id"])).mappings().first()
+                conn.execute(sa.select(self.store.tasks).where(self.store.tasks.c.id == job["id"]))
+                .mappings()
+                .first()
             )
             if (
                 not current
@@ -101,7 +113,7 @@ class SourceWorker:
                 now = datetime.now(UTC)
                 data = job["input"]
                 rate = data["rate_limit_per_minute"] or PROVIDERS[data["provider"]]["rpm"]
-                limits = [(self.pacing_scope(job), rate)]
+                limits = [(self.pacing_scope(job, system=self.store.system), rate)]
                 if data["provider"] == "arxiv":
                     limits.append(("arxiv-public", 20))
                 for scope, budget in limits:
@@ -129,8 +141,10 @@ class SourceWorker:
             )
             expired = (
                 conn.execute(
-                    sa.select(tasks)
-                    .where(tasks.c.state == "running", tasks.c.lease_until < now)
+                    sa.select(self.store.tasks)
+                    .where(
+                        self.store.tasks.c.state == "running", self.store.tasks.c.lease_until < now
+                    )
                     .with_for_update()
                 )
                 .mappings()
@@ -139,8 +153,8 @@ class SourceWorker:
             for stale in expired:
                 transition_revision = uuid4()
                 conn.execute(
-                    tasks.update()
-                    .where(tasks.c.id == stale["id"])
+                    self.store.tasks.update()
+                    .where(self.store.tasks.c.id == stale["id"])
                     .values(
                         state="failed",
                         revision=transition_revision,
@@ -151,9 +165,9 @@ class SourceWorker:
                 )
             row = (
                 conn.execute(
-                    sa.select(tasks)
-                    .where(tasks.c.state == "queued")
-                    .order_by(tasks.c.created_at, tasks.c.id)
+                    sa.select(self.store.tasks)
+                    .where(self.store.tasks.c.state == "queued")
+                    .order_by(self.store.tasks.c.created_at, self.store.tasks.c.id)
                     .with_for_update(skip_locked=True)
                     .limit(1)
                 )
@@ -161,10 +175,13 @@ class SourceWorker:
                 .first()
             )
             if row is None:
+                prune_diagnostics(conn, read_policy(conn))
                 return bool(expired)
             job = dict(row)
             config = (
-                conn.execute(sa.select(configs).where(configs.c.id == job["config_id"]))
+                conn.execute(
+                    sa.select(self.store.configs).where(self.store.configs.c.id == job["config_id"])
+                )
                 .mappings()
                 .first()
             )
@@ -175,7 +192,13 @@ class SourceWorker:
             )
             error = None
             secret = ""
-            if not actor or not actor["enabled"] or not config or config["deleted"]:
+            if (
+                not actor
+                or not actor["enabled"]
+                or (self.store.system and not actor["is_admin"])
+                or not config
+                or config["deleted"]
+            ):
                 error = "PERMISSION_RESOURCE_UNAVAILABLE"
             elif config["revision"] != job["config_revision"]:
                 error = "CONFIG_CONNECTION_FAILED"
@@ -188,38 +211,56 @@ class SourceWorker:
                     secret = self.store.cipher.decrypt(config["secret_ciphertext"]).decode()
                 except InvalidToken, UnicodeError:
                     error = "CONFIG_SECRET_UNAVAILABLE"
+            policy = read_policy(conn)
+            budget = test_config(job["input"], policy)["timeout_seconds"]
+            job["input"] = {**job["input"], "_test_policy": policy}
             transition_revision = uuid4()
             conn.execute(
-                tasks.update()
-                .where(tasks.c.id == job["id"])
+                self.store.tasks.update()
+                .where(self.store.tasks.c.id == job["id"])
                 .values(
                     state="running",
                     revision=transition_revision,
                     started_at=now,
-                    lease_until=now + timedelta(seconds=30 + 30),
+                    lease_until=now + timedelta(seconds=budget + 30),
+                    input=job["input"],
                     events=job["events"] + [event_record("running", transition_revision, now)],
                 )
             )
         result = None
+        started = monotonic()
+        attempts = 0
         if error is None:
             try:
                 with self.outbound_slot(job):
-                    result = self.provider.execute(
-                        job["input"], job["operation"], None, secret, lambda: self.dispatch(job)
+                    result, attempts = execute_test(
+                        self.provider,
+                        job["input"],
+                        job["operation"],
+                        None,
+                        secret,
+                        lambda: self.dispatch(job),
+                        policy,
                     )
             except ProviderFailure as exc:
                 error = exc.code
+                attempts = exc.attempts
             except ParameterError:
                 error = "VALIDATION_FIELD_INVALID"
             except Exception:
                 # An unknown provider/transport exception is never automatically retried.
                 error = "PROVIDER_RESULT_UNKNOWN"
+                attempts = max(attempts, 1)
         with self.store.account.engine.begin() as conn:
             conn.execute(
                 sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK}
             )
             current = (
-                conn.execute(sa.select(tasks).where(tasks.c.id == job["id"]).with_for_update())
+                conn.execute(
+                    sa.select(self.store.tasks)
+                    .where(self.store.tasks.c.id == job["id"])
+                    .with_for_update()
+                )
                 .mappings()
                 .first()
             )
@@ -230,7 +271,9 @@ class SourceWorker:
             ):
                 return True
             config = (
-                conn.execute(sa.select(configs).where(configs.c.id == job["config_id"]))
+                conn.execute(
+                    sa.select(self.store.configs).where(self.store.configs.c.id == job["config_id"])
+                )
                 .mappings()
                 .first()
             )
@@ -239,7 +282,13 @@ class SourceWorker:
                 .mappings()
                 .first()
             )
-            if not actor or not actor["enabled"] or not config or config["deleted"]:
+            if (
+                not actor
+                or not actor["enabled"]
+                or (self.store.system and not actor["is_admin"])
+                or not config
+                or config["deleted"]
+            ):
                 error = "PERMISSION_RESOURCE_UNAVAILABLE"
                 result = None
             now = datetime.now(UTC)
@@ -257,10 +306,21 @@ class SourceWorker:
                 **(result or {}),
             }
             state = "failed" if error else "succeeded"
+            record_diagnostic(
+                conn,
+                job["id"],
+                policy,
+                stage=job["operation"],
+                status=state,
+                error=error,
+                elapsed_ms=int((monotonic() - started) * 1000),
+                attempts=attempts,
+                protocol="http",
+            )
             transition_revision = uuid4()
             conn.execute(
-                tasks.update()
-                .where(tasks.c.id == job["id"])
+                self.store.tasks.update()
+                .where(self.store.tasks.c.id == job["id"])
                 .values(
                     state=state,
                     revision=transition_revision,

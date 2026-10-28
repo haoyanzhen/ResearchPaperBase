@@ -35,7 +35,7 @@ class SourceProvider(HTTPProvider):
             "source_" + provider,
             "",
             None,
-            30,
+            config.get("timeout_seconds", 30),
             authorize,
             response_format="xml" if provider == "arxiv" else "json",
         )

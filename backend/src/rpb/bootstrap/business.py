@@ -11,19 +11,29 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.engine import Engine
 
+from rpb.adapters.admin_accounts import AdminAccountStore
 from rpb.adapters.auth import AccountStore
 from rpb.adapters.configuration_tasks import ConfigurationTasks
 from rpb.adapters.construction import ConstructionInitializer
 from rpb.adapters.llm import LLMStore
 from rpb.adapters.project_commands import ProjectUnitOfWork
+from rpb.adapters.search_terms import TermStore
+from rpb.adapters.security import SecurityStore
+from rpb.adapters.smtp import SMTPStore
 from rpb.adapters.sources import SourceStore
 from rpb.api.account import router_for
+from rpb.api.admin_accounts import router_for as admin_router
 from rpb.api.llm import router_for as llm_router
 from rpb.api.projects import router_for as projects_router
+from rpb.api.search_terms import router_for as terms_router
+from rpb.api.security import router_for as security_router
+from rpb.api.smtp import router_for as smtp_router
 from rpb.api.sources import router_for as sources_router
+from rpb.modules.account_config.application.admin import AdminService
 from rpb.modules.account_config.application.llm import LLMService
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.account_config.application.service import AccountService
+from rpb.modules.construction.application.terms import TermService
 from rpb.modules.project.application.service import ProjectService
 
 
@@ -44,11 +54,29 @@ def create_business_app(
         raise ValueError("Explicit same-origin HTTPS or loopback HTTP origin required")
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     account = AccountStore(engine)
+    smtp = SMTPStore(account, encryption_key, origin)
+    app.state.smtp_store = smtp
+    app.include_router(smtp_router(smtp, origin))
+    app.include_router(security_router(LLMService(SecurityStore(account), origin)))
+    app.include_router(admin_router(AdminService(AdminAccountStore(account), origin)))
+    app.include_router(
+        llm_router(LLMService(LLMStore(account, encryption_key, system=True), origin), system=True)
+    )
+    app.include_router(
+        sources_router(
+            LLMService(SourceStore(account, encryption_key, system=True), origin), system=True
+        )
+    )
+    terms = TermStore(account, encryption_key)
+    app.state.term_store = terms
+    app.include_router(terms_router(TermService(terms, origin)))
     sources = SourceStore(account, encryption_key)
     app.include_router(sources_router(LLMService(sources, origin)))
     app.include_router(
         llm_router(
-            LLMService(ConfigurationTasks(LLMStore(account, encryption_key), sources), origin)
+            LLMService(
+                ConfigurationTasks(LLMStore(account, encryption_key), sources, smtp, terms), origin
+            )
         )
     )
     app.include_router(router_for(AccountService(account, origin), parsed.scheme == "https"))
@@ -115,7 +143,16 @@ def create_business_app(
             request._body = b"".join(chunks)
             if (
                 request.url.path.startswith(
-                    ("/api/v1/me/llm-configs", "/api/v1/me/data-source-configs")
+                    (
+                        "/api/v1/projects/",
+                        "/api/v1/me/llm-configs",
+                        "/api/v1/me/data-source-configs",
+                        "/api/v1/admin/users",
+                        "/api/v1/admin/llm-configs",
+                        "/api/v1/admin/data-source-configs",
+                        "/api/v1/admin/smtp-config",
+                        "/api/v1/admin/security-config",
+                    )
                 )
                 and request._body.strip()
             ):

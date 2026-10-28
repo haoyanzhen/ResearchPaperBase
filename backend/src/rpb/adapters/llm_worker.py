@@ -3,17 +3,23 @@
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime, timedelta
+from time import monotonic
 from typing import Any, Protocol
 from uuid import uuid4
 
 import sqlalchemy as sa
 from cryptography.fernet import InvalidToken
 
-from rpb.adapters.account import accounts
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
 from rpb.adapters.llm import LLMStore, event_record
 from rpb.adapters.llm_provider import ProviderFailure
-from rpb.adapters.llm_tables import configs, tasks
+from rpb.adapters.security import (
+    execute_test,
+    prune_diagnostics,
+    read_policy,
+    record_diagnostic,
+    test_config,
+)
 from rpb.modules.account_config.domain.parameters import ParameterError
 
 
@@ -34,14 +40,12 @@ class LLMWorker:
 
     @contextmanager
     def dispatch(self, job: dict[str, Any]) -> Iterator[None]:
+        configs, tasks = self.store.configs, self.store.tasks
         # Order revocation against the actual outbound request, not just queue claim.
         with self.store.account.engine.begin() as conn:
             conn.execute(
                 sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK}
             )
-            actor = conn.execute(
-                sa.select(accounts.c.enabled).where(accounts.c.id == job["owner_id"])
-            ).scalar()
             config = (
                 conn.execute(sa.select(configs).where(configs.c.id == job["config_id"]))
                 .mappings()
@@ -57,13 +61,18 @@ class LLMWorker:
                 or current["lease_until"] <= datetime.now(UTC)
             ):
                 raise ProviderFailure("PROVIDER_RESULT_UNKNOWN")
-            if not actor or not config or config["deleted"]:
+            if (
+                not self.store.permitted_actor(conn, job["owner_id"])
+                or not config
+                or config["deleted"]
+            ):
                 raise ProviderFailure("PERMISSION_RESOURCE_UNAVAILABLE")
             if config["revision"] != job["config_revision"]:
                 raise ProviderFailure("CONFIG_CONNECTION_FAILED")
             yield
 
     def run_once(self) -> bool:
+        configs, tasks = self.store.configs, self.store.tasks
         now = datetime.now(UTC)
         with self.store.account.engine.begin() as conn:
             conn.execute(
@@ -103,6 +112,7 @@ class LLMWorker:
                 .first()
             )
             if row is None:
+                prune_diagnostics(conn, read_policy(conn))
                 return bool(expired)
             job = dict(row)
             config = (
@@ -110,14 +120,13 @@ class LLMWorker:
                 .mappings()
                 .first()
             )
-            actor = (
-                conn.execute(sa.select(accounts).where(accounts.c.id == job["owner_id"]))
-                .mappings()
-                .first()
-            )
             error = None
             secret = ""
-            if not actor or not actor["enabled"] or not config or config["deleted"]:
+            if (
+                not self.store.permitted_actor(conn, job["owner_id"])
+                or not config
+                or config["deleted"]
+            ):
                 error = "PERMISSION_RESOURCE_UNAVAILABLE"
             elif config["revision"] != job["config_revision"]:
                 error = "CONFIG_CONNECTION_FAILED"
@@ -128,6 +137,9 @@ class LLMWorker:
                     secret = self.store.cipher.decrypt(config["secret_ciphertext"]).decode()
                 except InvalidToken, UnicodeError:
                     error = "CONFIG_SECRET_UNAVAILABLE"
+            policy = read_policy(conn)
+            budget = test_config(job["input"], policy)["timeout_seconds"]
+            job["input"] = {**job["input"], "_test_policy": policy}
             transition_revision = uuid4()
             conn.execute(
                 tasks.update()
@@ -136,27 +148,34 @@ class LLMWorker:
                     state="running",
                     revision=transition_revision,
                     started_at=now,
-                    lease_until=now + timedelta(seconds=job["input"]["timeout_seconds"] + 30),
+                    lease_until=now + timedelta(seconds=budget + 30),
+                    input=job["input"],
                     events=job["events"] + [event_record("running", transition_revision, now)],
                 )
             )
         result = None
+        started = monotonic()
+        attempts = 0
         if error is None:
             try:
-                result = self.provider.execute(
+                result, attempts = execute_test(
+                    self.provider,
                     job["input"],
                     job["operation"],
                     job["model_id"],
                     secret,
                     lambda: self.dispatch(job),
+                    policy,
                 )
             except ProviderFailure as exc:
                 error = exc.code
+                attempts = exc.attempts
             except ParameterError:
                 error = "VALIDATION_FIELD_INVALID"
             except Exception:
                 # An unknown provider/transport exception is never automatically retried.
                 error = "PROVIDER_RESULT_UNKNOWN"
+                attempts = max(attempts, 1)
         with self.store.account.engine.begin() as conn:
             conn.execute(
                 sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK}
@@ -177,12 +196,11 @@ class LLMWorker:
                 .mappings()
                 .first()
             )
-            actor = (
-                conn.execute(sa.select(accounts).where(accounts.c.id == job["owner_id"]))
-                .mappings()
-                .first()
-            )
-            if not actor or not actor["enabled"] or not config or config["deleted"]:
+            if (
+                not self.store.permitted_actor(conn, job["owner_id"])
+                or not config
+                or config["deleted"]
+            ):
                 error = "PERMISSION_RESOURCE_UNAVAILABLE"
                 result = None
             now = datetime.now(UTC)
@@ -204,6 +222,17 @@ class LLMWorker:
                 ),
             }
             state = "failed" if error else "succeeded"
+            record_diagnostic(
+                conn,
+                job["id"],
+                policy,
+                stage=job["operation"],
+                status=state,
+                error=error,
+                elapsed_ms=int((monotonic() - started) * 1000),
+                attempts=attempts,
+                protocol="http",
+            )
             transition_revision = uuid4()
             conn.execute(
                 tasks.update()

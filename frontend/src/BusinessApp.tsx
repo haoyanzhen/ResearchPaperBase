@@ -1,3 +1,7 @@
+import { SearchTerms } from './SearchTerms';
+import { SMTPSettings } from './SMTPSettings';
+import { SecuritySettings } from './SecuritySettings';
+import { AdminUsers } from './AdminUsers';
 import { SourceSettings } from './SourceSettings';
 import { LLMSettings, ModelPicker } from './LLMSettings';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -35,7 +39,7 @@ async function post<T>(path: string, body: unknown, key?: string, expectedActor?
     const current = await json<User>('/api/v1/me');
     if (current.id !== expectedActor) throw new ApiError(401, 'AUTH_SESSION_INVALID', '登录账号已变化，请重新确认。');
   }
-  return json<T>(path, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}) }, body: method === 'DELETE' ? undefined : JSON.stringify(body) });
+  return json<T>(path, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf.csrf_token, ...(key ? { 'Idempotency-Key': key } : {}), ...(expectedActor ? { 'X-Expected-Actor': expectedActor } : {}) }, body: method === 'DELETE' ? undefined : JSON.stringify(body) });
 }
 
 type LifecyclePreview = { action: 'archive' | 'delete'; subject_revision: string; confirmation_token: string; risks: { id: string; message: string }[]; retained_items: { reason: string }[] };
@@ -197,6 +201,14 @@ function ProjectList({ actor, onAuthFailure }: { actor: string; onAuthFailure: (
 export function BusinessApp() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState(false);
+  const [adminSMTP, setAdminSMTP] = useState(false);
+  const [adminSMTPOpened, setAdminSMTPOpened] = useState(false);
+  const [adminSecurity, setAdminSecurity] = useState(false);
+  const [adminSecurityOpened, setAdminSecurityOpened] = useState(false);
+  const [adminSources, setAdminSources] = useState(false);
+  const [adminSourcesOpened, setAdminSourcesOpened] = useState(false);
+  const [adminLLM, setAdminLLM] = useState(false);
+  const [adminUsers, setAdminUsers] = useState(false);
   const [sourceOpened, setSourceOpened] = useState(false);
   const [sourceSettings, setSourceSettings] = useState(false);
   const [llmSettings, setLlmSettings] = useState(false);
@@ -231,7 +243,7 @@ export function BusinessApp() {
   }
   function clearPrivate(discardPending = false) {
     try { if (discardPending) for (const key of Object.keys(sessionStorage)) if (key.startsWith('rpb:create:')) sessionStorage.removeItem(key); } catch { /* Authentication state must clear even when storage is unavailable. */ }
-    setUser(null); setSourceOpened(false); setSourceSettings(false); setProfile(false); setLlmSettings(false); setProject(null); setPending(null); setName(''); setDescription(''); setScope('');
+    setAdminSMTP(false); setAdminSMTPOpened(false); setAdminSecurity(false); setAdminSecurityOpened(false); setAdminSourcesOpened(false); setAdminSources(false); setUser(null); setAdminLLM(false); setAdminUsers(false); setSourceOpened(false); setSourceSettings(false); setProfile(false); setLlmSettings(false); setProject(null); setPending(null); setName(''); setDescription(''); setScope('');
     setPassword(''); setConfirmation(''); setShowPassword(false);
     window.history.replaceState(null, '', '/workspace');
   }
@@ -252,6 +264,13 @@ export function BusinessApp() {
         const current = await json<User>('/api/v1/me');
         if (!alive) return;
         setUser(current); restorePending(current);
+        const query = new URLSearchParams(window.location.search);
+        if (current.is_admin && query.has('smtp_oauth')) {
+          setAdminSMTP(true); setAdminSMTPOpened(true);
+          setNotice('授权流程已结束，请核查SMTP授权状态并测试连接。');
+          query.delete('smtp_oauth');
+          window.history.replaceState(null, '', '/workspace' + (query.size ? '?' + query.toString() : ''));
+        }
         await selectedProject();
       } catch (reason) {
         if (alive && reason instanceof ApiError && reason.status === 401) {
@@ -306,17 +325,21 @@ export function BusinessApp() {
 
   return <div className="app business">
     <a className="skip" href="#content">跳到内容</a>
-    <header><a className="brand" href="/workspace">Research Paper Base</a>{user && <div className="account-bar"><span>{user.display_name || user.username}</span><button disabled={busy} onClick={() => { setSourceSettings(false); setLlmSettings(false); setProfile(!profile); }}>{profile ? '返回项目' : '个人资料'}</button><button disabled={busy} onClick={() => { setSourceSettings(false); setProfile(false); setLlmSettings(!llmSettings); }}>{llmSettings ? '返回项目' : 'LLM设置'}</button><button disabled={busy} onClick={() => { setSourceOpened(true); setLlmSettings(false); setProfile(false); setSourceSettings(!sourceSettings); }}>{sourceSettings ? '返回项目' : '数据源设置'}</button><button disabled={busy} onClick={() => void logout()}>退出登录</button></div>}</header>
+    <header><a className="brand" href="/workspace">Research Paper Base</a>{user && <div className="account-bar"><span>{user.display_name || user.username}</span><button disabled={busy} onClick={() => { setAdminSMTP(false); setAdminSecurity(false); setAdminSources(false); setAdminLLM(false); setAdminUsers(false); setSourceSettings(false); setLlmSettings(false); setProfile(!profile); }}>{profile ? '返回项目' : '个人资料'}</button><button disabled={busy} onClick={() => { setAdminSMTP(false); setAdminSecurity(false); setAdminSources(false); setAdminLLM(false); setAdminUsers(false); setSourceSettings(false); setProfile(false); setLlmSettings(!llmSettings); }}>{llmSettings ? '返回项目' : 'LLM设置'}</button><button disabled={busy} onClick={() => { setAdminSMTP(false); setAdminSecurity(false); setAdminSources(false); setAdminLLM(false); setAdminUsers(false); setSourceOpened(true); setLlmSettings(false); setProfile(false); setSourceSettings(!sourceSettings); }}>{sourceSettings ? '返回项目' : '数据源设置'}</button>{user.is_admin && <button disabled={busy} onClick={() => { setAdminSMTP(false); setAdminSecurity(false); setAdminSources(false); setAdminLLM(false); setAdminUsers(!adminUsers); setSourceSettings(false); setProfile(false); setLlmSettings(false); }}>管理员用户</button>}<>{user.is_admin && <button disabled={busy} onClick={() => { setAdminSMTP(false); setAdminSecurity(false); setAdminSources(false); setAdminLLM(!adminLLM); setAdminUsers(false); setSourceSettings(false); setProfile(false); setLlmSettings(false); }}>系统LLM</button>}</>{user.is_admin && <button disabled={busy} onClick={() => { setAdminSMTP(false); setAdminSecurity(false); setAdminSourcesOpened(true); setAdminSources(!adminSources); setAdminLLM(false); setAdminUsers(false); setSourceSettings(false); setProfile(false); setLlmSettings(false); }}>系统数据源</button>}{user.is_admin && <><button disabled={busy} onClick={() => { setAdminSMTPOpened(true); setAdminSMTP(!adminSMTP); setAdminSecurity(false); setAdminSources(false); setAdminLLM(false); setAdminUsers(false); setSourceSettings(false); setProfile(false); setLlmSettings(false); }}>系统SMTP</button><button disabled={busy} onClick={() => { setAdminSecurityOpened(true); setAdminSecurity(!adminSecurity); setAdminSMTP(false); setAdminSources(false); setAdminLLM(false); setAdminUsers(false); setSourceSettings(false); setProfile(false); setLlmSettings(false); }}>基础安全</button></>}<button disabled={busy} onClick={() => void logout()}>退出登录</button></div>}</header>
     <main id="content" tabIndex={-1} aria-busy={busy}>
       <p className="eyebrow">你的研究，始于一个问题</p>
-      <h1>{user ? sourceSettings ? '数据源设置' : profile ? '账户设置' : '研究项目' : mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
+      <h1>{user ? adminSMTP ? '系统SMTP管理' : adminSecurity ? '基础安全设置' : adminSources ? '系统数据源管理' : adminLLM ? '系统LLM管理' : adminUsers ? '管理员账号管理' : sourceSettings ? '数据源设置' : profile ? '账户设置' : '研究项目' : mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
       {notice && <p className="notice" role="status">{notice}</p>}
       {error && <p className="error" role="alert">{error}</p>}
-      {user && <><ModelPicker key={user.id + '-model'} api={json} write={post} actor={user.id} revision={modelRevision} onAuthFailure={explain} /><div hidden={!llmSettings}><LLMSettings key={user.id + '-llm'} api={json} pageApi={envelope} write={post} actor={user.id} onChange={() => setModelRevision(v => v + 1)} onBusy={setBusy} onAuthFailure={explain} /></div></>}
+      {user && <><ModelPicker key={user.id + '-model'} api={json} write={post} actor={user.id} revision={modelRevision} onAuthFailure={explain} /><LLMSettings active={llmSettings} key={user.id + '-llm'} api={json} pageApi={envelope} write={post} actor={user.id} onChange={() => setModelRevision(v => v + 1)} onBusy={setBusy} onAuthFailure={explain} />{user.is_admin && <LLMSettings system active={adminLLM} key={user.id + '-system-llm'} api={json} pageApi={envelope} write={post} actor={user.id} onChange={() => setModelRevision(v => v + 1)} onBusy={setBusy} onAuthFailure={explain} />}</>}
+      {user && adminUsers && <AdminUsers key={user.id + "-admin"} actor={user.id} api={json} pageApi={envelope} write={post} onAuthFailure={explain} onBusy={setBusy}/>}
       {user && sourceOpened && <div hidden={!sourceSettings}><SourceSettings key={user.id + '-sources'} api={json} pageApi={envelope} write={post} actor={user.id} onChange={() => {}} onBusy={setBusy} onAuthFailure={explain}/></div>}
       {user && <div hidden={!profile}><Profile key={user.id} user={user} onChange={setUser} onAuthFailure={explain} onBusy={setBusy} /></div>}
-      <div hidden={!!user && (profile || sourceSettings)}>
-      {user && !project && !busy && <ProjectList key={user.id} actor={user.id} onAuthFailure={explain} />}
+      {user?.is_admin && adminSourcesOpened && <div hidden={!adminSources}><SourceSettings system key={user.id + "-system-sources"} api={json} pageApi={envelope} write={post} actor={user.id} onChange={() => {}} onBusy={setBusy} onAuthFailure={explain}/></div>}
+      {user?.is_admin && adminSMTPOpened && <div hidden={!adminSMTP}><SMTPSettings key={user.id + '-smtp'} actor={user.id} api={json} write={post} onBusy={setBusy} onAuthFailure={explain}/></div>}
+      {user?.is_admin && adminSecurityOpened && <div hidden={!adminSecurity}><SecuritySettings key={user.id + '-security'} actor={user.id} api={json} write={post} onBusy={setBusy} onAuthFailure={explain}/></div>}
+      <div hidden={!!user && (adminSMTP || adminSecurity || adminSources || profile || sourceSettings || adminUsers || adminLLM || llmSettings)}>
+      {user && !project && !busy && !adminUsers && <ProjectList key={user.id} actor={user.id} onAuthFailure={explain} />}
       {!user ? <section className="form-card auth-card" aria-label="账号认证">
         <div className="auth-tabs"><button disabled={busy} aria-pressed={mode === 'login'} onClick={() => { setMode('login'); setError(''); setConfirmation(''); }}>登录</button><button disabled={busy} aria-pressed={mode === 'register'} onClick={() => { setMode('register'); setError(''); setPassword(''); }}>注册</button></div>
         <form onSubmit={event => void authenticate(event)}>
@@ -335,6 +358,7 @@ export function BusinessApp() {
         <h3>研究范围</h3><p className="preserve">{project.research_scope || '未填写'}</p>
         <p className="knowledge-state">{project.default_knowledge_version_id ? '已有知识版本' : '尚未构建知识版本'}</p>
         <a href={`/workspace?project=${encodeURIComponent(project.id)}`}>项目链接</a>
+        <SearchTerms envelope={envelope} key={user.id + project.id} project={project} actor={user.id} api={json} write={post} onAuthFailure={explain} />
         <ProjectMaintenance key={project.id} project={project} actor={user.id} onChange={setProject} onBusy={setBusy} onAuthFailure={explain} onUnavailable={() => { setProject(null); setName(''); setDescription(''); setScope(''); setNotice(''); setError('资源不可用。'); window.history.replaceState(null, '', '/workspace'); }} onDeleted={() => { setProject(null); window.history.replaceState(null, '', '/workspace'); setNotice('Project 已软删除。'); }} />
       </section> : <section className="form-card" aria-label="新建研究项目">
         <h2>新建 Project</h2><p className="hint">定义研究问题与范围，建立自己的研究容器。</p>

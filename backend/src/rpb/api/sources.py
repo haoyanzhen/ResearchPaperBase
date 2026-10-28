@@ -37,8 +37,9 @@ class Empty(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
-def router_for(service: LLMService) -> APIRouter:
-    router = APIRouter(prefix="/api/v1/me/data-source-configs")
+def router_for(service: LLMService, *, system: bool = False) -> APIRouter:
+    base = "/api/v1/admin/data-source-configs" if system else "/api/v1/me/data-source-configs"
+    router = APIRouter(prefix=base)
 
     def call(
         request: Request,
@@ -82,7 +83,7 @@ def router_for(service: LLMService) -> APIRouter:
     @router.post("", status_code=201)
     def create(request: Request, response: Response, body: SourceWrite) -> Any:
         data = call(request, "create", data=values(body), write=True)
-        response.headers["Location"] = "/api/v1/me/data-source-configs/" + data["id"]
+        response.headers["Location"] = base + "/" + data["id"]
         result = envelope(request, data)
         result["meta"]["idempotency_expires_at"] = (
             (datetime.fromisoformat(data["created_at"]) + timedelta(hours=48))

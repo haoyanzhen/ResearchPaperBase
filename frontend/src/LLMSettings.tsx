@@ -45,7 +45,8 @@ export function ModelPicker({ api: baseApi, write, actor, revision, onAuthFailur
   return <div aria-label="模型选择"><label>当前模型<select aria-label="当前模型" disabled={busy || !selection} value={selection?.selection ? identity(selection.selection) : ''} onChange={e => void choose(e.target.value)}><option value="">请选择模型</option>{selection?.selection && !selection.valid && <option value={identity(selection.selection)}>原模型已失效，请修复配置</option>}{options.map(o => <option key={identity(o)} value={identity(o)}>{o.label}</option>)}</select></label><button disabled={busy} onClick={() => void load()}>刷新模型选择</button>{message && <p role="alert">{message}</p>}</div>;
 }
 
-export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, onChange, onBusy, onAuthFailure }: { api: API; pageApi: <T>(url: string, init?: RequestInit) => Promise<{ data: T; meta: {next_cursor: string | null; has_more: boolean} }>; write: Write; actor: string; onChange: () => void; onBusy: (v: boolean) => void; onAuthFailure: (e: unknown) => void }) {
+export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, onChange, onBusy, onAuthFailure, system = false, active = true }: { active?: boolean; system?: boolean; api: API; pageApi: <T>(url: string, init?: RequestInit) => Promise<{ data: T; meta: {next_cursor: string | null; has_more: boolean} }>; write: Write; actor: string; onChange: () => void; onBusy: (v: boolean) => void; onAuthFailure: (e: unknown) => void }) {
+  const configPath = system ? '/api/v1/admin/llm-configs' : '/api/v1/me/llm-configs';
   const api: API = (url, init) => baseApi(url, { ...init, headers: { ...init?.headers, 'X-Expected-Actor': actor } });
   const pageApi: typeof basePageApi = (url, init) => basePageApi(url, { ...init, headers: { ...init?.headers, 'X-Expected-Actor': actor } });
   const [configs, setConfigs] = useState<Config[]>([]);
@@ -63,8 +64,8 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
   const [consent, setConsent] = useState(false);
   const [task, setTask] = useState<Task | null>(null);
   const [testDetails, setTestDetails] = useState<{reason_code: string | null; tested_parameters: unknown; test_overrides: unknown} | null>(null);
-  async function listing() { const all: Config[] = []; let cursor: string | null = null; do { const page: {data: {items: Config[]}; meta: {next_cursor: string | null; has_more: boolean}} = await pageApi<{items: Config[]}>('/api/v1/me/llm-configs?page_size=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); all.push(...page.data.items); cursor = page.meta.has_more ? page.meta.next_cursor : null; } while (cursor); setConfigs(all); }
-  useEffect(() => { void listing().catch(e => { onAuthFailure(e); setMessage('配置列表读取失败。'); }); }, [actor]);
+  async function listing() { const all: Config[] = []; let cursor: string | null = null; do { const page: {data: {items: Config[]}; meta: {next_cursor: string | null; has_more: boolean}} = await pageApi<{items: Config[]}>(configPath + '?page_size=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); all.push(...page.data.items); cursor = page.meta.has_more ? page.meta.next_cursor : null; } while (cursor); setConfigs(all); }
+  useEffect(() => { if (active) void listing().catch(e => { onAuthFailure(e); setMessage('配置列表读取失败。'); }); }, [actor, active]);
   function enter(c: Config | null) { setSelected(c); setDraft(c ? draftFor(c) : fresh()); setDirty(false); setSwitchTo(undefined); setUncertain(false); setPending(null); setTask(null); setTestDetails(null); setConsent(false); setMessage(''); setModel(''); }
   function switchConfig(c: Config | null) { if (dirty || uncertain || pending) setSwitchTo(c); else enter(c); }
   function change(value: Partial<Draft>) { setDraft(prev => ({ ...prev, ...value })); setDirty(true); }
@@ -86,24 +87,24 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
     let payload: unknown;
     try { payload = body(); } catch { setMessage('参数JSON无效或有重复字段，请修正后保存。'); return; }
     await run(async () => {
-      const command = pending ?? { key: crypto.randomUUID(), path: '/api/v1/me/llm-configs', body: payload };
+      const command = pending ?? { key: crypto.randomUUID(), path: configPath, body: payload };
       if (!selected) setPending(command);
-      const result = await write<Config>(selected ? '/api/v1/me/llm-configs/' + selected.id : command.path, selected ? payload : command.body, selected ? undefined : command.key, actor, selected ? 'PATCH' : 'POST');
-      setSelected(result); setDraft(draftFor(result)); setDirty(false); setPending(null); setUncertain(false); setMessage('配置已保存；保存不会调用模型。'); setConsent(false); await listing(); onChange(); if (next !== undefined) enter(next);
+      const result = await write<Config>(selected ? configPath + '/' + selected.id : command.path, selected ? payload : command.body, selected ? undefined : command.key, actor, selected ? 'PATCH' : 'POST');
+      setSelected(result); setDraft(draftFor(result)); setDirty(false); setPending(null); setUncertain(false); setMessage('配置已保存；保存不会调用模型。'); setTask(null); setTestDetails(null); setConsent(false); await listing(); onChange(); if (next !== undefined) enter(next);
     }, true);
   }
   async function loadCurrent() {
     await run(async () => {
-      if (pending && pending.path !== '/api/v1/me/llm-configs') { const restored = await write<Task>(pending.path, pending.body, pending.key, actor); setTask(restored); setPending(null); setUncertain(false); }
+      if (pending && pending.path !== configPath) { const restored = await write<Task>(pending.path, pending.body, pending.key, actor); setTask(restored); setPending(null); setUncertain(false); }
       else if (pending) { const restored = await write<Config>(pending.path, pending.body, pending.key, actor); enter(restored); }
-      else if (selected) { try { enter(await api<Config>('/api/v1/me/llm-configs/' + selected.id)); } catch (e) { if ((e as {status?: number}).status === 404) enter(null); else throw e; } }
+      else if (selected) { try { enter(await api<Config>(configPath + '/' + selected.id)); } catch (e) { if ((e as {status?: number}).status === 404) enter(null); else throw e; } }
       await listing(); onChange();
     });
   }
   async function start(kind: 'test' | 'refresh') {
     if (!selected) return;
     await run(async () => {
-      const command = pending ?? { key: crypto.randomUUID(), path: '/api/v1/me/llm-configs/' + selected.id + (kind === 'test' ? '/test' : '/models/refresh'), body: kind === 'test' ? { model_id: model.trim() } : {} };
+      const command = pending ?? { key: crypto.randomUUID(), path: configPath + '/' + selected.id + (kind === 'test' ? '/test' : '/models/refresh'), body: kind === 'test' ? { model_id: model.trim() } : {} };
       setTestDetails(null); setPending(command); const started = await write<Task>(command.path, command.body, command.key, actor); setTask(started); setPending(null); setUncertain(false);
     }, true);
   }
@@ -111,7 +112,7 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
     if (!task) return;
     await run(async () => {
       const current = await api<Task>(task.status_url); setTask(current);
-      if (['succeeded', 'failed'].includes(current.execution_status)) { if (current.result_refs.length) { const result = await api<{payload: {reason_code: string | null; tested_parameters: unknown; test_overrides: unknown}}>(current.result_refs[0].url); setTestDetails(result.payload); } setMessage(current.execution_status === 'succeeded' ? (current.operation_id === 'Config.RefreshModels' ? '模型发现完成；候选模型仍须逐一测试。' : '模型测试成功，现在可选择。') : '操作失败：' + current.error?.code); if (selected) { const latest = await api<Config>('/api/v1/me/llm-configs/' + selected.id); setSelected(previous => previous ? { ...previous, models: latest.models } : previous); } await listing(); onChange(); }
+      if (['succeeded', 'failed'].includes(current.execution_status)) { if (current.result_refs.length) { const result = await api<{payload: {reason_code: string | null; tested_parameters: unknown; test_overrides: unknown}}>(current.result_refs[0].url); setTestDetails(result.payload); } setMessage(current.execution_status === 'succeeded' ? (['Config.RefreshModels', 'Admin.RefreshSystemModels'].includes(current.operation_id) ? '模型发现完成；候选模型仍须逐一测试。' : '模型测试成功，现在可选择。') : '操作失败：' + current.error?.code); if (selected) { const latest = await api<Config>(configPath + '/' + selected.id); setSelected(previous => previous ? { ...previous, models: latest.models } : previous); } await listing(); onChange(); }
     });
   }
   const extensionNames = draft.protocol === 'openai_chat' ? ['reasoning_effort', 'max_tokens', 'max_completion_tokens'] : draft.protocol === 'openai_responses' ? ['reasoning'] : draft.protocol === 'anthropic_messages' ? ['thinking'] : ['thinkingConfig'];
@@ -129,8 +130,9 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
     } catch { setMessage('扩展参数名称或JSON值无效；字符串需要双引号，数值和布尔值保留原类型。'); }
   }
   const protocols = draft.provider === 'anthropic' ? ['anthropic_messages'] : draft.provider === 'gemini' ? ['gemini_content'] : draft.provider === 'deepseek' ? ['openai_chat'] : ['openai_chat', 'openai_responses'];
-  return <section className="form-card" aria-label="LLM设置" aria-busy={busy}><h2>LLM配置</h2>
-    <p>配置只供本人使用。保存不调用外部服务；修改后需重新逐模型测试。</p>
+  if (!active) return null;
+  return <section className="form-card" aria-label="LLM设置" aria-busy={busy}><h2>{system ? "系统LLM配置" : "LLM配置"}</h2>
+    <p>{system ? "系统模型可供用户显式选择，凭据不向用户公开。" : "配置只供本人使用。"}保存不调用外部服务；修改后需重新逐模型测试。</p>
     {message && <p role="alert">{message}</p>}
     <div className="list-pages"><button disabled={busy} onClick={() => switchConfig(null)}>新增LLM配置</button><button disabled={busy} onClick={() => void run(listing)}>刷新配置列表</button>{configs.map(c => <button key={c.id} disabled={busy} onClick={() => switchConfig(c)}>{c.name}</button>)}</div>
     {switchTo !== undefined && <div role="group" aria-label="未保存修改"><p>有未保存或未核实的修改。</p><button disabled={busy || uncertain || !!pending} onClick={() => void save(switchTo)}>保存并切换</button><button disabled={busy || uncertain || !!pending} onClick={() => enter(switchTo)}>放弃并切换</button><button disabled={busy} onClick={() => setSwitchTo(undefined)}>留在当前配置</button></div>}
@@ -157,7 +159,7 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
       {pending && <button disabled={busy} onClick={() => void start(pending.path.endsWith('/test') ? 'test' : 'refresh')}>核查同一测试请求</button>}
       {task && <div role="status">任务状态：{task.execution_status}<button disabled={busy} onClick={() => void poll()}>刷新测试状态</button></div>}
       {testDetails && <div aria-label="测试详情"><p>诊断：{testDetails.reason_code ?? '成功'}</p><p>实际生成参数</p><pre>{JSON.stringify(testDetails.tested_parameters, null, 2)}</pre><p>仅测试时覆盖</p><pre>{JSON.stringify(testDetails.test_overrides, null, 2)}</pre></div>}
-      <button disabled={busy || dirty || uncertain || !!pending} onClick={() => { if (window.confirm('删除此LLM配置？已保存的模型选择将失效。')) void run(async () => { await write('/api/v1/me/llm-configs/' + selected.id + '?expected_revision=' + selected.revision, undefined, undefined, actor, 'DELETE'); enter(null); await listing(); onChange(); }, true); }}>删除LLM配置</button>
+      <button disabled={busy || dirty || uncertain || !!pending} onClick={() => { if (window.confirm('删除此LLM配置？已保存的模型选择将失效。')) void run(async () => { await write(configPath + '/' + selected.id + '?expected_revision=' + selected.revision, undefined, undefined, actor, 'DELETE'); enter(null); await listing(); onChange(); }, true); }}>删除LLM配置</button>
     </div>}
   </section>;
 }

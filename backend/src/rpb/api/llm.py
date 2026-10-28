@@ -71,8 +71,9 @@ class Selection(BaseModel):
     selection: dict[str, str] | None
 
 
-def router_for(service: LLMService) -> APIRouter:
+def router_for(service: LLMService, *, system: bool = False) -> APIRouter:
     router = APIRouter(prefix="/api/v1")
+    config_path = "/admin/llm-configs" if system else "/me/llm-configs"
 
     def call(
         request: Request,
@@ -99,7 +100,7 @@ def router_for(service: LLMService) -> APIRouter:
             meta["idempotency_expires_at"] = None
         return {"data": data, "meta": meta}
 
-    @router.get("/me/llm-configs")
+    @router.get(config_path)
     def listing(
         request: Request,
         page_size: Annotated[int, Query(ge=1, le=100)] = 20,
@@ -110,13 +111,13 @@ def router_for(service: LLMService) -> APIRouter:
         result["meta"].update(next_cursor=page["next_cursor"], has_more=page["has_more"])
         return result
 
-    @router.post("/me/llm-configs", status_code=201)
+    @router.post(config_path, status_code=201)
     def create(request: Request, response: Response, body: LLMWrite) -> Any:
         values = body.model_dump(exclude_unset=True)
         if any(value is None for value in values.values()):
             raise AccountError("VALIDATION_FIELD_INVALID", 422)
         data = call(request, "create", data=values, write=True)
-        response.headers["Location"] = "/api/v1/me/llm-configs/" + data["id"]
+        response.headers["Location"] = "/api/v1" + config_path + "/" + data["id"]
         result = env(request, data, True)
         result["meta"]["idempotency_expires_at"] = (
             (datetime.fromisoformat(data["created_at"]) + timedelta(hours=48))
@@ -125,33 +126,36 @@ def router_for(service: LLMService) -> APIRouter:
         )
         return result
 
-    @router.get("/me/llm-configs/{config_id}")
+    @router.get(config_path + "/{config_id}")
     def read(request: Request, config_id: str) -> Any:
         return env(request, call(request, "read", config_id))
 
-    @router.patch("/me/llm-configs/{config_id}")
+    @router.patch(config_path + "/{config_id}")
     def update(request: Request, config_id: str, body: LLMPatch) -> Any:
         data = body.model_dump(exclude_unset=True)
         if any(value is None for value in data.values()):
             raise AccountError("VALIDATION_FIELD_INVALID", 422)
         return env(request, call(request, "update", config_id, data, True))
 
-    @router.delete("/me/llm-configs/{config_id}", status_code=204)
+    @router.delete(config_path + "/{config_id}", status_code=204)
     def delete(request: Request, config_id: str, expected_revision: str | None = None) -> Response:
         call(request, "delete", config_id, {"expected_revision": expected_revision}, True)
         return Response(status_code=204)
 
-    @router.post("/me/llm-configs/{config_id}/test", status_code=202)
+    @router.post(config_path + "/{config_id}/test", status_code=202)
     def test(request: Request, response: Response, config_id: str, body: ModelTest) -> Any:
         data = call(request, "test", config_id, body.model_dump(), True)
         response.headers["Location"] = data["status_url"]
         return env(request, data, True)
 
-    @router.post("/me/llm-configs/{config_id}/models/refresh", status_code=202)
+    @router.post(config_path + "/{config_id}/models/refresh", status_code=202)
     def refresh(request: Request, response: Response, config_id: str, body: Empty) -> Any:
         data = call(request, "refresh", config_id, {}, True)
         response.headers["Location"] = data["status_url"]
         return env(request, data, True)
+
+    if system:
+        return router
 
     @router.get("/me/model-options")
     def options(request: Request) -> Any:
@@ -215,7 +219,7 @@ def router_for(service: LLMService) -> APIRouter:
                 view = current["view"]
                 for index, item in enumerate(current["events"][position:], position + 1):
                     state = item["execution_status"]
-                    final = state in {"succeeded", "failed"}
+                    final = state in {"succeeded", "failed", "cancelled"}
                     payload = {
                         "execution_status": state,
                         "stage": view["stage"],
@@ -230,7 +234,7 @@ def router_for(service: LLMService) -> APIRouter:
                         "event_id": item["cursor"],
                         "sequence": index,
                         "task_id": task_id,
-                        "project_id": None,
+                        "project_id": view["project_id"],
                         "target": view["target"],
                         "attempt_id": view["attempt_id"],
                         "knowledge_version_id": None,
@@ -249,7 +253,7 @@ def router_for(service: LLMService) -> APIRouter:
                         + "\n\n"
                     )
                     position = index
-                if view["execution_status"] in {"succeeded", "failed"}:
+                if view["execution_status"] in {"succeeded", "failed", "cancelled"}:
                     return
                 await asyncio.sleep(1)
                 heartbeat += 1

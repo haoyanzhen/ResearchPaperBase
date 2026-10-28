@@ -1,7 +1,7 @@
 # Domain 附录：Construction 资产入库
 
-文档版本：v1.4
-更新日期：2026-10-26
+文档版本：v1.6
+更新日期：2026-10-27
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义 Construction 的检索词、候选论文与资料、去重筛选、手动补充、文本处理和分析确认的业务对象与不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -51,7 +51,7 @@ KnowledgeSyncState、KnowledgeVersion 和 CitationEvidence 为 [02-02](02-02_con
 | `SearchTermVersion` | ConstructionWorkspace 内的检索词内容快照 | 保存自然语言关键词、布尔表达式、同义词/缩写、排除词、生成理由、预期覆盖方向、确认时间、修改来源、自动更新开关和数据源策略；新生成或新增检索词默认 `auto_update_enabled=true` | FR-020 |
 | `SelectedSearchTerms` | 单次手动 ConstructionRun 本次选择的检索词集合 | 不改变检索词自身的自动更新开关 | FR-014, FR-021 |
 | `AutoUpdateSearchTerms` | 自动 Run 使用的检索词集合 | 只包含 `auto_update_enabled=true` 的检索词 | FR-009, FR-021 |
-| `DataSourcePolicy` | 检索词级数据源策略 | 未显式选择时默认使用用户和系统当前可解析的全部数据源 | FR-020, FR-021 |
+| `DataSourcePolicy` | 检索词级数据源策略 | 按FR-007逐Provider个人优先解析，未显式选择时使用解析后的全部可用数据源 | FR-020, FR-021 |
 | `ConstructionRunConfigSnapshot` | ConstructionRun 启动配置快照 | 固化本次检索词内容、检索词来源、数据源策略、解析后数据源、配置来源、检索时间范围、返回数量上限和触发方式 | FR-009, FR-014, FR-021 |
 | `CandidatePaper` | 检索得到的候选论文 | 必须记录来源检索词、来源数据源和基础元数据；论文元数据保持严格结构 | FR-021, FR-022 |
 | `CandidateMaterial` | 检索得到的候选非论文 Project 资料 | 必须记录来源检索词、来源数据源或资料来源、标题或待补充标题状态、`content_format`、URL/文件线索和最小可追溯信息 | FR-021, FR-022 |
@@ -87,6 +87,7 @@ Construction 不变量：
 - 删除检索词只影响之后按检索词检索时的可选集合和自动更新集合；不得删除历史 Run、候选论文、候选资料、ProjectPaper、ProjectMaterial、KnowledgeVersion、图谱、向量或其他已生成内容；历史回溯只能读取当时的 ConstructionRunConfigSnapshot。
 - 所有实际数据源均失败或不可解析时，不得进入去重、评分与筛选阶段。
 - 单个数据源失败不得破坏其他成功数据源结果；失败数据源、失败原因和受影响检索词必须可诊断。
+- D-CW-01 A（2026-10-27）：Construction检索构建的身份、Project资格及所需LLM等全局必需配置失败时拒绝整个Run；数据源按检索词解析。all_resolvable使用可用来源并记录拒绝项；selected中任一显式来源失效则整条词失败，不执行该词的其他来源，但不阻断其他可执行词。至少一条词有可执行来源才受理，全部不可执行则拒绝启动。显式失效来源不替换，个人禁用不回落。取得独占构建资格后、冻结并派发前重新校验；此时全部不可执行则终止且不外发。失败项与原因必须可见并随本轮输入依据保存，不以部分执行冒充完整范围。
 - 普通检索命中当前 Project 已有关联论文的重复候选项不得进入下载、解析、AI 分析、入库、图谱更新或推送流程；已发布论文不再接受补全文本、元数据或分析修订，更改须移除成功后重新导入；人工排除承接 [02-02](02-02_construction_versioning_appendix.md) 的待纳入修订与人工决定接口。
 - 命中当前 Project 已有 ProjectMaterial 的候选资料不得创建新资料条目；重复来源仅记录为独立候选来源线索，不改变已发布资料元数据或版本内 `candidate_sources`；`candidate_sources` 的知识构建资格承接 [02-02](02-02_construction_versioning_appendix.md)。
 - 论文去重、评分、筛选和人工修正必须形成 DeduplicationDecision 或 PaperScreeningDecision；评分阈值来源、去重依据、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选论文和操作者。
@@ -153,3 +154,5 @@ Construction 不变量：
 
 
 本次修订（2026-10-26）：按用户决定分离数据源检索服务入口与具体资源地址；本次决定不涉及通用抓站支持及范围，具体文件地址不作为配置入口。
+
+本次修订（2026-10-26）：按task032 D-SOURCE-02用户选择B同步逐Provider优先/回落及显式身份保护；个人可分别配置四个论文源API。

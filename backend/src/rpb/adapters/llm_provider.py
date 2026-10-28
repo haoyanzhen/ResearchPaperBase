@@ -17,8 +17,10 @@ from rpb.modules.account_config.domain.llm_profiles import compile_for_model
 
 
 class ProviderFailure(Exception):
-    def __init__(self, code: str) -> None:
+    def __init__(self, code: str, *, submitted: bool | None = None) -> None:
         self.code = code
+        self.submitted = submitted
+        self.attempts = 1
         super().__init__(code)
 
 
@@ -67,6 +69,7 @@ class HTTPProvider:
         response_format: str = "json",
     ) -> Any:
         deadline = monotonic() + timeout
+        submitted = False
         url = urlsplit(base_url)
         host = url.hostname or ""
         port = url.port or (443 if url.scheme == "https" else 80)
@@ -74,7 +77,12 @@ class HTTPProvider:
         if url.scheme != "https" and not internal:
             raise ProviderFailure("CONFIG_CONNECTION_FAILED")
         try:
-            addresses = resolve_addresses(host, port, deadline)
+            try:
+                addresses = resolve_addresses(host, port, deadline)
+            except ProviderFailure as exc:
+                if exc.code in {"CONFIG_CONNECTION_FAILED", "PROVIDER_TIMEOUT"}:
+                    exc.submitted = False
+                raise
             if not addresses or (
                 not internal and any(not ipaddress.ip_address(x[4][0]).is_global for x in addresses)
             ):
@@ -143,6 +151,7 @@ class HTTPProvider:
                 with authorize():
                     if expired.is_set():
                         raise ProviderFailure("PROVIDER_TIMEOUT")
+                    submitted = True
                     connection.request(
                         "GET" if payload is None else "POST",
                         url.path.rstrip("/") + path,
@@ -174,12 +183,14 @@ class HTTPProvider:
                 connection.close()
         except ProviderFailure:
             raise
+        except ssl.SSLCertVerificationError:
+            raise ProviderFailure("CONFIG_CONNECTION_FAILED") from None
         except TimeoutError:
-            raise ProviderFailure("PROVIDER_TIMEOUT") from None
+            raise ProviderFailure("PROVIDER_TIMEOUT", submitted=submitted) from None
         except OSError, ValueError, http.client.HTTPException, UnicodeError:
             if monotonic() >= deadline:
-                raise ProviderFailure("PROVIDER_TIMEOUT") from None
-            raise ProviderFailure("CONFIG_CONNECTION_FAILED") from None
+                raise ProviderFailure("PROVIDER_TIMEOUT", submitted=submitted) from None
+            raise ProviderFailure("CONFIG_CONNECTION_FAILED", submitted=submitted) from None
 
     def execute(
         self,

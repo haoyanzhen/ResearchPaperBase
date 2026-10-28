@@ -115,6 +115,18 @@ class PublicErrorTests(unittest.TestCase):
     updated=copy.deepcopy(SCHEMAS[name])
     self.assertEqual(updated['properties']['base_url'].pop('description'), '检索服务/API入口，由已实现的Provider适配器解释；具体论文、网页或文件地址属于检索结果或手动补充资料，不属于数据源配置。')
     self.assertEqual(schema,updated,name)
+   elif name in {'SMTPWrite','SMTPSave','SMTPView'}:
+    # D-SMTP-02/03 explicitly authorize provider-specific OAuth; normalize only additions.
+    updated=copy.deepcopy(SCHEMAS[name])
+    self.assertEqual(updated['properties'].pop('provider')['enum'], ['custom','qq','163','gmail','microsoft365','sendgrid'])
+    oauth=updated['properties'].pop('oauth')
+    self.assertEqual(oauth, {'anyOf':[{'$ref':'#/components/schemas/'+('SMTPOAuthView' if name=='SMTPView' else 'SMTPOAuthWrite')},{'type':'null'}]})
+    if name=='SMTPView':
+     self.assertEqual(updated['properties'].pop('oauth_status')['enum'], ['not_connected','connected','reauthorization_required','refreshing'])
+     self.assertEqual(updated['properties'].pop('connection_status')['enum'], ['untested','available','unavailable'])
+     self.assertEqual(updated['properties'].pop('last_test_at'), {'anyOf':[{'$ref':'#/components/schemas/Time'},{'type':'null'}]})
+     for added in ['provider','oauth','oauth_status','connection_status','last_test_at']: updated['required'].remove(added)
+    self.assertEqual(schema,updated,name)
    elif name not in llm_changed: self.assertEqual(schema,SCHEMAS[name],name)
    else:
     # task026 explicitly accepted expansion; LP and LC13 test its new bounded contracts.
@@ -133,9 +145,32 @@ class PublicErrorTests(unittest.TestCase):
     if method == 'post' and path in {'/me/llm-configs/{config_id}/test','/me/llm-configs/{config_id}/models/refresh'}:
      self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/LLMTaskView'})
      del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
+    if method == 'post' and path in {'/admin/llm-configs/{config_id}/test','/admin/llm-configs/{config_id}/models/refresh'}:
+     # task031 adds a scoped system projection; retain every historical binding.
+     self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/SystemLLMTaskView'})
+     del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
+    if method == 'post' and path == '/admin/smtp-config/test':
+     self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/SMTPTaskView'})
+     del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
+    if method == 'post' and path == '/admin/data-source-configs/{config_id}/test':
+     self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/SystemSourceTaskView'})
+     del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
     if method == 'post' and path == '/me/data-source-configs/{config_id}/test':
      self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'],{'$ref':'#/components/schemas/SourceTaskView'})
      del updated['responses']['202']; updated['x-coverage']=op['x-coverage']
+    if (path, method) in {
+        ('/projects/{project_id}/construction-workspace', 'patch'),
+        ('/projects/{project_id}/construction-workspace/search-terms/{term_id}/confirm', 'post')}:
+     # task037 promotes exactly these request-only endpoints to bounded responses.
+     expected = 'ConstructionWorkspaceView' if method == 'patch' else 'SearchTermView'
+     self.assertEqual(updated['responses']['200']['content']['application/json']['schema']['properties']['data'], {'$ref':'#/components/schemas/'+expected})
+     self.assertEqual(set(updated['responses']), {'200','400','401','403','404','409','412','413','415','422','428','500'})
+     for status in ['400','401','403','404','409','412','413','415','422','428','500']:
+      self.assertEqual(updated['responses'][status], {'$ref':'#/components/responses/PublicError'+status})
+     guard=next(p for p in updated['parameters'] if p['name']=='X-Expected-Actor')
+     self.assertEqual(guard, {'name':'X-Expected-Actor','in':'header','required':False,'schema':{'$ref':'#/components/schemas/ID'}})
+     updated['parameters'].remove(guard)
+     updated['responses']=copy.deepcopy(op['responses']); updated['x-coverage']=op['x-coverage']
     if (path, method) == ('/projects', 'post'):
      # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.
      # Normalize only reviewed deltas, then retain the full historical operation assertion.

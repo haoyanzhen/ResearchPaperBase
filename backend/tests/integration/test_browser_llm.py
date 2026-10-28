@@ -63,7 +63,7 @@ def test_lu01_save_discover_test_select_reload_and_invalidate(llm_browser):
     expect(page.get_by_role("button", name="model-a：测试通过", exact=True)).to_be_visible()
     picker = page.get_by_label("当前模型", exact=True)
     expect(picker.locator("option")).to_have_count(2)
-    picker.select_option(label="My model / model-a")
+    picker.select_option(label="个人 / My model / model-a")
     expect(picker).not_to_have_value("")
     selected = picker.input_value()
     page.reload()

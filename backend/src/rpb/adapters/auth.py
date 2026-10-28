@@ -115,6 +115,15 @@ class AccountStore:
             .mappings()
             .first()
         )
+        # Concurrent protected reads may already have revoked a disabled account's
+        # session. Preserve that safe diagnostic until re-enabled; the revoked
+        # credential must still never become valid again.
+        if row and row["revoked"] and row["account_id"] and row["expires_at"] > datetime.now(UTC):
+            enabled = conn.scalar(
+                sa.select(accounts.c.enabled).where(accounts.c.id == row["account_id"])
+            )
+            if enabled is False:
+                raise AccountError("AUTH_ACCOUNT_DISABLED", 401, row["account_id"])
         if not row or row["revoked"] or row["expires_at"] <= datetime.now(UTC):
             raise AccountError("AUTH_SESSION_INVALID", 401)
         if csrf is not None and not hmac.compare_digest(row["csrf_hash"], digest(csrf)):
