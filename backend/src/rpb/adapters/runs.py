@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 
+from rpb.adapters import paper_deduplication as dedup
 from rpb.adapters.llm import event_record, require_revision, uuid_value
 from rpb.adapters.llm import public_error as config_error
 from rpb.adapters.run_tables import commands, runs
@@ -89,8 +90,10 @@ def transition(run: Any, status: str, error: str | None = None) -> None:
     if status in {"failed", "cancelled"}:
         run["finished_at"] = now()
     if status == "cancelled":
-        run["cleaned_candidate_count"] = len(run["candidates"])
-        run["candidates"] = []
+        run["deduplication_summary"] = dedup.summary(run)
+        if not any(c.get("deduplication", {}).get("history") for c in run["candidates"]):
+            run["cleaned_candidate_count"] = len(run["candidates"])
+            run["candidates"] = []
     if status == "cancelled" and run["candidate_version"]:
         run["candidate_version"].update(
             state="discarded", closing_reason={"code": "cancelled", "message": "构建已取消"}
@@ -141,6 +144,16 @@ class RunStore:
         if run["status"] != "waiting_user":
             return []
         wait = run["waiting"]
+        if run.get("phase") == "screening":
+            return [
+                {
+                    "id": wait["id"],
+                    "kind": "screening",
+                    "revision": wait["revision"],
+                    "allowed_actions": [],
+                    "confirmation": None,
+                }
+            ]
         expires = (datetime.now(UTC) + timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
         basis = ":".join(
             [run["owner_id"], run["project_id"], wait["id"], wait["revision"], expires]
@@ -151,7 +164,7 @@ class RunStore:
                 "id": wait["id"],
                 "kind": "retrieval",
                 "revision": wait["revision"],
-                "allowed_actions": [],
+                "allowed_actions": ["confirm_retrieval"],
                 "confirmation": {
                     "confirmation_id": stable(token),
                     "action": "confirm_retrieval",
@@ -162,7 +175,7 @@ class RunStore:
                     "candidate_revision": run["candidate_revision"],
                     "risks": [],
                     "expires_at": expires,
-                    "confirmation_token": token,
+                    "confirmation_token": expires + "." + token,
                     "affected_items": [],
                     "retained_items": [],
                     "blocked_reasons": [],
@@ -193,7 +206,7 @@ class RunStore:
             "updated_at": run["updated_at"],
             "started_at": run.get("started_at"),
             "finished_at": run.get("finished_at"),
-            "stage": "retrieval",
+            "stage": run.get("phase", "retrieval"),
             "business_state": run["status"],
             "waiting_items": [
                 {
@@ -238,7 +251,7 @@ class RunStore:
                     "effective_input_revision",
                 )
             },
-            "phase": "retrieval",
+            "phase": run.get("phase", "retrieval"),
             "base_knowledge_version_id": None,
             "published_knowledge_version_id": None,
             "completion": None,
@@ -252,6 +265,7 @@ class RunStore:
                         + run.get("cleaned_candidate_count", 0),
                         "sources": run["source_results"],
                         "resolution": run.get("resolution"),
+                        "deduplication": dedup.summary(run),
                     },
                     "error": public_error(run["error"]) if run.get("error") else None,
                 }
@@ -432,6 +446,63 @@ class RunStore:
                     )
                 )
                 value = {"run": self.view(run), "task": self.task(run)}
+            elif operation == "confirm_retrieval" and run:
+                required = {
+                    "run_id",
+                    "waiting_item_id",
+                    "expected_revision",
+                    "subject_revision",
+                    "candidate_revision",
+                    "confirmation_token",
+                    "acknowledged_risk_ids",
+                }
+                if set(body) != required or body["acknowledged_risk_ids"] != []:
+                    raise AccountError("VALIDATION_FIELD_INVALID", 422)
+                if run["status"] != "waiting_user" or run.get("phase", "retrieval") != "retrieval":
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                wait = run["waiting"]
+                require_revision(wait["revision"], body["expected_revision"])
+                require_revision(run["effective_input_revision"], body["subject_revision"])
+                require_revision(run["candidate_revision"], body["candidate_revision"])
+                if body["waiting_item_id"] != wait["id"]:
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                # Issued claims persist across reads and expire; HMAC binds the exact input.
+                token = body["confirmation_token"]
+                if not isinstance(token, str) or "." not in token:
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                expires, signature = token.rsplit(".", 1)
+                basis = ":".join(
+                    [run["owner_id"], run["project_id"], wait["id"], wait["revision"], expires]
+                )
+                expected = hmac.new(
+                    run["confirmation_secret"].encode(), basis.encode(), "sha256"
+                ).hexdigest()
+                try:
+                    valid = datetime.fromisoformat(expires.replace("Z", "+00:00")) > datetime.now(
+                        UTC
+                    )
+                except ValueError, TypeError:
+                    valid = False
+                if (
+                    not valid
+                    or not signature.isascii()
+                    or not hmac.compare_digest(signature, expected)
+                ):
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                run["retrieval_confirmation"] = {
+                    "actor_id": str(actor),
+                    "at": now(),
+                    "candidate_revision": run["candidate_revision"],
+                    "input_revision": run["effective_input_revision"],
+                }
+                dedup.initialize(run)
+                transition(run, "waiting_user")
+                persist(conn, run)
+                value = {"run": self.view(run), "task": self.task(run)}
+            elif operation == "correct_deduplication" and run:
+                value = copy.deepcopy(dedup.correct(run, body, actor))
+                transition(run, "waiting_user")
+                persist(conn, run)
             elif operation == "cancel" and run:
                 if set(body) != {"run_id", "expected_revision", "attempt_id"}:
                     raise AccountError("VALIDATION_FIELD_INVALID", 422)

@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.22
-更新日期：2026-10-28
+文档版本：v1.23
+更新日期：2026-10-29
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -261,7 +261,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 | POST `CR/candidates/{candidate_id}/replace-source` | `Construction.ReplaceCandidateSource` / 023–025 | `{expected_revision!,supplement_id:ID!,supplement_confirmed_revision:Revision!}` → CandidateView | 仅入库确认前；同Project同kind已确认补充及其不可变来源；原子核验确认修订，拒绝已发布或被其他Run占用的补充，互斥处理；替换重新核验身份/元数据/去重并使依赖处理及确认失效，不直接接收路径或已发布资产修改 |
 | GET `CR/candidates`、`CR/candidates/{candidate_id}` | `Construction.ReadCandidates` / 022–025 | 分页/无 → List<CandidateView>/CandidateView | 只读本 Run 候选；禁止传给正式研究 |
 | PATCH `CR/candidates/{candidate_id}` | `Construction.EditCandidate` / 017,022,025 | CandidatePatch → CandidateView | expected_revision 校验；计算中冲突拒绝；改变范围使相关确认失效 |
-| POST `CR/candidates/{candidate_id}/deduplication-decision` | `Construction.CorrectDeduplication` / 022 | `{expected_revision!,decision:distinct\|match!,matched_project_asset_id?:ID,reason:string!}` → CandidateView | match 必须同 Project 目标；distinct 可撤销误合并，保留原决定追溯 |
+| POST `CR/candidates/{candidate_id}/deduplication-decision` | `Construction.CorrectDeduplication` / 022 | `{expected_revision!,decision:distinct\|match!,matched_project_asset_id?:ID,matched_candidate_id?:ID,matched_candidate_revision?:Revision,reason:string!}` → CandidateView | match目标二选一：同Run候选（同时必须提交matched_candidate_revision，原子校验目标当前修订）或同Project资产；distinct不带匹配目标，可撤销误合并，保留原决定追溯。当前运行切片仅支持同Run候选；资产目标待发布能力实现 |
 | POST `CR/screening/score` | `Construction.ScoreCandidates` / 022 | `{expected_revision!,candidate_ids:ID[]!,confirmation_token?:string,acknowledged_risk_ids:string[]!}` → TaskRef | 使用本Run冻结模型配置对当前有效候选重新评分，不允许换model_selection；人工覆盖须先生成确认预览，不自动改确认结果 |
 | POST `CR/candidates/{candidate_id}/analysis/generate` | `Construction.GenerateAnalysis` / 025 | `{expected_revision!,confirmation_token?:string,acknowledged_risk_ids:string[]!}` → TaskRef | 使用本Run冻结模型配置和已确认处理文本，禁止变更model_selection；P0阶段重生成，不是P1通用重跑 |
 | GET `CR/ingestion-preview` | `Construction.PreviewIngestion` / 026 | 无 → IngestionPreview | 明列失败/降级等；失败或零结果不得伪造可发布，有意移除全部按统一确认及空版本发布规则 |
@@ -574,3 +574,5 @@ MetadataCandidate增加必填`assessment:MetadataDraftAssessment`：`{confidence
 本次修订（2026-10-26）：落实task025用户决定，P0个人/系统LLM无启停开关；发现/手填只提供待测项，当前配置/凭据修订下逐模型显式测试成功才可选择。扩展参数方向B另行调研，不将方案或机器缺项视为已实现。
 
 本次修订（2026-10-26）：按用户决定分离数据源检索服务入口与具体资源地址；本次决定不涉及通用抓站支持及范围，具体文件地址不作为配置入口。
+
+本次修订（2026-10-28，D-CW-03）：用户明确“只以去标点符号、全小写的标题来判断是否是同一论文身份”。自动标题键删除Unicode P类标点后调用lower，不增加模糊匹配、空白合并或字符兼容转换；保留数学符号，空/纯空白结果不自动匹配。人工修正优先、原始元数据和全部来源保留；身份合并不修改已发布内容或跨Project私有资产。该规则替代旧强标识优先自动去重要求。

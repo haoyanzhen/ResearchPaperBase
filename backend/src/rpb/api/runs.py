@@ -95,4 +95,36 @@ def router_for(service: TermService) -> APIRouter:
             raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
         return call(request, project_id, "cancel", {**body, "run_id": str(run_id)}, True)
 
+    @router.post("/{run_id}/waiting-items/{waiting_item_id}/confirm")
+    def confirm(
+        request: Request,
+        project_id: UUID,
+        run_id: UUID,
+        waiting_item_id: UUID,
+        body: dict[str, Any],
+    ) -> Any:
+        if {"run_id", "waiting_item_id"} & body.keys():
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        return call(
+            request,
+            project_id,
+            "confirm_retrieval",
+            {**body, "run_id": str(run_id), "waiting_item_id": str(waiting_item_id)},
+            True,
+        )
+
+    @router.post("/{run_id}/candidates/{candidate_id}/deduplication-decision")
+    def correct(
+        request: Request, project_id: UUID, run_id: UUID, candidate_id: UUID, body: dict[str, Any]
+    ) -> Any:
+        if {"run_id", "candidate_id"} & body.keys():
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        return call(
+            request,
+            project_id,
+            "correct_deduplication",
+            {**body, "run_id": str(run_id), "candidate_id": str(candidate_id)},
+            True,
+        )
+
     return router

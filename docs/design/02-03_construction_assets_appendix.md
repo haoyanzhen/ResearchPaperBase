@@ -1,7 +1,7 @@
 # Domain 附录：Construction 资产入库
 
-文档版本：v1.7
-更新日期：2026-10-28
+文档版本：v1.8
+更新日期：2026-10-29
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义 Construction 的检索词、候选论文与资料、去重筛选、手动补充、文本处理和分析确认的业务对象与不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -61,7 +61,7 @@ KnowledgeSyncState、KnowledgeVersion 和 CitationEvidence 为 [02-02](02-02_con
 | `MaterialScreeningDecision` | 资料评分与筛选决策 | 记录评分、有效性、评分阈值来源、人工调整、确认状态和可追溯理由；确认前不得进入文件获取解析 | FR-022 |
 | `ManualPaperSupplementRequest` | 用户手动补充论文请求 | 记录补充方式、提交人、来源值、解析结果、确认状态和失败原因；不得在用户确认前写入 ProjectPaper | FR-023 |
 | `ManualMaterialSupplementRequest` | 用户手动补充 Project 资料请求 | 记录补充方式、提交人、来源值、`content_format`、解析结果、标题草稿/确认状态和失败原因；不得在用户确认前写入 ProjectMaterial | FR-023 |
-| `PaperIdentity` | 全局论文身份 | 使用 DOI、arXiv ID、外部 ID、标准化标题等归一化；跨 Project 共享 | FR-022, FR-023 |
+| `PaperIdentity` | 全局论文身份 | 按D-CW-03以去标点、小写的非空标题自动归一化，外部标识保留为来源依据；跨 Project 共享身份，不共享私有资产 | FR-022, FR-023 |
 | `ExternalPaperIdentifier` | DOI、arXiv ID、URL 等外部标识 | 必须归一化类型和值，并记录解析来源；解析到多个候选或关键元数据冲突时必须要求用户确认 | FR-023 |
 | `ProjectPaper` | Project 私有论文关联 | 同一 Project 当前版本不得有同一论文的重复活动关联；移除后新导入保留历史成员；保存有效性、评分、推送状态和分析结果 | FR-012, FR-022, FR-026 |
 | `ProjectMaterial` | Project 私有非论文资料条目 | 同一 Project 内按 `normalized_title + content_format_group` 去重；保存项目资料库编号、标题、`content_format`、主来源、`candidate_sources`、有效性、推送状态和重要摘要 | FR-012, FR-022, FR-026 |
@@ -157,3 +157,5 @@ Construction 不变量：
 本次修订（2026-10-26）：按用户决定分离数据源检索服务入口与具体资源地址；本次决定不涉及通用抓站支持及范围，具体文件地址不作为配置入口。
 
 本次修订（2026-10-26）：按task032 D-SOURCE-02用户选择B同步逐Provider优先/回落及显式身份保护；个人可分别配置四个论文源API。
+
+本次修订（2026-10-28，D-CW-03）：用户明确“只以去标点符号、全小写的标题来判断是否是同一论文身份”。自动标题键删除Unicode P类标点后调用lower，不增加模糊匹配、空白合并或字符兼容转换；保留数学符号，空/纯空白结果不自动匹配。人工修正优先、原始元数据和全部来源保留；身份合并不修改已发布内容或跨Project私有资产。该规则替代旧强标识优先自动去重要求。

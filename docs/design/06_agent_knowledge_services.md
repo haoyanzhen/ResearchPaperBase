@@ -1,7 +1,7 @@
 # Agent & Knowledge Services 设计
 
-文档版本：v1.16
-更新日期：2026-10-28
+文档版本：v1.17
+更新日期：2026-10-29
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 资料分类与派生内容策略见[08-01](08-01_agent_data_access_policy.md)。补充/候选、嵌入、检索和历史上下文均有接入点，不能仅过滤文件下载；Q1–Q4已确认，后续读取/外发/提交均核验当前政策；扩权不重做步骤，收紧不静默剪历史。Provider访问与当前凭据解析遵循08 §12已确认规则，具体网络/认证实现仍需验证。
@@ -33,7 +33,7 @@ Knowledge 不依赖具体 Agent；Agent 的 LLM/来源等能力也通过自身�
 
 | 能力 | 职责 | 关联 FR |
 | --- | --- | --- |
-| Paper Identity | 归一化 DOI/arXiv/URL/来源 ID，完成全局去重 | FR-022 |
+| Paper Identity | 按D-CW-03标题规则归一化身份，保留DOI/arXiv/URL/来源ID追溯 | FR-022 |
 | Project Library | 提供 ProjectPaper/ProjectMaterial 的候选处理与只读投影，包括有效性、评分和分类分析；业务提交归应用；推送状态按只读投影展示，邮件执行仍为 P1 | FR-012, FR-026 |
 | Document Assets | 提供论文 PDF、支持格式资料、解析文本、摘要降级及文件访问引用，区分补充暂存、候选和已发布范围 | FR-024 |
 | Vector Index | 写入和查询向量索引，记录同步状态 | FR-026, FR-028 |
@@ -113,7 +113,7 @@ D-CW-02 A：P0评分输出0–10综合分以及理论价值、技术价值、Pro
 多源检索支持 arXiv、OpenAlex、Semantic Scholar、ADS 和后续扩展 Provider。Provider 返回统一候选结构，不把 SDK 原始对象泄漏到应用层。
 检索使用数据源配置的服务/API入口；具体论文、网页及文件地址随结果来源线索返回，获取/解析按资源地址执行，不能从配置base_url推定文件位置或抓取整个站点。数据源失败应分类为缺失配置、密钥失效、限流、连接失败、权限过期或 Provider 不可用。
 
-论文去重使用全局论文身份归一化，评分包含主题相关性、来源质量、时间新鲜度、摘要匹配度。资料按 Project 内归一化标题及 content_format/相似格式组识别重复或疑似重复，记录 MaterialDeduplicationDecision/MaterialScreeningDecision，不套用论文身份或强制作者、年份、语言、provider。标题归一化及轻量元数据遵循 [02-03 §5](02-03_construction_assets_appendix.md#5-手动补充与资产边界)。两类候选均保留人工调整和误合并修正依据；手动 Run 确认筛选后才能进入下载解析，自动 Run 仅按 P1 安全自动确认策略处理。
+论文去重使用D-CW-03标题键及人工纠错进行身份归一化，评分包含主题相关性、来源质量、时间新鲜度、摘要匹配度。资料按 Project 内归一化标题及 content_format/相似格式组识别重复或疑似重复，记录 MaterialDeduplicationDecision/MaterialScreeningDecision，不套用论文身份或强制作者、年份、语言、provider。标题归一化及轻量元数据遵循 [02-03 §5](02-03_construction_assets_appendix.md#5-手动补充与资产边界)。两类候选均保留人工调整和误合并修正依据；手动 Run 确认筛选后才能进入下载解析，自动 Run 仅按 P1 安全自动确认策略处理。
 
 论文优先获取 PDF 并解析全文；缺失或失败时，只有实际可用摘要才能作为降级文本，并记录原因及来源，不能生成摘要冒充原文。资料按实际格式静态提取文本，不套用论文摘要降级；获取/解析失败或无可用文本时记录失败或不可用结果，不伪造文本。两类处理分别收敛到 DocumentProcessingState/MaterialProcessingState，后续分析只使用其最终可用文本及修订。
 
@@ -349,3 +349,5 @@ CandidateWriteScope下先冻结BuildProfile，构建清单为完整目标集合�
 
 
 本次修订（2026-10-26）：按用户决定分离数据源检索服务入口与具体资源地址；本次决定不涉及通用抓站支持及范围，具体文件地址不作为配置入口。
+
+本次修订（2026-10-28，D-CW-03）：用户明确“只以去标点符号、全小写的标题来判断是否是同一论文身份”。自动标题键删除Unicode P类标点后调用lower，不增加模糊匹配、空白合并或字符兼容转换；保留数学符号，空/纯空白结果不自动匹配。人工修正优先、原始元数据和全部来源保留；身份合并不修改已发布内容或跨Project私有资产。该规则替代旧强标识优先自动去重要求。

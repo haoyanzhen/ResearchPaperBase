@@ -1,7 +1,7 @@
 # Data Persistence 设计
 
-文档版本：v1.14
-更新日期：2026-10-26
+文档版本：v1.15
+更新日期：2026-10-29
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -42,7 +42,7 @@ LLM模型发现结果与逐模型测试事实分开保存；测试事实关联�
 | ConstructionRun、InputRevision / Construction | Project、状态/阶段、有效输入修订、初始输入、配置快照、基线、候选引用、成功结果及来源命令 | 输入修订只追加；取得槽后冻结常规构建基线；成功 published/no_change 互斥；输入变更仅限既定追加词动作 |
 | ConstructionSlot、Attempt / Execution + Construction | Project、occupant_run_id、reservation/new_run、epoch；attempt_id、task_id、run_id、input_revision、authority_epoch、资格/租约 | 每 Project 一个槽记录；queued 无占槽资格；waiting_user 保槽、paused 在 P1 保槽；失权/超时不等于任意新 Run 可接管 |
 | CandidateSet、Candidate、ConfirmationRecord / Construction | Run、kind、修订、候选集修订、处理/分析结果、人工来源、确认主体/动作/影响修订、入库锁定事实 | 单项修订与候选集修订分开；入库确认受理后锁定；确认 token 到期只影响新受理，已受理使用持久确认依据 |
-| PaperIdentity、ExternalIdentifier / Identity 能力经应用提交 | 全局身份、规范化标识及匹配依据 | 已核验 DOI/arXiv/Provider 标识按其语义唯一；标题仅辅助索引，不能唯一约束误合并；不得放 Project 私有分析/上传授权 |
+| PaperIdentity、ExternalIdentifier / Identity 能力经应用提交 | 全局身份、规范化标识及匹配依据 | D-CW-03以去标点、小写的非空标题索引作自动匹配；人工拆分例外不得被全局唯一标题约束阻断；DOI/arXiv/Provider标识保存来源，不作为跨论文身份的强制唯一键；不得放 Project 私有分析/上传授权 |
 | ProjectPaper、ProjectMaterial / Construction | Project 资产身份、论文身份或资料身份、人工排除决定、不可变内容修订引用 | 同 Project 同论文只有一个当前有效成员；移除后重新导入可形成新内容修订；历史版本成员不能被该当前唯一性约束删除 |
 | AssetRevision、DocumentAsset、Text/Analysis/ChunkRevision / Construction | Project、来源 Run、来源输入、内容摘要、父依赖、处理配置/模型、文件/正文/分析引用、人工来源事实 | 发布修订不可原地修改；正文、切片、模型或分析改变产生新修订；物理复用不得复用授权；见 §5.1 |
 | CandidateManifest、PublishedManifest、KnowledgeVersion / Construction | Project、Run、基线、候选修订、完整成员/依赖清单摘要、索引/图谱视图、就绪证据、发布时间 | 清单必须完整可解析；发布后成员与依赖闭包不可变；version 的 source_run 唯一，且同 Project；空清单也是合法完整版本 |
@@ -290,3 +290,5 @@ v1.8（2026-10-19）：按用户授权删除旧 SQL 草案，细化逻辑记录�
 
 
 本次修订（2026-10-26）：落实task025用户决定，P0个人/系统LLM无启停开关；发现/手填只提供待测项，当前配置/凭据修订下逐模型显式测试成功才可选择。扩展参数方向B另行调研，不将方案或机器缺项视为已实现。
+
+本次修订（2026-10-28，D-CW-03）：用户明确“只以去标点符号、全小写的标题来判断是否是同一论文身份”。自动标题键删除Unicode P类标点后调用lower，不增加模糊匹配、空白合并或字符兼容转换；保留数学符号，空/纯空白结果不自动匹配。人工修正优先、原始元数据和全部来源保留；身份合并不修改已发布内容或跨Project私有资产。该规则替代旧强标识优先自动去重要求。

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 type Term = { id: string; revision: string; confirmed_revision: string | null; query: string };
 type Model = { source: string; config_id: string; model_id: string };
 type SourceResult = { term_id: string; config_id: string; status: string; count: number; error: string | null; limited?: boolean };
-type Run = { id: string; revision: string; status: string; created_at: string; input_snapshot: { selected_terms: { term_id: string; content: { query: string } }[]; retrieval_range: { published_from: string | null; published_until: string | null }; result_limit_per_source: number; frozen_at: string } | null; config_snapshot: { model_selection: Model; parameters: Record<string, unknown> } | null; task: { attempt_id: string }; steps: { result_summary: { candidate_count: number; sources: SourceResult[]; resolution: { executable: { term_id: string; rejected: { config_id?: string; reason_code: string }[] }[]; failed: { term_id: string; resolution: { rejected: { reason_code: string }[] } }[] } | null }; error: { code: string } | null }[] };
-type Candidate = { id: string; metadata: { title: string; authors: string[]; year: number | null; abstract: string | null }; source: { search_term_id: string; provider_config_ref: { config_id: string } } };
+type Run = { phase: string; waiting_items: { id: string; revision: string; confirmation: { subject_revision: string; candidate_revision: string; confirmation_token: string } | null }[]; id: string; revision: string; status: string; created_at: string; input_snapshot: { selected_terms: { term_id: string; content: { query: string } }[]; retrieval_range: { published_from: string | null; published_until: string | null }; result_limit_per_source: number; frozen_at: string } | null; config_snapshot: { model_selection: Model; parameters: Record<string, unknown> } | null; task: { attempt_id: string }; steps: { result_summary: { candidate_count: number; deduplication: { unique_count: number; duplicate_count: number; unresolved_count: number } | null; sources: SourceResult[]; resolution: { executable: { term_id: string; rejected: { config_id?: string; reason_code: string }[] }[]; failed: { term_id: string; resolution: { rejected: { reason_code: string }[] } }[] } | null }; error: { code: string } | null }[] };
+type Candidate = { revision: string; deduplication?: { state: string; group_id: string | null; origin: string; matched_candidate_id: string | null; history: { decision: string; reason: string; at: string }[] }; id: string; metadata: { title: string; authors: string[]; year: number | null; abstract: string | null }; source: { search_term_id: string; provider_config_ref: { config_id: string } } };
 type Props = {
   project: { id: string; status: string }; actor: string;
   envelope: <T>(path: string, init?: RequestInit) => Promise<{ data: T; meta: { next_cursor: string | null; has_more: boolean } }>;
@@ -65,9 +65,9 @@ export function ConstructionRuns({ project, actor, api, envelope, write, onAuthF
   async function submit(command: { path: string; key: string; body: unknown }) {
     setBusy(true); setError(''); setPending(command);
     try {
-      const result = await write<{ run: Run }>(command.path, command.body, command.key, actor);
+      const result = await write<{ run?: Run }>(command.path, command.body, command.key, actor);
       if (!mounted.current) return;
-      setPending(null); setCurrent(result.run); setCandidates([]); await refresh();
+      setPending(null); setCandidates([]); await refresh(); if (result.run ?? current) await inspect((result.run ?? current)!);
     } catch (e) {
       if (mounted.current) { const status = (e as { status?: number }).status; if (status && status >= 400 && status < 500 && status !== 408) setPending(null); failed(e); }
     } finally { if (mounted.current) setBusy(false); }
@@ -75,7 +75,7 @@ export function ConstructionRuns({ project, actor, api, envelope, write, onAuthF
   const active = project.status === 'active';
   return <section aria-label="构建运行" className="maintenance" aria-busy={busy}>
     <h2>构建运行</h2>
-    <p>选择已确认检索词和模型，检索论文并查看来源结果。检索完成后保持待确认；去重评分和入库将在后续阶段开放。</p>
+    <p>选择已确认检索词和模型，检索论文并查看来源结果。确认检索后按标题去标点、转小写去重，可人工拆分或合并。评分和入库将在后续阶段开放。</p>
     {error && <p role="alert" className="error">{error}</p>}
     <button disabled={busy} onClick={() => { void refresh(); }}>刷新运行与配置</button>
     {pending && <button disabled={busy || !active} onClick={() => { void submit(pending); }}>用原请求核查重试</button>}
@@ -94,16 +94,23 @@ export function ConstructionRuns({ project, actor, api, envelope, write, onAuthF
     <h3>历史运行</h3>
     <ul>{runs.map(run => <li key={run.id}><button disabled={busy} onClick={() => { void inspect(run); }}>{run.created_at} · {labels[run.status] ?? run.status}</button></li>)}</ul>
     {current && <div aria-label="运行详情">
-      <h3>{labels[current.status] ?? current.status}</h3>
-      {current.status === 'waiting_user' && <p>检索已完成；去重评分尚未交付。该运行仍占用构建槽，可查看结果或取消。</p>}
+      <h3>{current.status === 'waiting_user' && current.phase === 'screening' ? '去重结果待核对' : labels[current.status] ?? current.status}</h3>
+      {current.status === 'waiting_user' && <p>{current.phase === 'screening' ? '去重已完成，可检查来源并纠正合并；评分尚未开放。' : '检索已完成，确认后进行标题去重。'}该运行仍占用构建槽，可查看结果或取消。</p>}
+      {current.status === 'waiting_user' && current.phase === 'retrieval' && current.waiting_items.map(wait => wait.confirmation && <button key={wait.id} disabled={busy || !active || !!pending} onClick={() => { void submit({ path: base + '/construction-runs/' + current.id + '/waiting-items/' + wait.id + '/confirm', key: crypto.randomUUID(), body: { expected_revision: wait.revision, subject_revision: wait.confirmation!.subject_revision, candidate_revision: wait.confirmation!.candidate_revision, confirmation_token: wait.confirmation!.confirmation_token, acknowledged_risk_ids: [] } }); }}>确认检索并去重</button>)}
       <button disabled={busy} onClick={() => { void inspect(current); }}>刷新本次结果</button>
       {['queued', 'running', 'waiting_user'].includes(current.status) && <button disabled={busy || !active || !!pending} onClick={() => { void submit({ path: base + '/construction-runs/' + current.id + '/cancel', key: crypto.randomUUID(), body: { expected_revision: current.revision, attempt_id: current.task.attempt_id } }); }}>取消本次构建</button>}
-      {current.steps.map(step => <div key="retrieval"><p>候选论文：{step.result_summary.candidate_count}</p>{step.error && <p role="alert">{step.error.code}</p>}<ul>{step.result_summary.resolution?.executable.flatMap(term => term.rejected.map((reason, i) => <li key={term.term_id + i}>检索词 {term.term_id} 的部分来源不可用：{reason.config_id} · {reason.reason_code}</li>))}</ul><ul>{step.result_summary.resolution?.failed.map(term => <li key={term.term_id}>检索词 {term.term_id} 未执行：{term.resolution.rejected.map(reason => reason.reason_code).join("、")}</li>)}</ul><ul>{step.result_summary.sources.map((source, i) => <li key={i}>来源 {source.config_id} · 检索词 {source.term_id}：{source.count} 条 · {source.status}{source.error && ` · ${source.error}`}{source.limited && ' · 已达到返回范围限制'}</li>)}</ul></div>)}
+      {current.steps.map(step => <div key="retrieval"><p>候选论文：{step.result_summary.candidate_count}</p>{step.result_summary.deduplication && <p>不同论文：{step.result_summary.deduplication.unique_count} · 重复来源：{step.result_summary.deduplication.duplicate_count} · 身份待补充：{step.result_summary.deduplication.unresolved_count}</p>}{step.error && <p role="alert">{step.error.code}</p>}<ul>{step.result_summary.resolution?.executable.flatMap(term => term.rejected.map((reason, i) => <li key={term.term_id + i}>检索词 {term.term_id} 的部分来源不可用：{reason.config_id} · {reason.reason_code}</li>))}</ul><ul>{step.result_summary.resolution?.failed.map(term => <li key={term.term_id}>检索词 {term.term_id} 未执行：{term.resolution.rejected.map(reason => reason.reason_code).join("、")}</li>)}</ul><ul>{step.result_summary.sources.map((source, i) => <li key={i}>来源 {source.config_id} · 检索词 {source.term_id}：{source.count} 条 · {source.status}{source.error && ` · ${source.error}`}{source.limited && ' · 已达到返回范围限制'}</li>)}</ul></div>)}
       <details><summary>本轮输入与模型</summary>
         {current.input_snapshot ? <><p>冻结于 {current.input_snapshot.frozen_at}；每源上限 {current.input_snapshot.result_limit_per_source}</p><p>时间范围：{current.input_snapshot.retrieval_range.published_from ?? '不限'} 至 {current.input_snapshot.retrieval_range.published_until ?? '不限'}（不含结束时刻）</p><ul>{current.input_snapshot.selected_terms.map(t => <li key={t.term_id}>{t.content.query}</li>)}</ul></> : <p>尚未取得构建资格，输入未冻结。</p>}
         {current.config_snapshot && <><p>本轮模型：{current.config_snapshot.model_selection.source} / {current.config_snapshot.model_selection.model_id}</p><dl>{Object.entries(current.config_snapshot.parameters).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{JSON.stringify(value)}</dd></div>)}</dl></>}
       </details>
-      <ul>{candidates.map(candidate => <li key={candidate.id}><strong>{candidate.metadata.title}</strong><p>{candidate.metadata.authors.join('、')} · {candidate.metadata.year ?? '年份未知'}</p><p>{candidate.metadata.abstract}</p></li>)}</ul>
+      <ul>{candidates.map(candidate => <li key={candidate.id}><strong>{candidate.metadata.title}</strong><p>{candidate.metadata.authors.join('、')} · {candidate.metadata.year ?? '年份未知'}</p><p>{candidate.metadata.abstract}</p><p>候选 {candidate.id} · 来源配置 {candidate.source.provider_config_ref.config_id}</p>
+        {candidate.deduplication && <><p>{candidate.deduplication.state === 'match' ? `重复来源，归入候选 ${candidate.deduplication.matched_candidate_id}` : candidate.deduplication.state === 'needs_title' ? '标题无有效身份，请人工核对' : '独立论文'} · {candidate.deduplication.origin === 'human' ? '人工决定' : '标题自动判断'}</p>
+        <ul>{candidate.deduplication.history.map((entry, index) => <li key={index}>{entry.at} · {entry.decision} · {entry.reason}</li>)}</ul>
+        {current.status === 'waiting_user' && <form aria-label={'纠正去重 ' + candidate.id} onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); const target = String(form.get('target') ?? ''); void submit({ path: base + '/construction-runs/' + current.id + '/candidates/' + candidate.id + '/deduplication-decision', key: crypto.randomUUID(), body: { expected_revision: candidate.revision, decision: target ? 'match' : 'distinct', ...(target ? { matched_candidate_id: target, matched_candidate_revision: candidates.find(item => item.id === target)!.revision } : {}), reason: String(form.get('reason')) } }); }}>
+          <fieldset disabled={busy || !active || !!pending}><legend>纠正合并结果</legend><label>处理方式<select name="target"><option value="">独立保留（撤销误合并）</option>{candidates.filter(other => other.id !== candidate.id && other.deduplication?.group_id).map(other => <option key={other.id} value={other.id}>合并到：{other.metadata.title} · {other.id.slice(0, 8)}</option>)}</select></label><label>纠正理由<input name="reason" required maxLength={10000} /></label><button>保存去重决定</button></fieldset>
+        </form>}</>}
+      </li>)}</ul>
     </div>}
   </section>;
 }

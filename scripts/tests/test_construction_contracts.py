@@ -25,7 +25,7 @@ class RetrievalContracts(unittest.TestCase):
         for name in ['RetrievalRunView', 'RetrievalRuntimeConfig', 'RetrievalCandidate']:
             self.assertFalse(SCHEMAS[name]['additionalProperties'])
             self.assertNotIn('secret', SCHEMAS[name]['properties'])
-        self.assertEqual(SCHEMAS['RetrievalWaiting']['properties']['allowed_actions']['maxItems'], 0)
+        self.assertEqual(SCHEMAS['RetrievalWaiting']['properties']['allowed_actions']['items'], {'const': 'confirm_retrieval'})
 
     def test_cr03_default_rate_limit_is_nullable(self):
         source = dict(source='user', config_id=ID, provider='arxiv', config_revision=ID,

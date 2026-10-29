@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.9",
+    "version": "1.10",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
   },
   "servers": [
@@ -5128,8 +5128,68 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
+          "200": {
+            "description": "Run-local title deduplication; no scoring or knowledge publication.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrievalCommandResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
           }
         },
         "requestBody": {
@@ -5142,7 +5202,7 @@
             }
           }
         },
-        "x-coverage": "request-only"
+        "x-coverage": "request-success-errors-partial"
       }
     },
     "/projects/{project_id}/construction-runs/{run_id}/cancel": {
@@ -11441,6 +11501,153 @@
             "$ref": "#/components/responses/PublicError415"
           }
         }
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/candidates/{candidate_id}/deduplication-decision": {
+      "post": {
+        "operationId": "Construction.CorrectDeduplication",
+        "x-use-case": "Construction.CorrectDeduplication",
+        "x-fr": [
+          "FR-022"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128,
+              "pattern": "^[\\x20-\\x7e]+$"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run-local title deduplication; no scoring or knowledge publication.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrievalCandidate"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCandidateDeduplication"
+              }
+            }
+          }
+        },
+        "x-coverage": "request-success-errors-partial"
       }
     }
   },
@@ -20794,6 +21001,9 @@
               "reason"
             ],
             "additionalProperties": false
+          },
+          "deduplication": {
+            "$ref": "#/components/schemas/PaperDeduplication"
           }
         },
         "required": [
@@ -21083,7 +21293,10 @@
             ]
           },
           "stage": {
-            "const": "retrieval"
+            "enum": [
+              "retrieval",
+              "screening"
+            ]
           },
           "business_state": {
             "enum": [
@@ -21270,7 +21483,10 @@
             ]
           },
           "phase": {
-            "const": "retrieval"
+            "enum": [
+              "retrieval",
+              "screening"
+            ]
           },
           "base_knowledge_version_id": {
             "type": "null"
@@ -21407,12 +21623,43 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "deduplication": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unique_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "duplicate_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "unresolved_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "unique_count",
+                            "duplicate_count",
+                            "unresolved_count"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "candidate_count",
                     "sources",
-                    "resolution"
+                    "resolution",
+                    "deduplication"
                   ],
                   "additionalProperties": false
                 },
@@ -21576,20 +21823,30 @@
             "$ref": "#/components/schemas/ID"
           },
           "kind": {
-            "const": "retrieval"
+            "enum": [
+              "retrieval",
+              "screening"
+            ]
           },
           "revision": {
             "$ref": "#/components/schemas/Revision"
           },
           "allowed_actions": {
             "type": "array",
-            "maxItems": 0,
+            "maxItems": 1,
             "items": {
-              "type": "string"
+              "const": "confirm_retrieval"
             }
           },
           "confirmation": {
-            "$ref": "#/components/schemas/RetrievalConfirmation"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrievalConfirmation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -21600,6 +21857,183 @@
           "confirmation"
         ],
         "additionalProperties": false
+      },
+      "PaperDeduplication": {
+        "type": "object",
+        "properties": {
+          "normalized_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "origin": {
+            "enum": [
+              "automatic",
+              "human"
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "decision": {
+                  "enum": [
+                    "distinct",
+                    "match"
+                  ]
+                },
+                "matched_candidate_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "previous_group_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "group_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "actor_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "at": {
+                  "$ref": "#/components/schemas/Time"
+                }
+              },
+              "required": [
+                "decision",
+                "matched_candidate_id",
+                "previous_group_id",
+                "group_id",
+                "reason",
+                "actor_id",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "matched_candidate_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "distinct",
+              "match",
+              "needs_title"
+            ]
+          }
+        },
+        "required": [
+          "normalized_title",
+          "group_id",
+          "origin",
+          "history",
+          "matched_candidate_id",
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "RunCandidateDeduplication": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "decision": {
+            "enum": [
+              "distinct",
+              "match"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "matched_candidate_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "matched_candidate_revision": {
+            "$ref": "#/components/schemas/Revision"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "decision": {
+                  "const": "match"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "matched_candidate_id",
+                "matched_candidate_revision"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "matched_candidate_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "matched_candidate_revision"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
       }
     },
     "responses": {

@@ -171,3 +171,56 @@ def test_crb02_accepted_http_500_replays_original_command(monkeypatch, request):
     region.get_by_role("button", name="取消本次构建", exact=True).click()
     expect(region.get_by_role("heading", name="已取消", exact=True)).to_be_visible()
     page.close()
+
+
+def test_pdb01_confirm_correct_refresh_unknown_submit_and_cancel(monkeypatch, request):
+    from test_paper_deduplication import RepeatedPapers
+
+    page, region, app, client, headers, root = configured_browser(monkeypatch, request)
+    region.get_by_label("graph", exact=True).check()
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    assert RunWorker(app.state.run_store, RepeatedPapers()).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    expect(region.get_by_text("不同论文：2 · 重复来源：1 · 身份待补充：1")).to_be_visible()
+    forms = region.get_by_role("form")
+    expect(forms).to_have_count(4)
+    keys = []
+
+    def unknown(route):
+        keys.append(route.request.headers["idempotency-key"])
+        response = route.fetch()
+        assert response.status == 200
+        if len(keys) == 1:
+            route.fulfill(
+                status=500,
+                content_type="application/json",
+                body='{"error":{"code":"INTERNAL_ERROR","message":"unknown"}}',
+            )
+        else:
+            route.fulfill(response=response)
+
+    page.route("**/deduplication-decision", unknown)
+    forms.nth(1).get_by_label("纠正理由").fill("Keep this version separate")
+    forms.nth(1).get_by_role("button", name="保存去重决定").click()
+    expect(region.get_by_role("button", name="用原请求核查重试")).to_be_enabled()
+    region.get_by_role("button", name="用原请求核查重试").click()
+    expect(region.get_by_text("不同论文：3 · 重复来源：0 · 身份待补充：1")).to_be_visible()
+    assert len(keys) == 2 and keys[0] == keys[1]
+    page.unroute("**/deduplication-decision", unknown)
+    forms.nth(1).get_by_label("处理方式").select_option(index=1)
+    forms.nth(1).get_by_label("纠正理由").fill("Same paper after checking")
+    forms.nth(1).get_by_role("button", name="保存去重决定").click()
+    expect(region.get_by_text("不同论文：2 · 重复来源：1 · 身份待补充：1")).to_be_visible()
+    region.get_by_role("button", name="刷新本次结果").click()
+    expect(region.get_by_text("人工决定", exact=False)).to_be_visible()
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    output = Path(__file__).parents[3] / "docs/workorders/evidence/task042_title_rule_2026-10-28"
+    page.screenshot(path=str(output / "dedup-mobile.png"), full_page=True)
+    region.get_by_role("button", name="取消本次构建", exact=True).click()
+    expect(region.get_by_role("heading", name="已取消", exact=True)).to_be_visible()
+    expect(region.get_by_text("Keep this version separate", exact=False)).to_be_visible()
+    expect(region.get_by_role("button", name="保存去重决定")).to_have_count(0)
+    page.close()
