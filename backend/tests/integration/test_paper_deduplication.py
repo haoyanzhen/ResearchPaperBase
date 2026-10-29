@@ -170,6 +170,8 @@ def test_pd05_receipt_failure_rolls_back_decision(subject, monkeypatch):
     url, confirm, body = prepared(subject)
     assert post(c, h, confirm, body).status_code == 200
     first = candidates(c, url)
+    with engine.connect() as conn:
+        persisted_before = conn.execute(sa.select(runs.c.payload)).scalar_one()["candidates"]
     from sqlalchemy.engine import Connection
 
     execute = Connection.execute
@@ -184,7 +186,9 @@ def test_pd05_receipt_failure_rolls_back_decision(subject, monkeypatch):
         assert correction(c, h, url, first[1]).status_code == 500
     assert candidates(c, url) == first
     with engine.connect() as conn:
-        assert conn.execute(sa.select(runs.c.payload)).scalar_one()["candidates"] == first
+        assert (
+            conn.execute(sa.select(runs.c.payload)).scalar_one()["candidates"] == persisted_before
+        )
 
 
 def test_pd06_concurrent_corrections_serialize_and_reject_stale(subject, monkeypatch):

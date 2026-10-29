@@ -27,7 +27,7 @@ def router_for(service: TermService) -> APIRouter:
             request.headers.get("x-expected-actor"),
         )
         meta = {"request_id": request.state.request_id}
-        if write:
+        if write and operation != "preview_score":
             meta["idempotency_expires_at"] = value["expires_at"]
             if value["original_request_id"] != request.state.request_id:
                 meta["original_request_id"] = value["original_request_id"]
@@ -123,6 +123,38 @@ def router_for(service: TermService) -> APIRouter:
             request,
             project_id,
             "correct_deduplication",
+            {**body, "run_id": str(run_id), "candidate_id": str(candidate_id)},
+            True,
+        )
+
+    @router.post("/{run_id}/screening/action-preview")
+    def score_preview(
+        request: Request, project_id: UUID, run_id: UUID, body: dict[str, Any]
+    ) -> Any:
+        if "run_id" in body:
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        return call(request, project_id, "preview_score", {**body, "run_id": str(run_id)}, True)
+
+    @router.post("/{run_id}/screening/score", status_code=202)
+    def score(
+        request: Request, response: Response, project_id: UUID, run_id: UUID, body: dict[str, Any]
+    ) -> Any:
+        if "run_id" in body:
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        value = call(request, project_id, "score", {**body, "run_id": str(run_id)}, True)
+        response.headers["Location"] = value["data"]["status_url"]
+        return value
+
+    @router.patch("/{run_id}/candidates/{candidate_id}")
+    def edit_candidate(
+        request: Request, project_id: UUID, run_id: UUID, candidate_id: UUID, body: dict[str, Any]
+    ) -> Any:
+        if {"run_id", "candidate_id"} & body.keys():
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        return call(
+            request,
+            project_id,
+            "edit_candidate",
             {**body, "run_id": str(run_id), "candidate_id": str(candidate_id)},
             True,
         )

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.10",
+    "version": "1.11",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
   },
   "servers": [
@@ -4917,6 +4917,7 @@
         "operationId": "Construction.ScoreCandidates",
         "x-use-case": "Construction.ScoreCandidates",
         "x-fr": [
+          "FR-017",
           "FR-022"
         ],
         "x-phase": "P0",
@@ -4963,11 +4964,79 @@
               "maxLength": 128,
               "pattern": "^[\\x20-\\x7e]+$"
             }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
           }
         ],
         "responses": {
-          "default": {
-            "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "202": {
+            "description": "Scoring task accepted for the selected Run-local paper groups.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ScoringTaskView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -4980,7 +5049,7 @@
             }
           }
         },
-        "x-coverage": "request-only"
+        "x-coverage": "request-success-errors-partial"
       }
     },
     "/projects/{project_id}/construction-runs/{run_id}/candidates/{candidate_id}/analysis/generate": {
@@ -11643,6 +11712,283 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RunCandidateDeduplication"
+              }
+            }
+          }
+        },
+        "x-coverage": "request-success-errors-partial"
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/screening/action-preview": {
+      "post": {
+        "operationId": "Construction.PreviewScoring",
+        "x-use-case": "Construction.PreviewScoring",
+        "x-fr": [
+          "FR-017",
+          "FR-022"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "200": {
+            "description": "Read-only scoring impact preview; no task or command receipt is created.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ScoringPreview"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringPreviewRequest"
+              }
+            }
+          }
+        },
+        "x-coverage": "request-success-errors-partial"
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/candidates/{candidate_id}": {
+      "patch": {
+        "operationId": "Construction.EditCandidate",
+        "x-use-case": "Construction.EditCandidate",
+        "x-fr": [
+          "FR-017",
+          "FR-022"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128,
+              "pattern": "^[\\x20-\\x7e]+$"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "200": {
+            "description": "Updated Run-local paper screening judgment with human modification provenance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrievalCandidate"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperScreeningPatch"
               }
             }
           }
@@ -20975,35 +21321,282 @@
             "additionalProperties": false
           },
           "screening": {
-            "type": "object",
-            "properties": {
-              "score": {
-                "type": "null"
-              },
-              "score_scale": {
-                "type": "null"
-              },
-              "valid": {
-                "type": "null"
-              },
-              "threshold_source": {
-                "type": "null"
-              },
-              "reason": {
-                "type": "null"
-              }
-            },
-            "required": [
-              "score",
-              "score_scale",
-              "valid",
-              "threshold_source",
-              "reason"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/PaperScreeningView"
           },
           "deduplication": {
             "$ref": "#/components/schemas/PaperDeduplication"
+          },
+          "material_classification": {
+            "$ref": "#/components/schemas/MaterialClassificationView"
+          },
+          "screening_state": {
+            "enum": [
+              "agent_draft",
+              "manual_edit",
+              "manual_confirm"
+            ]
+          },
+          "screening_stale": {
+            "type": "boolean"
+          },
+          "screening_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "screening_modified_by": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "screening_modified_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "screening_basis": {
+            "type": "object",
+            "properties": {
+              "threshold": {
+                "const": 7
+              },
+              "reasons": {
+                "$ref": "#/components/schemas/PaperScoringReasons"
+              },
+              "model_selection": {
+                "$ref": "#/components/schemas/ModelSelection"
+              },
+              "config_revision": {
+                "$ref": "#/components/schemas/Revision"
+              },
+              "task_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "candidate_sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "candidate_id": {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    "revision": {
+                      "$ref": "#/components/schemas/Revision"
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "source_kind": {
+                          "const": "provider"
+                        },
+                        "provider_config_ref": {
+                          "$ref": "#/components/schemas/TermSourceRef"
+                        },
+                        "url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "supplement_id": {
+                          "type": "null"
+                        },
+                        "search_term_id": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/ID"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "retrieved_at": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/Time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "source_kind",
+                        "provider_config_ref",
+                        "url",
+                        "supplement_id",
+                        "search_term_id",
+                        "retrieved_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "authors": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "year": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9999
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "abstract": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "doi": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "arxiv_id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "title",
+                        "authors",
+                        "year",
+                        "abstract",
+                        "doi",
+                        "arxiv_id",
+                        "url"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "candidate_id",
+                    "revision",
+                    "source",
+                    "metadata"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "topic": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "research_scope": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "description",
+                  "research_scope"
+                ],
+                "additionalProperties": false
+              },
+              "at": {
+                "$ref": "#/components/schemas/Time"
+              }
+            },
+            "required": [
+              "threshold",
+              "reasons",
+              "model_selection",
+              "config_revision",
+              "task_id",
+              "candidate_sources",
+              "topic",
+              "at"
+            ],
+            "additionalProperties": false
+          },
+          "screening_history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "screening": {
+                  "$ref": "#/components/schemas/PaperScreeningView"
+                },
+                "state": {
+                  "enum": [
+                    "agent_draft",
+                    "manual_edit",
+                    "manual_confirm"
+                  ]
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/Revision"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "actor_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "at": {
+                  "$ref": "#/components/schemas/Time"
+                }
+              },
+              "required": [
+                "screening",
+                "state",
+                "revision",
+                "action",
+                "actor_id",
+                "at"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -21653,13 +22246,49 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "screening": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "valid_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "invalid_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "pending_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "failed_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "valid_count",
+                            "invalid_count",
+                            "pending_count",
+                            "failed_count"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "candidate_count",
                     "sources",
                     "resolution",
-                    "deduplication"
+                    "deduplication",
+                    "screening"
                   ],
                   "additionalProperties": false
                 },
@@ -21699,6 +22328,12 @@
             "items": {
               "$ref": "#/components/schemas/ActionAvailability"
             }
+          },
+          "scoring_tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoringTaskView"
+            }
           }
         },
         "required": [
@@ -21719,7 +22354,8 @@
           "steps",
           "waiting_items",
           "task",
-          "available_actions"
+          "available_actions",
+          "scoring_tasks"
         ],
         "additionalProperties": false
       },
@@ -22034,6 +22670,557 @@
             }
           }
         ]
+      },
+      "PaperScreeningView": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score_scale": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "const": 0
+                  },
+                  "max": {
+                    "const": 10
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "valid": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "threshold_source": {
+            "anyOf": [
+              {
+                "const": "system_default"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "score",
+          "score_scale",
+          "valid",
+          "threshold_source",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "PaperScoringReasons": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "theoretical": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "technical": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "relevance": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "score",
+          "theoretical",
+          "technical",
+          "relevance"
+        ],
+        "additionalProperties": false
+      },
+      "ScoringTaskView": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "attempt_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "operation_id": {
+            "const": "Construction.ScoreCandidates"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "construction_run"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "execution_status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "status_url": {
+            "type": "string"
+          },
+          "events_url": {
+            "type": "string"
+          },
+          "cancel_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result_refs": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "const": "screening"
+          },
+          "business_state": {
+            "enum": [
+              "queued",
+              "running",
+              "waiting_user",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "waiting_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "cancel_requested_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "event_cursor": {
+            "type": "string"
+          },
+          "partial_result_ref": {
+            "type": "null"
+          },
+          "target_location": {
+            "type": "object",
+            "properties": {
+              "parent_type": {
+                "const": "project"
+              },
+              "parent_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "read_url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "parent_type",
+              "parent_id",
+              "read_url"
+            ],
+            "additionalProperties": false
+          },
+          "material_use_notices": {
+            "type": "array",
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_id",
+          "operation_id",
+          "target",
+          "project_id",
+          "knowledge_version_id",
+          "execution_status",
+          "status_url",
+          "events_url",
+          "cancel_url",
+          "result_refs",
+          "revision",
+          "created_at",
+          "updated_at",
+          "started_at",
+          "finished_at",
+          "stage",
+          "business_state",
+          "waiting_items",
+          "cancel_requested_at",
+          "error",
+          "warnings",
+          "event_cursor",
+          "partial_result_ref",
+          "target_location",
+          "material_use_notices"
+        ],
+        "additionalProperties": false
+      },
+      "ScoringPreview": {
+        "type": "object",
+        "properties": {
+          "confirmation_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "action": {
+            "const": "score"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "construction_run"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "subject_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "impact_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "candidate_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "confirmation_token": {
+            "type": "string"
+          },
+          "affected_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "content_change"
+                },
+                "object": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "construction_candidate"
+                    },
+                    "id": {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    "project_id": {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    "revision": {
+                      "$ref": "#/components/schemas/Revision"
+                    },
+                    "read_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "project_id",
+                    "revision",
+                    "read_url"
+                  ],
+                  "additionalProperties": false
+                },
+                "operation": {
+                  "const": "replace"
+                },
+                "content_state": {
+                  "enum": [
+                    "agent_draft",
+                    "manual_edit",
+                    "manual_confirm"
+                  ]
+                },
+                "content_scope": {
+                  "const": [
+                    "screening"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "object",
+                "operation",
+                "content_state",
+                "content_scope",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "retained_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "protected_scope"
+                },
+                "scope": {
+                  "const": "existing_content"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "scope",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "blocked_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "confirmation_id",
+          "action",
+          "target",
+          "subject_revision",
+          "impact_revision",
+          "knowledge_version_id",
+          "candidate_revision",
+          "risks",
+          "expires_at",
+          "confirmation_token",
+          "affected_items",
+          "retained_items",
+          "blocked_reasons"
+        ],
+        "additionalProperties": false
+      },
+      "ScoringPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "action": {
+            "const": "score"
+          },
+          "candidate_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        },
+        "required": [
+          "expected_revision",
+          "action",
+          "candidate_ids"
+        ],
+        "additionalProperties": false
+      },
+      "PaperScreeningPatch": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "screening": {
+            "type": "object",
+            "properties": {
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10
+              },
+              "valid": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              }
+            },
+            "required": [
+              "reason"
+            ],
+            "additionalProperties": false,
+            "anyOf": [
+              {
+                "required": [
+                  "score"
+                ]
+              },
+              {
+                "required": [
+                  "valid"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "expected_revision",
+          "screening"
+        ],
+        "additionalProperties": false
       }
     },
     "responses": {

@@ -14,10 +14,11 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 
 from rpb.adapters import paper_deduplication as dedup
+from rpb.adapters import paper_screening as screening
 from rpb.adapters.llm import event_record, require_revision, uuid_value
 from rpb.adapters.llm import public_error as config_error
 from rpb.adapters.run_tables import commands, runs
-from rpb.adapters.search_terms import TermStore, load, now, stable
+from rpb.adapters.search_terms import TermStore, load, now, save, stable
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.construction.domain.runs import RunInputError, start_input
 from rpb.modules.construction.domain.terms import resolve_terms
@@ -91,9 +92,22 @@ def transition(run: Any, status: str, error: str | None = None) -> None:
         run["finished_at"] = now()
     if status == "cancelled":
         run["deduplication_summary"] = dedup.summary(run)
-        if not any(c.get("deduplication", {}).get("history") for c in run["candidates"]):
+        run["screening_summary"] = screening.summary(run)
+        from rpb.adapters.search_term_worker import TermWorker
+
+        for job in run.get("scoring_jobs", {}).values():
+            if job["state"] in {"queued", "running"}:
+                TermWorker.finish(job, "cancelled", error)
+
+        if not any(
+            c.get("deduplication", {}).get("history") or screening.has_human_content(c)
+            for c in run["candidates"]
+        ):
             run["cleaned_candidate_count"] = len(run["candidates"])
             run["candidates"] = []
+            for job in run.get("scoring_jobs", {}).values():
+                job["input"] = {}
+                job["results"] = []
     if status == "cancelled" and run["candidate_version"]:
         run["candidate_version"].update(
             state="discarded", closing_reason={"code": "cancelled", "message": "构建已取消"}
@@ -266,11 +280,16 @@ class RunStore:
                         "sources": run["source_results"],
                         "resolution": run.get("resolution"),
                         "deduplication": dedup.summary(run),
+                        "screening": screening.summary(run),
                     },
                     "error": public_error(run["error"]) if run.get("error") else None,
                 }
             ],
             "waiting_items": self.waiting(run),
+            "scoring_tasks": [
+                screening.task_view(run, job, self.task(run))
+                for job in run.get("scoring_jobs", {}).values()
+            ],
             "task": self.task(run),
             "available_actions": [
                 {
@@ -300,7 +319,11 @@ class RunStore:
                 row = (
                     conn.execute(
                         sa.select(runs).where(
-                            runs.c.owner_id == actor, runs.c.payload["task_id"].astext == target
+                            runs.c.owner_id == actor,
+                            sa.or_(
+                                runs.c.payload["task_id"].astext == target,
+                                runs.c.payload["scoring_jobs"].has_key(target),
+                            ),
                         )
                     )
                     .mappings()
@@ -311,6 +334,12 @@ class RunStore:
                 project = self.terms.project(conn, actor, row["project_id"])
                 run = copy.deepcopy(row["payload"])
                 self.revoke(conn, project, run)
+                if target in run.get("scoring_jobs", {}):
+                    job = run["scoring_jobs"][target]
+                    view = screening.task_view(run, job, self.task(run))
+                    return (
+                        {"view": view, "events": job["events"]} if operation == "events" else view
+                    )
                 return (
                     {"view": self.task(run), "events": run["events"]}
                     if operation == "events"
@@ -358,7 +387,13 @@ class RunStore:
                 if operation == "read_run":
                     return self.view(run)
                 if operation == "candidates":
-                    return paginate(copy.deepcopy(run["candidates"]), run["revision"])
+                    values = copy.deepcopy(run["candidates"])
+                    for c in values:
+                        if c["id"] in state["sources"]:
+                            c["material_classification"] = state["sources"][c["id"]][
+                                "classification"
+                            ]
+                    return paginate(values, run["revision"])
                 if operation == "input_revisions":
                     return paginate(
                         []
@@ -376,6 +411,8 @@ class RunStore:
                     )
             request_id = data.get("_request_id", str(uuid4()))
             body = {k: v for k, v in data.items() if k != "_request_id"}
+            if operation == "preview_score" and run:
+                return screening.preview(run, body)
             if not key or not 16 <= len(key) <= 128 or any(not 32 <= ord(c) <= 126 for c in key):
                 raise AccountError("VALIDATION_BAD_REQUEST", 400)
             fingerprint = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
@@ -495,11 +532,24 @@ class RunStore:
                     "candidate_revision": run["candidate_revision"],
                     "input_revision": run["effective_input_revision"],
                 }
+                screening.register_sources(run, state)
+                save(conn, project, state)
                 dedup.initialize(run)
                 transition(run, "waiting_user")
                 persist(conn, run)
                 value = {"run": self.view(run), "task": self.task(run)}
+            elif operation in {"score", "edit_candidate"} and run:
+                if operation == "score":
+                    job = screening.accept(run, body, state, project)
+                    value = screening.task_view(run, job, self.task(run))
+                    transition(run, "waiting_user")
+                    persist(conn, run)
+                else:
+                    value = copy.deepcopy(screening.edit(run, body, actor))
+                    transition(run, "waiting_user")
+                    persist(conn, run)
             elif operation == "correct_deduplication" and run:
+                screening.writable(run)
                 value = copy.deepcopy(dedup.correct(run, body, actor))
                 transition(run, "waiting_user")
                 persist(conn, run)

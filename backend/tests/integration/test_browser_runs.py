@@ -1,6 +1,7 @@
 # ruff: noqa: F811
 """Real browser, durable HTTP and isolated PG with controlled external providers."""
 
+import re
 from pathlib import Path
 
 from cryptography.fernet import Fernet
@@ -184,7 +185,7 @@ def test_pdb01_confirm_correct_refresh_unknown_submit_and_cancel(monkeypatch, re
     region.get_by_role("button", name="刷新本次结果", exact=True).click()
     region.get_by_role("button", name="确认检索并去重", exact=True).click()
     expect(region.get_by_text("不同论文：2 · 重复来源：1 · 身份待补充：1")).to_be_visible()
-    forms = region.get_by_role("form")
+    forms = region.get_by_role("form", name=re.compile("^纠正去重 "))
     expect(forms).to_have_count(4)
     keys = []
 
@@ -223,4 +224,109 @@ def test_pdb01_confirm_correct_refresh_unknown_submit_and_cancel(monkeypatch, re
     expect(region.get_by_role("heading", name="已取消", exact=True)).to_be_visible()
     expect(region.get_by_text("Keep this version separate", exact=False)).to_be_visible()
     expect(region.get_by_role("button", name="保存去重决定")).to_have_count(0)
+    page.close()
+
+
+def test_psb01_classification_scoring_human_edit_preview_and_refresh(monkeypatch, request):
+    from test_paper_deduplication import RepeatedPapers
+    from test_paper_screening import Scores
+
+    from rpb.adapters.paper_scoring_worker import ScoreWorker
+
+    page, region, app, client, headers, root = configured_browser(monkeypatch, request)
+    region.get_by_label("graph", exact=True).check()
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    assert RunWorker(app.state.run_store, RepeatedPapers()).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    forms = region.get_by_role("form", name=re.compile("^来源分类 "))
+    expect(forms).to_have_count(4)
+    page.get_by_text("主题资料分类与Agent使用范围", exact=True).click()
+    page.get_by_label("主题分类", exact=True).select_option("public")
+    page.get_by_label("分类依据", exact=True).fill("Public project topic checked")
+    page.get_by_role("button", name="确认主题资料分类", exact=True).click()
+    expect(page.get_by_text("主题分类：已确认公开", exact=False)).to_be_visible()
+    for index in range(2):
+        forms.nth(index).get_by_label("实际内容依据").fill("Checked public metadata")
+        forms.nth(index).get_by_role("button", name="确认来源分类").click()
+        expect(forms.nth(index).get_by_text("已确认：public", exact=True)).to_be_visible()
+    score = region.get_by_role("region", name=re.compile("^论文评分 ")).first
+    score.get_by_role("button", name="评分或重新评分", exact=True).click()
+    preview = region.get_by_role("region", name="评分确认", exact=True)
+    expect(preview).to_be_visible()
+    preview.get_by_role("button", name="确认评分", exact=True).click()
+    expect(region.get_by_text("评分任务：queued", exact=True)).to_be_visible()
+    assert ScoreWorker(app.state.run_store, Scores([7])).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    expect(score.get_by_text("评分：7 / 10", exact=False)).to_be_visible()
+    form = score.get_by_role("form", name=re.compile("^调整评分 "))
+    form.get_by_label("评分", exact=True).fill("3")
+    form.get_by_label("有效性", exact=True).select_option("false")
+    form.get_by_label("判断理由", exact=True).fill("Human relevance judgment")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    expect(score.get_by_text("评分：3 / 10 · 无效 · 人工修改", exact=True)).to_be_visible()
+    score.get_by_role("button", name="评分或重新评分", exact=True).click()
+    expect(preview.get_by_text("将替换所选论文组的人工评分/有效性", exact=True)).to_be_visible()
+    preview.get_by_role("button", name="取消评分确认", exact=True).click()
+    expect(score.get_by_text("Human relevance judgment", exact=True)).to_be_visible()
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    output = (
+        Path(__file__).parents[3] / "docs/workorders/evidence/task044_screening_gate_2026-10-29"
+    )
+    page.screenshot(path=str(output / "screening-mobile.png"), full_page=True)
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    expect(score.get_by_text("Human relevance judgment", exact=True)).to_be_visible()
+    page.close()
+
+
+def test_psb02_validity_only_and_both_merged_human_judgments(monkeypatch, request):
+    from test_paper_deduplication import RepeatedPapers
+
+    page, region, app, _, _, _ = configured_browser(monkeypatch, request)
+    region.get_by_label("graph", exact=True).check()
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    assert RunWorker(app.state.run_store, RepeatedPapers()).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    scores = region.get_by_role("region", name=re.compile("^论文评分 "))
+    first = scores.nth(0)
+    form = first.get_by_role("form", name=re.compile("^调整评分 "))
+    form.get_by_label("有效性", exact=True).select_option("false")
+    form.get_by_label("判断理由", exact=True).fill("Human invalid without invented score")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    expect(first.get_by_text("评分：未判定 / 10 · 无效 · 人工修改", exact=True)).to_be_visible()
+    form.get_by_label("评分", exact=True).fill("8")
+    form.get_by_label("判断理由", exact=True).fill("Human eight")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    expect(first.get_by_text("评分：8 / 10 · 有效 · 人工修改", exact=True)).to_be_visible()
+    expect(first.get_by_text("默认评分阈值：7 / 10（系统默认）", exact=True)).to_be_visible()
+    second = scores.nth(2)
+    form2 = second.get_by_role("form", name=re.compile("^调整评分 "))
+    form2.get_by_label("评分", exact=True).fill("3")
+    form2.get_by_label("判断理由", exact=True).fill("Human three")
+    form2.get_by_role("button", name="保存人工评分", exact=True).click()
+    expect(second.get_by_text("评分：3 / 10 · 无效 · 人工修改", exact=True)).to_be_visible()
+    first_id = first.get_attribute("aria-label").removeprefix("论文评分 ")
+    correction = region.get_by_role("form", name=re.compile("^纠正去重 ")).nth(2)
+    correction.get_by_label("处理方式").select_option(first_id)
+    correction.get_by_label("纠正理由").fill("Same paper after human review")
+    correction.get_by_role("button", name="保存去重决定").click()
+    expect(
+        first.get_by_text("评分：8 / 10 · 依据已变化，待复核 · 人工修改", exact=True)
+    ).to_be_visible()
+    expect(
+        second.get_by_text("评分：3 / 10 · 依据已变化，待复核 · 人工修改", exact=True)
+    ).to_be_visible()
+    expect(second.get_by_text("最后人工修改：", exact=False)).to_be_visible()
+    second.get_by_text("保留的判断记录", exact=True).click()
+    expect(second.get_by_role("listitem").filter(has_text="Human three")).to_be_visible()
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    output = (
+        Path(__file__).parents[3] / "docs/workorders/evidence/task044_screening_gate_2026-10-29"
+    )
+    page.screenshot(path=str(output / "screening-merged-mobile.png"), full_page=True)
     page.close()

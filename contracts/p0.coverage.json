@@ -1,5 +1,5 @@
 {
-  "version": "1.15",
+  "version": "1.16",
   "date": "2026-10-29",
   "source_rows": [
     {
@@ -621,7 +621,10 @@
     "Construction.ReadInputRevisions",
     "Construction.Cancel",
     "Construction.ConfirmStep",
-    "Construction.CorrectDeduplication"
+    "Construction.CorrectDeduplication",
+    "Construction.PreviewScoring",
+    "Construction.ScoreCandidates",
+    "Construction.EditCandidate"
   ],
   "request_only_operations": [
     "Admin.TestSystemSource",
@@ -631,7 +634,6 @@
     "Construction.ClearAssociations",
     "Construction.AppendSearchTerms",
     "Construction.ReplaceCandidateSource",
-    "Construction.ScoreCandidates",
     "Construction.GenerateAnalysis",
     "Research.SendMessage",
     "Research.CancelResponse",
@@ -703,7 +705,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "df3151910395e98c039e4d73cc9ad5f77a10d1ec132468e4d28bf6cabafea8cb",
+    "04-01_p0_operation_contracts.md": "0946895c8abb4ab9110cb809632747cdbd3acedec86e02383f8a00bc816f111e",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -1110,11 +1112,9 @@
       ]
     },
     "Construction.ScoreCandidates": {
-      "status": "request-only",
+      "status": "request-success-errors-partial",
       "gaps": [
-        "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-REMAINING"
+        "GAP-RUNTIME"
       ]
     },
     "Construction.GenerateAnalysis": {
@@ -1472,6 +1472,18 @@
       "gaps": [
         "GAP-RUNTIME"
       ]
+    },
+    "Construction.PreviewScoring": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
+    },
+    "Construction.EditCandidate": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
     }
   },
   "row_coverage": [
@@ -1488,14 +1500,11 @@
     },
     {
       "source_row_index": 1,
-      "status": "not-typed",
-      "typed_operations": {},
-      "remaining": [
-        {
-          "use_case_or_route": "Construction.PreviewScoring",
-          "gap": "GAP-CONFIRM"
-        }
-      ]
+      "status": "partial",
+      "typed_operations": {
+        "Construction.PreviewScoring": "request-success-errors-partial"
+      },
+      "remaining": []
     },
     {
       "source_row_index": 2,
@@ -2272,14 +2281,11 @@
     },
     {
       "source_row_index": 67,
-      "status": "not-typed",
-      "typed_operations": {},
-      "remaining": [
-        {
-          "use_case_or_route": "Construction.EditCandidate",
-          "gap": "GAP-REMAINING"
-        }
-      ]
+      "status": "partial",
+      "typed_operations": {
+        "Construction.EditCandidate": "request-success-errors-partial"
+      },
+      "remaining": []
     },
     {
       "source_row_index": 68,
@@ -2293,7 +2299,7 @@
       "source_row_index": 69,
       "status": "partial",
       "typed_operations": {
-        "Construction.ScoreCandidates": "request-only"
+        "Construction.ScoreCandidates": "request-success-errors-partial"
       },
       "remaining": []
     },
@@ -3143,6 +3149,21 @@
       "published ProjectPaper matching",
       "other step confirmations",
       "matched_project_asset_id target"
+    ]
+  },
+  "construction_screening": {
+    "scope": "Run-local paper scoring and human decisions; no ingestion or published knowledge writes",
+    "operations": [
+      "Construction.PreviewScoring",
+      "Construction.ScoreCandidates",
+      "Construction.EditCandidate"
+    ],
+    "tests": "backend/tests/integration/test_paper_screening.py",
+    "remaining": [
+      "global identity and existing members",
+      "materials",
+      "screening confirmation with parsing",
+      "full metadata/analysis candidate patch"
     ]
   }
 }

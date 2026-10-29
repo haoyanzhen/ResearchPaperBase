@@ -1,6 +1,6 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.23
+文档版本：v1.24
 更新日期：2026-10-29
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
@@ -576,3 +576,8 @@ MetadataCandidate增加必填`assessment:MetadataDraftAssessment`：`{confidence
 本次修订（2026-10-26）：按用户决定分离数据源检索服务入口与具体资源地址；本次决定不涉及通用抓站支持及范围，具体文件地址不作为配置入口。
 
 本次修订（2026-10-28，D-CW-03）：用户明确“只以去标点符号、全小写的标题来判断是否是同一论文身份”。自动标题键删除Unicode P类标点后调用lower，不增加模糊匹配、空白合并或字符兼容转换；保留数学符号，空/纯空白结果不自动匹配。人工修正优先、原始元数据和全部来源保留；身份合并不修改已发布内容或跨Project私有资产。该规则替代旧强标识优先自动去重要求。
+
+
+Task044（2026-10-29）论文评分限定增量：同Run身份组按逐来源原始标题/摘要结构化输入评分，不拼接成权威摘要；空摘要如实保留。PaperScreeningView返回0–10分、有效性、系统默认阈值来源和理由；screening_basis记录三类理由、阈值7、冻结模型配置修订、实际来源/主题输入及任务。人工修改、过期依据、错误和历史独立投影；身份变化保留旧判断并标记待复核，不按显示代表自动解决冲突。候选详情提供MaterialClassificationView，来源分类与当前资料政策在读取/派发/提交重验；主题使用评分命令受理时已分类的具体内容修订，不改变Run初始输入/模型快照。
+
+POST screening/action-preview与score按A07绑定当前候选集及所选组，人工覆盖须完整预览；PATCH候选本切片只开放screening评分/有效性/理由，metadata/analysis仍未实现。运行中的评分拒绝候选编辑/去重变更；失败或取消保留人工内容。ScoringTaskView为该限定Task投影，原Run仍处于screening等待，评分任务完成不等于Run发布；不能从此推定筛选确认/下载解析已开放。Run/candidate新增字段机器契约见PaperScreeningView、ScoringPreview、ScoringTaskView、PaperScreeningPatch及RetrievalCandidate/RunView；不扩全量CandidateView或一般Task覆盖声明。

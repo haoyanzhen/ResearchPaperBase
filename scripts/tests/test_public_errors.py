@@ -189,6 +189,18 @@ class PublicErrorTests(unittest.TestCase):
       self.assertEqual(updated['responses'][status], {'$ref':'#/components/responses/PublicError'+status})
      self.assertEqual(updated['x-coverage'], 'request-success-errors-partial')
      updated['responses']=copy.deepcopy(op['responses']); updated['x-coverage']=op['x-coverage']
+    if (path, method) == ('/projects/{project_id}/construction-runs/{run_id}/screening/score', 'post'):
+     self.assertEqual(updated['requestBody'], op['requestBody'])
+     self.assertEqual(updated['x-fr'], ['FR-017','FR-022'])
+     self.assertEqual(updated['responses']['202']['content']['application/json']['schema']['properties']['data'], {'$ref':'#/components/schemas/ScoringTaskView'})
+     self.assertEqual(set(updated['responses']), {'202','400','401','403','404','409','412','413','415','422','428','500'})
+     for status in ['400','401','403','404','409','412','413','415','422','428','500']:
+      self.assertEqual(updated['responses'][status], {'$ref':'#/components/responses/PublicError'+status})
+     guard=updated['parameters'][-1]
+     self.assertEqual(guard, {'name':'X-Expected-Actor','in':'header','required':False,'schema':{'$ref':'#/components/schemas/ID'}})
+     updated['parameters'].remove(guard)
+     self.assertEqual(updated['x-coverage'], 'request-success-errors-partial')
+     updated['responses']=copy.deepcopy(op['responses']); updated['x-coverage']=op['x-coverage']; updated['x-fr']=op['x-fr']
     if (path, method) == ('/projects', 'post'):
      # task014 owns these exact B01 additions; PC-01..08 verify their new requirements.
      # Normalize only reviewed deltas, then retain the full historical operation assertion.

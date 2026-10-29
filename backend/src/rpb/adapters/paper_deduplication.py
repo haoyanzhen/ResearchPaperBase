@@ -3,6 +3,7 @@
 from typing import Any
 from uuid import uuid4
 
+from rpb.adapters import paper_screening as screening
 from rpb.adapters.llm import require_revision
 from rpb.adapters.search_terms import now
 from rpb.modules.account_config.application.ports import AccountError
@@ -79,6 +80,9 @@ def correct(run: Any, body: Any, actor: Any) -> Any:
     # A group correction is a content change for every source in either affected group.
     for item in run["candidates"]:
         if item["id"] == candidate["id"] or item["deduplication"]["group_id"] in {previous, group}:
+            if item["screening"]["score"] is not None or item["screening"]["valid"] is not None:
+                screening.archive(item, "deduplication_dependency_changed", str(actor))
+                item["screening_stale"] = True
             item["revision"] = str(uuid4())
     decision = candidate["deduplication"]
     decision["history"].append(
