@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.11",
+    "version": "1.13",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
   },
   "servers": [
@@ -5114,8 +5114,68 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "202": {
+            "description": "One paper analysis task accepted; no knowledge publication.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PaperAnalysisTaskView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -5128,7 +5188,7 @@
             }
           }
         },
-        "x-coverage": "request-only"
+        "x-coverage": "request-success-errors-partial"
       }
     },
     "/projects/{project_id}/construction-runs/{run_id}/waiting-items/{waiting_item_id}/confirm": {
@@ -11988,7 +12048,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PaperScreeningPatch"
+                "$ref": "#/components/schemas/PaperCandidatePatch"
               }
             }
           }
@@ -12415,6 +12475,143 @@
             "$ref": "#/components/responses/PublicError410"
           }
         }
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/candidates/{candidate_id}/analysis/action-preview": {
+      "post": {
+        "operationId": "Construction.PreviewAnalysisGeneration",
+        "x-use-case": "Construction.PreviewAnalysisGeneration",
+        "x-fr": [
+          "FR-017",
+          "FR-025"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "200": {
+            "description": "Read-only analysis overwrite preview.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PaperAnalysisPreview"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperAnalysisPreviewRequest"
+              }
+            }
+          }
+        },
+        "x-coverage": "request-success-errors-partial"
       }
     }
   },
@@ -22105,6 +22302,117 @@
           },
           "cleanup_pending": {
             "$ref": "#/components/schemas/CleanupPending"
+          },
+          "analysis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaperAnalysis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "analysis_basis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaperAnalysisBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "analysis_current": {
+            "type": "boolean"
+          },
+          "analysis_state": {
+            "enum": [
+              "agent_draft",
+              "manual_edit",
+              "confirmed"
+            ]
+          },
+          "analysis_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "analysis_modified_by": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "analysis_confirmed_by": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "analysis_modified_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "analysis_confirmed_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "analysis_confirmed_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "analysis_history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "analysis": {
+                  "$ref": "#/components/schemas/PaperAnalysis"
+                },
+                "basis": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PaperAnalysisBasis"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "agent_draft",
+                    "manual_edit",
+                    "confirmed",
+                    null
+                  ]
+                },
+                "actor_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "at": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "analysis",
+                "basis",
+                "state",
+                "actor_id",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "retained_analysis": {
+            "$ref": "#/components/schemas/PaperAnalysis"
           }
         },
         "required": [
@@ -22398,7 +22706,8 @@
               "retrieval",
               "screening",
               "processing",
-              "analysis"
+              "analysis",
+              "ingestion_preview"
             ]
           },
           "business_state": {
@@ -22590,7 +22899,8 @@
               "retrieval",
               "screening",
               "processing",
-              "analysis"
+              "analysis",
+              "ingestion_preview"
             ]
           },
           "base_knowledge_version_id": {
@@ -22837,6 +23147,42 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "analysis": {
+                      "type": "object",
+                      "properties": {
+                        "completed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "failed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pending": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "manual": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "confirmed": {
+                          "type": "boolean"
+                        },
+                        "busy": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "completed",
+                        "failed",
+                        "pending",
+                        "manual",
+                        "confirmed",
+                        "busy"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -22845,7 +23191,8 @@
                     "resolution",
                     "deduplication",
                     "screening",
-                    "processing"
+                    "processing",
+                    "analysis"
                   ],
                   "additionalProperties": false
                 },
@@ -22891,6 +23238,12 @@
             "items": {
               "$ref": "#/components/schemas/ScoringTaskView"
             }
+          },
+          "analysis_tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaperAnalysisTaskView"
+            }
           }
         },
         "required": [
@@ -22912,7 +23265,8 @@
           "waiting_items",
           "task",
           "available_actions",
-          "scoring_tasks"
+          "scoring_tasks",
+          "analysis_tasks"
         ],
         "additionalProperties": false
       },
@@ -22942,7 +23296,8 @@
             "enum": [
               "confirm_retrieval",
               "confirm_screening",
-              "confirm_processing"
+              "confirm_processing",
+              "confirm_analysis"
             ]
           },
           "target": {
@@ -23024,7 +23379,8 @@
               "retrieval",
               "screening",
               "processing",
-              "analysis"
+              "analysis",
+              "ingestion_preview"
             ]
           },
           "revision": {
@@ -23037,7 +23393,8 @@
               "enum": [
                 "confirm_retrieval",
                 "confirm_screening",
-                "confirm_processing"
+                "confirm_processing",
+                "confirm_analysis"
               ]
             }
           },
@@ -24545,6 +24902,514 @@
           "coverage",
           "line_mapping",
           "segments"
+        ],
+        "additionalProperties": false
+      },
+      "PaperAnalysis": {
+        "type": "object",
+        "properties": {
+          "one_sentence_summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000,
+            "pattern": "\\S",
+            "not": {
+              "pattern": "\u0000"
+            }
+          },
+          "highlights": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S",
+              "not": {
+                "pattern": "\u0000"
+              }
+            }
+          },
+          "relevance_points": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S",
+              "not": {
+                "pattern": "\u0000"
+              }
+            }
+          },
+          "methods": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000,
+            "pattern": "\\S",
+            "not": {
+              "pattern": "\u0000"
+            }
+          },
+          "innovations": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S",
+              "not": {
+                "pattern": "\u0000"
+              }
+            }
+          }
+        },
+        "required": [
+          "one_sentence_summary",
+          "highlights",
+          "relevance_points",
+          "methods",
+          "innovations"
+        ],
+        "additionalProperties": false
+      },
+      "PaperAnalysisBasis": {
+        "type": "object",
+        "properties": {
+          "analysis_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "candidate_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "processing_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "processing_confirmation_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "text_revision_id": {
+            "$ref": "#/components/schemas/Revision"
+          }
+        },
+        "required": [
+          "analysis_revision",
+          "candidate_revision",
+          "processing_revision",
+          "processing_confirmation_revision",
+          "text_revision_id"
+        ],
+        "additionalProperties": false
+      },
+      "PaperAnalysisPatch": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/PaperAnalysis"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "analysis"
+        ],
+        "additionalProperties": false
+      },
+      "PaperCandidatePatch": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaperScreeningPatch"
+          },
+          {
+            "$ref": "#/components/schemas/PaperAnalysisPatch"
+          }
+        ]
+      },
+      "PaperAnalysisTaskView": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "attempt_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "operation_id": {
+            "const": "Construction.GenerateAnalysis"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "construction_run"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "execution_status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "status_url": {
+            "type": "string"
+          },
+          "events_url": {
+            "type": "string"
+          },
+          "cancel_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result_refs": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "const": "analysis"
+          },
+          "business_state": {
+            "enum": [
+              "queued",
+              "running",
+              "waiting_user",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "waiting_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "cancel_requested_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "event_cursor": {
+            "type": "string"
+          },
+          "partial_result_ref": {
+            "type": "null"
+          },
+          "target_location": {
+            "type": "object",
+            "properties": {
+              "parent_type": {
+                "const": "project"
+              },
+              "parent_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "read_url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "parent_type",
+              "parent_id",
+              "read_url"
+            ],
+            "additionalProperties": false
+          },
+          "material_use_notices": {
+            "type": "array",
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_id",
+          "operation_id",
+          "target",
+          "project_id",
+          "knowledge_version_id",
+          "execution_status",
+          "status_url",
+          "events_url",
+          "cancel_url",
+          "result_refs",
+          "revision",
+          "created_at",
+          "updated_at",
+          "started_at",
+          "finished_at",
+          "stage",
+          "business_state",
+          "waiting_items",
+          "cancel_requested_at",
+          "error",
+          "warnings",
+          "event_cursor",
+          "partial_result_ref",
+          "target_location",
+          "material_use_notices"
+        ],
+        "additionalProperties": false
+      },
+      "PaperAnalysisPreview": {
+        "type": "object",
+        "properties": {
+          "confirmation_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "action": {
+            "const": "generate"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "construction_candidate"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "subject_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "impact_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "candidate_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "confirmation_token": {
+            "type": "string"
+          },
+          "affected_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "content_change"
+                },
+                "object": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "construction_candidate"
+                    },
+                    "id": {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    "project_id": {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    "revision": {
+                      "$ref": "#/components/schemas/Revision"
+                    },
+                    "read_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "project_id",
+                    "revision",
+                    "read_url"
+                  ],
+                  "additionalProperties": false
+                },
+                "operation": {
+                  "const": "replace"
+                },
+                "content_state": {
+                  "enum": [
+                    "agent_draft",
+                    "manual_edit",
+                    "confirmed"
+                  ]
+                },
+                "content_scope": {
+                  "const": [
+                    "analysis"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "object",
+                "operation",
+                "content_state",
+                "content_scope",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "retained_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "protected_scope"
+                },
+                "scope": {
+                  "const": "existing_content"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "scope",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "blocked_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "confirmation_id",
+          "action",
+          "target",
+          "subject_revision",
+          "impact_revision",
+          "knowledge_version_id",
+          "candidate_revision",
+          "risks",
+          "expires_at",
+          "confirmation_token",
+          "affected_items",
+          "retained_items",
+          "blocked_reasons"
+        ],
+        "additionalProperties": false
+      },
+      "PaperAnalysisPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "action": {
+            "const": "generate"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "action"
         ],
         "additionalProperties": false
       }

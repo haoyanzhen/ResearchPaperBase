@@ -1,6 +1,6 @@
 {
-  "version": "1.16",
-  "date": "2026-10-29",
+  "version": "1.18",
+  "date": "2026-10-30",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -631,7 +631,9 @@
     "Construction.EditCandidate",
     "Construction.AccessCandidateFile",
     "Construction.DownloadUnpublishedFile",
-    "Construction.ReadProcessingText"
+    "Construction.ReadProcessingText",
+    "Construction.GenerateAnalysis",
+    "Construction.PreviewAnalysisGeneration"
   ],
   "request_only_operations": [
     "Admin.TestSystemSource",
@@ -641,7 +643,6 @@
     "Construction.ClearAssociations",
     "Construction.AppendSearchTerms",
     "Construction.ReplaceCandidateSource",
-    "Construction.GenerateAnalysis",
     "Research.SendMessage",
     "Research.CancelResponse",
     "Research.ContinueWithoutEvidence",
@@ -712,7 +713,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "d46521e6f8a7c178aa8536b2f8d70ea556fac26c6cc9c17cffd6599d7cc66ea8",
+    "04-01_p0_operation_contracts.md": "576d68ea404fb3da13e5ac760139b7b123056b054b1760123f5c0626976d82e4",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -1125,11 +1126,9 @@
       ]
     },
     "Construction.GenerateAnalysis": {
-      "status": "request-only",
+      "status": "request-success-errors-partial",
       "gaps": [
-        "GAP-ERROR",
-        "GAP-RUNTIME",
-        "GAP-TASK"
+        "GAP-RUNTIME"
       ]
     },
     "Construction.ConfirmStep": {
@@ -1503,6 +1502,12 @@
       "gaps": [
         "Supplement file transport remains outside this slice"
       ]
+    },
+    "Construction.PreviewAnalysisGeneration": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "GAP-RUNTIME"
+      ]
     }
   },
   "row_coverage": [
@@ -1528,12 +1533,11 @@
     {
       "source_row_index": 2,
       "status": "not-typed",
-      "typed_operations": {},
+      "typed_operations": [
+        "Construction.PreviewAnalysisGeneration"
+      ],
       "remaining": [
-        {
-          "use_case_or_route": "Construction.PreviewAnalysisGeneration",
-          "gap": "GAP-CONFIRM"
-        }
+        "Full material analysis runtime remains outside this paper slice."
       ]
     },
     {
@@ -3206,5 +3210,9 @@
       "analysis",
       "published knowledge"
     ]
+  },
+  "construction_analysis": {
+    "scope": "Run-local paper analysis only; material and knowledge publication remain open",
+    "task": "tasks/048-paper-analysis.md"
   }
 }

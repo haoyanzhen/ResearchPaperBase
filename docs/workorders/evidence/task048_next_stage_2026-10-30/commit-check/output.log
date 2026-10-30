@@ -1,0 +1,2 @@
+PASS: changed documentation versions/dates/local references, successful evidence exit codes, scoped diff whitespace
+{"head": "1d93f4205daa9b695ff1ac29651331f803a44133", "scope_files": 74, "accepted_business_files": 20, "business_hash_mismatches": [], "record_only_changes": ["docs/PROJECT_STATUS.md", "tasks/048-paper-analysis.md"], "protected_files": 2368, "business_tests_rerun": false}

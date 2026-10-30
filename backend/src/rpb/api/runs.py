@@ -27,7 +27,7 @@ def router_for(service: TermService) -> APIRouter:
             request.headers.get("x-expected-actor"),
         )
         meta = {"request_id": request.state.request_id}
-        if write and operation != "preview_score":
+        if write and operation not in {"preview_score", "preview_analysis"}:
             meta["idempotency_expires_at"] = value["expires_at"]
             if value["original_request_id"] != request.state.request_id:
                 meta["original_request_id"] = value["original_request_id"]
@@ -203,6 +203,41 @@ def router_for(service: TermService) -> APIRouter:
         if "run_id" in body:
             raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
         value = call(request, project_id, "score", {**body, "run_id": str(run_id)}, True)
+        response.headers["Location"] = value["data"]["status_url"]
+        return value
+
+    @router.post("/{run_id}/candidates/{candidate_id}/analysis/action-preview")
+    def analysis_preview(
+        request: Request, project_id: UUID, run_id: UUID, candidate_id: UUID, body: dict[str, Any]
+    ) -> Any:
+        if {"run_id", "candidate_id"} & body.keys():
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        return call(
+            request,
+            project_id,
+            "preview_analysis",
+            {**body, "run_id": str(run_id), "candidate_id": str(candidate_id)},
+            True,
+        )
+
+    @router.post("/{run_id}/candidates/{candidate_id}/analysis/generate", status_code=202)
+    def analysis_generate(
+        request: Request,
+        response: Response,
+        project_id: UUID,
+        run_id: UUID,
+        candidate_id: UUID,
+        body: dict[str, Any],
+    ) -> Any:
+        if {"run_id", "candidate_id"} & body.keys():
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        value = call(
+            request,
+            project_id,
+            "generate_analysis",
+            {**body, "run_id": str(run_id), "candidate_id": str(candidate_id)},
+            True,
+        )
         response.headers["Location"] = value["data"]["status_url"]
         return value
 

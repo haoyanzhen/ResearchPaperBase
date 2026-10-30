@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 
+from rpb.adapters import paper_analysis as analysis
 from rpb.adapters import paper_deduplication as dedup
 from rpb.adapters import paper_processing as processing
 from rpb.adapters import paper_screening as screening
@@ -96,12 +97,14 @@ def transition(run: Any, status: str, error: str | None = None) -> None:
         run["screening_summary"] = screening.summary(run)
         from rpb.adapters.search_term_worker import TermWorker
 
-        for job in run.get("scoring_jobs", {}).values():
+        for job in [*run.get("scoring_jobs", {}).values(), *run.get("analysis_jobs", {}).values()]:
             if job["state"] in {"queued", "running"}:
                 TermWorker.finish(job, "cancelled", error)
 
         if not any(
-            c.get("deduplication", {}).get("history") or screening.has_human_content(c)
+            c.get("deduplication", {}).get("history")
+            or screening.has_human_content(c)
+            or analysis.protected(c)
             for c in run["candidates"]
         ):
             run["cleaned_candidate_count"] = len(run["candidates"])
@@ -161,7 +164,12 @@ class RunStore:
         wait = run["waiting"]
         if (
             processing.busy(run)
-            or run.get("phase") == "analysis"
+            or analysis.busy(run)
+            or run.get("phase") == "ingestion_preview"
+            or (
+                run.get("phase") == "analysis"
+                and not any(analysis.valid(c) for c in processing.eligible(run))
+            )
             or (
                 run.get("phase") == "screening"
                 and (screening.busy(run) or not processing.eligible(run))
@@ -299,6 +307,7 @@ class RunStore:
                         "deduplication": dedup.summary(run),
                         "screening": screening.summary(run),
                         "processing": processing.summary(run),
+                        "analysis": analysis.summary(run),
                     },
                     "error": public_error(run["error"]) if run.get("error") else None,
                 }
@@ -307,6 +316,10 @@ class RunStore:
             "scoring_tasks": [
                 screening.task_view(run, job, self.task(run))
                 for job in run.get("scoring_jobs", {}).values()
+            ],
+            "analysis_tasks": [
+                analysis.task_view(run, job, self.task(run))
+                for job in run.get("analysis_jobs", {}).values()
             ],
             "task": self.task(run),
             "available_actions": [
@@ -341,6 +354,7 @@ class RunStore:
                             sa.or_(
                                 runs.c.payload["task_id"].astext == target,
                                 runs.c.payload["scoring_jobs"].has_key(target),
+                                runs.c.payload["analysis_jobs"].has_key(target),
                             ),
                         )
                     )
@@ -352,6 +366,12 @@ class RunStore:
                 project = self.terms.project(conn, actor, row["project_id"])
                 run = copy.deepcopy(row["payload"])
                 self.revoke(conn, project, run)
+                if target in run.get("analysis_jobs", {}):
+                    job = run["analysis_jobs"][target]
+                    view = analysis.task_view(run, job, self.task(run))
+                    return (
+                        {"view": view, "events": job["events"]} if operation == "events" else view
+                    )
                 if target in run.get("scoring_jobs", {}):
                     job = run["scoring_jobs"][target]
                     view = screening.task_view(run, job, self.task(run))
@@ -410,7 +430,14 @@ class RunStore:
                     return processing.text_view(conn, run, data["candidate_id"])
                 if operation == "candidates":
                     values = copy.deepcopy(run["candidates"])
+                    errors = analysis.latest_errors(run)
                     for c in values:
+                        c["analysis_current"] = analysis.valid(c)
+                        c["analysis_error"] = errors.get(c["id"])
+                        if c.get("analysis") and not c["analysis_current"]:
+                            c["retained_analysis"] = c["analysis"]
+                            c["analysis"] = None
+                            c["analysis_basis"] = None
                         pending = c.get("cleanup_pending")
                         if pending and pending["document_asset_id"] in state["sources"]:
                             pending["material_classification"] = state["sources"][
@@ -443,6 +470,8 @@ class RunStore:
                     )
             request_id = data.get("_request_id", str(uuid4()))
             body = {k: v for k, v in data.items() if k != "_request_id"}
+            if operation == "preview_analysis" and run:
+                return analysis.preview(run, body)
             if operation == "preview_score" and run:
                 return screening.preview(run, body)
             if not key or not 16 <= len(key) <= 128 or any(not 32 <= ord(c) <= 126 for c in key):
@@ -531,14 +560,15 @@ class RunStore:
                     "retrieval",
                     "screening",
                     "processing",
+                    "analysis",
                 }:
                     raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
                 wait = run["waiting"]
+                if body["waiting_item_id"] != wait["id"]:
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
                 require_revision(wait["revision"], body["expected_revision"])
                 require_revision(run["effective_input_revision"], body["subject_revision"])
                 require_revision(run["candidate_revision"], body["candidate_revision"])
-                if body["waiting_item_id"] != wait["id"]:
-                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
                 # Issued claims persist across reads and expire; HMAC binds the exact input.
                 token = body["confirmation_token"]
                 if not isinstance(token, str) or "." not in token:
@@ -562,7 +592,10 @@ class RunStore:
                     or not hmac.compare_digest(signature, expected)
                 ):
                     raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
-                if run.get("phase") == "screening":
+                if run.get("phase") == "analysis":
+                    analysis.confirm(run, actor)
+                    transition(run, "waiting_user")
+                elif run.get("phase") == "screening":
                     processing.accept(run, actor)
                 elif run.get("phase") == "processing":
                     processing.confirm(run, actor)
@@ -580,6 +613,11 @@ class RunStore:
                     transition(run, "waiting_user")
                 persist(conn, run)
                 value = {"run": self.view(run), "task": self.task(run)}
+            elif operation == "generate_analysis" and run:
+                job = analysis.accept(conn, run, body, state, project)
+                value = analysis.task_view(run, job, self.task(run))
+                transition(run, "waiting_user")
+                persist(conn, run)
             elif operation in {"score", "edit_candidate"} and run:
                 if operation == "score":
                     job = screening.accept(run, body, state, project)
@@ -587,7 +625,11 @@ class RunStore:
                     transition(run, "waiting_user")
                     persist(conn, run)
                 else:
-                    value = copy.deepcopy(screening.edit(run, body, actor))
+                    value = copy.deepcopy(
+                        analysis.edit(run, body, actor)
+                        if "analysis" in body
+                        else screening.edit(run, body, actor)
+                    )
                     transition(run, "waiting_user")
                     persist(conn, run)
             elif operation == "correct_deduplication" and run:

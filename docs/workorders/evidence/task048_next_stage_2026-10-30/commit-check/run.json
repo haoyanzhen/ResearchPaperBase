@@ -1,0 +1,1 @@
+{"command": ["python3", "docs/workorders/evidence/task048_next_stage_2026-10-30/commit_prepare.py"], "exit_code": 0, "pytest_addopts": null, "baseline": "handoff-snapshot"}

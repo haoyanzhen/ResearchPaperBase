@@ -1,0 +1,1 @@
+{"command": ["uv", "run", "--directory", "backend", "--locked", "ruff", "format", "--check", "src", "tests", "../scripts/run_business_demo.py"], "exit_code": 0, "pytest_addopts": null, "baseline": "review-fixes-snapshot"}

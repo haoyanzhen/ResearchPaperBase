@@ -35,14 +35,16 @@ def busy(run: Any) -> bool:
 
 
 def writable(run: Any) -> None:
+    from rpb.adapters.paper_analysis import busy as analysis_busy
     from rpb.adapters.paper_processing import busy as processing_busy
 
-    if processing_busy(run):
+    if processing_busy(run) or analysis_busy(run):
         raise AccountError("LOCK_CONTENT_BUSY", 409)
     if run["status"] != "waiting_user" or run.get("phase") not in {
         "screening",
         "processing",
         "analysis",
+        "ingestion_preview",
     }:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if busy(run):
@@ -285,6 +287,7 @@ def accept(run: Any, body: Any, state: Any, project: Any) -> Any:
 
 def bump(run: Any, changed_ids: set[str]) -> None:
     run["phase"] = "screening"
+    run.pop("analysis_confirmation", None)
     if run.get("processing_confirmation"):
         run.setdefault("processing_confirmation_history", []).append(
             run.pop("processing_confirmation")

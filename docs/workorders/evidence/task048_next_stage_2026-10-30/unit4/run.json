@@ -1,0 +1,1 @@
+{"command": ["uv", "run", "--directory", "backend", "--locked", "pytest", "tests/unit", "tests/architecture", "--junitxml=../docs/workorders/evidence/task048_next_stage_2026-10-30/unit4-tests.xml"], "exit_code": 0, "pytest_addopts": null, "baseline": "review-fixes-snapshot"}

@@ -1,6 +1,7 @@
 """Explicitly composed business API; callers own the engine and its lifecycle."""
 
 import json
+import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlsplit
@@ -142,10 +143,15 @@ def create_business_app(
                 != "application/json"
             ):
                 return error(request, "VALIDATION_UNSUPPORTED_FORMAT", 415)
+            # Full five-field analysis (up to 620000 Unicode characters) must be saveable.
+            analysis_patch = request.method == "PATCH" and re.fullmatch(
+                r"/api/v1/projects/[^/]+/construction-runs/[^/]+/candidates/[^/]+", request.url.path
+            )
+            limit = 4 * 1024 * 1024 if analysis_patch else 65536
             chunks, length = [], 0
             async for chunk in request.stream():
                 length += len(chunk)
-                if length > 65536:
+                if length > limit:
                     return error(request, "VALIDATION_PAYLOAD_TOO_LARGE", 413)
                 chunks.append(chunk)
             request._body = b"".join(chunks)

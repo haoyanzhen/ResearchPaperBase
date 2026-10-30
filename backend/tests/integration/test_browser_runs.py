@@ -363,7 +363,7 @@ def test_ppb01_manual_screening_to_processing_confirmation_and_edit(
     result.get_by_text("查看所用文本节选", exact=False).click()
     expect(result.get_by_text("Version 0", exact=True)).to_be_visible()
     region.get_by_role("button", name="确认处理结果", exact=True).click()
-    expect(region.get_by_role("heading", name="处理已确认，等待AI分析", exact=True)).to_be_visible()
+    expect(region.get_by_role("heading", name="论文AI分析", exact=True)).to_be_visible()
     page.set_viewport_size({"width": 390, "height": 844})
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     output = (
@@ -469,7 +469,7 @@ def test_plb01_real_pdf_classification_auto_continue_compare_and_confirm(monkeyp
         path=str(evidence / "cleanup-comparison.png")
     )
     region.get_by_role("button", name="确认处理结果", exact=True).click()
-    expect(region.get_by_role("heading", name="处理已确认，等待AI分析", exact=True)).to_be_visible()
+    expect(region.get_by_role("heading", name="论文AI分析", exact=True)).to_be_visible()
     page.set_viewport_size({"width": 390, "height": 844})
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     output = (

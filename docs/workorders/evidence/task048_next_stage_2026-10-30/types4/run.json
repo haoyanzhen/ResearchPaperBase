@@ -1,0 +1,1 @@
+{"command": ["uv", "run", "--directory", "backend", "--locked", "mypy", "src"], "exit_code": 0, "pytest_addopts": null, "baseline": "review-fixes-snapshot"}

@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task048_next_stage_2026-10-30/final-regression/output.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 1072,
+  "read_start_byte": 0,
+  "text": "{\"postgres\": \"postgres (PostgreSQL) 17.11 (Homebrew)\", \"run_id\": \"rpb_test_829ac22b956f44c8bbf28968c10fc47c\", \"root\": \"/private/tmp/rpb-db-01j87q4m\", \"tcp\": false, \"role_superuser\": false}\n................................................................................................................................................................................................................\n=============================== warnings summary ===============================\n.venv/lib/python3.14/site-packages/fastapi/testclient.py:1\n  /Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient as TestClient  # noqa\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n208 passed, 536 deselected, 1 warning in 186.82s (0:03:06)\n{\"run_id\": \"rpb_test_829ac22b956f44c8bbf28968c10fc47c\", \"server_stopped\": true, \"root_removed\": true}\n",
+  "truncated": false
+}

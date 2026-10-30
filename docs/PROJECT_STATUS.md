@@ -1,6 +1,6 @@
 # 项目进度与待完成项
 
-文档版本：v1.117
+文档版本：v1.119
 更新日期：2026-10-30
 适用项目大版本：v1
 
@@ -15,8 +15,8 @@
 | 范围 | 当前状态及限定证据 |
 | --- | --- |
 | 交付流程 | [task045](../tasks/045-commit-verification.md)完成上一轮提交调用审计及最小核验包：未发现旧业务测试重跑，修复重复文档读取/新旧阶段混记风险；文档核验与独立审查通过。保留[task043](../tasks/043-delivery-tool-adoption.md)定向读取/摘要采用和[task041](../tasks/041-token-efficiency.md)工具，必要基线、受影响验证及审查不削弱；不改业务授权，不宣称token降幅 |
-| 当前业务切片 | [task047](../tasks/047-llm-pdf-extraction-design.md#11-m-p0-16验收包与最终检查点2026-10-30) D-PDF-01–04已实施：文字PDF整理、分类后自动续作、模型容量默认256K可改、仅本引擎输出未填默认4096，原始/整理全文对比及持久预算。本机最终157项持久化/浏览器、433项单元/架构、48项契约通过；独立S3/S6复核通过。M-P0-16于2026-10-30获人工接受并授权本地提交；平台实测按用户决定移至下一大阶段TRACK-023，当前L0不做，未调用真实模型 |
-| 最近业务里程碑 | M-P0-15于2026-10-30获用户明确接受，见[task046第13节](../tasks/046-paper-processing-gate.md#13-m-p0-15人工接受与交接2026-10-30)。人工接受与工程验证分列：PDF/契约44项及独立48项通过；Linux容器实测未通过、Windows宿主未实测；2026-10-30用户明确延期至下一大阶段（TRACK-023），当前L0提交阻塞解除。M-P0-14已本地提交f5d5b19（未push），其接受和证据保留 |
+| 当前业务切片 | [task048](../tasks/048-paper-analysis.md)手动Run论文AI分析已完成S1–S7工程收口：已确认最终文本生成五字段、人工补全、显式覆盖保护、失败诊断及有效子集确认；确认后等待入库能力，不发布知识版本。最终208项隔离持久化/浏览器、517项单元/架构、48项契约通过；S3两缺陷已修复，S6独立复审通过。M-P0-17于2026-10-30获用户明确接受并授权本地Git提交；真实模型质量/正式发布/非论文未验证 |
+| 最近业务里程碑 | M-P0-15/16于2026-10-30获人工接受并本地提交`1d93f42`（未push），范围与证据见[task046](../tasks/046-paper-processing-gate.md#13-m-p0-15人工接受与交接2026-10-30)、[task047](../tasks/047-llm-pdf-extraction-design.md#11-m-p0-16验收包与最终检查点2026-10-30)。Windows/Linux平台实测按用户决定延期至下一大阶段TRACK-023，当前L0不做；未调用真实模型。M-P0-14本地提交f5d5b19及旧接受保留 |
 | 已交付业务基础 | 账号注册登录、本人Project与基础维护、个人/系统LLM和论文源配置、管理员账号治理、SMTP及基础安全已有局部交付；接受范围分别见[task019](../tasks/019-browser-milestone.md)、[task022](../tasks/022-project-maintenance.md)、[task026](../tasks/026-llm-parameter-runtime.md)、[task028](../tasks/028-personal-source-runtime.md)、[task029](../tasks/029-admin-accounts.md)、[task031](../tasks/031-system-llm-runtime.md)、[task033](../tasks/033-system-source-runtime.md)、[task035](../tasks/035-smtp-security-runtime.md)。不代表完整FR或当前工作区重新验收 |
 | 设计及工程基础 | A01–A10历史设计/骨架及限定接受见[历史快照](workorders/project_status_history_2026-10-28.md#2-当前进度概览)；现行规范入口为[设计索引](design/README.md)。旧应用仅保留archive候选片段；旧测试不能验收新核心 |
 | 尚未交付的整体能力 | 真实Construction检索/解析/分析及知识版本发布、Research Session、Review Run、Graph-RAG运行闭环和生产部署仍未整体交付；Memory及其他延期范围保持原分期。当前不提供整体完成百分比 |
