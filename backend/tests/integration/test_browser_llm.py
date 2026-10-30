@@ -293,3 +293,23 @@ def test_lu09_actual_anthropic_test_override_is_visible(llm_browser):
     page.get_by_role("button", name="刷新测试状态", exact=True).click()
     expect(page.get_by_label("测试详情", exact=True)).to_contain_text('"max_tokens": 32')
     assert sent[0]["max_tokens"] == 32 and len(sent) == 1
+
+
+def test_lu10_model_context_capacity_edit_reload_and_default(llm_browser):
+    page, _, provider = llm_browser
+    fill_config(page)
+    expect(page.get_by_label("上下文容量（tokens）", exact=True)).to_have_value("262144")
+    page.get_by_label("容量对应模型ID", exact=True).fill("model-a")
+    page.get_by_label("上下文容量（tokens）", exact=True).fill("524288")
+    page.get_by_role("button", name="将模型容量加入草稿", exact=True).click()
+    page.get_by_role("button", name="保存LLM配置", exact=True).click()
+    expect(page.get_by_text("配置已保存；保存不会调用模型。", exact=True)).to_be_visible()
+    page.reload()
+    page.get_by_role("button", name="LLM设置", exact=True).click()
+    page.get_by_role("button", name="My model", exact=True).click()
+    expect(page.get_by_role("button", name="恢复model-a默认容量", exact=True)).to_be_visible()
+    expect(page.get_by_text("model-a：524,288 tokens", exact=False)).to_be_visible()
+    page.get_by_role("button", name="恢复model-a默认容量", exact=True).click()
+    page.get_by_role("button", name="保存LLM配置", exact=True).click()
+    expect(page.get_by_text("配置已保存；保存不会调用模型。", exact=True)).to_be_visible()
+    assert provider.calls == []

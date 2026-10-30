@@ -1,0 +1,34 @@
+{
+  "scope": "task047 LLM cleanup final validation code/test/contracts; full files include preserved M15 changes",
+  "head": "f5d5b1970c8e3d621056aec77d89c7ac93ea418c",
+  "files": {
+    "backend/src/rpb/adapters/pdf_cleanup_capacity.py": "e8285a1796c66bb6d5a6240853084cf1c0c5e2cb2530cd25dac4593ce3f57e1f",
+    "backend/src/rpb/adapters/pdf_cleanup_worker.py": "abcfc5b4d109f5f247353707a6eab91162286d98d81f315a551d2b7cbfc0501a",
+    "backend/src/rpb/adapters/pdf_cleanup_budget.py": "21ba0a8de15413be0fd3935efa9d163a3a2902abfc57b92498a17e4e8b98afe0",
+    "backend/src/rpb/adapters/pdf_cleanup_provider.py": "18144d6743ec098b10324e7082273f4b7211f28981dea5531b2bba348d61aac8",
+    "backend/src/rpb/adapters/pdf_text_cleanup.py": "d2c79752cc23df5c6c8aac4dcb786f5e12eba80d26dbae70ddd0278824d32d25",
+    "backend/src/rpb/adapters/paper_processing.py": "029f0a3aa005bac83fa4e653352cceb4f0faa5a47ae5841b1ebc36c09f15be12",
+    "backend/src/rpb/adapters/run_worker.py": "ac4a1eddc4fb5d452e948f098fa82e4d0184e48ad94c04ad0917c4b5752f1bf3",
+    "backend/src/rpb/adapters/runs.py": "b7c832c878b69d3dc9d90dd1828cb9c47bdcc09b4c8c3e3c79e898da8d42f305",
+    "backend/src/rpb/api/runs.py": "a0d8f2903b94ad9fe6f7a5ffe56c5433c383cdf5cb79a7fc5b33cc839d3e3f97",
+    "backend/src/rpb/modules/construction/domain/runs.py": "58797e36c78303dbed1d42b604ff289dbddc578ab106a728ad45c52fd38124a9",
+    "frontend/src/ConstructionRuns.tsx": "a8bc3043630a8613189635644197e5d229a6a930a4a939371926f5c4c9fffe2d",
+    "scripts/run_business_demo.py": "fe55ab0917dcc5c1431b2c99701a65f58b14e61ae490efead29f95d1d117fda1",
+    "backend/tests/integration/test_pdf_cleanup.py": "9ecdf0ab951d8056eef4b26778443c92e74313d69482f454db165acfa288927b",
+    "backend/tests/integration/test_browser_runs.py": "3d8c192e239bc9b6a2bdd0e339d7ba57aed4676e375e4be1025852d7bde80490",
+    "backend/tests/unit/test_pdf_cleanup_capacity.py": "d70d04a8c3eea2db559126d373e50685fd5c1bfa483bac3f3b12546dfceea988",
+    "backend/tests/unit/test_pdf_cleanup_provider.py": "411fe3c919345bfc2cd1004dd1d435edfafa9b2bb0ad031960ea778e63c40f2c",
+    "backend/tests/unit/test_pdf_cleanup_budget.py": "61e2f4a9e7591818fd33fae1e1b5ffab57600d2949b62639590984894028a13a",
+    "backend/tests/unit/test_pdf_text_cleanup.py": "618c7c5a47db806bb3ff9511341dc48fa8cc85f0043304efb5d8c7a56f530649",
+    "contracts/p0.openapi.json": "06cc88a6cb31bb07b13129a80214f048b99be7988172da4ddf92f42069d71a50",
+    "contracts/p0.coverage.json": "e9bc5f5ccb63de87eb8644b89d808ed0385b255a6867096cdeeaf6c25678cfb3"
+  },
+  "runs": [
+    "cleanup-db-final1",
+    "cleanup-unit-final",
+    "cleanup-types-final",
+    "cleanup-lint-final",
+    "cleanup-format-final"
+  ],
+  "ledger_context": "task047-integrate-1"
+}

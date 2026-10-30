@@ -1,0 +1,6 @@
+{
+  "backend/src/rpb/adapters/pdf_cleanup_worker.py": "abcfc5b4d109f5f247353707a6eab91162286d98d81f315a551d2b7cbfc0501a",
+  "backend/src/rpb/adapters/paper_processing.py": "029f0a3aa005bac83fa4e653352cceb4f0faa5a47ae5841b1ebc36c09f15be12",
+  "backend/tests/integration/test_pdf_cleanup.py": "fd51586cdcd6538759ed738207d52eab0d75ad41faebe4f71e4b10a7de79bbd6",
+  "docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_worker_probe.py": "4af82f4b021887ca803e67a0be36bf93519ceff50e8748798c941cf5d4799494"
+}

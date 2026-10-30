@@ -1,0 +1,13 @@
+{
+  "command": [
+    "backend/.venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/unit/test_pdf_engine_runtime.py",
+    "backend/tests/unit/test_pdf_processing.py",
+    "docs/workorders/evidence/task046_processing_gate_2026-10-29/review_runtime_probes.py",
+    "-q",
+    "--junitxml=docs/workorders/evidence/task046_processing_gate_2026-10-29/review-runtime4.xml"
+  ],
+  "exit_code": 0
+}

@@ -33,6 +33,7 @@ def start_input(value: Any) -> dict[str, Any]:
         "result_limit_per_source",
         "model_selection",
         "graph_mode",
+        "pdf_extraction_engine",
     }:
         raise RunInputError("fields")
     if value.get("mode", "retrieval") != "retrieval" or value.get("supplement_ids", []) != []:
@@ -67,6 +68,8 @@ def start_input(value: Any) -> dict[str, Any]:
         raise RunInputError("graph")
     if "model_selection" not in value:
         raise RunInputError("model")
+    if value.get("pdf_extraction_engine", "pypdf") not in ("pypdf", "llm_text_cleanup"):
+        raise RunInputError("pdf engine")
     return {"mode": "retrieval", "supplement_ids": [], "graph_mode": "incremental", **value}
 
 

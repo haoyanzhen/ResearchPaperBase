@@ -18,6 +18,7 @@ from rpb.adapters.runs import ACTIVE, RunStore, persist, transition
 from rpb.adapters.search_terms import now
 from rpb.adapters.source_worker import SourceWorker
 from rpb.modules.account_config.application.ports import AccountError
+from rpb.modules.account_config.domain.parameters import ParameterError
 from rpb.modules.account_config.domain.sources import PROVIDERS
 
 
@@ -146,6 +147,8 @@ class RunWorker:
                 if run["status"] not in ACTIVE:
                     occupied.discard(row["project_id"])
                     continue
+                if run.get("phase", "retrieval") != "retrieval":
+                    continue
                 if run["status"] == "running" and datetime.fromisoformat(
                     run["lease_until"]
                 ) <= datetime.now(UTC):
@@ -168,6 +171,30 @@ class RunWorker:
                     run["resolution"] = resolution
                     run["source_configs"] = source_configs
                     run["model_config"] = copy.deepcopy(model["data"])
+                    if run["request"].get("pdf_extraction_engine") == "llm_text_cleanup":
+                        from rpb.adapters.pdf_cleanup_budget import new_budget
+                        from rpb.adapters.pdf_cleanup_capacity import effective_config
+                        from rpb.modules.account_config.domain.context_capacity import (
+                            context_window,
+                        )
+
+                        selected_model = run["request"]["model_selection"]["model_id"]
+                        cleanup_config, output, defaulted = effective_config(
+                            model["data"], selected_model
+                        )
+                        capacity = context_window(model["data"], selected_model)
+                        cleanup_config.setdefault("model_context_windows", {})[selected_model] = (
+                            capacity
+                        )
+                        run["cleanup_model_config"] = cleanup_config
+                        run["cleanup_settings"] = {
+                            "engine_id": "llm_text_cleanup",
+                            "engine_revision": "1",
+                            "context_window_tokens": capacity,
+                            "output_tokens": output,
+                            "output_defaulted": defaulted,
+                            "budget_limits": new_budget()["limits"],
+                        }
                     stamp = now()
                     run["input_snapshot"] = {
                         "mode": "retrieval",
@@ -204,6 +231,8 @@ class RunWorker:
                         ],
                         "captured_at": stamp,
                     }
+                    if run.get("cleanup_settings"):
+                        run["config_snapshot"]["pdf_cleanup"] = run["cleanup_settings"]
                     run.update(
                         effective_input_revision=str(uuid4()),
                         started_at=stamp,
@@ -213,6 +242,9 @@ class RunWorker:
                     persist(conn, run)
                     selected = copy.deepcopy(run)
                     occupied.add(row["project_id"])
+                except ParameterError:
+                    transition(run, "failed", "CONFIG_CONNECTION_FAILED")
+                    persist(conn, run)
                 except (AccountError, ProviderFailure) as exc:
                     transition(run, "failed", exc.code)
                     persist(conn, run)

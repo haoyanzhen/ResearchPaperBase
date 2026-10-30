@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 
 from rpb.adapters import paper_deduplication as dedup
+from rpb.adapters import paper_processing as processing
 from rpb.adapters import paper_screening as screening
 from rpb.adapters.llm import event_record, require_revision, uuid_value
 from rpb.adapters.llm import public_error as config_error
@@ -158,16 +159,32 @@ class RunStore:
         if run["status"] != "waiting_user":
             return []
         wait = run["waiting"]
-        if run.get("phase") == "screening":
+        if (
+            processing.busy(run)
+            or run.get("phase") == "analysis"
+            or (
+                run.get("phase") == "screening"
+                and (screening.busy(run) or not processing.eligible(run))
+            )
+            or (
+                run.get("phase") == "processing"
+                and not any(
+                    c.get("processing", {}).get("status") in {"available", "degraded"}
+                    for c in processing.eligible(run)
+                )
+            )
+        ):
             return [
                 {
                     "id": wait["id"],
-                    "kind": "screening",
+                    "kind": run.get("phase"),
                     "revision": wait["revision"],
                     "allowed_actions": [],
                     "confirmation": None,
                 }
             ]
+        kind = run.get("phase", "retrieval")
+        action = "confirm_" + kind
         expires = (datetime.now(UTC) + timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
         basis = ":".join(
             [run["owner_id"], run["project_id"], wait["id"], wait["revision"], expires]
@@ -176,12 +193,12 @@ class RunStore:
         return [
             {
                 "id": wait["id"],
-                "kind": "retrieval",
+                "kind": kind,
                 "revision": wait["revision"],
-                "allowed_actions": ["confirm_retrieval"],
+                "allowed_actions": [action],
                 "confirmation": {
                     "confirmation_id": stable(token),
-                    "action": "confirm_retrieval",
+                    "action": action,
                     "target": {"type": "waiting_item", "id": wait["id"]},
                     "subject_revision": run["effective_input_revision"],
                     "impact_revision": wait["revision"],
@@ -281,6 +298,7 @@ class RunStore:
                         "resolution": run.get("resolution"),
                         "deduplication": dedup.summary(run),
                         "screening": screening.summary(run),
+                        "processing": processing.summary(run),
                     },
                     "error": public_error(run["error"]) if run.get("error") else None,
                 }
@@ -386,9 +404,23 @@ class RunStore:
                 self.revoke(conn, project, run)
                 if operation == "read_run":
                     return self.view(run)
+                if operation in {"file_access", "file_download"}:
+                    return processing.file_view(conn, run, data, operation == "file_download")
+                if operation == "processing_text":
+                    return processing.text_view(conn, run, data["candidate_id"])
                 if operation == "candidates":
                     values = copy.deepcopy(run["candidates"])
                     for c in values:
+                        pending = c.get("cleanup_pending")
+                        if pending and pending["document_asset_id"] in state["sources"]:
+                            pending["material_classification"] = state["sources"][
+                                pending["document_asset_id"]
+                            ]["classification"]
+                        doc = c.get("processing", {}).get("basis", {}).get("document_asset_id")
+                        if doc in state["sources"]:
+                            c["processing"]["material_classification"] = state["sources"][doc][
+                                "classification"
+                            ]
                         if c["id"] in state["sources"]:
                             c["material_classification"] = state["sources"][c["id"]][
                                 "classification"
@@ -495,7 +527,11 @@ class RunStore:
                 }
                 if set(body) != required or body["acknowledged_risk_ids"] != []:
                     raise AccountError("VALIDATION_FIELD_INVALID", 422)
-                if run["status"] != "waiting_user" or run.get("phase", "retrieval") != "retrieval":
+                if run["status"] != "waiting_user" or run.get("phase", "retrieval") not in {
+                    "retrieval",
+                    "screening",
+                    "processing",
+                }:
                     raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
                 wait = run["waiting"]
                 require_revision(wait["revision"], body["expected_revision"])
@@ -526,16 +562,22 @@ class RunStore:
                     or not hmac.compare_digest(signature, expected)
                 ):
                     raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
-                run["retrieval_confirmation"] = {
-                    "actor_id": str(actor),
-                    "at": now(),
-                    "candidate_revision": run["candidate_revision"],
-                    "input_revision": run["effective_input_revision"],
-                }
-                screening.register_sources(run, state)
-                save(conn, project, state)
-                dedup.initialize(run)
-                transition(run, "waiting_user")
+                if run.get("phase") == "screening":
+                    processing.accept(run, actor)
+                elif run.get("phase") == "processing":
+                    processing.confirm(run, actor)
+                    transition(run, "waiting_user")
+                else:
+                    run["retrieval_confirmation"] = {
+                        "actor_id": str(actor),
+                        "at": now(),
+                        "candidate_revision": run["candidate_revision"],
+                        "input_revision": run["effective_input_revision"],
+                    }
+                    screening.register_sources(run, state)
+                    save(conn, project, state)
+                    dedup.initialize(run)
+                    transition(run, "waiting_user")
                 persist(conn, run)
                 value = {"run": self.view(run), "task": self.task(run)}
             elif operation in {"score", "edit_candidate"} and run:

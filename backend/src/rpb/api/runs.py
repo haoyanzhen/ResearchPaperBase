@@ -72,6 +72,67 @@ def router_for(service: TermService) -> APIRouter:
             {"run_id": str(run_id), "page_size": page_size, "cursor": cursor},
         )
 
+    @router.get("/{run_id}/candidates/{candidate_id}/processing-text")
+    def processing_text(
+        request: Request, response: Response, project_id: UUID, run_id: UUID, candidate_id: UUID
+    ) -> Any:
+        if request.query_params:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        response.headers["Cache-Control"] = "no-store"
+        return call(
+            request,
+            project_id,
+            "processing_text",
+            {"run_id": str(run_id), "candidate_id": str(candidate_id)},
+        )
+
+    @router.get("/{run_id}/candidates/{candidate_id}/file-access")
+    def file_access(
+        request: Request,
+        project_id: UUID,
+        run_id: UUID,
+        candidate_id: UUID,
+        document_asset_id: UUID,
+    ) -> Any:
+        if set(request.query_params) != {"document_asset_id"}:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        return call(
+            request,
+            project_id,
+            "file_access",
+            {
+                "run_id": str(run_id),
+                "candidate_id": str(candidate_id),
+                "document_id": str(document_asset_id),
+            },
+        )
+
+    @router.get("/{run_id}/candidates/{candidate_id}/files/{document_id}/download")
+    def file_download(
+        request: Request, project_id: UUID, run_id: UUID, candidate_id: UUID, document_id: UUID
+    ) -> Response:
+        if request.query_params:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        value = call(
+            request,
+            project_id,
+            "file_download",
+            {
+                "run_id": str(run_id),
+                "candidate_id": str(candidate_id),
+                "document_id": str(document_id),
+            },
+        )
+        return Response(
+            content=value["data"],
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": 'attachment; filename="paper.pdf"',
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+
     @router.get("/{run_id}/input-revisions")
     def inputs(
         request: Request,

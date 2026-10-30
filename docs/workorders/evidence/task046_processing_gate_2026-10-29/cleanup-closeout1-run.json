@@ -1,0 +1,8 @@
+{
+  "command": [
+    "python3",
+    "docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/verify_final_closeout.py"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": null
+}

@@ -1,6 +1,6 @@
 # Domain 附录：Construction 资产入库
 
-文档版本：v1.8
+文档版本：v1.9
 更新日期：2026-10-29
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义 Construction 的检索词、候选论文与资料、去重筛选、手动补充、文本处理和分析确认的业务对象与不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
@@ -125,6 +125,7 @@ Construction 不变量：
 - PDF 下载、文本解析、用户上传替代和重试结果必须收敛为一个可追溯的 DocumentProcessingState；后续 AI 分析、向量化、RAG 和综述引用只能读取其标记的最终可用文本来源。
 - Project 资料文件获取、文本解析、格式支持、不参与 KnowledgeVersion 和重试结果必须收敛为一个可追溯的 MaterialProcessingState；后续 AI 分析、向量化、RAG 和综述引用只能读取其标记的最终可用文本来源。
 - 摘要降级文本可进入后续分析、向量化或 RAG，但必须标记为摘要降级来源，不能冒充全文解析。
+- D-CW-04 B（2026-10-29用户决定）：同论文组按固定且可追溯的来源顺序选择首个可用全文；全部全文不可用时选择一份真实摘要降级，不融合不同原文。处理确认展示实际所用来源及其他来源，用户确认后才能进入分析；不将首成功来源称为权威或最新版本。
 - 下载解析阶段完成后，手动 ConstructionRun 必须由用户确认 DocumentProcessingState/MaterialProcessingState 摘要、失败项、摘要降级项和不参与知识构建项，才能进入 AI 分析阶段；自动 ConstructionRun 可由 AutoConfirmationPolicy 处理低风险确认，或对单项执行跳过、摘要降级和局部失败。
 - 手动 ConstructionRun 中，用户确认后的 PaperAnalysis 才能进入候选入库流程；自动 ConstructionRun 中，AutoConfirmationPolicy 确认后的 PaperAnalysis 可进入后续流程；正式研究读取承接 [02-02](02-02_construction_versioning_appendix.md) 的发布接口。
 - 手动 ConstructionRun 中，用户确认后的 MaterialAnalysis 才能进入候选入库流程；自动 ConstructionRun 中，AutoConfirmationPolicy 确认后的 MaterialAnalysis 可进入后续流程；正式研究读取承接 [02-02](02-02_construction_versioning_appendix.md) 的发布接口。

@@ -47,7 +47,11 @@ def refresh(run: Any) -> None:
 
 
 def correct(run: Any, body: Any, actor: Any) -> Any:
-    if run["status"] != "waiting_user" or run.get("phase") != "screening":
+    if run["status"] != "waiting_user" or run.get("phase") not in {
+        "screening",
+        "processing",
+        "analysis",
+    }:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     required = {"run_id", "candidate_id", "expected_revision", "decision", "reason"}
     if set(body) - (
@@ -98,11 +102,20 @@ def correct(run: Any, body: Any, actor: Any) -> Any:
     )
     decision.update(group_id=group, origin="human")
     refresh(run)
+    screening.bump(
+        run,
+        {
+            item["id"]
+            for item in run["candidates"]
+            if item["id"] == candidate["id"]
+            or item["deduplication"]["group_id"] in {previous, group}
+        },
+    )
     return candidate
 
 
 def summary(run: Any) -> dict[str, int] | None:
-    if run.get("phase") != "screening":
+    if run.get("phase") not in {"screening", "processing", "analysis"}:
         return None
     if run["status"] == "cancelled" and "deduplication_summary" in run:
         return dict(run["deduplication_summary"])

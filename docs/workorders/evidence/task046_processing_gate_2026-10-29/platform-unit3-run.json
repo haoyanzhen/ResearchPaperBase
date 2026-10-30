@@ -1,0 +1,13 @@
+{
+  "command": [
+    "backend/.venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/unit/test_pdf_engine_runtime.py",
+    "backend/tests/unit/test_pdf_processing.py",
+    "scripts/tests/test_construction_contracts.py",
+    "-q"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": " --junitxml=/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task046_processing_gate_2026-10-29/platform-unit3-tests.xml"
+}

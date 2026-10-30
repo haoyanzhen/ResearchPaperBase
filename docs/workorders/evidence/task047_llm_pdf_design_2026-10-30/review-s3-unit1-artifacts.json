@@ -1,0 +1,6 @@
+{
+  "backend/tests/unit/test_pdf_text_cleanup.py": "618c7c5a47db806bb3ff9511341dc48fa8cc85f0043304efb5d8c7a56f530649",
+  "backend/tests/unit/test_pdf_cleanup_capacity.py": "d70d04a8c3eea2db559126d373e50685fd5c1bfa483bac3f3b12546dfceea988",
+  "backend/tests/unit/test_pdf_cleanup_budget.py": "61e2f4a9e7591818fd33fae1e1b5ffab57600d2949b62639590984894028a13a",
+  "backend/tests/unit/test_pdf_cleanup_provider.py": "411fe3c919345bfc2cd1004dd1d435edfafa9b2bb0ad031960ea778e63c40f2c"
+}

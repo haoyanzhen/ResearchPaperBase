@@ -223,6 +223,10 @@
       "use_cases": "`Construction.AccessSupplementFile` / 023,024"
     },
     {
+      "signature": "GET `CR/candidates/{candidate_id}/processing-text`",
+      "use_cases": "`Construction.ReadProcessingText` / 024"
+    },
+    {
       "signature": "GET `CR/candidates/{candidate_id}/file-access`",
       "use_cases": "`Construction.AccessCandidateFile` / 024"
     },
@@ -624,7 +628,10 @@
     "Construction.CorrectDeduplication",
     "Construction.PreviewScoring",
     "Construction.ScoreCandidates",
-    "Construction.EditCandidate"
+    "Construction.EditCandidate",
+    "Construction.AccessCandidateFile",
+    "Construction.DownloadUnpublishedFile",
+    "Construction.ReadProcessingText"
   ],
   "request_only_operations": [
     "Admin.TestSystemSource",
@@ -705,7 +712,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "0946895c8abb4ab9110cb809632747cdbd3acedec86e02383f8a00bc816f111e",
+    "04-01_p0_operation_contracts.md": "d46521e6f8a7c178aa8536b2f8d70ea556fac26c6cc9c17cffd6599d7cc66ea8",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -1484,6 +1491,18 @@
       "gaps": [
         "GAP-RUNTIME"
       ]
+    },
+    "Construction.AccessCandidateFile": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "Supplement file transport remains outside this slice"
+      ]
+    },
+    "Construction.DownloadUnpublishedFile": {
+      "status": "request-success-errors-partial",
+      "gaps": [
+        "Supplement file transport remains outside this slice"
+      ]
     }
   },
   "row_coverage": [
@@ -2156,9 +2175,19 @@
       ]
     },
     {
-      "source_row_index": 55,
-      "status": "not-typed",
-      "typed_operations": {},
+      "status": "partial",
+      "typed_operations": {
+        "Construction.ReadProcessingText": "request-success-partial"
+      },
+      "remaining": [],
+      "source_row_index": 55
+    },
+    {
+      "source_row_index": 56,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.AccessCandidateFile": "request-success-errors-partial"
+      },
       "remaining": [
         {
           "use_case_or_route": "Construction.AccessCandidateFile",
@@ -2167,9 +2196,11 @@
       ]
     },
     {
-      "source_row_index": 56,
-      "status": "not-typed",
-      "typed_operations": {},
+      "source_row_index": 57,
+      "status": "partial",
+      "typed_operations": {
+        "Construction.DownloadUnpublishedFile": "request-success-errors-partial"
+      },
       "remaining": [
         {
           "use_case_or_route": "Construction.DownloadUnpublishedFile",
@@ -2178,7 +2209,7 @@
       ]
     },
     {
-      "source_row_index": 57,
+      "source_row_index": 58,
       "status": "partial",
       "typed_operations": {
         "Construction.ConfirmSupplement": "request-only"
@@ -2186,7 +2217,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 58,
+      "source_row_index": 59,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2197,7 +2228,7 @@
       ]
     },
     {
-      "source_row_index": 59,
+      "source_row_index": 60,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2208,7 +2239,7 @@
       ]
     },
     {
-      "source_row_index": 60,
+      "source_row_index": 61,
       "status": "partial",
       "typed_operations": {
         "Construction.ClearAssociations": "request-only"
@@ -2216,7 +2247,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 61,
+      "source_row_index": 62,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2231,7 +2262,7 @@
       ]
     },
     {
-      "source_row_index": 62,
+      "source_row_index": 63,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2242,7 +2273,7 @@
       ]
     },
     {
-      "source_row_index": 63,
+      "source_row_index": 64,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2253,7 +2284,7 @@
       ]
     },
     {
-      "source_row_index": 64,
+      "source_row_index": 65,
       "status": "partial",
       "typed_operations": {
         "Construction.AppendSearchTerms": "request-only"
@@ -2261,7 +2292,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 65,
+      "source_row_index": 66,
       "status": "partial",
       "typed_operations": {
         "Construction.ReplaceCandidateSource": "request-only"
@@ -2269,7 +2300,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 66,
+      "source_row_index": 67,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2280,7 +2311,7 @@
       ]
     },
     {
-      "source_row_index": 67,
+      "source_row_index": 68,
       "status": "partial",
       "typed_operations": {
         "Construction.EditCandidate": "request-success-errors-partial"
@@ -2288,7 +2319,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 68,
+      "source_row_index": 69,
       "status": "partial",
       "typed_operations": {
         "Construction.CorrectDeduplication": "request-success-errors-partial"
@@ -2296,7 +2327,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 69,
+      "source_row_index": 70,
       "status": "partial",
       "typed_operations": {
         "Construction.ScoreCandidates": "request-success-errors-partial"
@@ -2304,7 +2335,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 70,
+      "source_row_index": 71,
       "status": "partial",
       "typed_operations": {
         "Construction.GenerateAnalysis": "request-only"
@@ -2312,7 +2343,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 71,
+      "source_row_index": 72,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2323,7 +2354,7 @@
       ]
     },
     {
-      "source_row_index": 72,
+      "source_row_index": 73,
       "status": "partial",
       "typed_operations": {
         "Construction.ConfirmStep": "request-success-errors-partial"
@@ -2331,7 +2362,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 73,
+      "source_row_index": 74,
       "status": "partial",
       "typed_operations": {
         "Construction.Cancel": "request-only"
@@ -2339,7 +2370,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 74,
+      "source_row_index": 75,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2354,7 +2385,7 @@
       ]
     },
     {
-      "source_row_index": 75,
+      "source_row_index": 76,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2365,7 +2396,7 @@
       ]
     },
     {
-      "source_row_index": 76,
+      "source_row_index": 77,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2380,7 +2411,7 @@
       ]
     },
     {
-      "source_row_index": 77,
+      "source_row_index": 78,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2391,7 +2422,7 @@
       ]
     },
     {
-      "source_row_index": 78,
+      "source_row_index": 79,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2402,7 +2433,7 @@
       ]
     },
     {
-      "source_row_index": 79,
+      "source_row_index": 80,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2413,7 +2444,7 @@
       ]
     },
     {
-      "source_row_index": 80,
+      "source_row_index": 81,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2424,7 +2455,7 @@
       ]
     },
     {
-      "source_row_index": 81,
+      "source_row_index": 82,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2439,7 +2470,7 @@
       ]
     },
     {
-      "source_row_index": 82,
+      "source_row_index": 83,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2450,7 +2481,7 @@
       ]
     },
     {
-      "source_row_index": 83,
+      "source_row_index": 84,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2461,7 +2492,7 @@
       ]
     },
     {
-      "source_row_index": 84,
+      "source_row_index": 85,
       "status": "partial",
       "typed_operations": {
         "Research.SendMessage": "request-only"
@@ -2469,7 +2500,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 85,
+      "source_row_index": 86,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2480,7 +2511,7 @@
       ]
     },
     {
-      "source_row_index": 86,
+      "source_row_index": 87,
       "status": "partial",
       "typed_operations": {
         "Research.CancelResponse": "request-only"
@@ -2488,7 +2519,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 87,
+      "source_row_index": 88,
       "status": "partial",
       "typed_operations": {
         "Research.ContinueWithoutEvidence": "request-only"
@@ -2496,7 +2527,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 88,
+      "source_row_index": 89,
       "status": "partial",
       "typed_operations": {
         "Research.FixRange": "request-only"
@@ -2504,7 +2535,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 89,
+      "source_row_index": 90,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2515,7 +2546,7 @@
       ]
     },
     {
-      "source_row_index": 90,
+      "source_row_index": 91,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2526,7 +2557,7 @@
       ]
     },
     {
-      "source_row_index": 91,
+      "source_row_index": 92,
       "status": "partial",
       "typed_operations": {
         "Review.Create": "request-only"
@@ -2539,7 +2570,7 @@
       ]
     },
     {
-      "source_row_index": 92,
+      "source_row_index": 93,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2550,7 +2581,7 @@
       ]
     },
     {
-      "source_row_index": 93,
+      "source_row_index": 94,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2565,7 +2596,7 @@
       ]
     },
     {
-      "source_row_index": 94,
+      "source_row_index": 95,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2576,7 +2607,7 @@
       ]
     },
     {
-      "source_row_index": 95,
+      "source_row_index": 96,
       "status": "partial",
       "typed_operations": {
         "Review.ReviewOutline": "request-only"
@@ -2584,7 +2615,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 96,
+      "source_row_index": 97,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2599,7 +2630,7 @@
       ]
     },
     {
-      "source_row_index": 97,
+      "source_row_index": 98,
       "status": "partial",
       "typed_operations": {
         "Review.GenerateOutline": "request-only"
@@ -2607,7 +2638,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 98,
+      "source_row_index": 99,
       "status": "partial",
       "typed_operations": {
         "Review.ConfirmOutline": "request-only"
@@ -2615,7 +2646,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 99,
+      "source_row_index": 100,
       "status": "partial",
       "typed_operations": {
         "Review.EditChapter": "request-only"
@@ -2628,7 +2659,7 @@
       ]
     },
     {
-      "source_row_index": 100,
+      "source_row_index": 101,
       "status": "partial",
       "typed_operations": {
         "Review.GenerateChapter": "request-only"
@@ -2636,7 +2667,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 101,
+      "source_row_index": 102,
       "status": "partial",
       "typed_operations": {
         "Review.ReviewChapter": "request-only"
@@ -2644,7 +2675,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 102,
+      "source_row_index": 103,
       "status": "partial",
       "typed_operations": {
         "Review.ConfirmChapter": "request-only"
@@ -2652,7 +2683,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 103,
+      "source_row_index": 104,
       "status": "partial",
       "typed_operations": {
         "Review.ResolveChapterIssue": "request-only"
@@ -2660,7 +2691,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 104,
+      "source_row_index": 105,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2671,7 +2702,7 @@
       ]
     },
     {
-      "source_row_index": 105,
+      "source_row_index": 106,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2682,7 +2713,7 @@
       ]
     },
     {
-      "source_row_index": 106,
+      "source_row_index": 107,
       "status": "partial",
       "typed_operations": {
         "Review.ReviewFinal": "request-only"
@@ -2690,7 +2721,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 107,
+      "source_row_index": 108,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2701,7 +2732,7 @@
       ]
     },
     {
-      "source_row_index": 108,
+      "source_row_index": 109,
       "status": "partial",
       "typed_operations": {
         "Review.EditFinal": "request-only"
@@ -2709,7 +2740,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 109,
+      "source_row_index": 110,
       "status": "partial",
       "typed_operations": {
         "Review.RegenerateFinalComponents": "request-only"
@@ -2717,7 +2748,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 110,
+      "source_row_index": 111,
       "status": "partial",
       "typed_operations": {
         "Review.ResolveFinalIssue": "request-only"
@@ -2725,7 +2756,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 111,
+      "source_row_index": 112,
       "status": "partial",
       "typed_operations": {
         "Review.RejectFinal": "request-only"
@@ -2733,7 +2764,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 112,
+      "source_row_index": 113,
       "status": "partial",
       "typed_operations": {
         "Review.Complete": "request-only"
@@ -2741,7 +2772,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 113,
+      "source_row_index": 114,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2752,7 +2783,7 @@
       ]
     },
     {
-      "source_row_index": 114,
+      "source_row_index": 115,
       "status": "partial",
       "typed_operations": {
         "Review.CancelGeneration": "request-only"
@@ -2760,7 +2791,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 115,
+      "source_row_index": 116,
       "status": "partial",
       "typed_operations": {
         "Review.FixRange": "request-only"
@@ -2768,7 +2799,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 116,
+      "source_row_index": 117,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2779,7 +2810,7 @@
       ]
     },
     {
-      "source_row_index": 117,
+      "source_row_index": 118,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2795,7 +2826,7 @@
         "MaterialPolicy.Read": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 118
+      "source_row_index": 119
     },
     {
       "status": "partial",
@@ -2803,7 +2834,7 @@
         "MaterialPolicy.Update": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 119
+      "source_row_index": 120
     },
     {
       "status": "partial",
@@ -2811,7 +2842,7 @@
         "MaterialSource.ReadClassification": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 120
+      "source_row_index": 121
     },
     {
       "status": "partial",
@@ -2819,7 +2850,7 @@
         "MaterialSource.ConfirmClassification": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 121
+      "source_row_index": 122
     },
     {
       "status": "partial",
@@ -2827,10 +2858,10 @@
         "MaterialSource.CorrectClassification": "request-success-errors-partial"
       },
       "remaining": [],
-      "source_row_index": 122
+      "source_row_index": 123
     },
     {
-      "source_row_index": 123,
+      "source_row_index": 124,
       "status": "partial",
       "typed_operations": {
         "Config.ReadSelection": "request-success-partial"
@@ -2838,7 +2869,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 124,
+      "source_row_index": 125,
       "status": "partial",
       "typed_operations": {
         "Admin.ReadSMTP": "request-success-partial"
@@ -2846,7 +2877,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 125,
+      "source_row_index": 126,
       "status": "partial",
       "typed_operations": {
         "Admin.ReadSecurity": "request-success-partial"
@@ -2854,7 +2885,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 126,
+      "source_row_index": 127,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2865,7 +2896,7 @@
       ]
     },
     {
-      "source_row_index": 127,
+      "source_row_index": 128,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2876,7 +2907,7 @@
       ]
     },
     {
-      "source_row_index": 128,
+      "source_row_index": 129,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2887,7 +2918,7 @@
       ]
     },
     {
-      "source_row_index": 129,
+      "source_row_index": 130,
       "status": "partial",
       "typed_operations": {
         "Task.ReadConnectionResult": "request-success-partial"
@@ -2895,7 +2926,7 @@
       "remaining": []
     },
     {
-      "source_row_index": 130,
+      "source_row_index": 131,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2906,7 +2937,7 @@
       ]
     },
     {
-      "source_row_index": 131,
+      "source_row_index": 132,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2917,7 +2948,7 @@
       ]
     },
     {
-      "source_row_index": 132,
+      "source_row_index": 133,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2928,7 +2959,7 @@
       ]
     },
     {
-      "source_row_index": 133,
+      "source_row_index": 134,
       "status": "not-typed",
       "typed_operations": {},
       "remaining": [
@@ -2939,7 +2970,7 @@
       ]
     },
     {
-      "source_row_index": 134,
+      "source_row_index": 135,
       "status": "partial",
       "typed_operations": {
         "System.ReadCapabilities": "request-success-partial"
@@ -3162,8 +3193,18 @@
     "remaining": [
       "global identity and existing members",
       "materials",
-      "screening confirmation with parsing",
       "full metadata/analysis candidate patch"
+    ]
+  },
+  "construction_processing": {
+    "scope": "Run paper screening confirmation, PDF preparation/fallback, processing confirmation and unpublished file reads; selected LLM text cleanup and authorized raw/clean comparison (verification in task047)",
+    "tests": "backend/tests/integration/test_paper_processing.py",
+    "remaining": [
+      "supplement upload/source replacement",
+      "global existing identity",
+      "materials",
+      "analysis",
+      "published knowledge"
     ]
   }
 }

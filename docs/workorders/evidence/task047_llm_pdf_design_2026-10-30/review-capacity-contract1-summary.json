@@ -1,0 +1,41 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-capacity-contract1.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 3,
+    "passed": 0,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "docs.workorders.evidence.task047_llm_pdf_design_2026-10-30.review_capacity_contract_probe::test_trailing_linebreak_model_id_rejected_by_contract[LLMWrite]",
+      "message": "AssertionError: assert not True\n +  where True = is_valid({'model-a\\n': 262144})\n +    where is_valid = Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None).is_valid\n +      where Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None) = Draft202012Validator({'type': 'object', 'maxProperties': 1000, 'propertyNames': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$'}, 'additionalProperties': {'type': 'integer', 'minimum': 1, 'maximum': 2147483647}, ...})\nname = 'LLMWrite'\n\n    @pytest.mark.parametrize(\"name\",[\"LLMWrite\",\"LLMPatch\",\"LLMView\"])\n    def test_trailing_linebreak_model_id_rejected_by_contract(name):\n     schema=json.loads(Path(\"contracts/p0.openapi.json\").read_text())[\"components\"][\"schemas\"][name][\"properties\"][\"model_context_windows\"]\n>    assert not Draft202012Validator(schema).is_valid({\"model-a\\n\":262144})\nE    AssertionError: assert not True\nE     +  where True = is_valid({'model-a\\n': 262144})\nE     +    where is_valid = Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None).is_valid\nE     +      where Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None) = Draft202012Validator({'type': 'object', 'maxProperties': 1000, 'propertyNames': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$'}, 'additionalProperties': {'type': 'integer', 'minimum': 1, 'maximum': 2147483647}, ...})\n\ndocs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_capacity_contract_probe.py:9: AssertionError",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": false
+    },
+    {
+      "test": "docs.workorders.evidence.task047_llm_pdf_design_2026-10-30.review_capacity_contract_probe::test_trailing_linebreak_model_id_rejected_by_contract[LLMPatch]",
+      "message": "AssertionError: assert not True\n +  where True = is_valid({'model-a\\n': 262144})\n +    where is_valid = Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None).is_valid\n +      where Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None) = Draft202012Validator({'type': 'object', 'maxProperties': 1000, 'propertyNames': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$'}, 'additionalProperties': {'type': 'integer', 'minimum': 1, 'maximum': 2147483647}, ...})\nname = 'LLMPatch'\n\n    @pytest.mark.parametrize(\"name\",[\"LLMWrite\",\"LLMPatch\",\"LLMView\"])\n    def test_trailing_linebreak_model_id_rejected_by_contract(name):\n     schema=json.loads(Path(\"contracts/p0.openapi.json\").read_text())[\"components\"][\"schemas\"][name][\"properties\"][\"model_context_windows\"]\n>    assert not Draft202012Validator(schema).is_valid({\"model-a\\n\":262144})\nE    AssertionError: assert not True\nE     +  where True = is_valid({'model-a\\n': 262144})\nE     +    where is_valid = Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None).is_valid\nE     +      where Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None) = Draft202012Validator({'type': 'object', 'maxProperties': 1000, 'propertyNames': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$'}, 'additionalProperties': {'type': 'integer', 'minimum': 1, 'maximum': 2147483647}, ...})\n\ndocs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_capacity_contract_probe.py:9: AssertionError",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": false
+    },
+    {
+      "test": "docs.workorders.evidence.task047_llm_pdf_design_2026-10-30.review_capacity_contract_probe::test_trailing_linebreak_model_id_rejected_by_contract[LLMView]",
+      "message": "AssertionError: assert not True\n +  where True = is_valid({'model-a\\n': 262144})\n +    where is_valid = Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None).is_valid\n +      where Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None) = Draft202012Validator({'type': 'object', 'maxProperties': 1000, 'propertyNames': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$'}, 'additionalProperties': {'type': 'integer', 'minimum': 1, 'maximum': 2147483647}, ...})\nname = 'LLMView'\n\n    @pytest.mark.parametrize(\"name\",[\"LLMWrite\",\"LLMPatch\",\"LLMView\"])\n    def test_trailing_linebreak_model_id_rejected_by_contract(name):\n     schema=json.loads(Path(\"contracts/p0.openapi.json\").read_text())[\"components\"][\"schemas\"][name][\"properties\"][\"model_context_windows\"]\n>    assert not Draft202012Validator(schema).is_valid({\"model-a\\n\":262144})\nE    AssertionError: assert not True\nE     +  where True = is_valid({'model-a\\n': 262144})\nE     +    where is_valid = Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None).is_valid\nE     +      where Draft202012Validator(schema={'additionalProperties': {'maximum': 2147483647, 'minimum': 1, 'type': 'integer'}, 'descri...: {'maxLength': 200, 'minLength': 1, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$', 'type': 'string'}, ...}, format_checker=None) = Draft202012Validator({'type': 'object', 'maxProperties': 1000, 'propertyNames': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'pattern': '^\\\\S(?:[\\\\s\\\\S]*\\\\S)?$'}, 'additionalProperties': {'type': 'integer', 'minimum': 1, 'maximum': 2147483647}, ...})\n\ndocs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_capacity_contract_probe.py:9: AssertionError",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": false
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

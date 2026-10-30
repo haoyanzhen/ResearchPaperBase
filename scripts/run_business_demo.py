@@ -15,13 +15,16 @@ from cryptography.fernet import Fernet
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
 from rpb.adapters.auth import AccountStore
 from rpb.adapters.llm import LLMStore
 from rpb.adapters.llm_provider import HTTPProvider
 from rpb.adapters.llm_worker import LLMWorker
+from rpb.adapters.paper_processing import ProcessingWorker
 from rpb.adapters.paper_retrieval import PaperRetrieval
 from rpb.adapters.paper_scoring_worker import ScoreProvider, ScoreWorker
+from rpb.adapters.pdf_cleanup_provider import CleanupProvider
+from rpb.adapters.pdf_cleanup_worker import CleanupWorker
+from rpb.adapters.pdf_processing import PDFProvider
 from rpb.adapters.run_worker import RunWorker
 from rpb.adapters.search_term_worker import TermProvider, TermWorker
 from rpb.adapters.smtp_worker import SMTPWorker
@@ -69,7 +72,9 @@ def create_demo(
         with engine.begin() as conn:
             cfg = Config(str(ROOT / "backend/alembic.ini"))
             cfg.attributes.update(connection=conn, test_run_id=run_id)
-            command.upgrade(cfg, "head")  # Checks database, role, marker and privileges.
+            command.upgrade(
+                cfg, "head"
+            )  # Checks database, role, marker and privileges.
         app = create_business_app(engine, f"http://127.0.0.1:{port}", encryption_key)
         app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
@@ -110,8 +115,12 @@ def main() -> None:
     stopped = Event()
     worker = LLMWorker(LLMStore(AccountStore(engine), key), HTTPProvider())
 
-    system_worker = LLMWorker(LLMStore(AccountStore(engine), key, system=True), HTTPProvider())
-    source_worker = SourceWorker(SourceStore(AccountStore(engine), key), SourceProvider())
+    system_worker = LLMWorker(
+        LLMStore(AccountStore(engine), key, system=True), HTTPProvider()
+    )
+    source_worker = SourceWorker(
+        SourceStore(AccountStore(engine), key), SourceProvider()
+    )
 
     system_source_worker = SourceWorker(
         SourceStore(AccountStore(engine), key, system=True), SourceProvider()
@@ -121,6 +130,10 @@ def main() -> None:
     term_worker = TermWorker(app.state.term_store, TermProvider())
     run_worker = RunWorker(app.state.run_store, PaperRetrieval())
     score_worker = ScoreWorker(app.state.run_store, ScoreProvider())
+    processing_worker = ProcessingWorker(app.state.run_store, PDFProvider())
+    cleanup_worker = CleanupWorker(
+        app.state.run_store, PDFProvider(), CleanupProvider()
+    )
 
     def work() -> None:
         while not stopped.is_set():
@@ -129,7 +142,13 @@ def main() -> None:
             system_work = system_worker.run_once()
             system_source_work = system_source_worker.run_once()
             smtp_work = smtp_worker.run_once()
-            term_work = term_worker.run_once() or run_worker.run_once() or score_worker.run_once()
+            term_work = (
+                term_worker.run_once()
+                or run_worker.run_once()
+                or score_worker.run_once()
+                or processing_worker.run_once()
+                or cleanup_worker.run_once()
+            )
             if not (
                 llm_work
                 or source_work

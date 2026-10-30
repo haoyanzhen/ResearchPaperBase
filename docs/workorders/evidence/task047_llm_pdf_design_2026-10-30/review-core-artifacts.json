@@ -1,0 +1,7 @@
+{
+  "backend/src/rpb/adapters/pdf_text_cleanup.py": "d2c79752cc23df5c6c8aac4dcb786f5e12eba80d26dbae70ddd0278824d32d25",
+  "backend/src/rpb/adapters/pdf_cleanup_provider.py": "7f6ac67bcc4fde498d0b66aca21c6878d6cb3a8e1c10213ae1fa7fcf40f6a258",
+  "backend/tests/unit/test_pdf_text_cleanup.py": "618c7c5a47db806bb3ff9511341dc48fa8cc85f0043304efb5d8c7a56f530649",
+  "backend/tests/unit/test_pdf_cleanup_provider.py": "1d3d94c50418a85f61c1a8190a52d79bc4c6fcb088f34a16e3d2fce1125a5e50",
+  "docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_core_probes.py": "223ea8f306687133b6dfbcd01d8207b2758ba24a20436ee034883f249dd4cd60"
+}

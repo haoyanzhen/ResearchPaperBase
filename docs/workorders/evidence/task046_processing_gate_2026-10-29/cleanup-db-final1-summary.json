@@ -1,0 +1,16 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task046_processing_gate_2026-10-29/cleanup-db-final1-tests.xml",
+  "exit_code": 0,
+  "status": "reported_pass",
+  "counts": {
+    "tests": 157,
+    "passed": 157,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

@@ -18,6 +18,10 @@ from rpb.adapters.account import accounts
 from rpb.adapters.auth import AccountStore
 from rpb.adapters.llm_tables import audit, commands, configs, selections, tasks
 from rpb.modules.account_config.application.ports import AccountError
+from rpb.modules.account_config.domain.context_capacity import (
+    context_window,
+    validate_context_windows,
+)
 from rpb.modules.account_config.domain.llm_profiles import compile_for_model
 from rpb.modules.account_config.domain.parameters import ParameterError, client_timeout
 
@@ -185,6 +189,7 @@ class LLMStore:
                         "source": "system" if self.system else "user",
                         "config_id": str(config["id"]),
                         "model_id": name,
+                        "context_window_tokens": context_window(config["data"], name),
                         "label": ("系统 / " if self.system else "个人 / ")
                         + config["data"]["name"]
                         + " / "
@@ -221,6 +226,7 @@ class LLMStore:
             "created_at": row["created_at"].isoformat().replace("+00:00", "Z"),
             "updated_at": row["updated_at"].isoformat().replace("+00:00", "Z"),
             **row["data"],
+            "model_context_windows": row["data"].get("model_context_windows", {}),
             "secret": {"configured": row["secret_ciphertext"] is not None, "hint": None},
             "connection_status": "available"
             if any(x["available"] for x in opts)
@@ -300,6 +306,7 @@ class LLMStore:
             "protocol",
             "api_version",
             "timeout_seconds",
+            "model_context_windows",
         }:
             raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
         if not isinstance(result.get("name"), str) or not 1 <= len(result["name"].strip()) <= 200:
@@ -343,6 +350,12 @@ class LLMStore:
         }
         if result["protocol"] not in allowed[result["provider"]]:
             raise AccountError("VALIDATION_FIELD_INVALID", 422)
+        try:
+            result["model_context_windows"] = validate_context_windows(
+                result.get("model_context_windows", {})
+            )
+        except ValueError:
+            raise AccountError("VALIDATION_FIELD_INVALID", 422) from None
         result.setdefault("parameters", {})
         result.setdefault("api_version", "2023-06-01" if result["provider"] == "anthropic" else "")
         if (

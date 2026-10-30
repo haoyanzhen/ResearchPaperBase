@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-acceptance.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 726,
+  "read_start_byte": 0,
+  "text": "{\n  \"accepted_at\": \"2026-10-30 Asia/Shanghai\",\n  \"user_statement\": \"M-P0-15通过，继续下一阶段\",\n  \"head\": \"f5d5b1970c8e3d621056aec77d89c7ac93ea418c\",\n  \"accepted_head\": \"f5d5b1970c8e3d621056aec77d89c7ac93ea418c\",\n  \"manifest_count\": 43,\n  \"accepted_count\": 43,\n  \"old_manifest_to_acceptance_changed\": [\n    \"docs/PROJECT_STATUS.md\",\n    \"tasks/046-paper-processing-gate.md\"\n  ],\n  \"acceptance_to_current_changed\": [\n    \"docs/PROJECT_STATUS.md\",\n    \"tasks/046-paper-processing-gate.md\"\n  ],\n  \"known_gaps\": [\n    \"Linux容器实测未通过，镜像获取EOF\",\n    \"Windows宿主未实测\"\n  ],\n  \"commit\": \"deferred: mandatory platform verification is incomplete\",\n  \"current_staged\": \"\",\n  \"accepted_staged\": \"\"\n}\n",
+  "truncated": false
+}

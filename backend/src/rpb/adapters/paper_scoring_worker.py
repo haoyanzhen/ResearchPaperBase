@@ -284,7 +284,21 @@ class ScoreWorker:
                 "failed" if len(errors) == len(results) else "succeeded",
                 errors[0] if errors else None,
             )
-            screening.bump(run)
+            if len(errors) == len(results) and job.get("return_phase") in {
+                "processing",
+                "analysis",
+            }:
+                run["phase"] = job["return_phase"]
+            else:
+                screening.bump(
+                    run,
+                    {
+                        member["candidate_id"]
+                        for group, result in zip(job["input"]["groups"], results, strict=True)
+                        if not result["error"]
+                        for member in group["sources"]
+                    },
+                )
             transition(run, "waiting_user")
             persist(conn, run)
         return True

@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task046_processing_gate_2026-10-29/accepted-m16-check2.log",
+  "exit_code": 1,
+  "report_type": "log",
+  "status": "failed",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 1167,
+  "read_start_byte": 0,
+  "text": "docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-core1.xml:9: trailing whitespace.\n+docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_core_probes.py:16: \ndocs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-core1.xml:10: trailing whitespace.\n+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \ndocs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-worker1.xml:25: trailing whitespace.\n+E         \nTraceback (most recent call last):\n  File \"/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_acceptance_2026-10-30/verify_commit.py\", line 34, in <module>\n    subprocess.run(['git','diff','--cached','--check'],check=True)\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 578, in run\n    raise CalledProcessError(retcode, process.args,\n                             output=stdout, stderr=stderr)\nsubprocess.CalledProcessError: Command '['git', 'diff', '--cached', '--check']' returned non-zero exit status 2.\n",
+  "truncated": false
+}

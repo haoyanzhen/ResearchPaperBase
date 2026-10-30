@@ -10,6 +10,7 @@ dependencies = [
     "psycopg[binary]>=3,<4",
     "alembic>=1,<2",
     "cryptography>=46,<47",
+    "pypdf>=6,<7",
 ]
 [project.scripts]
 rpb-api = "rpb.bootstrap.api:main"

@@ -1,0 +1,1 @@
+{"command": ["backend/.venv/bin/python", "-m", "pytest", "scripts/tests/test_llm_parameter_contracts.py", "-q", "--junitxml=docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-capacity-contract-suite1.xml"], "exit_code": 0}

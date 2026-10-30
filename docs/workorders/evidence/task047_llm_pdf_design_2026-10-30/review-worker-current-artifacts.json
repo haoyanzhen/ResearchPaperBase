@@ -1,0 +1,12 @@
+{
+  "backend/src/rpb/adapters/pdf_cleanup_capacity.py": "e8285a1796c66bb6d5a6240853084cf1c0c5e2cb2530cd25dac4593ce3f57e1f",
+  "backend/src/rpb/adapters/pdf_cleanup_provider.py": "18144d6743ec098b10324e7082273f4b7211f28981dea5531b2bba348d61aac8",
+  "backend/src/rpb/adapters/pdf_cleanup_worker.py": "e2352ef23539dd56a0bdc39ca4537ae20cb57c55e362e60a9789c1d2440eb88d",
+  "backend/src/rpb/adapters/pdf_cleanup_budget.py": "21ba0a8de15413be0fd3935efa9d163a3a2902abfc57b92498a17e4e8b98afe0",
+  "backend/src/rpb/adapters/paper_processing.py": "029f0a3aa005bac83fa4e653352cceb4f0faa5a47ae5841b1ebc36c09f15be12",
+  "backend/src/rpb/adapters/runs.py": "b7c832c878b69d3dc9d90dd1828cb9c47bdcc09b4c8c3e3c79e898da8d42f305",
+  "backend/src/rpb/adapters/run_worker.py": "9e3fa7702628ecdb3f916dc356f0e9013ef2a1215cfd6fffac872ce0aeb933dc",
+  "backend/tests/unit/test_pdf_cleanup_capacity.py": "a652f8db66013a2f3e404247345e28243e8c0afa2b564a61b88e89587f87e83b",
+  "backend/tests/unit/test_pdf_cleanup_provider.py": "134288dd4e55e92de18032f20bf794d9bd617774830e0d9204a6cf0d134cf949",
+  "backend/tests/integration/test_pdf_cleanup.py": "6174d9d093119b5346a1c82503d387e1feed5f7b8314795aa588eefe7198a861"
+}

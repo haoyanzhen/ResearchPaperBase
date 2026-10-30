@@ -1,0 +1,8 @@
+{
+  "command": [
+    "backend/.venv/bin/mypy",
+    "backend/src"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": null
+}

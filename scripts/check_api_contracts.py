@@ -129,7 +129,15 @@ def check(spec, coverage):
     def bounded(node, location='$'):
         if isinstance(node, dict):
             if node.get('type') == 'object' or (isinstance(node.get('type'), list) and 'object' in node['type']):
-                assert 'properties' in node and node.get('additionalProperties') is False, f'unbounded object: {location}'
+                capacity_map = (
+                    location in {'$/components/schemas/' + name + '/properties/model_context_windows'
+                                 for name in ('LLMWrite', 'LLMPatch', 'LLMView')}
+                    and node.get('maxProperties') == 1000
+                    and node.get('propertyNames') == {'type': 'string', 'minLength': 1, 'maxLength': 200, 'pattern': r'^\S(?:[\s\S]*\S)?(?![\s\S])'}
+                    and node.get('additionalProperties') == {
+                        'type': 'integer', 'minimum': 1, 'maximum': 2147483647}
+                )
+                assert capacity_map or ('properties' in node and node.get('additionalProperties') is False), f'unbounded object: {location}'
             for key, val in node.items():
                 bounded(val, location + '/' + key)
         elif isinstance(node, list):

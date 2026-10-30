@@ -1,7 +1,7 @@
 # 项目进度与待完成项
 
-文档版本：v1.105
-更新日期：2026-10-29
+文档版本：v1.117
+更新日期：2026-10-30
 适用项目大版本：v1
 
 ## 1. 用途与维护规则
@@ -14,9 +14,9 @@
 
 | 范围 | 当前状态及限定证据 |
 | --- | --- |
-| 交付流程 | [task038](../tasks/038-workflow-efficiency.md)落实用户2026-10-28授权：减少重复上下文、按有效基线增量审查、里程碑人工接受后提交Git；文档工程收口、246链接/锚点检查及独立审查通过；不扩大业务授权 |
-| 当前业务切片 | [task044](../tasks/044-paper-scoring-input-gate.md)评分、来源与冻结模型依据、人工调整及受保护重评已工程收口并获M-P0-14接受；解析确认、全局身份、资料与知识发布仍开放。 |
-| 最近业务里程碑 | M-P0-14于2026-10-29获用户明确接受，见[验收包](workorders/task044_screening_delivery_2026-10-29.md)及task044第9节。业务产物与handoff无漂移，复用check10/build4/storage10与独立复审；本轮仅接受核验，不重跑旧业务测试。M-P0-13已本地提交cb9b28f。 |
+| 交付流程 | [task045](../tasks/045-commit-verification.md)完成上一轮提交调用审计及最小核验包：未发现旧业务测试重跑，修复重复文档读取/新旧阶段混记风险；文档核验与独立审查通过。保留[task043](../tasks/043-delivery-tool-adoption.md)定向读取/摘要采用和[task041](../tasks/041-token-efficiency.md)工具，必要基线、受影响验证及审查不削弱；不改业务授权，不宣称token降幅 |
+| 当前业务切片 | [task047](../tasks/047-llm-pdf-extraction-design.md#11-m-p0-16验收包与最终检查点2026-10-30) D-PDF-01–04已实施：文字PDF整理、分类后自动续作、模型容量默认256K可改、仅本引擎输出未填默认4096，原始/整理全文对比及持久预算。本机最终157项持久化/浏览器、433项单元/架构、48项契约通过；独立S3/S6复核通过。M-P0-16于2026-10-30获人工接受并授权本地提交；平台实测按用户决定移至下一大阶段TRACK-023，当前L0不做，未调用真实模型 |
+| 最近业务里程碑 | M-P0-15于2026-10-30获用户明确接受，见[task046第13节](../tasks/046-paper-processing-gate.md#13-m-p0-15人工接受与交接2026-10-30)。人工接受与工程验证分列：PDF/契约44项及独立48项通过；Linux容器实测未通过、Windows宿主未实测；2026-10-30用户明确延期至下一大阶段（TRACK-023），当前L0提交阻塞解除。M-P0-14已本地提交f5d5b19（未push），其接受和证据保留 |
 | 已交付业务基础 | 账号注册登录、本人Project与基础维护、个人/系统LLM和论文源配置、管理员账号治理、SMTP及基础安全已有局部交付；接受范围分别见[task019](../tasks/019-browser-milestone.md)、[task022](../tasks/022-project-maintenance.md)、[task026](../tasks/026-llm-parameter-runtime.md)、[task028](../tasks/028-personal-source-runtime.md)、[task029](../tasks/029-admin-accounts.md)、[task031](../tasks/031-system-llm-runtime.md)、[task033](../tasks/033-system-source-runtime.md)、[task035](../tasks/035-smtp-security-runtime.md)。不代表完整FR或当前工作区重新验收 |
 | 设计及工程基础 | A01–A10历史设计/骨架及限定接受见[历史快照](workorders/project_status_history_2026-10-28.md#2-当前进度概览)；现行规范入口为[设计索引](design/README.md)。旧应用仅保留archive候选片段；旧测试不能验收新核心 |
 | 尚未交付的整体能力 | 真实Construction检索/解析/分析及知识版本发布、Research Session、Review Run、Graph-RAG运行闭环和生产部署仍未整体交付；Memory及其他延期范围保持原分期。当前不提供整体完成百分比 |
@@ -51,7 +51,12 @@
 | TRACK-019 | 引用有效性与版本选择实现验收 | 待开始 | [设计评审](workorders/knowledge_citation_selection_review_2026-10-16.md)、02-02 §2.6–2.7、04-01 §5.1、09 §4.2 | 按已细化设计实现不可变引用解析、目标版本新引用、范围/风险投影及显式版本选择；执行 KV-C01–C05/KV-V01–V05；跨 Project 联合引用不在范围；引用规范与空版本消费已按R1/R3及补充决定关闭，后续验收不得恢复旧覆盖率或空版创建禁令 |
 | TRACK-021 | 资料策略跨层契约与实现接入 | Q1–Q4已闭合；A05修复待人工接受；A06设计获限定接受且S7收口，运行待收口 | [08-01 §11](design/08-01_agent_data_access_policy.md#11-闭合检查与剩余工作) | A05设置/分类/错误子集及来源只读字段见[task007审核包](workorders/task007_a05_review_2026-10-22.md)；A06内部设计已获接受并收口，见[task008审核包](workorders/task008_internal_contract_review_2026-10-23.md)；G01/G03剩余完整载体与可信来源运行消费、G02缓存/派发/提交及迁移验证仍开放；不再请求Q1–Q4决定。G04已按用户决定关闭：P1互联网公开来源自动public，内网通常不纳入，见08-01 §4.4；工程收口仍需落实自动来源记录和对应测试；见[检查记录](workorders/agent_data_policy_closure_2026-10-21.md) |
 | TRACK-022 | 运行目标OPS-D01 | 方案A已定；数值目标待明确 | [10 §9](design/10_operations_deployment.md#9-待决策的运行目标)；TRACK-007c/009b/011b | 已选单部署、管理员始终可授权计划停机、人工恢复；不采纳前轮示例RPO/RTO/备份周期，实际部署前再明确必要目标；实际证据复用既有跟踪项 |
+| TRACK-023 | Windows/Linux PDF隔离解析实测 | 延期至L0之后的下一大阶段；当前L0不做，不阻塞本轮提交 | 2026-10-30用户明确决定；[task047第12节](../tasks/047-llm-pdf-extraction-design.md#12-m-p0-16人工接受与git交接2026-10-30)、[task046第14节](../tasks/046-paper-processing-gate.md#14-平台实测分期调整2026-10-30) | 在Windows宿主及Linux实际容器环境运行现有隔离解析用例，核验成功、拒绝/超时/资源限制及清理，保存真实执行日志、退出码和独立复核；目前Windows未实测、Linux镜像获取失败/实测未通过，不能以macOS或mock证据关闭。本待办不构成下一阶段执行授权 |
 
 ## 4. 历史记录与验证
 
 精简前v1.90全部正文见[2026-10-28历史快照](workorders/project_status_history_2026-10-28.md)，更早附件见[项目状态附件](PROJECT_STATUS_APPENDIX.md)。归档保留原始接受/失败/待审记录的历史含义；当前状态以本页及所引任务最终检查点为准。本轮流程变更、文档检查及独立审查见[task038](../tasks/038-workflow-efficiency.md)，未重跑业务测试。
+
+2026-10-29每日整理：从10月27日成功快照核对85个源文件增量，入场388文件与task042 handoff一致；未重跑业务测试。拆解清单已衔接task036–042，task030区分已接入与剩余配置消费者，task042补DD-G01–06规划，逐子条目/全项目测试覆盖仍开放。检查及基线见[本轮报告](workorders/nightly_maintenance_2026-10-29.md)。
+
+2026-10-30每日整理：从10月29日成功快照核对62个源文件增量（23新增、39修改），含未提交/未跟踪文件。拆解清单衔接task043–046，task042限定旧证据时点并交接评分，task046新增PP-G01–06剩余规划；平台真实验证及M-P0-15仍开放，未重跑业务测试。证据、文档检查和新基线见[本轮报告](workorders/nightly_maintenance_2026-10-30.md)。

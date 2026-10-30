@@ -1,0 +1,1 @@
+{"command": ["python3", "scripts/check_api_contracts.py"], "exit_code": 1}

@@ -1,0 +1,8 @@
+{
+  "backend/src/rpb/adapters/pdf_cleanup_worker.py": "f15336924a4585a6feccff4876a8017ec08ac5b1a8a8afa22ef96a1bc96d032a",
+  "backend/src/rpb/adapters/paper_processing.py": "029f0a3aa005bac83fa4e653352cceb4f0faa5a47ae5841b1ebc36c09f15be12",
+  "backend/src/rpb/adapters/pdf_cleanup_capacity.py": "e8285a1796c66bb6d5a6240853084cf1c0c5e2cb2530cd25dac4593ce3f57e1f",
+  "backend/src/rpb/adapters/pdf_cleanup_provider.py": "18144d6743ec098b10324e7082273f4b7211f28981dea5531b2bba348d61aac8",
+  "backend/src/rpb/adapters/runs.py": "b7c832c878b69d3dc9d90dd1828cb9c47bdcc09b4c8c3e3c79e898da8d42f305",
+  "backend/tests/integration/test_pdf_cleanup.py": "c99a39f383e95ad9183ee0b3d40450f1afff46ace8eca1f3c07ddc709cbaa1b3"
+}

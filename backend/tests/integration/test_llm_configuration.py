@@ -561,7 +561,7 @@ def test_lc20_populated_migration_refuses_and_preserves_secrets(llm, db):
         assert after == ciphertext and Fernet(key).decrypt(after) == b"SENSITIVE-KEY-123"
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0014_construction_runs"
+            == "0015_processing_objects"
         )
 
 
@@ -630,3 +630,36 @@ def test_lc22_audit_failure_rolls_back_configuration_and_command(llm, db):
         for table in [configs, audit, commands]:
             assert conn.scalar(sa.select(sa.func.count()).select_from(table)) == 0
     assert provider.calls == [] and "SENSITIVE" not in response.text
+
+
+def test_lc23_model_context_capacity_defaults_persistence_and_revision(llm):
+    c, h, worker, provider, _ = llm
+    initial = create(c, h).json()["data"]
+    assert initial["model_context_windows"] == {}
+    assert start(c, h, initial).status_code == 202
+    assert worker.run_once()
+    current = c.get("/api/v1/me/llm-configs/" + initial["id"]).json()["data"]
+    assert current["models"][0]["context_window_tokens"] == 262144
+    changed = patch(c, h, current, model_context_windows={"model-a": 524288}).json()["data"]
+    assert changed["model_context_windows"] == {"model-a": 524288}
+    assert changed["revision"] != current["revision"]
+    assert len(provider.calls) == 1
+    assert patch(c, h, current, model_context_windows={}).status_code == 412
+    assert start(c, h, changed).status_code == 202
+    assert worker.run_once()
+    loaded = c.get("/api/v1/me/llm-configs/" + initial["id"]).json()["data"]
+    assert loaded["models"][0]["context_window_tokens"] == 524288
+    renamed = patch(c, h, loaded, name="same-capacity").json()["data"]
+    assert renamed["model_context_windows"] == {"model-a": 524288}
+    reset = patch(c, h, renamed, model_context_windows={}).json()["data"]
+    assert reset["model_context_windows"] == {}
+    assert len(provider.calls) == 2
+
+
+def test_lc24_invalid_capacity_never_changes_config(llm):
+    c, h, _, provider, _ = llm
+    original = create(c, h).json()["data"]
+    for bad in (None, {"model": True}, {"model": 0}, {"model": "262144"}, {"": 262144}):
+        assert patch(c, h, original, model_context_windows=bad).status_code == 422
+        assert c.get("/api/v1/me/llm-configs/" + original["id"]).json()["data"] == original
+    assert provider.calls == []

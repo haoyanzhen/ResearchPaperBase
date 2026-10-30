@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task046_processing_gate_2026-10-29/accepted-platform-image1.log",
+  "exit_code": 1,
+  "report_type": "log",
+  "status": "failed",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 822,
+  "read_start_byte": 0,
+  "text": "#0 building with \"desktop-linux\" instance using docker driver\n\n#1 [internal] load .dockerignore\n#1 transferring context: 2B done\n#1 DONE 0.0s\n\n#2 [internal] load build definition from Dockerfile\n#2 transferring dockerfile: 135B done\n#2 DONE 0.0s\n\n#3 [internal] load metadata for docker.io/library/python:3.14-slim\n#3 ERROR: failed to do request: Head \"https://registry-1.docker.io/v2/library/python/manifests/3.14-slim\": EOF\n------\n > [internal] load metadata for docker.io/library/python:3.14-slim:\n------\nDockerfile:1\n--------------------\n   1 | >>> FROM python:3.14-slim\n   2 |     RUN pip install --no-cache-dir pypdf==6.21.4\n   3 |     USER 65534:65534\n--------------------\nERROR: failed to solve: python:3.14-slim: failed to do request: Head \"https://registry-1.docker.io/v2/library/python/manifests/3.14-slim\": EOF\n",
+  "truncated": false
+}

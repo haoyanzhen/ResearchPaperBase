@@ -1,0 +1,11 @@
+{
+  "command": [
+    "backend/.venv/bin/ruff",
+    "format",
+    "--check",
+    "backend/src",
+    "backend/tests"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": null
+}

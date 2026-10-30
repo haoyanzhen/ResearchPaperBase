@@ -4,6 +4,7 @@
 import re
 from pathlib import Path
 
+import pytest
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from playwright.sync_api import expect
@@ -329,4 +330,150 @@ def test_psb02_validity_only_and_both_merged_human_judgments(monkeypatch, reques
         Path(__file__).parents[3] / "docs/workorders/evidence/task044_screening_gate_2026-10-29"
     )
     page.screenshot(path=str(output / "screening-merged-mobile.png"), full_page=True)
+    page.close()
+
+
+@pytest.mark.parametrize("cancel_phase", ["processing", "analysis"])
+def test_ppb01_manual_screening_to_processing_confirmation_and_edit(
+    monkeypatch, request, cancel_phase
+):
+    from test_paper_deduplication import RepeatedPapers
+    from test_paper_processing import Prepared
+
+    from rpb.adapters.paper_processing import ProcessingWorker
+
+    page, region, app, _, _, _ = configured_browser(monkeypatch, request)
+    region.get_by_label("graph", exact=True).check()
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    assert RunWorker(app.state.run_store, RepeatedPapers()).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    form = region.get_by_role("form", name=re.compile("^调整评分 ")).first
+    form.get_by_label("有效性", exact=True).select_option("true")
+    form.get_by_label("判断理由", exact=True).fill("Human inclusion decision")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    region.get_by_role("button", name="确认筛选并下载解析", exact=True).click()
+    expect(region.get_by_role("status")).to_contain_text("正在获取并解析")
+    assert ProcessingWorker(app.state.run_store, Prepared()).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    result = region.get_by_role("region", name=re.compile("^论文处理 ")).first
+    expect(result.get_by_role("heading", name="摘要降级（不是全文）", exact=True)).to_be_visible()
+    expect(result.get_by_text("本轮所用来源：", exact=False)).to_be_visible()
+    result.get_by_text("查看所用文本节选", exact=False).click()
+    expect(result.get_by_text("Version 0", exact=True)).to_be_visible()
+    region.get_by_role("button", name="确认处理结果", exact=True).click()
+    expect(region.get_by_role("heading", name="处理已确认，等待AI分析", exact=True)).to_be_visible()
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    output = (
+        Path(__file__).parents[3] / "docs/workorders/evidence/task046_processing_gate_2026-10-29"
+    )
+    page.screenshot(path=str(output / "processing-mobile.png"), full_page=True)
+    form.get_by_label("有效性", exact=True).select_option("false")
+    form.get_by_label("判断理由", exact=True).fill("Exclude after checking text")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    expect(region.get_by_role("heading", name="去重结果待核对", exact=True)).to_be_visible()
+    expect(result.get_by_text("处理结果未确认", exact=False)).to_be_visible()
+    form.get_by_label("有效性", exact=True).select_option("true")
+    form.get_by_label("判断理由", exact=True).fill("Include again")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    region.get_by_role("button", name="确认筛选并下载解析", exact=True).click()
+    expect(region.get_by_role("status")).to_contain_text("正在获取并解析")
+    if cancel_phase == "analysis":
+        assert ProcessingWorker(app.state.run_store, Prepared()).run_once()
+        region.get_by_role("button", name="刷新本次结果", exact=True).click()
+        region.get_by_role("button", name="确认处理结果", exact=True).click()
+    region.get_by_role("button", name="取消本次构建", exact=True).click()
+    expect(region.get_by_role("heading", name="已取消", exact=True)).to_be_visible()
+    expect(region.get_by_role("button", name="确认处理结果", exact=True)).to_have_count(0)
+    page.close()
+
+
+def test_plb01_real_pdf_classification_auto_continue_compare_and_confirm(monkeypatch, request):
+    import io
+
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.generic import DecodedStreamObject, NameObject
+    from test_paper_deduplication import RepeatedPapers
+    from test_paper_processing import pdf
+    from test_pdf_cleanup import Model
+
+    from rpb.adapters.pdf_cleanup_worker import CleanupWorker
+    from rpb.adapters.pdf_processing import PDFProvider
+
+    page, region, app, _, _, _ = configured_browser(monkeypatch, request)
+    region.get_by_label("PDF提取引擎", exact=True).select_option("llm_text_cleanup")
+    expect(region.get_by_text("本引擎默认4096 tokens", exact=False)).to_be_visible()
+    region.get_by_label("graph", exact=True).check()
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+
+    class PapersWithFile(RepeatedPapers):
+        def search(self, *args):
+            result = super().search(*args)
+            for item in result["items"]:
+                item["url"] = "https://example.org/full.pdf"
+            return result
+
+    assert RunWorker(app.state.run_store, PapersWithFile()).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    form = region.get_by_role("form", name=re.compile("^调整评分 ")).first
+    form.get_by_label("有效性", exact=True).select_option("true")
+    form.get_by_label("判断理由", exact=True).fill("Read this paper")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    region.get_by_role("button", name="确认筛选并下载解析", exact=True).click()
+
+    expect(region.get_by_role("status")).to_contain_text("正在获取并解析")
+
+    writer = PdfWriter(clone_from=PdfReader(io.BytesIO(pdf())))
+    content = DecodedStreamObject()
+    content.set_data(b"BT /F1 12 Tf 72 720 Td (first) Tj 0 -14 Td (second) Tj ET")
+    writer.pages[0][NameObject("/Contents")] = writer._add_object(content)
+    stream = io.BytesIO()
+    writer.write(stream)
+
+    class Files(PDFProvider):
+        def download(self, link, authorize):
+            with authorize():
+                return stream.getvalue()
+
+    model = Model()
+    worker = CleanupWorker(app.state.run_store, Files(), model)
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    expect(region.get_by_role("button", name="确认处理结果", exact=True)).to_have_count(0)
+    assert model.calls == []
+    evidence = (
+        Path(__file__).parents[3] / "docs/workorders/evidence/task047_llm_pdf_design_2026-10-30"
+    )
+    region.get_by_role("region", name=re.compile("^全文分类等待 ")).first.screenshot(
+        path=str(evidence / "cleanup-classification.png")
+    )
+    classification = region.get_by_role("form", name=re.compile("^全文分类 ")).first
+    classification.get_by_label("全文分类", exact=True).select_option("public")
+    classification.get_by_label("全文分类依据", exact=True).fill("Actual public PDF checked")
+    classification.get_by_role("button", name="保存全文分类并继续", exact=True).click()
+    expect(
+        region.get_by_text("全文分类已保存，原作业将自动重验权限和预算后继续。", exact=True)
+    ).to_be_visible()
+    assert worker.run_once() and len(model.calls) == 1
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="核对原始与整理全文", exact=True).click()
+    expect(region.get_by_role("heading", name="原始提取全文", exact=True)).to_be_visible()
+    assert region.locator("pre").nth(0).text_content() == "first\nsecond\n"
+    assert region.locator("pre").nth(1).text_content() == "first second\n"
+    region.get_by_role("region", name=re.compile("^论文处理 ")).first.screenshot(
+        path=str(evidence / "cleanup-comparison.png")
+    )
+    region.get_by_role("button", name="确认处理结果", exact=True).click()
+    expect(region.get_by_role("heading", name="处理已确认，等待AI分析", exact=True)).to_be_visible()
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    output = (
+        Path(__file__).parents[3] / "docs/workorders/evidence/task047_llm_pdf_design_2026-10-30"
+    )
+    page.screenshot(path=str(output / "cleanup-mobile.png"), full_page=True)
     page.close()

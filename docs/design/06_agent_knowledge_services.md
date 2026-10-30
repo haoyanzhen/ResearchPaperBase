@@ -1,6 +1,6 @@
 # Agent & Knowledge Services 设计
 
-文档版本：v1.17
+文档版本：v1.18
 更新日期：2026-10-29
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
@@ -217,6 +217,8 @@ available/degraded必须text非null；failed/unsupported必须text=null。result
 processing_revision由应用为本次受控处理结果分配并持久绑定，服务端提案使用待提交修订，不能由模型/客户端选择或复用；相同持久结果重放复用该修订。paper available只对应full_text或既有合法user_text；degraded仅真实非空abstract_fallback，且诊断必须解释全文缺失/失败。failed/unsupported必须text=null，不能携带旧成功文本冒充本次结果。document可在失败时保留安全已收文件；其存在不表示文本可用。此结果只表达最终处理，pending/processing由应用基于受理/执行事实投影，不由解析器伪造。
 
 `PreparationDiagnostic={category:acquisition|format|parse|metadata|analysis|integrity|policy,reason:PreparationReason,message:string,source:SourceRef|null,diagnostic_ref:ID|null}`，message为脱敏摘要；内部诊断ID不赋予公开读取权。PreparationReason闭合为source_unavailable、transient_failure、unsupported_format、parser_unavailable、corrupt_content、encrypted_content、safety_limit、no_usable_text、missing_title、ambiguous_metadata、metadata_conflict、invalid_analysis、input_changed、scope_invalid、dependency_invalid、material_restricted。category按实际阶段选择，reason保持精确；这不是新增PublicError码。
+
+D-CW-04 B（2026-10-29用户决定）：同论文组按固定且可追溯的来源顺序选择首个可用全文；全部全文不可用时选择一份真实摘要降级，不融合不同原文。处理确认展示实际所用来源及其他来源，用户确认后才能进入分析；不将首成功来源称为权威或最新版本。
 
 ### A08.2 确定映射与提交
 

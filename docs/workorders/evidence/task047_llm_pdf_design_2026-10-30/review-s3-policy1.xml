@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.652" timestamp="2026-10-30T11:08:56.668495+08:00" hostname="qy.local"><testcase classname="" name="test_review_policy_revoked_after_failure_before_fallback" time="1.226"><failure message="AssertionError: {'basis': {'file_revision': None, 'input_revision': '9a68e0d5-e46b-4567-b2ff-bb6122f59231', 'text_revision_id': 'ae336...tart_offset': 0}], 'source_ids': ['0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', '0b333615-5948-4fbf-9069-dd60065f5c4a'], ...}&#10;assert 'processing' not in {'id': '0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', 'kind': 'paper', 'source': {'url': 'https://arxiv.org/abs/2601.00001', ...'metadata': {'doi': '10.1/0', 'url': 'https://arxiv.org/abs/2601.00001', 'year': 2026, 'title': 'A: PAPER!', ...}, ...}">subject = (&lt;test_search_terms.TermsClient object at 0x111090830&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'fZ2FdIbnq...da83c906d685acca45?host=%2Fprivate%2Ftmp%2Frpb-db-l30sbru5&amp;port=5432), b'309QkOKQNucUaE3MRHWCp2jguLqd5xmhNms236kfOtk=')
+
+    def test_review_policy_revoked_after_failure_before_fallback(subject):
+        from rpb.adapters.llm_provider import ProviderFailure
+        from test_search_terms import post
+        c,h,root,app,engine,_=subject
+        url=ready(subject)
+        class Bad(Model):
+            def propose(self,*args):
+                super().propose(*args)
+                raise ProviderFailure("PROVIDER_RESPONSE_INVALID")
+        worker=CleanupWorker(app.state.run_store,TextPDF(),Bad())
+        policy=c.get(root+"/material-policy").json()["data"]
+        assert c.put(root+"/material-policy",headers=h,json={"expected_revision":policy["revision"],"mode":"allow_private","risk_acknowledged":True}).status_code==200
+        for _ in range(2):
+            assert worker.run_once()
+            doc=candidates(c,url)[0]["cleanup_pending"]["document_asset_id"]
+            path=root+"/material-sources/"+doc+"/classification"
+            value=c.get(path).json()["data"]
+            assert post(c,h,path+"/confirm",{"expected_revision":value["revision"],"content_revision":value["source"]["content_revision"],"classification":"private","basis":"private PDF checked","explicit_confirmation":True}).status_code==200
+            assert worker.run_once()
+        policy=c.get(root+"/material-policy").json()["data"]
+        assert c.put(root+"/material-policy",headers=h,json={"expected_revision":policy["revision"],"mode":"public_only","risk_acknowledged":False}).status_code==200
+        worker.run_once()
+&gt;       assert "processing" not in candidates(c,url)[0], candidates(c,url)[0].get("processing")
+E       AssertionError: {'basis': {'file_revision': None, 'input_revision': '9a68e0d5-e46b-4567-b2ff-bb6122f59231', 'text_revision_id': 'ae336...tart_offset': 0}], 'source_ids': ['0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', '0b333615-5948-4fbf-9069-dd60065f5c4a'], ...}
+E       assert 'processing' not in {'id': '0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', 'kind': 'paper', 'source': {'url': 'https://arxiv.org/abs/2601.00001', ...'metadata': {'doi': '10.1/0', 'url': 'https://arxiv.org/abs/2601.00001', 'year': 2026, 'title': 'A: PAPER!', ...}, ...}
+
+../docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_worker_probe.py:54: AssertionError</failure></testcase></testsuite></testsuites>

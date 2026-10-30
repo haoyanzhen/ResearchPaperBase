@@ -73,8 +73,12 @@ class HTTPProvider:
         url = urlsplit(base_url)
         host = url.hostname or ""
         port = url.port or (443 if url.scheme == "https" else 80)
-        internal = (host, port) in self.allowed_internal
-        if url.scheme != "https" and not internal:
+        internal = (host, port) in self.allowed_internal and response_format != "pdf"
+        if (
+            url.scheme != "https"
+            and not internal
+            and not (response_format == "pdf" and url.scheme == "http")
+        ):
             raise ProviderFailure("CONFIG_CONNECTION_FAILED")
         try:
             try:
@@ -129,6 +133,8 @@ class HTTPProvider:
                     headers["x-api-key"] = secret
             elif secret:
                 headers["Authorization"] = "Bearer " + secret
+            if response_format == "pdf":
+                headers = {"Accept": "application/pdf"}
             if response_format == "xml":
                 headers["Accept"] = "application/atom+xml"
             expired = Event()
@@ -159,6 +165,11 @@ class HTTPProvider:
                         headers=headers,
                     )
                 response = connection.getresponse()
+                if response_format == "pdf" and response.status in {301, 302, 303, 307, 308}:
+                    location = response.getheader("Location")
+                    if not location or len(location) > 8192:
+                        raise ProviderFailure("CONFIG_CONNECTION_FAILED")
+                    return {"redirect": location}
                 if response.status in {401, 403}:
                     raise ProviderFailure("CONFIG_SECRET_UNAVAILABLE")
                 if response.status == 429:
@@ -167,12 +178,13 @@ class HTTPProvider:
                     raise ProviderFailure("CONFIG_CONNECTION_FAILED")
                 if not 200 <= response.status < 300:
                     raise ProviderFailure("CONFIG_CONNECTION_FAILED")
-                raw = response.read(1048577)
-                if len(raw) > 1048576:
+                limit = 52_428_800 if response_format == "pdf" else 1_048_576
+                raw = response.read(limit + 1)
+                if len(raw) > limit:
                     raise ProviderFailure("PROVIDER_RESPONSE_INVALID")
                 if expired.is_set():
                     raise ProviderFailure("PROVIDER_TIMEOUT")
-                if response_format == "xml":
+                if response_format in {"xml", "pdf"}:
                     return raw
                 value = json.loads(raw)
                 if not isinstance(value, dict):

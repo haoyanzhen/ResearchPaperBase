@@ -57,12 +57,14 @@ def test_lp07_protocol_request_and_false_success(protocol, path, good, bad):
         "api_version": "2023-06-01",
         "parameters": {"temperature": 0, "max_output_tokens": 100},
         "timeout_seconds": 7,
+        "model_context_windows": {"model-a": 524288},
     }
     provider = CapturingProvider(good)
     result = provider.execute(config, "test", "model-a", "PRIVATE", nullcontext)
     assert provider.sent[1] == path
     assert provider.sent[-2] == 7
     body = provider.sent[5]
+    assert "model_context_windows" not in str(body) and "524288" not in str(body)
     assert "timeout_seconds" not in body and "PRIVATE" not in str(body)
     assert result["test_overrides"] == {} and result["tested_parameters"]
     assert "OK" in str(body) and "project" not in str(body)

@@ -5,13 +5,13 @@ type API = <T>(url: string, init?: RequestInit) => Promise<T>;
 type Write = <T>(url: string, body: unknown, key?: string, actor?: string, method?: string) => Promise<T>;
 type Option = { source: string; config_id: string; model_id: string; label: string; available: boolean };
 type Selection = { revision: string; selection: Pick<Option, 'source' | 'config_id' | 'model_id'> | null; valid: boolean };
-type Config = { id: string; revision: string; name: string; provider: string; protocol: string; base_url: string; api_version: string; timeout_seconds: number; parameters: Record<string, unknown>; secret: { configured: boolean }; models: Option[] };
+type Config = { id: string; revision: string; name: string; provider: string; protocol: string; base_url: string; api_version: string; timeout_seconds: number; parameters: Record<string, unknown>; model_context_windows?: Record<string, number>; secret: { configured: boolean }; models: Option[] };
 type Task = { task_id: string; status_url: string; execution_status: string; error: { code: string } | null; result_refs: {url: string}[]; operation_id: string };
-type Draft = { name: string; provider: string; protocol: string; base_url: string; api_version: string; secret: string; clearSecret: boolean; timeout: string; temperature: string; top_p: string; max_output_tokens: string; extra: string };
-const fresh = (): Draft => ({ name: '', provider: 'openai', protocol: 'openai_chat', base_url: 'https://api.openai.com/v1', api_version: '', secret: '', clearSecret: false, timeout: '30', temperature: '', top_p: '', max_output_tokens: '', extra: '{}' });
+type Draft = { name: string; provider: string; protocol: string; base_url: string; api_version: string; secret: string; clearSecret: boolean; timeout: string; temperature: string; top_p: string; max_output_tokens: string; extra: string; model_context_windows: Record<string, number> };
+const fresh = (): Draft => ({ name: '', provider: 'openai', protocol: 'openai_chat', base_url: 'https://api.openai.com/v1', api_version: '', secret: '', clearSecret: false, timeout: '30', temperature: '', top_p: '', max_output_tokens: '', extra: '{}', model_context_windows: {} });
 function draftFor(c: Config): Draft {
   const { temperature, top_p, max_output_tokens, ...extra } = c.parameters;
-  return { name: c.name, provider: c.provider, protocol: c.protocol, base_url: c.base_url, api_version: c.api_version, secret: '', clearSecret: false, timeout: String(c.timeout_seconds), temperature: temperature === undefined ? '' : String(temperature), top_p: top_p === undefined ? '' : String(top_p), max_output_tokens: max_output_tokens === undefined ? '' : String(max_output_tokens), extra: JSON.stringify(extra, null, 2) };
+  return { name: c.name, provider: c.provider, protocol: c.protocol, base_url: c.base_url, api_version: c.api_version, secret: '', clearSecret: false, timeout: String(c.timeout_seconds), temperature: temperature === undefined ? '' : String(temperature), top_p: top_p === undefined ? '' : String(top_p), max_output_tokens: max_output_tokens === undefined ? '' : String(max_output_tokens), extra: JSON.stringify(extra, null, 2), model_context_windows: { ...c.model_context_windows } };
 }
 function errorText(e: unknown): string {
   const value = e as { status?: number; code?: string };
@@ -61,12 +61,14 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
   const [customKey, setCustomKey] = useState('');
   const [customValue, setCustomValue] = useState('');
   const [model, setModel] = useState('');
+  const [capacityModel, setCapacityModel] = useState('');
+  const [capacityValue, setCapacityValue] = useState('262144');
   const [consent, setConsent] = useState(false);
   const [task, setTask] = useState<Task | null>(null);
   const [testDetails, setTestDetails] = useState<{reason_code: string | null; tested_parameters: unknown; test_overrides: unknown} | null>(null);
   async function listing() { const all: Config[] = []; let cursor: string | null = null; do { const page: {data: {items: Config[]}; meta: {next_cursor: string | null; has_more: boolean}} = await pageApi<{items: Config[]}>(configPath + '?page_size=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); all.push(...page.data.items); cursor = page.meta.has_more ? page.meta.next_cursor : null; } while (cursor); setConfigs(all); }
   useEffect(() => { if (active) void listing().catch(e => { onAuthFailure(e); setMessage('配置列表读取失败。'); }); }, [actor, active]);
-  function enter(c: Config | null) { setSelected(c); setDraft(c ? draftFor(c) : fresh()); setDirty(false); setSwitchTo(undefined); setUncertain(false); setPending(null); setTask(null); setTestDetails(null); setConsent(false); setMessage(''); setModel(''); }
+  function enter(c: Config | null) { setSelected(c); setDraft(c ? draftFor(c) : fresh()); setDirty(false); setSwitchTo(undefined); setUncertain(false); setPending(null); setTask(null); setTestDetails(null); setConsent(false); setMessage(''); setModel(''); setCapacityModel(''); setCapacityValue('262144'); }
   function switchConfig(c: Config | null) { if (dirty || uncertain || pending) setSwitchTo(c); else enter(c); }
   function change(value: Partial<Draft>) { setDraft(prev => ({ ...prev, ...value })); setDirty(true); }
   async function run(action: () => Promise<void>, writing = false) {
@@ -81,7 +83,7 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
     for (const key of ['temperature', 'top_p', 'max_output_tokens'] as const) {
       if (draft[key] !== '') { if (key in parameters) throw new Error('常用字段不能在高级参数中重复'); const value = Number(draft[key]); if (!Number.isFinite(value)) throw new Error('参数必须是有限数字'); parameters[key] = value; }
     }
-    return { name: draft.name, provider: draft.provider, protocol: draft.protocol, base_url: draft.base_url, api_version: draft.api_version, parameters, timeout_seconds: Number(draft.timeout), ...(draft.clearSecret ? { secret: { operation: 'clear' } } : draft.secret ? { secret: { operation: 'set', value: draft.secret } } : {}), ...(selected ? { expected_revision: selected.revision } : {}) };
+    return { name: draft.name, provider: draft.provider, protocol: draft.protocol, base_url: draft.base_url, api_version: draft.api_version, parameters, model_context_windows: draft.model_context_windows, timeout_seconds: Number(draft.timeout), ...(draft.clearSecret ? { secret: { operation: 'clear' } } : draft.secret ? { secret: { operation: 'set', value: draft.secret } } : {}), ...(selected ? { expected_revision: selected.revision } : {}) };
   }
   async function save(next?: Config | null) {
     let payload: unknown;
@@ -148,6 +150,12 @@ export function LLMSettings({ api: baseApi, pageApi: basePageApi, write, actor, 
       <fieldset disabled={busy || uncertain}><legend>常用参数（留空使用Provider默认）</legend>{(['temperature', 'top_p', 'max_output_tokens'] as const).map(key => <label key={key}>{key}<input type="number" step={key === 'max_output_tokens' ? '1' : 'any'} value={draft[key]} onChange={e => change({ [key]: e.target.value })} /></label>)}</fieldset>
       <fieldset disabled={busy || uncertain}><legend>扩展参数键值编辑</legend><label>扩展参数名<select aria-label="扩展参数名" value={extensionNames.includes(customKey) ? customKey : ''} onChange={e => setCustomKey(e.target.value)}><option value="">请选择字段</option>{extensionNames.map(name => <option key={name}>{name}</option>)}</select></label><label>扩展参数值（JSON类型）<textarea aria-label="扩展参数值（JSON类型）" value={customValue} onChange={e => setCustomValue(e.target.value)} /></label><p>字符串如 "high"；数字如 1024；对象如 {"{\"effort\":\"high\"}"}。未登记字段不可透传。</p><button type="button" onClick={() => editExtension()}>添加或更新扩展参数</button><button type="button" onClick={() => editExtension(true)}>移除扩展参数</button></fieldset>
       <label>高级参数 JSON<textarea aria-label="高级参数 JSON" rows={5} spellCheck={false} value={draft.extra} disabled={busy || uncertain} onChange={e => change({ extra: e.target.value })} /></label><p>可填写stop、seed等适用字段；扩展项放在custom_params对象中。类型、范围及能力由后端校验，不支持的参数会明确拒绝。</p>
+      <fieldset disabled={busy || uncertain}><legend>模型上下文容量</legend><p>未设置的模型默认256K（262,144 tokens）。这是用户配置的输入与输出总容量假设，不是Provider能力验证；修改后按现有规则重新测试模型。</p>
+        <label>容量对应模型ID<input maxLength={200} value={capacityModel} onChange={e => setCapacityModel(e.target.value)} /></label>
+        <label>上下文容量（tokens）<input type="number" min={1} max={2147483647} step={1} value={capacityValue} onChange={e => setCapacityValue(e.target.value)} /></label>
+        <button type="button" onClick={() => { const id = capacityModel.trim(); const value = Number(capacityValue); if (!id || !Number.isSafeInteger(value) || value < 1 || value > 2147483647) { setMessage('请填写模型ID与正整数容量。'); return; } change({ model_context_windows: { ...draft.model_context_windows, [id]: value } }); setMessage('容量已加入草稿，请保存LLM配置。'); }}>将模型容量加入草稿</button>
+        {Object.entries(draft.model_context_windows).map(([id, value]) => <p key={id}>{id}：{value.toLocaleString()} tokens <button type="button" onClick={() => { const values = { ...draft.model_context_windows }; delete values[id]; change({ model_context_windows: values }); }}>恢复{id}默认容量</button></p>)}
+      </fieldset>
       <label>调用超时（秒，不发送给模型）<input type="number" min={1} max={120} value={draft.timeout} disabled={busy || uncertain} onChange={e => change({ timeout: e.target.value })} /></label>
       <button type="submit" disabled={busy || uncertain || !!pending}>保存LLM配置</button><button type="button" disabled={busy} onClick={() => { if (uncertain || pending) void loadCurrent(); else enter(selected); }}>取消配置编辑</button>
     </form>

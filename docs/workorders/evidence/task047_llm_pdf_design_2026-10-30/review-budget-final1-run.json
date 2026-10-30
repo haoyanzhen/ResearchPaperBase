@@ -1,0 +1,1 @@
+{"command": ["backend/.venv/bin/python", "-m", "pytest", "backend/tests/unit/test_pdf_cleanup_budget.py", "-q", "--junitxml=docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-budget-final1.xml"], "exit_code": 0}

@@ -40,6 +40,7 @@ class LLMWrite(BaseModel):
     api_version: str | None = None
     parameters: dict[str, Any] | None = None
     timeout_seconds: int | None = None
+    model_context_windows: dict[str, Any] | None = None
     secret: dict[str, Any] | None = None
 
 
@@ -53,6 +54,7 @@ class LLMPatch(BaseModel):
     api_version: str | None = None
     parameters: dict[str, Any] | None = None
     timeout_seconds: int | None = None
+    model_context_windows: dict[str, Any] | None = None
     secret: dict[str, Any] | None = None
 
 

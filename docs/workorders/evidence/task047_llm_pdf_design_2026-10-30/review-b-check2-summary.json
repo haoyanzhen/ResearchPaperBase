@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-b-check2.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 379,
+  "read_start_byte": 0,
+  "text": "{\n  \"tasks/047-llm-pdf-extraction-design.md\": {\n    \"sha256\": \"ced1274a059cefd13c0ae942c720a7a95fec8ce586d2ebc7b8e70a12cc29a049\",\n    \"local_file_links\": \"exist\",\n    \"version_date\": \"present\"\n  },\n  \"docs/PROJECT_STATUS.md\": {\n    \"sha256\": \"fb72eaf42ada93196f06f3526f7b5b2870429435fb00b1ee9593419b757785a4\",\n    \"local_file_links\": \"exist\",\n    \"version_date\": \"present\"\n  }\n}\n",
+  "truncated": false
+}

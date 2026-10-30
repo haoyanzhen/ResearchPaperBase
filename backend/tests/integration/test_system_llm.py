@@ -292,6 +292,7 @@ def test_sl08_wire_system_task_and_safe_fields(system):
             "label",
             "available",
             "unavailable_reason",
+            "context_window_tokens",
         }
         valid("ModelOption", item)
     assert "SYSTEM-SECRET" not in a.get(job["events_url"]).text
@@ -322,7 +323,7 @@ def test_sl09_failed_audit_rolls_back_and_downgrade_refused(system, db, monkeypa
     with db[0].connect() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0014_construction_runs"
+            == "0015_processing_objects"
         )
         assert sa.inspect(conn).has_table("system_source_audit")
     with db[0].connect() as conn:

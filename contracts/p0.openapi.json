@@ -11995,6 +11995,427 @@
         },
         "x-coverage": "request-success-errors-partial"
       }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/candidates/{candidate_id}/file-access": {
+      "get": {
+        "operationId": "Construction.AccessCandidateFile",
+        "x-use-case": "Construction.AccessCandidateFile",
+        "x-fr": [
+          "FR-024"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "document_asset_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run-owned unpublished file; current authorization and complete ownership checked; no knowledge membership.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "document_asset_id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "const": "candidate"
+                            },
+                            "id": {
+                              "$ref": "#/components/schemas/ID"
+                            },
+                            "run_id": {
+                              "$ref": "#/components/schemas/ID"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id",
+                            "run_id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "filename": {
+                          "const": "paper.pdf"
+                        },
+                        "media_type": {
+                          "const": "application/pdf"
+                        },
+                        "size_bytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "download_url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "document_asset_id",
+                        "scope",
+                        "filename",
+                        "media_type",
+                        "size_bytes",
+                        "download_url"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/candidates/{candidate_id}/files/{document_id}/download": {
+      "get": {
+        "operationId": "Construction.DownloadUnpublishedFile",
+        "x-use-case": "Construction.DownloadUnpublishedFile",
+        "x-fr": [
+          "FR-024"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run-owned unpublished file; current authorization and complete ownership checked; no knowledge membership.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "const": "attachment; filename=\"paper.pdf\""
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/candidates/{candidate_id}/processing-text": {
+      "get": {
+        "operationId": "Construction.ReadProcessingText",
+        "x-use-case": "Construction.ReadProcessingText",
+        "x-fr": [
+          "FR-024"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized immutable raw/clean text comparison; no-store.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProcessingTextView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12478,6 +12899,12 @@
                 "type": "null"
               }
             ]
+          },
+          "context_window_tokens": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "description": "User-declared context capacity; default 262144, not Provider verified."
           }
         },
         "required": [
@@ -12486,7 +12913,8 @@
           "model_id",
           "label",
           "available",
-          "unavailable_reason"
+          "unavailable_reason",
+          "context_window_tokens"
         ],
         "additionalProperties": false
       },
@@ -12743,6 +13171,22 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 120
+          },
+          "model_context_windows": {
+            "type": "object",
+            "maxProperties": 1000,
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
+            },
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "description": "Per-model user-declared context tokens, including input/output. Omitted model IDs use 262144; not Provider-verified and not transmitted as a generation parameter."
           }
         },
         "required": [
@@ -12798,6 +13242,22 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 120
+          },
+          "model_context_windows": {
+            "type": "object",
+            "maxProperties": 1000,
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
+            },
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "description": "Per-model user-declared context tokens, including input/output. Omitted model IDs use 262144; not Provider-verified and not transmitted as a generation parameter."
           }
         },
         "required": [
@@ -12884,6 +13344,22 @@
             "items": {
               "$ref": "#/components/schemas/ModelOption"
             }
+          },
+          "model_context_windows": {
+            "type": "object",
+            "maxProperties": 1000,
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
+            },
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "description": "Per-model user-declared context tokens, including input/output. Omitted model IDs use 262144; not Provider-verified and not transmitted as a generation parameter."
           }
         },
         "required": [
@@ -12901,7 +13377,8 @@
           "protocol",
           "api_version",
           "timeout_seconds",
-          "models"
+          "models",
+          "model_context_windows"
         ],
         "additionalProperties": false
       },
@@ -20940,6 +21417,13 @@
               "incremental",
               "rebuild"
             ]
+          },
+          "pdf_extraction_engine": {
+            "enum": [
+              "pypdf",
+              "llm_text_cleanup"
+            ],
+            "default": "pypdf"
           }
         },
         "required": [
@@ -21168,6 +21652,9 @@
           },
           "captured_at": {
             "$ref": "#/components/schemas/Time"
+          },
+          "pdf_cleanup": {
+            "$ref": "#/components/schemas/CleanupSettings"
           }
         },
         "required": [
@@ -21597,6 +22084,27 @@
               ],
               "additionalProperties": false
             }
+          },
+          "processing": {
+            "$ref": "#/components/schemas/RunPaperProcessing"
+          },
+          "processing_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunPaperProcessing"
+            }
+          },
+          "document_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "processing_stale": {
+            "type": "boolean"
+          },
+          "cleanup_pending": {
+            "$ref": "#/components/schemas/CleanupPending"
           }
         },
         "required": [
@@ -21888,7 +22396,9 @@
           "stage": {
             "enum": [
               "retrieval",
-              "screening"
+              "screening",
+              "processing",
+              "analysis"
             ]
           },
           "business_state": {
@@ -22078,7 +22588,9 @@
           "phase": {
             "enum": [
               "retrieval",
-              "screening"
+              "screening",
+              "processing",
+              "analysis"
             ]
           },
           "base_knowledge_version_id": {
@@ -22281,6 +22793,50 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "processing": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "available": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "degraded": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "failed": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "pending": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "excluded": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "confirmed": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "available",
+                            "degraded",
+                            "failed",
+                            "pending",
+                            "excluded",
+                            "confirmed"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
@@ -22288,7 +22844,8 @@
                     "sources",
                     "resolution",
                     "deduplication",
-                    "screening"
+                    "screening",
+                    "processing"
                   ],
                   "additionalProperties": false
                 },
@@ -22382,7 +22939,11 @@
             "$ref": "#/components/schemas/ID"
           },
           "action": {
-            "const": "confirm_retrieval"
+            "enum": [
+              "confirm_retrieval",
+              "confirm_screening",
+              "confirm_processing"
+            ]
           },
           "target": {
             "type": "object",
@@ -22461,7 +23022,9 @@
           "kind": {
             "enum": [
               "retrieval",
-              "screening"
+              "screening",
+              "processing",
+              "analysis"
             ]
           },
           "revision": {
@@ -22471,7 +23034,11 @@
             "type": "array",
             "maxItems": 1,
             "items": {
-              "const": "confirm_retrieval"
+              "enum": [
+                "confirm_retrieval",
+                "confirm_screening",
+                "confirm_processing"
+              ]
             }
           },
           "confirmation": {
@@ -23039,67 +23606,120 @@
           "affected_items": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "const": "content_change"
-                },
-                "object": {
+              "oneOf": [
+                {
                   "type": "object",
                   "properties": {
-                    "type": {
-                      "const": "construction_candidate"
+                    "kind": {
+                      "const": "content_change"
                     },
-                    "id": {
-                      "$ref": "#/components/schemas/ID"
+                    "object": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "const": "construction_candidate"
+                        },
+                        "id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "project_id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "revision": {
+                          "$ref": "#/components/schemas/Revision"
+                        },
+                        "read_url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "project_id",
+                        "revision",
+                        "read_url"
+                      ],
+                      "additionalProperties": false
                     },
-                    "project_id": {
-                      "$ref": "#/components/schemas/ID"
+                    "operation": {
+                      "const": "replace"
                     },
-                    "revision": {
-                      "$ref": "#/components/schemas/Revision"
+                    "content_state": {
+                      "enum": [
+                        "agent_draft",
+                        "manual_edit",
+                        "manual_confirm"
+                      ]
                     },
-                    "read_url": {
+                    "content_scope": {
+                      "const": [
+                        "screening"
+                      ]
+                    },
+                    "reason": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "type",
-                    "id",
-                    "project_id",
-                    "revision",
-                    "read_url"
+                    "kind",
+                    "object",
+                    "operation",
+                    "content_state",
+                    "content_scope",
+                    "reason"
                   ],
                   "additionalProperties": false
                 },
-                "operation": {
-                  "const": "replace"
-                },
-                "content_state": {
-                  "enum": [
-                    "agent_draft",
-                    "manual_edit",
-                    "manual_confirm"
-                  ]
-                },
-                "content_scope": {
-                  "const": [
-                    "screening"
-                  ]
-                },
-                "reason": {
-                  "type": "string"
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "confirmation_invalidation"
+                    },
+                    "object": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "const": "construction_candidate"
+                        },
+                        "id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "project_id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "revision": {
+                          "$ref": "#/components/schemas/Revision"
+                        },
+                        "read_url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "project_id",
+                        "revision",
+                        "read_url"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "confirmation_revision": {
+                      "$ref": "#/components/schemas/Revision"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "object",
+                    "confirmation_revision",
+                    "reason"
+                  ],
+                  "additionalProperties": false
                 }
-              },
-              "required": [
-                "kind",
-                "object",
-                "operation",
-                "content_state",
-                "content_scope",
-                "reason"
-              ],
-              "additionalProperties": false
+              ]
             }
           },
           "retained_items": {
@@ -23219,6 +23839,712 @@
         "required": [
           "expected_revision",
           "screening"
+        ],
+        "additionalProperties": false
+      },
+      "RunPaperProcessing": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "available",
+              "degraded",
+              "failed",
+              "unsupported"
+            ]
+          },
+          "text_source_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "full_text",
+                  "abstract_fallback"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "participates_in_knowledge": {
+            "const": false
+          },
+          "selected_source_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "enum": [
+                    "source_unavailable",
+                    "corrupt_content",
+                    "encrypted_content",
+                    "no_usable_text",
+                    "safety_limit",
+                    "parser_unavailable",
+                    "cleanup_failed",
+                    "capacity_exceeded",
+                    "budget_exhausted"
+                  ]
+                }
+              },
+              "required": [
+                "source_id",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "text_preview": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "basis": {
+            "type": "object",
+            "properties": {
+              "processing_revision": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "input_revision": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "text_revision_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "document_asset_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "file_revision": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confirmed_revision": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "processing_revision",
+              "input_revision",
+              "text_revision_id",
+              "document_asset_id",
+              "file_revision",
+              "confirmed_revision"
+            ],
+            "additionalProperties": false
+          },
+          "text_length_chars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200000
+          },
+          "text_digest": {
+            "type": "string"
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "page": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "start_offset",
+                "end_offset",
+                "page"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "material_classification": {
+            "$ref": "#/components/schemas/MaterialClassificationView"
+          },
+          "retained_file": {
+            "type": "object",
+            "properties": {
+              "document_asset_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "source_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "file_revision": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "document_asset_id",
+              "source_id",
+              "file_revision"
+            ],
+            "additionalProperties": false
+          },
+          "selected_source_revision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_attempts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "state": {
+                  "enum": [
+                    "selected_full_text",
+                    "selected_abstract",
+                    "failed",
+                    "not_attempted"
+                  ]
+                }
+              },
+              "required": [
+                "source_id",
+                "state"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "cleanup": {
+            "$ref": "#/components/schemas/CleanupProvenance"
+          }
+        },
+        "required": [
+          "status",
+          "text_source_kind",
+          "failure_reason",
+          "participates_in_knowledge",
+          "selected_source_id",
+          "source_ids",
+          "diagnostics",
+          "text_preview",
+          "basis",
+          "source_attempts"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "available"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "text_source_kind": {
+                  "const": "full_text"
+                },
+                "text_preview": {
+                  "type": "string"
+                },
+                "basis": {
+                  "properties": {
+                    "document_asset_id": {
+                      "type": "string"
+                    },
+                    "file_revision": {
+                      "type": "string"
+                    },
+                    "text_revision_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "degraded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "text_source_kind": {
+                  "const": "abstract_fallback"
+                },
+                "text_preview": {
+                  "type": "string"
+                },
+                "basis": {
+                  "properties": {
+                    "document_asset_id": {
+                      "type": "null"
+                    },
+                    "file_revision": {
+                      "type": "null"
+                    },
+                    "text_revision_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "failed",
+                    "unsupported"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "text_source_kind": {
+                  "type": "null"
+                },
+                "text_preview": {
+                  "type": "null"
+                },
+                "basis": {
+                  "properties": {
+                    "document_asset_id": {
+                      "type": "null"
+                    },
+                    "file_revision": {
+                      "type": "null"
+                    },
+                    "text_revision_id": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CleanupPending": {
+        "type": "object",
+        "properties": {
+          "document_asset_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "file_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "source_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "page": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "start_offset",
+                "end_offset",
+                "page"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "raw_text_digest": {
+            "type": "string"
+          },
+          "state": {
+            "const": "waiting_classification"
+          },
+          "material_classification": {
+            "$ref": "#/components/schemas/MaterialClassificationView"
+          }
+        },
+        "required": [
+          "document_asset_id",
+          "file_revision",
+          "source_id",
+          "segments",
+          "raw_text_digest",
+          "state",
+          "material_classification"
+        ],
+        "additionalProperties": false
+      },
+      "CleanupProvenance": {
+        "type": "object",
+        "properties": {
+          "engine_id": {
+            "const": "llm_text_cleanup"
+          },
+          "engine_revision": {
+            "type": "string"
+          },
+          "prompt_revision": {
+            "type": "string"
+          },
+          "model_selection": {
+            "$ref": "#/components/schemas/ModelSelection"
+          },
+          "config_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output_defaulted": {
+            "type": "boolean"
+          },
+          "raw_text_digest": {
+            "type": "string"
+          },
+          "raw_text_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "line_mapping": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line_id": {
+                  "type": "string"
+                },
+                "page": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "raw_start_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "raw_end_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "start_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "line_id",
+                "page",
+                "raw_start_offset",
+                "raw_end_offset",
+                "start_offset",
+                "end_offset"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "coverage": {
+            "const": "text_layer_only"
+          },
+          "raw_text_preview": {
+            "type": "string"
+          },
+          "parameter_digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "engine_id",
+          "engine_revision",
+          "prompt_revision",
+          "model_selection",
+          "config_revision",
+          "output_tokens",
+          "output_defaulted",
+          "raw_text_digest",
+          "raw_text_id",
+          "line_mapping",
+          "coverage",
+          "raw_text_preview",
+          "parameter_digest"
+        ],
+        "additionalProperties": false
+      },
+      "CleanupSettings": {
+        "type": "object",
+        "properties": {
+          "engine_id": {
+            "const": "llm_text_cleanup"
+          },
+          "engine_revision": {
+            "const": "1"
+          },
+          "context_window_tokens": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output_defaulted": {
+            "type": "boolean"
+          },
+          "budget_limits": {
+            "type": "object",
+            "properties": {
+              "source_seconds": {
+                "type": "number",
+                "minimum": 1
+              },
+              "group_seconds": {
+                "type": "number",
+                "minimum": 1
+              },
+              "call_seconds": {
+                "type": "number",
+                "minimum": 1
+              },
+              "source_calls": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "group_calls": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "source_seconds",
+              "group_seconds",
+              "call_seconds",
+              "source_calls",
+              "group_calls"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "engine_id",
+          "engine_revision",
+          "context_window_tokens",
+          "output_tokens",
+          "output_defaulted",
+          "budget_limits"
+        ],
+        "additionalProperties": false
+      },
+      "ProcessingTextView": {
+        "type": "object",
+        "properties": {
+          "raw_text": {
+            "type": "string",
+            "maxLength": 200000
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 200000
+          },
+          "processing_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "coverage": {
+            "const": "text_layer_only"
+          },
+          "line_mapping": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line_id": {
+                  "type": "string"
+                },
+                "page": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "raw_start_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "raw_end_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "start_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "line_id",
+                "page",
+                "raw_start_offset",
+                "raw_end_offset",
+                "start_offset",
+                "end_offset"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "page": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "start_offset",
+                "end_offset",
+                "page"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "raw_text",
+          "text",
+          "processing_revision",
+          "coverage",
+          "line_mapping",
+          "segments"
         ],
         "additionalProperties": false
       }

@@ -1,0 +1,15 @@
+{
+  "backend/src/rpb/adapters/pdf_processing.py": "aa62026ca0828fffa0c24c7c4fa0a95a4fcc7b8f8dd9507f7c72c4738e39ad95",
+  "backend/src/rpb/adapters/pdf_engines.py": "0fcff502e900819d75bb24f6e959fd3dc3e3970576c9f8baebf674fd863cd55a",
+  "backend/src/rpb/adapters/pdf_container.py": "a2bbf8fbde5f4982dbe3df0cc87fdd53319e9142df5a1971c0b82c92ab5b2740",
+  "backend/tests/unit/test_pdf_engine_runtime.py": "b0339eeee74cd97097465011d33f91a2f3036623913b48b0e2411b44e235b34f",
+  "backend/tests/unit/test_pdf_processing.py": "ccbaed72677ed0d6adad73c2443d67f7206b2cdd74c7856cdfe99f22d6c03ce4",
+  "backend/tests/runtime/test_pdf_container.py": "ffe2a3998e689b7654cf4516ed6bfe497e55d58b1ba8aad75a5342281aa2fcd8",
+  "deploy/pdf-parser/Dockerfile": "20e3eb21c745c03b69e1aa960f398efff7502012e8831944d5914ed708cd18a8",
+  "deploy/pdf-parser/README.md": "194ab1e900c3a91705aa223fe0a7a78f105a5da78cffc3018ed9c75f61350eb6",
+  "tasks/046-paper-processing-gate.md": "7b9555f257238e65f25a00eba04d56e6e36ccf77190f06751e062955e58eae7f",
+  "docs/design/04-01_p0_operation_contracts.md": "64f34e3f4ae6cd43ff610044de6d4abf5a918021d5cd40ed059dfa886d5a986c",
+  "contracts/p0.coverage.json": "a66c31b04660627a4d3c8421c639c1883c35b18fab81e12f6bf8a26d61c183fc",
+  "docs/PROJECT_STATUS.md": "531cb86887f91a02a2a5ba1dbe12a13571fe1256067b254fcbec400864153fec",
+  "docs/workorders/evidence/task046_processing_gate_2026-10-29/review_runtime_probes.py": "1cfeb410691601747c0015ea3ab3819e35dd3ab8dccb05fc6fb8bdaf86bf5ec8"
+}

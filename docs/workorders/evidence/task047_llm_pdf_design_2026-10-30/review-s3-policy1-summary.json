@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-s3-policy1.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 1,
+    "passed": 0,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "::test_review_policy_revoked_after_failure_before_fallback",
+      "message": "AssertionError: {'basis': {'file_revision': None, 'input_revision': '9a68e0d5-e46b-4567-b2ff-bb6122f59231', 'text_revision_id': 'ae336...tart_offset': 0}], 'source_ids': ['0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', '0b333615-5948-4fbf-9069-dd60065f5c4a'], ...}\nassert 'processing' not in {'id': '0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', 'kind': 'paper', 'source': {'url': 'https://arxiv.org/abs/2601.00001', ...'metadata': {'doi': '10.1/0', 'url': 'https://arxiv.org/abs/2601.00001', 'year': 2026, 'title': 'A: PAPER!', ...}, ...}\nsubject = (<test_search_terms.TermsClient object at 0x111090830>, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'fZ2FdIbnq...da83c906d685acca45?host=%2Fprivate%2Ftmp%2Frpb-db-l30sbru5&port=5432), b'309QkOKQNucUaE3MRHWCp2jguLqd5xmhNms236kfOtk=')\n\n    def test_review_policy_revoked_after_failure_before_fallback(subject):\n        from rpb.adapters.llm_provider import ProviderFailure\n        from test_search_terms import post\n        c,h,root,app,engine,_=subject\n        url=ready(subject)\n        class Bad(Model):\n            def propose(self,*args):\n                super().propose(*args)\n                raise ProviderFailure(\"PROVIDER_RESPONSE_INVALID\")\n        worker=CleanupWorker(app.state.run_store,TextPDF(),Bad())\n        policy=c.get(root+\"/material-policy\").json()[\"data\"]\n        assert c.put(root+\"/material-policy\",headers=h,json={\"expected_revision\":policy[\"revision\"],\"mode\":\"allow_private\",\"risk_acknowledged\":True}).status_code==200\n        for _ in range(2):\n            assert worker.run_once()\n            doc=candidates(c,url)[0][\"cleanup_pending\"][\"document_asset_id\"]\n            path=root+\"/material-sources/\"+doc+\"/classification\"\n            value=c.get(path).json()[\"data\"]\n            assert post(c,h,path+\"/confirm\",{\"expected_revision\":value[\"revision\"],\"content_revision\":value[\"source\"][\"content_revision\"],\"classification\":\"private\",\"basis\":\"private PDF checked\",\"explicit_confirmation\":True}).status_code==200\n            assert worker.run_once()\n        policy=c.get(root+\"/material-policy\").json()[\"data\"]\n        assert c.put(root+\"/material-policy\",headers=h,json={\"expected_revision\":policy[\"revision\"],\"mode\":\"public_only\",\"risk_acknowledged\":False}).status_code==200\n        worker.run_once()\n>       assert \"processing\" not in candidates(c,url)[0], candidates(c,url)[0].get(\"processing\")\nE       AssertionError: {'basis': {'file_revision': None, 'input_revision': '9a68e0d5-e46b-4567-b2ff-bb6122f59231', 'text_revision_id': 'ae336...tart_offset': 0}], 'source_ids': ['0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', '0b333615-5948-4fbf-9069-dd60065f5c4a'], ...}\nE       assert 'processing' not in {'id': '0a6db039-d9b7-4347-8d7f-9038dd3f0ccb', 'kind': 'paper', 'source': {'url': 'https://arxiv.org/abs/2601.00001', ...'metadata': {'",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

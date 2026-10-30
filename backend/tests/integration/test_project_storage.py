@@ -48,7 +48,7 @@ def test_ps01_upgrade_existing_account_and_metadata(db):
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0014_construction_runs"
+            == "0015_processing_objects"
         )
 
 
@@ -77,6 +77,7 @@ def test_ps02_pair_commits_defaults_and_independent_read(db):
             "construction_workspaces",
             "construction_term_states",
             "construction_runs",
+            "construction_processing_objects",
             "construction_run_commands",
             "alembic_version",
             "auth_sessions",
@@ -222,7 +223,7 @@ def test_ps05_populated_downgrade_refused_empty_preserves_account(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0014_construction_runs"
+            == "0015_processing_objects"
         )
         conn.execute(cw.delete())
         conn.execute(projects.delete())
@@ -301,7 +302,7 @@ def test_ps06_committing_writer_blocks_destructive_downgrade(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0014_construction_runs"
+            == "0015_processing_objects"
         )
 
 

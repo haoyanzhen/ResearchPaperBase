@@ -1,0 +1,14 @@
+{
+  "command": [
+    "contracts/.venv/bin/python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "scripts/tests",
+    "-p",
+    "test_*contracts.py"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": null
+}

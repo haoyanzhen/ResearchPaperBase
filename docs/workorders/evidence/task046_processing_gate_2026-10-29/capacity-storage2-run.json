@@ -1,0 +1,10 @@
+{
+  "command": [
+    "backend/.venv/bin/python",
+    "scripts/run_storage_tests.py",
+    "--postgres-bin",
+    "/opt/homebrew/opt/postgresql@17/bin"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": "-k \"test_lc or test_lu or test_sl or test_sb\" --junitxml=/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task046_processing_gate_2026-10-29/capacity-storage2-tests.xml"
+}

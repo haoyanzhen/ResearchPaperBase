@@ -35,7 +35,15 @@ def busy(run: Any) -> bool:
 
 
 def writable(run: Any) -> None:
-    if run["status"] != "waiting_user" or run.get("phase") != "screening":
+    from rpb.adapters.paper_processing import busy as processing_busy
+
+    if processing_busy(run):
+        raise AccountError("LOCK_CONTENT_BUSY", 409)
+    if run["status"] != "waiting_user" or run.get("phase") not in {
+        "screening",
+        "processing",
+        "analysis",
+    }:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if busy(run):
         raise AccountError("LOCK_CONTENT_BUSY", 409)
@@ -137,6 +145,26 @@ def preview(run: Any, body: Any) -> Any:
                         "reason": "替换所选论文组的评分与有效性；原判断保留历史",
                     }
                 )
+    for leader in chosen:
+        basis = leader.get("processing", {}).get("basis", {})
+        if basis.get("confirmed_revision"):
+            affected.append(
+                {
+                    "kind": "confirmation_invalidation",
+                    "object": {
+                        "type": "construction_candidate",
+                        "id": leader["id"],
+                        "project_id": run["project_id"],
+                        "revision": leader["revision"],
+                        "read_url": (
+                            f"/api/v1/projects/{run['project_id']}"
+                            f"/construction-runs/{run['id']}/candidates"
+                        ),
+                    },
+                    "confirmation_revision": basis["confirmed_revision"],
+                    "reason": "新评分成功后需重新确认受影响的文本处理；原确认保留历史",
+                }
+            )
     expires = (datetime.now(UTC) + timedelta(minutes=10)).isoformat().replace("+00:00", "Z")
     basis = json.dumps(
         [
@@ -249,11 +277,26 @@ def accept(run: Any, body: Any, state: Any, project: Any) -> Any:
         "events": [event_record("queued", UUID(revision), datetime.now(UTC))],
         "results": [],
     }
+    job["return_phase"] = run.get("phase", "screening")
+    run["phase"] = "screening"
     run.setdefault("scoring_jobs", {})[identity] = job
     return job
 
 
-def bump(run: Any) -> None:
+def bump(run: Any, changed_ids: set[str]) -> None:
+    run["phase"] = "screening"
+    if run.get("processing_confirmation"):
+        run.setdefault("processing_confirmation_history", []).append(
+            run.pop("processing_confirmation")
+        )
+    for candidate in run["candidates"]:
+        if candidate["id"] in changed_ids and candidate.get("processing", {}).get("basis"):
+            candidate["processing_stale"] = True
+            if candidate["processing"]["basis"]["confirmed_revision"]:
+                candidate.setdefault("processing_history", []).append(
+                    copy.deepcopy(candidate["processing"])
+                )
+            candidate["processing"]["basis"]["confirmed_revision"] = None
     revision = str(uuid4())
     run["candidate_revision"] = revision
     run["candidate_version"]["revision"] = revision
@@ -304,7 +347,7 @@ def edit(run: Any, body: Any, actor: Any) -> Any:
             screening_modified_by=str(actor),
             screening_modified_at=now(),
         )
-    bump(run)
+    bump(run, {item["id"] for item in members(run, c)})
     return c
 
 
@@ -323,7 +366,7 @@ def archive(c: Any, action: str, actor: str) -> None:
 
 
 def summary(run: Any) -> Any:
-    if run.get("phase") != "screening":
+    if run.get("phase") not in {"screening", "processing", "analysis"}:
         return None
     if run["status"] == "cancelled" and "screening_summary" in run:
         return run["screening_summary"]

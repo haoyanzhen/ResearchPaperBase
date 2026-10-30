@@ -1,0 +1,16 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-s3-db1.xml",
+  "exit_code": 0,
+  "status": "reported_pass",
+  "counts": {
+    "tests": 27,
+    "passed": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

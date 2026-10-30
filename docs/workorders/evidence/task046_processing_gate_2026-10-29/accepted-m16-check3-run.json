@@ -1,0 +1,8 @@
+{
+  "command": [
+    "python3",
+    "docs/workorders/evidence/task047_acceptance_2026-10-30/verify_commit.py"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": null
+}

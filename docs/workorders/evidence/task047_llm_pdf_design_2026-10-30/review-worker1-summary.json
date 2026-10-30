@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-worker1.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 1,
+    "passed": 0,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "::test_review_group_budget_keeps_attempted_source",
+      "message": "AssertionError: {'basis': {'file_revision': None, 'input_revision': '72f47639-1185-4662-aa1b-83986a925f3b', 'text_revision_id': None, ...'source_ids': ['8d87a725-eac4-4aa8-9814-b58612be1616', '4d4e5295-756c-42a7-9e6a-43c4af23592c'], 'diagnostics': [], ...}\nassert 'not_attempted' == 'failed'\n  \n  - failed\n  + not_attempted\nsubject = (<test_search_terms.TermsClient object at 0x10ca778c0>, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'QH-rcGRDW...a8a3e1f28c08e61b4b?host=%2Fprivate%2Ftmp%2Frpb-db-pn5spssq&port=5432), b'VGdDbuL21ZiIy7kKBS7I9awHGRFeMCWIxFUZ2jSYMlE=')\n\n    def test_review_group_budget_keeps_attempted_source(subject):\n        c,h,_,app,engine,_ = subject\n        url=ready(subject)\n        model=Model()\n        worker=CleanupWorker(app.state.run_store, TextPDF(\"line\\n\"*100), model)\n        assert worker.run_once()\n        file_classify(subject,url)\n        assert worker.run_once()\n        assert len(model.calls)==1\n        with engine.begin() as conn:\n            run=conn.scalar(sa.select(runs.c.payload))\n            job=run[\"processing_job\"]\n            source_id=job[\"prepared\"][\"source_id\"]\n            assert job[\"budget\"][\"calls\"]==1 and job[\"replies\"]\n            job[\"budget\"][\"seconds\"]=job[\"budget\"][\"limits\"][\"group_seconds\"]\n            conn.execute(runs.update().values(payload=run))\n        assert worker.run_once()\n        result=candidates(c,url)[0][\"processing\"]\n        attempted=next(x for x in result[\"source_attempts\"] if x[\"source_id\"]==source_id)\n>       assert attempted[\"state\"] == \"failed\", result\nE       AssertionError: {'basis': {'file_revision': None, 'input_revision': '72f47639-1185-4662-aa1b-83986a925f3b', 'text_revision_id': None, ...'source_ids': ['8d87a725-eac4-4aa8-9814-b58612be1616', '4d4e5295-756c-42a7-9e6a-43c4af23592c'], 'diagnostics': [], ...}\nE       assert 'not_attempted' == 'failed'\nE         \nE         - failed\nE         + not_attempted\n\n../docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_worker_probe.py:29: AssertionError",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": false
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

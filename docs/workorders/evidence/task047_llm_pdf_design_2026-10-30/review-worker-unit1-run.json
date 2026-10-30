@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/unit/test_pdf_cleanup_capacity.py",
+    "tests/unit/test_pdf_cleanup_provider.py",
+    "--junitxml=/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-worker-unit1.xml",
+    "-q"
+  ],
+  "cwd": "/Users/qingyue/projects/ResearchPaperBase_codex/backend",
+  "exit_code": 0
+}

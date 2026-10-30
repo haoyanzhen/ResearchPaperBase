@@ -1,0 +1,11 @@
+{
+  "command": [
+    "backend/.venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/unit",
+    "backend/tests/architecture"
+  ],
+  "exit_code": 0,
+  "pytest_addopts": " --junitxml=/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task046_processing_gate_2026-10-29/cleanup-unit-final-tests.xml"
+}

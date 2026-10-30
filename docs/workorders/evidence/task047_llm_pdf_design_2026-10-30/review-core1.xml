@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="62" time="0.442" timestamp="2026-10-30T09:46:16.150997+08:00" hostname="qy.local"><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc01_preserves_unicode_indent_empty_lines_and_page_end" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc02_batches_cover_every_boundary_once_and_never_cross_pages" time="0.001" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[extra_prose]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[delete]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[duplicate]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[reorder]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[wrong_id]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[unknown_separator]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[missing]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc03_model_cannot_rewrite_delete_reorder_or_invent[bad_type]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc04_empty_scan_text_and_oversize_line_rejected_before_dispatch" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc05_invalid_source_page_mapping_rejected[segments0]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc05_invalid_source_page_mapping_rejected[segments1]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc05_invalid_source_page_mapping_rejected[segments2]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc05_invalid_source_page_mapping_rejected[segments3]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc05_invalid_source_page_mapping_rejected[segments4]" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc06_partial_batch_results_never_produce_success" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc07_single_line_has_no_boundaries_and_fixed_page_break" time="0.000" /><testcase classname="tests.unit.test_pdf_text_cleanup" name="test_lc08_expanded_paragraphs_cannot_exceed_output_limit" time="0.361" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp01_one_text_request_uses_selected_model_parameters_and_authority[openai_chat]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp01_one_text_request_uses_selected_model_parameters_and_authority[openai_responses]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp01_one_text_request_uses_selected_model_parameters_and_authority[anthropic_messages]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp01_one_text_request_uses_selected_model_parameters_and_authority[gemini_content]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp02_current_denial_dispatches_nothing[openai_chat]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp02_current_denial_dispatches_nothing[openai_responses]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp02_current_denial_dispatches_nothing[anthropic_messages]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp02_current_denial_dispatches_nothing[gemini_content]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[{&quot;text&quot;:&quot;rewritten&quot;}-openai_chat]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[{&quot;text&quot;:&quot;rewritten&quot;}-openai_responses]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[{&quot;text&quot;:&quot;rewritten&quot;}-anthropic_messages]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[{&quot;text&quot;:&quot;rewritten&quot;}-gemini_content]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[null-openai_chat]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[null-openai_responses]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[null-anthropic_messages]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[null-gemini_content]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[not JSON-openai_chat]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[not JSON-openai_responses]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[not JSON-anthropic_messages]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp03_invalid_output_is_failure_without_retry_or_model_switch[not JSON-gemini_content]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[incomplete-openai_chat]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[incomplete-openai_responses]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[incomplete-anthropic_messages]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[incomplete-gemini_content]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[malformed-openai_chat]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[malformed-openai_responses]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[malformed-anthropic_messages]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp04_incomplete_or_malformed_envelope_cannot_succeed[malformed-gemini_content]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp05_invalid_time_budget_is_rejected_before_dispatch[0]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp05_invalid_time_budget_is_rejected_before_dispatch[-1]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp05_invalid_time_budget_is_rejected_before_dispatch[31]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp05_invalid_time_budget_is_rejected_before_dispatch[nan]" time="0.000" /><testcase classname="tests.unit.test_pdf_cleanup_provider" name="test_lcp05_invalid_time_budget_is_rejected_before_dispatch[inf]" time="0.000" /><testcase classname="" name="test_gemini_thought_summary_not_parsed_as_final_answer" time="0.000"><failure message="rpb.adapters.llm_provider.ProviderFailure: PROVIDER_RESPONSE_INVALID">def test_gemini_thought_summary_not_parsed_as_final_answer():
+        c=config("gemini_content");c["parameters"]["custom_params"]={"thinkingConfig":{"includeThoughts":True}}
+        envelope=response("gemini_content",json.dumps(REPLY))
+        envelope["candidates"][0]["content"]["parts"].insert(0,{"thought":True,"text":"reasoning summary"})
+        http=HTTP(envelope)
+&gt;       result=CleanupProvider(http).propose(c,"gemini-2.5-flash","secret-value",batch(),5,nullcontext)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_core_probes.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;rpb.adapters.pdf_cleanup_provider.CleanupProvider object at 0x106b83bb0&gt;
+config = {'protocol': 'gemini_content', 'base_url': 'https://example.test', 'api_version': '', 'parameters': {'max_output_tokens': 1024, 'custom_params': {'thinkingConfig': {'includeThoughts': True}}}, ...}
+model = 'gemini-2.5-flash', secret = 'secret-value'
+batch = Batch(lines=(Line(identity='p1:l1', text='first', start=0, end=5, page=1), Line(identity='p1:l2', text='second', start=6, end=12, page=1)), raw_digest='dbea9325179efe46ea2add94f7b6b745ca983fabb208dc6d34aa064623d7ee23')
+timeout = 5, authorize = &lt;class 'contextlib.nullcontext'&gt;
+
+    def propose(
+        self,
+        config: dict[str, Any],
+        model: str,
+        secret: str,
+        batch: Batch,
+        timeout: float,
+        authorize: Callable[[], AbstractContextManager[None]],
+    ) -&gt; dict[str, Any]:
+        """Exactly one request, no fallback/retry and no implicit configuration probes."""
+        if not 0 &lt; timeout &lt;= 30:
+            raise ProviderFailure("CONFIG_CONNECTION_FAILED")
+        prompt = batch.prompt()
+        protocol = config["protocol"]
+        params = compile_for_model(protocol, model, config["parameters"], config["api_version"])
+        if protocol in {"openai_chat", "anthropic_messages"}:
+            if protocol == "anthropic_messages" and "max_tokens" not in params:
+                raise ProviderFailure("CONFIG_CONNECTION_FAILED")
+            path = "/messages" if protocol == "anthropic_messages" else "/chat/completions"
+            body = {
+                **params,
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+            }
+        elif protocol == "openai_responses":
+            path, body = "/responses", {**params, "model": model, "input": prompt, "stream": False}
+        elif protocol == "gemini_content":
+            path = "/models/" + quote(model, safe="") + ":generateContent"
+            body = {**params, "contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+        else:
+            raise ProviderFailure("CONFIG_CONNECTION_FAILED")
+        response = self.http.request(
+            config["base_url"],
+            path,
+            secret,
+            protocol,
+            config["api_version"],
+            body,
+            min(timeout, config["timeout_seconds"]),
+            authorize,
+        )
+        try:
+            if protocol == "openai_chat":
+                item = response["choices"][0]
+                if item.get("finish_reason") not in {None, "stop"}:
+                    raise ValueError("incomplete response")
+                text = item["message"]["content"]
+            elif protocol == "openai_responses":
+                if response.get("status") not in {None, "completed"}:
+                    raise ValueError("incomplete response")
+                text = "".join(
+                    part["text"]
+                    for item in response["output"]
+                    if item.get("type") == "message"
+                    for part in item["content"]
+                    if part.get("type") == "output_text"
+                )
+            elif protocol == "anthropic_messages":
+                if response.get("stop_reason") not in {None, "end_turn", "stop_sequence"}:
+                    raise ValueError("incomplete response")
+                text = "".join(
+                    part["text"] for part in response["content"] if part.get("type") == "text"
+                )
+            else:
+                item = response["candidates"][0]
+                if item.get("finishReason") not in {None, "STOP"}:
+                    raise ValueError("incomplete response")
+                text = "".join(part["text"] for part in item["content"]["parts"])
+            if not isinstance(text, str) or (secret and secret in text):
+                raise ValueError("invalid or credential-bearing response")
+            result: dict[str, Any] = json.loads(text)
+            validate(batch, result)
+            return result
+        except ValueError, KeyError, TypeError, IndexError, RecursionError, AttributeError:
+&gt;           raise ProviderFailure("PROVIDER_RESPONSE_INVALID") from None
+E           rpb.adapters.llm_provider.ProviderFailure: PROVIDER_RESPONSE_INVALID
+
+backend/src/rpb/adapters/pdf_cleanup_provider.py:93: ProviderFailure</failure></testcase><testcase classname="" name="test_gemini_thought_only_cannot_become_final_proposal" time="0.000"><failure message="Failed: DID NOT RAISE ProviderFailure">def test_gemini_thought_only_cannot_become_final_proposal():
+        envelope=response("gemini_content",json.dumps(REPLY))
+        envelope["candidates"][0]["content"]["parts"][0]["thought"]=True
+&gt;       with pytest.raises(ProviderFailure,match="PROVIDER_RESPONSE_INVALID"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ProviderFailure
+
+docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_core_probes.py:22: Failed</failure></testcase><testcase classname="" name="test_credential_echo_rejected_without_response_leak[openai_chat]" time="0.000" /><testcase classname="" name="test_credential_echo_rejected_without_response_leak[openai_responses]" time="0.000" /><testcase classname="" name="test_credential_echo_rejected_without_response_leak[anthropic_messages]" time="0.000" /><testcase classname="" name="test_credential_echo_rejected_without_response_leak[gemini_content]" time="0.000" /><testcase classname="" name="test_identity_separators_preserve_every_original_character[a\r\nb\r\n]" time="0.000" /><testcase classname="" name="test_identity_separators_preserve_every_original_character[\n  x\n\n]" time="0.000" /><testcase classname="" name="test_identity_separators_preserve_every_original_character[\u03b1\U0001f600\n\u4e2d\n]" time="0.000" /><testcase classname="" name="test_identity_separators_preserve_every_original_character[x\u2028y\nz\n]" time="0.000" /></testsuite></testsuites>

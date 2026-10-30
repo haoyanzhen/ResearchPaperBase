@@ -1,0 +1,1 @@
+{"command": ["backend/.venv/bin/python", "-m", "pytest", "backend/tests/unit/test_context_capacity.py", "docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_capacity_unit.py", "-q", "--junitxml=docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-capacity-unit1.xml"], "exit_code": 0}

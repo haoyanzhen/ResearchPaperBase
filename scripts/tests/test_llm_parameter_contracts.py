@@ -21,3 +21,12 @@ class LLMParameterContracts(unittest.TestCase):
         for path in ['/me/llm-configs/{config_id}/test', '/me/llm-configs/{config_id}/models/refresh']:
             self.assertIn('202', SPEC_DATA['paths'][path]['post']['responses'])
         self.assertNotIn('cancel', SCHEMAS['LLMTaskView']['properties'])
+
+    def test_context_capacity_map_is_bounded_metadata(self):
+        for value in ({}, {'model-a': 262144}, {'model-a': 524288}):
+            self.assertTrue(valid('LLMPatch', {'expected_revision': 'r1', 'model_context_windows': value}))
+        for value in (None, {'model-a': True}, {'model-a': 0}, {'model-a': '262144'},
+                      {'': 262144}, {' model': 262144}, {'model ': 262144}, {'model-a\n': 262144},
+                      {'model-a': 2147483648}, {str(i): 1 for i in range(1001)}):
+            self.assertFalse(valid('LLMPatch', {'expected_revision': 'r1', 'model_context_windows': value}))
+        self.assertFalse(valid('ModelParameters', {'model_context_windows': {'model-a': 262144}}))

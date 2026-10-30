@@ -1,0 +1,11 @@
+{
+  "command": [
+    "docker",
+    "build",
+    "--tag",
+    "rpb-pdf-parser:1",
+    "deploy/pdf-parser"
+  ],
+  "exit_code": 1,
+  "pytest_addopts": null
+}

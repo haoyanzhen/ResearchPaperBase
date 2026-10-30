@@ -1,0 +1,14 @@
+{
+  "backend/src/rpb/modules/account_config/domain/context_capacity.py": "220f427f34c28d7994c057bd14a091d4248b3f151b9119913fa43584d5da2e9e",
+  "backend/src/rpb/adapters/llm.py": "42c68badfa957be950228c3982f42fb4d11deeda5a82a26102a022eed160cafa",
+  "backend/src/rpb/api/llm.py": "f24c3a7492a2a2782339e5afb76a6e6b1f28e5e6698512acbb112096b052cb34",
+  "frontend/src/LLMSettings.tsx": "3c465c5fc28974653688e29786aa6993b7c42528e3863227b510822303e152bd",
+  "contracts/p0.openapi.json": "ae171c3176f28bfbecd9ec0916a65fce9a784c1c5fc91389b0f2650e64de773c",
+  "scripts/check_api_contracts.py": "68963e063aa7dc5fecada94d567df39598ec73ea5831c80c3fdac28a925eb2fe",
+  "backend/tests/unit/test_context_capacity.py": "392a7c477d62a898f4b2c20edced81e978bd89c41499c8f298d5349d0bba669d",
+  "backend/tests/integration/test_llm_configuration.py": "a063dec9c01f7702e165176dc626d94a05f776e8999d5cd5c48b52627ffee2a2",
+  "backend/tests/integration/test_browser_llm.py": "3cd7af2b622004f8fd4d9dd2f6c016b75adcabc83ab3ffde5da63137ef7f4694",
+  "backend/tests/integration/test_system_llm.py": "002ec48c5ae29fceb2a510d2a7663f67e1d67b4a69a66c0c1e36332d4d93b845",
+  "scripts/tests/test_llm_parameter_contracts.py": "569b6dfa3739b133ea07446fb6d7f05379ff004b2a2cc8d98f11bdd9a502cadb",
+  "docs/design/04-04_llm_parameter_contracts.md": "b8990c138ac73428fa1b7aa59879e829f962b46eff40afdcfb179e32fbc27f53"
+}

@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.24
-更新日期：2026-10-29
+文档版本：v1.28
+更新日期：2026-10-30
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -248,6 +248,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 | POST `CW/supplements/upload` | `Construction.UploadSupplement` / 023,024 | multipart `file!,kind:paper\|material!,title?` → `{supplement:SupplementView,task:TaskRef}` | 单文件；格式/大小按04-02；paper仅PDF |
 | GET/PATCH `CW/supplements/{supplement_id}` | `Construction.ReadSupplement/CorrectSupplement` / 023 | 无/SupplementPatch → SupplementView | 仅未入库确认的请求可修改；已冻结范围走候选修正，已发布同身份须先完成移除再显式新导入 |
 | GET `CW/supplements/{supplement_id}/file-access` | `Construction.AccessSupplementFile` / 023,024 | `document_asset_id!` query → 04-02 UnpublishedFileAccess | 只读该请求实际关联且可安全读取的文件；不解析、不确认、不纳入 |
+| GET `CR/candidates/{candidate_id}/processing-text` | `Construction.ReadProcessingText` / 024 | 无 → 原始提取全文、整理全文、处理修订、页段及行映射 | 当前Project/Run/候选完整归属鉴权；no-store；不接受知识版本或任意对象ID，不写状态 |
 | GET `CR/candidates/{candidate_id}/file-access` | `Construction.AccessCandidateFile` / 024 | `document_asset_id!` query → 04-02 UnpublishedFileAccess | 校验 Project/Run/候选/文件完整归属，不作为正式研究证据入口 |
 | GET `CW/supplements/{supplement_id}/files/{document_asset_id}/download`、`CR/candidates/{candidate_id}/files/{document_asset_id}/download` | `Construction.DownloadUnpublishedFile` / 023,024 | 无 → 鉴权文件流 | 与 file-access 同等当前权限、生命周期和安全接收检查；不接受 knowledge_version_id |
 | POST `CW/supplements/{supplement_id}/confirm` | `Construction.ConfirmSupplement` / 023 | RevCommand+Confirmation → SupplementView | 详情confirmations提供当前确认token；关键元数据冲突、资料标题缺失禁止确认；仅进入待纳入 |
@@ -581,3 +582,24 @@ MetadataCandidate增加必填`assessment:MetadataDraftAssessment`：`{confidence
 Task044（2026-10-29）论文评分限定增量：同Run身份组按逐来源原始标题/摘要结构化输入评分，不拼接成权威摘要；空摘要如实保留。PaperScreeningView返回0–10分、有效性、系统默认阈值来源和理由；screening_basis记录三类理由、阈值7、冻结模型配置修订、实际来源/主题输入及任务。人工修改、过期依据、错误和历史独立投影；身份变化保留旧判断并标记待复核，不按显示代表自动解决冲突。候选详情提供MaterialClassificationView，来源分类与当前资料政策在读取/派发/提交重验；主题使用评分命令受理时已分类的具体内容修订，不改变Run初始输入/模型快照。
 
 POST screening/action-preview与score按A07绑定当前候选集及所选组，人工覆盖须完整预览；PATCH候选本切片只开放screening评分/有效性/理由，metadata/analysis仍未实现。运行中的评分拒绝候选编辑/去重变更；失败或取消保留人工内容。ScoringTaskView为该限定Task投影，原Run仍处于screening等待，评分任务完成不等于Run发布；不能从此推定筛选确认/下载解析已开放。Run/candidate新增字段机器契约见PaperScreeningView、ScoringPreview、ScoringTaskView、PaperScreeningPatch及RetrievalCandidate/RunView；不扩全量CandidateView或一般Task覆盖声明。
+
+
+### M-P0-15工程细化：论文处理切片
+
+D-CW-04 B（2026-10-29用户选择）：沿冻结候选来源顺序选首个可用全文；全部全文不可用才选第一份真实非空摘要，不拼接。确认展示最终来源、其他来源及逐次失败诊断，不声称所选版本最新/权威。筛选阶段确认仅放行当前有效且依据未失效的独立论文组，失败/无效/待判定项仍可诊断，不增加整Run全成功门槛。
+
+沿既有ConfirmStep路由支持confirm_screening/confirm_processing，沿修订和主体绑定token。处理完成等待用户；无可用文本不进入分析。确认后phase=analysis只表示已完成处理确认，本切片没有分析生成/入库能力。活动处理与编辑互斥；处理完成后评分/有效性/去重编辑保留旧处理历史和文件，失效受影响确认，重新筛选确认。Run源、配置和知识基线不变。
+
+本片RetrievalCandidate增加可选processing（机器schema RunPaperProcessing）、processing_history与document_refs；processing展示状态、来源类型、最终source ID、按序source IDs及必返source_attempts（所选全文/所选摘要/全文失败/未尝试）、脱敏diagnostics、前2000字符节选及总字符数、文本digest、页/文本范围和ProcessingBasis。全文分类单独返回material_classification，不继承摘要分类。对象字节与完整文本存于Run所属未发布对象，列表不内联正文或物理路径；file-access及download沿原授权路由。处理/确认不设置参与正式知识标志，旧结果不能冒充新确认。
+
+PDF下载每跳独立校验公开HTTP/HTTPS目标，最多4次请求、每次30秒，最多50MiB，无应用凭据；静态解析子进程20秒、CPU15秒、最多2000页/200000字符且不截断，限额失败可用真实摘要降级。macOS保留sandbox-exec；Windows/Linux采用独立Linux解析容器方案，Windows宿主需要Docker Desktop的Linux容器模式，不宣称Windows原生无依赖运行。应用不必整体容器化；未提供隔离运行时的平台必须报告parser_unavailable，不退回应用进程解析。技术获取重试预算为0，不新增P1通用恢复。非论文格式、独立补充上传/替换、全局成员、AI分析和发布仍不属于本切片，不宣称完整FR024验收。
+
+2026-10-29用户确认提取引擎选择语义：提供多个引擎选项，每次选择一个执行，不同时运行多个引擎或混合结果。本阶段建立统一后端选择/结果接口，仅pypdf已实现；未实现引擎不列为可用，也不新增终端用户选择UI。LLM PDF解析引擎列为下一阶段设计目标，未授权本阶段模型调用；后续需明确Run冻结选择、外发权限、模型配置、证据定位、预算与失败规则。平台方案、部署依赖及真实执行证据参见[运行器说明](../../deploy/pdf-parser/README.md)与[task046](../../tasks/046-paper-processing-gate.md)，实现方案不代表平台验证通过。
+
+### M-P0-16工程细化：LLM文字整理（2026-10-30）
+
+依据task047及D-PDF-01–04：RetrievalRunStart可选pdf_extraction_engine=pypdf|llm_text_cleanup，省略及旧Run为pypdf；单次选一个引擎，换引擎新建Run。LLM引擎内部pypdf静态准备，仅读文字层，不视觉/OCR；保留原行原序，只建议同页换行。冻结同一Run模型/参数；不改变评分等其他调用的参数。个人每模型上下文容量默认262144；仅整理引擎未指定输出上限时默认4096，原显式同义输出参数保留。实际容量与隐藏推理消耗不能由连通测试证明，按UTF-8字节保守估计并预留协议/输出，单行不容纳明确失败，Provider截断/超限拒绝且不截断原文。
+
+实际PDF保存为Project/Run/候选所属不可变对象，独立private/unconfirmed分类；cleanup_pending给出文件、来源及分类。D-PDF-02特定例外：分类保存自动继续已明确请求的原整理作业，不另启动流水线，不复活终态任务；派发与提交仍重验当前权限、分类修订和资料政策。活动分类等待也禁止候选编辑和处理确认。原文件/原文本与整理后文本分开保存，cleanup给出来源定位/模型/输出默认标志和映射，processing-text按需读取完整比较文本；列表仅节选，旧人工确认和处理历史保留。
+
+每调用30秒、每来源120秒/32次、每论文组240秒/64次，限额冻结；外呼前原子预留并提交预算，结果未知不重发，重启不重置。失败按冻结来源顺序继续，整源所有批次验证才可用；组预算耗尽不把未尝试来源写成失败，也不能将真实摘要标作成功降级，只有全部全文实际不可用才选真实摘要。权限/政策失效或取消停止并拒绝提交。此设计细化不代表S6或M-P0-16验收已完成；平台实测限制继续沿task046记录。

@@ -1,0 +1,33 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review-core1.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 62,
+    "passed": 60,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "::test_gemini_thought_summary_not_parsed_as_final_answer",
+      "message": "rpb.adapters.llm_provider.ProviderFailure: PROVIDER_RESPONSE_INVALID\ndef test_gemini_thought_summary_not_parsed_as_final_answer():\n        c=config(\"gemini_content\");c[\"parameters\"][\"custom_params\"]={\"thinkingConfig\":{\"includeThoughts\":True}}\n        envelope=response(\"gemini_content\",json.dumps(REPLY))\n        envelope[\"candidates\"][0][\"content\"][\"parts\"].insert(0,{\"thought\":True,\"text\":\"reasoning summary\"})\n        http=HTTP(envelope)\n>       result=CleanupProvider(http).propose(c,\"gemini-2.5-flash\",\"secret-value\",batch(),5,nullcontext)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ndocs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_core_probes.py:16: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <rpb.adapters.pdf_cleanup_provider.CleanupProvider object at 0x106b83bb0>\nconfig = {'protocol': 'gemini_content', 'base_url': 'https://example.test', 'api_version': '', 'parameters': {'max_output_tokens': 1024, 'custom_params': {'thinkingConfig': {'includeThoughts': True}}}, ...}\nmodel = 'gemini-2.5-flash', secret = 'secret-value'\nbatch = Batch(lines=(Line(identity='p1:l1', text='first', start=0, end=5, page=1), Line(identity='p1:l2', text='second', start=6, end=12, page=1)), raw_digest='dbea9325179efe46ea2add94f7b6b745ca983fabb208dc6d34aa064623d7ee23')\ntimeout = 5, authorize = <class 'contextlib.nullcontext'>\n\n    def propose(\n        self,\n        config: dict[str, Any],\n        model: str,\n        secret: str,\n        batch: Batch,\n        timeout: float,\n        authorize: Callable[[], AbstractContextManager[None]],\n    ) -> dict[str, Any]:\n        \"\"\"Exactly one request, no fallback/retry and no implicit configuration probes.\"\"\"\n        if not 0 < timeout <= 30:\n            raise ProviderFailure(\"CONFIG_CONNECTION_FAILED\")\n        prompt = batch.prompt()\n        protocol = config[\"protocol\"]\n        params = compile_for_model(protocol, model, config[\"parameters\"], config[\"api_version\"])\n        if protocol in {\"openai_chat\", \"anthropic_messages\"}:\n            if protocol == \"anthropic_messages\" and \"max_tokens\" not in params:\n                raise ProviderFailure(\"CONFIG_CONNECTION_FAILED\")\n            path = \"/messages\" if protocol == \"anthropic_messages\" else \"/chat/completions\"\n            body = {\n                **params,\n                \"model\": model,\n                \"messages\": [{\"role\": \"user\", \"content\": prompt}],\n                \"stream\": False,\n            }\n        elif protocol == \"openai_responses\":\n            path, body = \"/responses\", {**params, \"model\": model, \"input\": prompt, \"stream\": False}\n        elif protocol == \"gemini_content\":\n            path = \"/models/\" + quote(model, safe=\"\") + \":generateContent\"\n            body = {**params, \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": prompt}]}]}\n        else:\n            raise ProviderFailure(\"CONFIG_CONNECTION_FAILED\")\n        response = self.http.request(\n            config[\"base_url\"],\n            path,\n            secret,\n            protocol,\n            config[\"api_version\"],\n            body,\n            min(timeout, config[\"timeout_seconds\"]),\n            authorize,\n        )\n        try:\n            if protocol == \"openai_chat\":\n                item = response[\"choices\"][0]\n                if item.get(\"finish_reason\") not in {None, \"stop\"}:\n                    raise ValueError(\"incomplete response\")\n                text = item[\"message\"][\"content\"]\n            elif protocol == \"openai_responses\":\n                if response.get(\"status\") not in {None, \"completed\"}:\n                    raise ValueError(\"incomplete response\")\n                text = \"\".join(\n                    part[\"text\"]\n                    for item in response[\"output\"]\n                    if item.get(\"type\") == \"message\"\n                    for part in item[\"content\"]\n                    if part.get(\"type\") == \"output_text\"\n                )\n            elif protocol == \"anthropic_messages\":\n                if response.get(\"stop_reason\") not in {None, \"end_turn\", \"stop_sequence\"}:\n                    raise ValueError(\"incomplete response\")\n                text = \"\".join(\n                    part[\"text\"] for part in response[\"content\"] if part.get(\"type\") == \"text\"\n                )\n            else:\n                item = response[\"candidates\"][0]\n                if item.get(\"finishReason\") not in {None, \"STOP\"}:\n                    raise ValueError(\"incomplete response\")\n                text = \"\".join(part[\"text\"] for part in item[\"content\"][\"parts\"])\n            if not isinstance(text, str) or (secret and secret in text):\n                raise ValueError(\"invalid or credential-bearing response\")\n            result: dict[str, Any] = json.loads(text)\n            validate(batch, result)\n            return result\n        except ValueError, KeyError, TypeError, IndexError, RecursionError, AttributeError:\n>           raise ProviderFailure(\"PROVIDER",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    },
+    {
+      "test": "::test_gemini_thought_only_cannot_become_final_proposal",
+      "message": "Failed: DID NOT RAISE ProviderFailure\ndef test_gemini_thought_only_cannot_become_final_proposal():\n        envelope=response(\"gemini_content\",json.dumps(REPLY))\n        envelope[\"candidates\"][0][\"content\"][\"parts\"][0][\"thought\"]=True\n>       with pytest.raises(ProviderFailure,match=\"PROVIDER_RESPONSE_INVALID\"):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ProviderFailure\n\ndocs/workorders/evidence/task047_llm_pdf_design_2026-10-30/review_core_probes.py:22: Failed",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": false
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}
