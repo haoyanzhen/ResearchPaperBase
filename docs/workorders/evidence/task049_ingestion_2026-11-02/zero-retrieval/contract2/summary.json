@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task049_ingestion_2026-11-02/zero-retrieval/contract2/output.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 352,
+  "read_start_byte": 0,
+  "text": "PASS: 88 request/success partial + 28 request-only operations; 240 schemas; 136 inventoried source rows; 5/6 SSE payload types\nCOMPATIBILITY NOT CHECKED: no prior reviewed --baseline supplied.\nNOT VERIFIED: runtime authorization/state/transactions, runtime error sanitization/action eligibility, TaskView/output and uncovered operations; see coverage.\n",
+  "truncated": false
+}

@@ -1,4 +1,4 @@
-"""Read-only screening preview for a complete retrieval containing only existing papers."""
+"""Read-only screening preview for a complete retrieval with no new papers."""
 
 from collections import Counter
 from typing import Any
@@ -46,13 +46,17 @@ def _complete_retrieval(run: Any) -> bool:
         or r["limited"] is not False
         or type(r["count"]) is not int
         or r["count"] < 0
+        or type(r["skipped_date"]) is not int
         or r["skipped_date"] != 0
         for r in results
     ):
         return False
     counts = {(r["term_id"], r["source"], r["config_id"]): r["count"] for r in results}
     # Only a newly attested exhausted search can support this preview; legacy results lack it.
-    attested = Counter(tuple(fact) for fact in run.get("exhausted_sources", []))
+    facts = run.get("exhausted_sources", [])
+    if any(len(fact) != 4 or type(fact[3]) is not int for fact in facts):
+        return False
+    attested = Counter(tuple(fact) for fact in facts)
     if (
         len(counts) != len(results)
         or counts.keys() != set(expected)
@@ -77,7 +81,7 @@ def baseline_match_preview(conn: Any, run: Any) -> dict[str, Any] | None:
 
 
 def match_scope_digest(run: Any, scope: dict[str, Any]) -> str:
-    keys = (
+    keys: tuple[str, ...] = (
         "id",
         "owner_id",
         "project_id",
@@ -97,6 +101,8 @@ def match_scope_digest(run: Any, scope: dict[str, Any]) -> str:
         "dedup_group_leaders",
         "retrieval_confirmation",
     )
+    if "retrieval_proof_version" in run:
+        keys += ("retrieval_proof_version",)
     # The candidate state advances during verification; its revision is bound separately.
     return content_digest({"scope": scope, "facts": {key: run.get(key) for key in keys}})
 
@@ -112,7 +118,8 @@ def matched_baseline_scope(conn: Any, run: Any) -> dict[str, Any] | None:
         or snapshot.get("graph_mode") != "incremental"
         or snapshot.get("supplement_ids") != []
         or snapshot.get("pending_revision_ids") != []
-        or not run["candidates"]
+        or not isinstance(run.get("candidates"), list)
+        or (not run["candidates"] and run.get("retrieval_proof_version") != 2)
     ):
         return None
     try:

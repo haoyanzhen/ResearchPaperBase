@@ -306,12 +306,18 @@ class RunWorker:
                             selected["id"], selected["attempt_id"], source, current_secret
                         ),
                     )
-                    if len(output["items"]) > budgets[binding]:
+                    skipped = output.get("skipped_date", 0)
+                    if (
+                        not isinstance(output.get("items"), list)
+                        or len(output["items"]) > budgets[binding]
+                        or type(skipped) is not int
+                        or skipped < 0
+                    ):
                         raise ProviderFailure("PROVIDER_RESPONSE_INVALID")
                     budgets[binding] -= len(output["items"])
                     result.update(
                         count=len(output["items"]),
-                        skipped_date=output.get("skipped_date", 0),
+                        skipped_date=skipped,
                         limited=output.get("limited", False),
                     )
                     if output.get("exhausted") is True:
@@ -389,6 +395,8 @@ class RunWorker:
                 ]
                 run["candidates"], run["source_results"] = candidates, results
                 run["exhausted_sources"] = exhausted_sources
+                # Earlier workers did not check providers' partial-page/continuation markers.
+                run["retrieval_proof_version"] = 2
                 if any(r["status"] == "succeeded" for r in results):
                     revision = str(uuid4())
                     run["candidate_revision"] = revision

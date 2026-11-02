@@ -1,0 +1,16 @@
+{
+  "report": "/private/tmp/zero-review-integration.xml",
+  "exit_code": 0,
+  "status": "reported_pass",
+  "counts": {
+    "tests": 3,
+    "passed": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

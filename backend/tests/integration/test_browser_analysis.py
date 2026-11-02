@@ -240,4 +240,26 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
     expect(region.get_by_role("button", name="查看已发布版本", exact=True)).to_have_count(0)
     if evidence:
         verified.screenshot(path=str(Path(evidence) / "no-change.png"))
+    from test_baseline_match_preview import ZeroPapers
+
+    headers["X-CSRF-Token"] = client.get("/api/v1/auth/csrf").json()["data"]["csrf_token"]
+    empty_run = post(client, headers, root + "/construction-runs", inputs, str(uuid4()))
+    assert empty_run.status_code == 202
+    with engine.begin() as conn:
+        conn.execute(dispatch_limits.delete())
+    assert RunWorker(store, ZeroPapers()).run_once()
+    page.reload()
+    open_run(empty_run.json()["data"]["run"])
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    expect(zero).to_contain_text("共返回 0 条")
+    expect(zero).to_contain_text(latest)
+    if evidence:
+        zero.screenshot(path=str(Path(evidence) / "zero-results.png"))
+    region.get_by_role("button", name="确认检索零条，查看核验范围").click()
+    region.get_by_role("button", name="确认核验既有版本", exact=True).click()
+    expect(region.get_by_role("heading", name="正在核验既有版本")).to_be_visible()
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    expect(verified).to_contain_text(latest)
+    expect(verified).to_contain_text("检索词：graph")
     page.close()

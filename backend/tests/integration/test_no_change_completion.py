@@ -26,6 +26,7 @@ from rpb.adapters.source_tables import dispatch_limits
     "case",
     [
         "success",
+        "zero",
         "cancel",
         "revoke",
         "pdf_missing",
@@ -85,6 +86,8 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
         def search(self, *args):
             result = super().search(*args)
             result["items"][0]["title"] = first["candidates"][0]["metadata"]["title"]
+            if case == "zero":
+                result["items"] = []
             return result
 
     request = {
@@ -100,6 +103,12 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
     detail = c.get(url).json()["data"]
     assert detail["baseline_match_preview"]["base_knowledge_version_id"] == str(base)
     assert detail["waiting_items"][0]["allowed_actions"] == ["confirm_screening"]
+    if case == "zero":
+        assert detail["baseline_match_preview"] == {
+            "base_knowledge_version_id": str(base),
+            "candidate_count": 0,
+            "matched_paper_count": 0,
+        }
     if case == "success":
         # Keep revisions unchanged while changing the scope covered by the issued token.
         wait = detail["waiting_items"][0]
@@ -123,7 +132,11 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
             conn.execute(runs.update().where(runs.c.id == identity).values(payload=original))
     assert confirm(c, h, url)[0].status_code == 200
     preview = c.get(url + "/ingestion-preview").json()["data"]
-    assert preview["valid_papers"] == [] and len(preview["skipped"]) == 1 and not preview["failed"]
+    assert (
+        preview["valid_papers"] == []
+        and len(preview["skipped"]) == (0 if case == "zero" else 1)
+        and not preview["failed"]
+    )
     assert preview["waiting_item"]["allowed_actions"] == ["confirm_ingestion_preview"]
     assert not worker.run_once()
     key = str(uuid4())
@@ -244,7 +257,7 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
             identity if case == "lost_claim" else None
         )
     assert bool(commits) == (case not in {"profile_change", "pdf_missing", "bad_count"})
-    if case in {"success", "rollback"}:
+    if case in {"success", "rollback", "zero"}:
         assert detail["status"] == "succeeded"
         assert detail["completion"]["outcome"] == "no_change" and detail["completion"][
             "verified_knowledge_version_id"

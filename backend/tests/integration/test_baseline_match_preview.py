@@ -126,3 +126,73 @@ def test_preview_is_bound_to_candidates_sources_and_pins(subject):
         assert "baseline_match_preview" not in c.get(url).json()["data"], change
     persist(before)
     assert c.get(url).json()["data"]["baseline_match_preview"] == preview
+
+
+class ZeroPapers(Papers):
+    def search(self, *args):
+        return super().search(*args) | {"items": []}
+
+
+def test_zero_retrieval_requires_complete_frozen_sources(subject):
+    c, h, _, _, engine, _ = subject
+    url, _, _ = baseline_run(subject, 1, ZeroPapers())
+    assert confirm(c, h, url)[0].status_code == 200
+    rid = UUID(url.rsplit("/", 1)[1])
+    with engine.connect() as conn:
+        before = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == rid))
+    result = before["source_results"][0]
+    fact = before["exhausted_sources"][0]
+    for patch in (
+        {"source_results": []},
+        {"source_results": [result | {"status": "failed"}]},
+        {"source_results": [result | {"status": "skipped"}]},
+        {"source_results": [result | {"limited": True}]},
+        {"source_results": [result | {"skipped_date": 1}]},
+        {"retrieval_proof_version": None},
+        {"exhausted_sources": []},
+        {"exhausted_sources": [fact, fact]},
+        {"exhausted_sources": [[*fact[:3], False]]},
+        {"exhausted_sources": [[*fact[:3], 1]]},
+    ):
+        with engine.begin() as conn:
+            conn.execute(runs.update().where(runs.c.id == rid).values(payload=before | patch))
+        detail = c.get(url).json()["data"]
+        assert "baseline_match_preview" not in detail, patch
+        assert not detail["waiting_items"][0]["allowed_actions"]
+        assert detail["status"] == "waiting_user" and detail["completion"] is None
+
+
+def test_zero_first_retrieval_has_no_existing_version_to_verify(subject):
+    from test_construction_runs import setup
+    from test_search_terms import post
+
+    from rpb.adapters.run_worker import RunWorker
+
+    c, h, root, app, engine, _ = subject
+    body, _ = setup(subject)
+    path = root + "/construction-runs"
+    run = post(c, h, path, body, str(uuid4())).json()["data"]["run"]
+    assert RunWorker(app.state.run_store, ZeroPapers()).run_once()
+    url = path + "/" + run["id"]
+    assert confirm(c, h, url)[0].status_code == 200
+    detail = c.get(url).json()["data"]
+    assert "baseline_match_preview" not in detail and detail["completion"] is None
+    assert not detail["waiting_items"][0]["allowed_actions"]
+    with engine.connect() as conn:
+        assert not conn.scalar(sa.select(sa.func.count()).select_from(versions))
+
+
+def test_zero_with_invalid_skipped_count_fails_at_retrieval(subject):
+    class InvalidCount(ZeroPapers):
+        def search(self, *args):
+            return super().search(*args) | {"skipped_date": False}
+
+    c, _, _, _, engine, _ = subject
+    url, version, _ = baseline_run(subject, 1, InvalidCount())
+    detail = c.get(url).json()["data"]
+    assert detail["status"] == "failed" and detail["completion"] is None
+    assert (
+        detail["steps"][0]["result_summary"]["sources"][0]["error"] == "PROVIDER_RESPONSE_INVALID"
+    )
+    with engine.connect() as conn:
+        assert conn.scalar(sa.select(heads.c.version_id)) == version

@@ -1,0 +1,41 @@
+{
+  "report": "/private/tmp/zero-review-probe.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 3,
+    "passed": 0,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "zero_review_probe::test_conflicting_completion[openalex-response0]",
+      "message": "assert not True\nprovider = 'openalex'\nresponse = {'meta': {'count': 0, 'next_cursor': 'more'}, 'results': []}\n\n    @pytest.mark.parametrize(\"provider,response\", [\n        (\"openalex\", {\"meta\":{\"count\":0,\"next_cursor\":\"more\"},\"results\":[]}),\n        (\"semantic_scholar\", {\"total\":0,\"next\":1,\"data\":[]}),\n        (\"ads\", {\"responseHeader\":{\"partialResults\":True},\"response\":{\"numFound\":0,\"docs\":[]}}),\n    ])\n    def test_conflicting_completion(provider,response):\n>       assert not search(HTTP([respo",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    },
+    {
+      "test": "zero_review_probe::test_conflicting_completion[semantic_scholar-response1]",
+      "message": "assert not True\nprovider = 'semantic_scholar', response = {'total': 0, 'next': 1, 'data': []}\n\n    @pytest.mark.parametrize(\"provider,response\", [\n        (\"openalex\", {\"meta\":{\"count\":0,\"next_cursor\":\"more\"},\"results\":[]}),\n        (\"semantic_scholar\", {\"total\":0,\"next\":1,\"data\":[]}),\n        (\"ads\", {\"responseHeader\":{\"partialResults\":True},\"response\":{\"numFound\":0,\"docs\":[]}}),\n    ])\n    def test_conflicting_completion(provider,response):\n>       assert not search(HTTP([response]),provider)[",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    },
+    {
+      "test": "zero_review_probe::test_conflicting_completion[ads-response2]",
+      "message": "assert not True\nprovider = 'ads'\nresponse = {'responseHeader': {'partialResults': True}, 'response': {'numFound': 0, 'docs': []}}\n\n    @pytest.mark.parametrize(\"provider,response\", [\n        (\"openalex\", {\"meta\":{\"count\":0,\"next_cursor\":\"more\"},\"results\":[]}),\n        (\"semantic_scholar\", {\"total\":0,\"next\":1,\"data\":[]}),\n        (\"ads\", {\"responseHeader\":{\"partialResults\":True},\"response\":{\"numFound\":0,\"docs\":[]}}),\n    ])\n    def test_conflicting_completion(provider,response):\n>       assert no",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

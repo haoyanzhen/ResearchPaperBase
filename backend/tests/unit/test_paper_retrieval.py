@@ -185,3 +185,57 @@ def test_unidentified_row_preserves_result_without_attesting_pagination():
     result = search(http, "semantic_scholar")
     assert [row["title"] for row in result["items"]] == ["No external ID"]
     assert result["limited"] is False and result["exhausted"] is False
+
+
+EMPTY_ARXIV_FEED = (
+    b'<feed xmlns="http://www.w3.org/2005/Atom" '
+    b'xmlns:o="http://a9.com/-/spec/opensearch/1.1/">'
+    b"<o:totalResults>0</o:totalResults>"
+)
+
+
+@pytest.mark.parametrize(
+    "provider,response",
+    [
+        ("ads", {"response": {"numFound": 0, "docs": []}}),
+        ("semantic_scholar", {"total": 0, "data": []}),
+        ("openalex", {"meta": {"count": 0, "next_cursor": None}, "results": []}),
+        (
+            "arxiv",
+            EMPTY_ARXIV_FEED + b"</feed>",
+        ),
+    ],
+)
+def test_empty_search_attests_only_exhausted_pages(provider, response):
+    assert search(HTTP([response]), provider) == {
+        "items": [],
+        "limited": False,
+        "exhausted": True,
+        "skipped_date": 0,
+    }
+
+
+def test_empty_page_with_outstanding_hits_is_incomplete():
+    result = search(HTTP([{"response": {"numFound": 1, "docs": []}}]))
+    assert not result["items"] and result["limited"] and not result["exhausted"]
+
+
+@pytest.mark.parametrize(
+    "provider,response",
+    [
+        (
+            "ads",
+            {"responseHeader": {"partialResults": True}, "response": {"numFound": 0, "docs": []}},
+        ),
+        ("ads", {"response": {"numFound": 0, "numFoundExact": False, "docs": []}}),
+        ("openalex", {"meta": {"count": 0, "next_cursor": "more"}, "results": []}),
+        ("semantic_scholar", {"total": 0, "next": 1, "data": []}),
+        (
+            "arxiv",
+            EMPTY_ARXIV_FEED + b'<link rel="next" href="more"/></feed>',
+        ),
+    ],
+)
+def test_conflicting_empty_provider_page_cannot_prove_zero(provider, response):
+    result = search(HTTP([response]), provider)
+    assert result["items"] == [] and result["limited"] and not result["exhausted"]

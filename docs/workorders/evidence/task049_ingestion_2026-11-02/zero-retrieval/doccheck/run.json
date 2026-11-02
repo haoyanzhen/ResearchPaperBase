@@ -1,0 +1,1 @@
+{"command": ["sh", "-c", "git diff --check -- backend frontend contracts docs/design/04-01_p0_operation_contracts.md tasks/049-ingestion-publication.md docs/PROJECT_STATUS.md && python3 /tmp/rpb-zero-doccheck.py"], "exit_code": 0}

@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task049_ingestion_2026-11-02/zero-retrieval/frontend/output.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 682,
+  "read_start_byte": 0,
+  "text": "nks...\ncomputing gzip size...\ndist/index.html                   0.36 kB │ gzip:   0.27 kB\ndist/assets/index-UO5Jxu7J.css    5.45 kB │ gzip:   1.79 kB\ndist/assets/index-BPLlEO02.js   338.99 kB │ gzip: 100.33 kB\n\n✓ built in 85ms\n\n> rpb-workspace@1.0.0 test\n> vitest run\n\n\n RUN  v5.0.5 /Users/qingyue/projects/ResearchPaperBase_codex/frontend\n\n\n Test Files  2 passed (2)\n      Tests  4 passed (4)\n   Start at  14:39:16\n   Duration  742ms (environment 76%, setup 10%, tests 9%, transform 3%, import 1%)\n\n",
+  "truncated": true
+}

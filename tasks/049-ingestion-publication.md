@@ -1,9 +1,13 @@
 # Task049：M-P0-18 手动论文入库与知识版本发布
 
-文档版本：v1.21
+文档版本：v1.23
 更新日期：2026-11-02
 
 ## 8. 最新检查点
+
+2026-11-02 用户明确接受全匹配 no_change，要求提交一次并继续处理检索返回零条。全匹配已本地提交 `240034e`，父提交 `2795d91`。验收基线、候选文件与提交树经核对，原有流程及其他任务改动留在工作区。[提交核验记录](../docs/workorders/evidence/task049_ingestion_2026-11-02/matched-acceptance/summary.json)。
+
+本轮已实现手动增量检索完整返回零条且有既有纯论文基线的场景。用户可以查看零条及其基线，确认范围后再确认核验。只有既有资产、文本、向量及图谱核验通过，Run 才记录 succeeded/no_change 并释放写槽，版本和默认指针保持原值。旧零条记录缺少严格分页证明，继续留在原流程。检索完整返回零条子范围于 2026-11-02 获用户明确验收通过。[浏览器截图](../docs/workorders/evidence/task049_ingestion_2026-11-02/zero-retrieval/browser-final/zero-results.png)。
 
 2026-11-02 用户要求继续推进。已完成手动普通增量检索中「来源完整返回、至少一条候选且全部命中冻结纯论文基线」的 no_change 成功决定。用户可修正去重，也可确认匹配范围，再确认核验既有版本。系统检查受保护论文与文件、文本分块和定位、模型配置、向量及证据图谱。成功时同一事务记录所核验的版本、范围和时间，将候选标为已废弃／核验无变化，释放本 Run 写槽。版本、默认指针与发布事件保持原值。工程收口，2026-11-02 用户明确验收通过本全匹配子范围。[浏览器核验结果](../docs/workorders/evidence/task049_ingestion_2026-11-02/no-change-completion/browser-final/no-change.png)。尚未覆盖来源真正返回零条、筛选后全部排除、配置变化后的重建及清理。
 
@@ -45,7 +49,8 @@
 | 增量向量成员 | test_incremental_vector_members 从真正发布的首版启动第二次检索，在内部受理后核验新旧向量成员并集、重放无模型调用、历史视图及默认指针；配置改变、撤权和保留文本丢失均拒绝 | 兼容配置且有新增论文的常规增量分支已工程收口；依赖或配置变化后的重算及 no_change 另验，兼容增量发布见下项 |
 | 增量图谱成员 | test_incremental_graph_members 通过实际首版和第二次检索验证共同实体归并、各论文独立支持、零新增语义断言、历史成员逐行守恒及重放；旧标题单独撤权、不一致的证明、迟到 claim 均阻止写入 | 有新增且完整保留基线的内部视图工程收口。兼容增量发布见下项；删除/替换、rebuild 另行跟踪 |
 | 零新增预览 | test_preview_is_bound_to_candidates_sources_and_pins、test_baseline_match_blocks_processing_and_allows_explicit_correction 及浏览器 test_pab01 验证多个来源记录命中一个资产、歧义/人工修正、来源拒绝、结果不完整和旧记录无分页证据。检查 Run、指针、槽和事件无预览副作用 | 预览本身保持只读；全匹配场景的人工确认与成功决定见下项 |
-| S28–S30 全部检索候选命中基线 | test_no_change_completion、浏览器 test_pab01 验证两次确认、冻结范围、时限及归属、完整图文与向量读回、读回后撤权/文件替换、取消先后顺序、失败回滚、重复执行、后续新版本及归档后查证 | 真正零条等其他无新增原因仍开放，本全匹配子范围已获人工接受 |
+| S28–S30 所有来源完整返回零条 | 四种来源适配器的正常零条、矛盾分页与部分响应；test_zero_retrieval_requires_complete_frozen_sources 覆盖来源未完成、日期排除、旧证明及错误计数；首次无基线和错误供应商计数走原等待/失败；test_no_change_completion[zero] 及 test_pab01 经确认和基线核验后检查原子收尾、重放、默认版本及无发布事件 | 已验证，零条子范围已获人工接受 |
+| S28–S30 全部检索候选命中基线 | test_no_change_completion、浏览器 test_pab01 验证两次确认、冻结范围、时限及归属、完整图文与向量读回、读回后撤权/文件替换、取消先后顺序、失败回滚、重复执行、后续新版本及归档后查证 | 本全匹配子范围已获人工接受 |
 | 增量论文公开发布 | test_incremental_publication 及浏览器 test_pab01 验证普通命令重放、完整清单/对象/视图、保留全文 PDF、同版读取、事务故障回滚、默认指针竞争、准备后撤权、凭据替换和证明篡改 | 受控模型、隔离库及浏览器通过；本子范围获用户限定接受 |
 | PUB-G02 首版构建配置 | 向量构建器取得写资格后、首次分块前持久化配置；封存时比对，重放时核对配置及摘要。见[profile2](../docs/workorders/evidence/task049_ingestion_2026-10-31/profile2/)的六项隔离回归，含配置字段、摘要与成功重放 | 首次分块从独立事务读回冻结配置；模型派发前或封存前改变配置、执行状态或尝试归属均拒绝，Run 和槽位保留。见第5节 vector-fence。增量基线仍开放 |
 | 图谱抽取和文件存储基础 | graph-provider-test2 24项；provider-review2复验终态缺失反例；filestore-test2 3项与file-review2复验FIFO | 首版内部图谱和文件暂存已接线并局部验证；首版保护转换及发布已验证，显式清理仍开放 |
@@ -60,6 +65,10 @@
 | 删除历史记录。历史记录所有者处理明确删除请求，已发布版本和必要来源依据继续可读 | 与清理临时数据分别验收。须补精确入口、鉴权、引用保护及失败回滚测试；未经授权不执行删除。生产备份周期、容量与恢复目标仍归 H03 |
 
 ## 5. 验证与限制
+
+[零条执行记录](../docs/workorders/evidence/task049_ingestion_2026-11-02/zero-retrieval/)与全匹配提交包分列。S1 实际执行 delivery_context 状态与设计权威性 read、task049 entry、02-02 §10.4 和工具 §5 定向 read（zero context、ledger.json），以 240034e 后工作区 baseline 开始。S2–S5 复用原有两次确认、冻结范围摘要及既有版本事务，不产生候选论文。独立探针复现空页仍有下一页/来源标记 partialResults 却签发完成证明；修复适配器，严格证明版本随本轮检索持久化，不追认旧零条。独立复验供应商测试及探针 25/25，隔离数据库 3/3。首轮反例直接写入数据库的布尔跳过数量触发公开响应 schema 拒绝；现在 worker 在写入前拒绝错误计数，并从正常入口验证失败收尾。
+
+S6–S7 全部后端单元 558/558，受影响 PostgreSQL 17/pgvector 集成 96/96，含真实浏览器；验证后实例已移除。最终类型注解与单测字节串整理后专项 4/4，Ruff、mypy、前端构建与 4 项前端测试、契约检查通过。实际退出码及 delivery_summary 的 JUnit 或普通日志摘要见 final、verified-focused、unit-verified、frontend、static-final、contract2 和 review。兼容性对照标记 RetrievalRunView；实际仅两项预览计数的下限从 1 调到 0，严格校验旧响应的客户端需要 API 1.21。供应商及模型使用受控输入。筛选后全部排除、重建和清理仍开放，本轮零条实现未提交。
 
 [全匹配 no_change 执行证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/no-change-completion/)记录完整工作区、baseline 与 candidate2/candidate3 快照。S1 执行状态/权威性 read、task049 entry，使用 nc-completion / ledger 定向读取授权、02-02 §10.4、06 A09.6 及工具 §5。S2 沿用已有确认命令，首阶段签名绑定实际范围，第二阶段记录人工决定与候选快照。就绪时读回永久 pin、正文/PDF、分块定位、注册 profile、向量和图谱，短事务重验权限、head、claim、attempt/租约、人工依据、文件身份与证明摘要。S3 独立测试复现旧实现准备后确认快照被换仍成功、已归档可读项目重放被写权限阻断，修复后四项隔离 PG 独立复测通过，见 review/final-summary.json。S4 覆盖失败、过时基线、准备后文件同尺寸改写、确认/证明失配、坏计数、取消、迟到执行者、原子回滚及重放。S5 复用既有发布校验，提交阶段核对文件身份和时间戳，避免重复加载全文。
 
@@ -127,3 +136,5 @@ regression-full1最终750项通过，属于regression-full-snapshot而非后续�
 用户指令为“ok，验收通过，并进行一次git提交。然后继续推进”。接受基线为 incremental-publication/candidate3；97 项集成回归、542 项后端单元、4 项前端测试及 4 项独立探针沿用原执行证据。提交前从 a07f21d 检查空暂存区，逐文件比对业务产物，混合状态文件只选取本业务范围。实际核验见[提交记录](../docs/workorders/evidence/task049_ingestion_2026-11-02/accepted-increment/)。
 
 全匹配提交核验使用 no-change-completion/candidate3 及最终测试和独立审查证据；本次只更新验收记录，沿用原业务验证。核验清单见 matched-acceptance/scope.json。
+
+本次零条验收提交复用 zero-retrieval/verified、final、unit-verified 及独立复验证据。提交核对见 zero-acceptance/scope.json。

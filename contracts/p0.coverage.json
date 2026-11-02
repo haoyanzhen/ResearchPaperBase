@@ -1,5 +1,5 @@
 {
-  "version": "1.25",
+  "version": "1.26",
   "date": "2026-11-02",
   "source_rows": [
     {
@@ -715,7 +715,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "d2faab0bba46bcea0f19c4409ac34f8621a6899ca0a2eaeec6d10ce170c4c4eb",
+    "04-01_p0_operation_contracts.md": "3e2daa07738f35d39bdf75902a2ceeb3c5de0f315b26cab264ea300ee15b0d83",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -3229,7 +3229,7 @@
     "task": "tasks/048-paper-analysis.md"
   },
   "construction_ingestion_preview": {
-    "scope": "Manual paper publication and fully matched, exhaustively retrieved paper verification (no_change). Rebuild, removal and other zero-addition paths remain open.",
+    "scope": "Manual paper publication and exhaustive paper retrieval verification for zero returns or all matched results (no_change). Rebuild, removal and other zero-addition paths remain open.",
     "task": "tasks/049-ingestion-publication.md"
   }
 }

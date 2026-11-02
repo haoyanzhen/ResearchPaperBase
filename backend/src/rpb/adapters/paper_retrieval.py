@@ -99,12 +99,12 @@ class PaperRetrieval:
                         raise
                     sleep(3)
             try:
-                batch, total, next_cursor = self.normalize(provider, response)
+                batch, total, next_cursor, complete = self.normalize(provider, response)
                 if len(batch) > count or type(total) is not int or total < 0:
                     raise ValueError("size")
                 if first_total is None:
                     first_total = total
-                consistent = consistent and total == first_total
+                consistent = consistent and complete and total == first_total
                 for item in batch:
                     identity = item["url"] or item["arxiv_id"] or item["doi"]
                     if not identity:
@@ -162,6 +162,7 @@ class PaperRetrieval:
     def normalize(self, provider: str, response: Any) -> Any:
         result = []
         cursor = None
+        complete = True
         if provider == "arxiv":
             document = response.decode("utf-8-sig")
             if "<!DOCTYPE" in document.upper() or "<!ENTITY" in document.upper():
@@ -171,6 +172,12 @@ class PaperRetrieval:
             if root.tag != ns + "feed":
                 raise ValueError("feed")
             total = int(root.findtext("{http://a9.com/-/spec/opensearch/1.1/}totalResults", "-1"))
+            if total == 0:
+                complete = (
+                    root.find(ns + "link[@rel='next']") is None
+                    and root.findtext("{http://a9.com/-/spec/opensearch/1.1/}startIndex", "0")
+                    == "0"
+                )
             for entry in root.findall(ns + "entry"):
                 url = entry.findtext(ns + "id")
                 if not url or "/api/errors" in url:
@@ -193,10 +200,22 @@ class PaperRetrieval:
             if provider == "openalex":
                 total, items = response["meta"]["count"], response["results"]
                 cursor = response["meta"].get("next_cursor")
+                complete = total != 0 or cursor is None
             elif provider == "semantic_scholar":
                 total, items = response["total"], response["data"]
+                complete = total != 0 or (
+                    response.get("next") is None and response.get("offset", 0) == 0
+                )
             else:
-                total, items = response["response"]["numFound"], response["response"]["docs"]
+                page = response["response"]
+                total, items = page["numFound"], page["docs"]
+                header = response.get("responseHeader", {})
+                complete = (
+                    header.get("partialResults", False) is False
+                    and header.get("status", 0) == 0
+                    and page.get("numFoundExact", True) is True
+                    and (total != 0 or page.get("start", 0) == 0)
+                )
             if not isinstance(items, list):
                 raise ValueError("items")
             for item in items:
@@ -267,4 +286,4 @@ class PaperRetrieval:
                 raise ValueError("year")
             for key in ("title", "abstract", "url", "doi", "arxiv_id"):
                 item[key] = text(item[key])
-        return result, total, cursor
+        return result, total, cursor, complete
