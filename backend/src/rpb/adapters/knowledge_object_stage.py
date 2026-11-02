@@ -10,6 +10,7 @@ from uuid import UUID, uuid5
 import sqlalchemy as sa
 
 from rpb.adapters.immutable_files import ImmutableFileStore
+from rpb.adapters.knowledge_build_failure import require_publication_claim
 from rpb.adapters.knowledge_paper_stage import stage_paper
 from rpb.adapters.knowledge_paper_tables import object_build_pins, object_lifecycle
 from rpb.adapters.knowledge_paper_tables import objects as staged_objects
@@ -89,6 +90,8 @@ def stage_objects(
     run_id: UUID,
     attempt_id: UUID,
     candidate_id: UUID,
+    *,
+    publication_claim_id: str | None = None,
 ) -> list[dict[str, str]]:
     """Stage then revalidate before registering; this is not a version pin or proof."""
     files = ImmutableFileStore(file_root)
@@ -96,6 +99,8 @@ def stage_objects(
     def read_inputs(conn: Any) -> tuple[dict[str, str], list[dict[str, Any]]]:
         staged = stage_paper(conn, store, actor, project_id, run_id, attempt_id, candidate_id)
         run = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == run_id))
+        if publication_claim_id is not None:
+            require_publication_claim(run, publication_claim_id)
         candidate = next(c for c in run["candidates"] if c["id"] == str(candidate_id))
         processing = candidate["processing"]
         basis = processing["basis"]

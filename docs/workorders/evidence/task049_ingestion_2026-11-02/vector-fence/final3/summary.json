@@ -1,0 +1,16 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task049_ingestion_2026-11-02/vector-fence/final3/tests.xml",
+  "exit_code": 0,
+  "status": "reported_pass",
+  "counts": {
+    "tests": 20,
+    "passed": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

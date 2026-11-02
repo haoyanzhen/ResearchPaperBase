@@ -1,4 +1,4 @@
-"""Dispatch a confirmed first build once, including its final publication check."""
+"""Dispatch a confirmed paper build once, including its final publication check."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
-from rpb.adapters.knowledge_build_failure import record_failure
+from rpb.adapters.knowledge_build_failure import BuildClaimChanged, record_failure
 from rpb.adapters.knowledge_graph_builder import build_graph_view
 from rpb.adapters.knowledge_vector_builder import build_vector_view
 from rpb.adapters.run_tables import runs
@@ -26,11 +26,24 @@ class FirstPublicationWorker:
             conn.execute(
                 sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK}
             )
+            snapshot = runs.c.payload["input_snapshot"]
+            selected = runs.c.payload["ingestion_confirmation"]["preview"]["valid_papers"]
             run = conn.scalar(
                 sa.select(runs.c.payload)
                 .where(
                     runs.c.status == "running",
                     runs.c.payload["phase"].astext == "knowledge_build",
+                    sa.or_(
+                        snapshot["base_knowledge_version_id"].astext.is_(None),
+                        sa.and_(
+                            snapshot["mode"].astext == "retrieval",
+                            snapshot["graph_mode"].astext == "incremental",
+                            snapshot["pending_revision_ids"] == [],
+                            snapshot["supplement_ids"] == [],
+                            sa.func.jsonb_typeof(selected) == "array",
+                            selected != [],
+                        ),
+                    ),
                     sa.or_(
                         ~runs.c.payload.has_key("publication_claim"),
                         sa.and_(
@@ -62,14 +75,29 @@ class FirstPublicationWorker:
             persist(conn, run)
         args = (self.store, self.root, actor, project, identity, attempt)
         try:
-            build_vector_view(*args, self.embedding)
-            build_graph_view(*args, self.graph)
+            build_vector_view(*args, self.embedding, publication_claim_id=claim)
+            build_graph_view(*args, self.graph, publication_claim_id=claim)
             ready = build_graph_view(
-                *args, self.graph, publish=True, tokenizer_factory=self.embedding
+                *args,
+                self.graph,
+                publish=True,
+                tokenizer_factory=self.embedding,
+                publication_claim_id=claim,
             )
             from rpb.adapters.first_publication import commit_ready
 
-            commit_ready(self.store, actor, project, identity, attempt, ready["read_barrier_id"])
+            commit_ready(
+                self.store,
+                actor,
+                project,
+                identity,
+                attempt,
+                ready["read_barrier_id"],
+                claim,
+                ready["readback_digest"],
+            )
+        except BuildClaimChanged:
+            return True
         except Exception as failure:
             record_failure(
                 self.store, actor, project, identity, attempt, "publication_claim", claim, failure

@@ -14,6 +14,7 @@ from rpb.adapters import ingestion_preview
 from rpb.adapters.analysis_lineage import currently_usable
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
 from rpb.adapters.construction_slots import is_current
+from rpb.adapters.knowledge_baseline_papers import baseline_papers
 from rpb.adapters.knowledge_tables import heads
 from rpb.adapters.run_tables import runs, slots
 from rpb.adapters.search_terms import load, now
@@ -127,6 +128,15 @@ def accept_locked(
         if candidate["id"] in selected
     ):
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+    if latest and (
+        run["input_snapshot"].get("mode") != "retrieval"
+        or run["input_snapshot"].get("pending_revision_ids") != []
+        or run["input_snapshot"].get("supplement_ids") != []
+    ):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+    retained = baseline_papers(conn, run, papers_only=True)
+    if retained != run.get("baseline_papers"):
+        raise AccountError("STATE_CONFIRMATION_STALE", 409)
     accepted_attempt = run["attempt_id"]
     run["attempt_id"] = str(uuid4())
     run["lease_until"] = (datetime.now(UTC) + timedelta(minutes=30)).isoformat()
@@ -142,6 +152,10 @@ def accept_locked(
         "model_config": copy.deepcopy(run["model_config"]),
         "source_configs": copy.deepcopy(run["source_configs"]),
         "preview": preview,
+        "retained_papers": [
+            {key: paper[key] for key in ("project_paper_id", "paper_revision_id")}
+            for paper in retained
+        ],
         "candidate_snapshot": copy.deepcopy(run["candidates"]),
         "acknowledged_risk_ids": copy.deepcopy(body["acknowledged_risk_ids"]),
     }

@@ -189,6 +189,19 @@ class RunStore:
         _, model = self.terms.model(conn, actor, data["model_selection"])
         return selected, result, model
 
+    def publication_available(self, run: Any) -> bool:
+        snapshot = run["input_snapshot"]
+        return getattr(self, "first_publication_enabled", False) and (
+            snapshot["base_knowledge_version_id"] is None
+            or (
+                snapshot.get("graph_mode") == "incremental"
+                and snapshot.get("mode") == "retrieval"
+                and snapshot.get("pending_revision_ids") == []
+                and snapshot.get("supplement_ids") == []
+                and bool((run.get("analysis_confirmation") or {}).get("candidate_ids"))
+            )
+        )
+
     def waiting(self, run: Any) -> list[Any]:
         if run["status"] != "waiting_user":
             return []
@@ -236,10 +249,7 @@ class RunStore:
         )
         token = hmac.new(run["confirmation_secret"].encode(), basis.encode(), "sha256").hexdigest()
         ingestion = kind == "ingestion_preview"
-        blocked = ingestion and (
-            not getattr(self, "first_publication_enabled", False)
-            or run["input_snapshot"]["base_knowledge_version_id"] is not None
-        )
+        blocked = ingestion and not self.publication_available(run)
         if ingestion:
             from rpb.adapters.ingestion_confirmation import signature
 
@@ -636,10 +646,7 @@ class RunStore:
             ):
                 from rpb.adapters.ingestion_confirmation import accept_locked
 
-                if (
-                    not getattr(self, "first_publication_enabled", False)
-                    or run["input_snapshot"]["base_knowledge_version_id"] is not None
-                ):
+                if not self.publication_available(run):
                     raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
                 accepted = accept_locked(
                     conn,

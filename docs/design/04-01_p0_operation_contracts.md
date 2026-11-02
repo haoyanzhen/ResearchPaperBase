@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.31
-更新日期：2026-11-01
+文档版本：v1.32
+更新日期：2026-11-02
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -437,6 +437,8 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
   "acknowledged_risk_ids": ["ABSTRACT_ONLY"]
 }
 ```
+
+阶段确认读取已绑定的论文基线、或论文列表读取指定版本时，若清单与受保护的论文修订不一致，返回 `410 STORAGE_FILE_UNAVAILABLE`。确认保持原等待状态，列表读取保持原版本绑定。
 
 若提交前候选已变为 candidate-r10，返回412或主文明确的确认失效冲突，不可用相同 token 发布 r10。用户重新查看预览，再取得与新内容绑定的确认。
 

@@ -1,6 +1,6 @@
 # 项目进度与待完成项
 
-文档版本：v1.129
+文档版本：v1.135
 更新日期：2026-11-02
 适用项目大版本：v1
 
@@ -15,8 +15,8 @@
 | 范围 | 当前状态及限定证据 |
 | --- | --- |
 | 交付流程 | [task045](../tasks/045-commit-verification.md)完成上一轮提交调用审计及最小核验包：未发现旧业务测试重跑，修复重复文档读取/新旧阶段混记风险；文档核验与独立审查通过。保留[task043](../tasks/043-delivery-tool-adoption.md)定向读取/摘要采用和[task041](../tasks/041-token-efficiency.md)工具，必要基线、受影响验证及审查不削弱；不改业务授权，不宣称token降幅 |
-| 当前业务切片 | [task049](../tasks/049-ingestion-publication.md)推进M-P0-18。手动论文首版于2026-11-02获用户限定验收通过，用户可确认入库并打开同一已发布版本读取人工分析。已验证准备后取消或撤权拒绝、提交失败回滚、发布决定重放和默认指针一致性。独立浏览器复验使用受控模型，另有本地真实E5浏览器证据。增量、no_change、清理及整体里程碑仍开放。[task048](../tasks/048-paper-analysis.md)手动Run论文分析已工程收口，M-P0-17获用户限定接受并本地提交；真实模型质量、正式发布和非论文未验证 |
-| 最近业务里程碑 | 2026-11-02 用户接受 M-P0-18 手动论文首版发布子范围，见 [task049](../tasks/049-ingestion-publication.md)。 M-P0-15/16于2026-10-30获人工接受并本地提交`1d93f42`（未push），范围与证据见[task046](../tasks/046-paper-processing-gate.md#13-m-p0-15人工接受与交接2026-10-30)、[task047](../tasks/047-llm-pdf-extraction-design.md#11-m-p0-16验收包与最终检查点2026-10-30)。Windows/Linux平台实测按用户决定延期至下一大阶段TRACK-023，当前L0不做；未调用真实模型。M-P0-14本地提交f5d5b19及旧接受保留 |
+| 当前业务切片 | [task049](../tasks/049-ingestion-publication.md)推进M-P0-18。手动论文首版于2026-11-02获用户限定验收通过，用户可确认入库并打开同一已发布版本读取人工分析。已验证准备后取消或撤权拒绝、提交失败回滚、发布决定重放和默认指针一致性。独立浏览器复验使用受控模型，另有本地真实E5浏览器证据。向量构建中途变更配置或执行资格后，旧 Worker 的结果及失败写入均已验证受阻，当前 Run 保留写槽。普通增量检索有新增论文且配置、依赖匹配时，用户可确认增量入库并打开完整新版本。已验证继承论文、文件及人工分析，默认指针原子切换，失败回滚、迟到执行者拒绝、旧版独立读取。本增量子范围已于2026-11-02获用户接受；变化后的重建、no_change、清理及整体里程碑仍开放。[task048](../tasks/048-paper-analysis.md)手动Run论文分析已工程收口，M-P0-17获用户限定接受并本地提交；真实模型质量、正式发布和非论文未验证 |
+| 最近业务里程碑 | 2026-11-02 用户接受 M-P0-18 手动论文首版及兼容增量发布子范围，见 [task049](../tasks/049-ingestion-publication.md)。 M-P0-15/16于2026-10-30获人工接受并本地提交`1d93f42`（未push），范围与证据见[task046](../tasks/046-paper-processing-gate.md#13-m-p0-15人工接受与交接2026-10-30)、[task047](../tasks/047-llm-pdf-extraction-design.md#11-m-p0-16验收包与最终检查点2026-10-30)。Windows/Linux平台实测按用户决定延期至下一大阶段TRACK-023，当前L0不做；未调用真实模型。M-P0-14本地提交f5d5b19及旧接受保留 |
 | 已交付业务基础 | 账号注册登录、本人Project与基础维护、个人/系统LLM和论文源配置、管理员账号治理、SMTP及基础安全已有局部交付；接受范围分别见[task019](../tasks/019-browser-milestone.md)、[task022](../tasks/022-project-maintenance.md)、[task026](../tasks/026-llm-parameter-runtime.md)、[task028](../tasks/028-personal-source-runtime.md)、[task029](../tasks/029-admin-accounts.md)、[task031](../tasks/031-system-llm-runtime.md)、[task033](../tasks/033-system-source-runtime.md)、[task035](../tasks/035-smtp-security-runtime.md)。不代表完整FR或当前工作区重新验收 |
 | 设计及工程基础 | A01–A10历史设计/骨架及限定接受见[历史快照](workorders/project_status_history_2026-10-28.md#2-当前进度概览)；现行规范入口为[设计索引](design/README.md)。旧应用仅保留archive候选片段；旧测试不能验收新核心 |
 | 尚未交付的整体能力 | 真实Construction检索/解析/分析及知识版本发布、Research Session、Review Run、Graph-RAG运行闭环和生产部署仍未整体交付；Memory及其他延期范围保持原分期。当前不提供整体完成百分比 |
@@ -47,7 +47,7 @@
 | TRACK-012c | Project 隔离与文件访问实现验收 | 待开始 | 01、02-03、04-02、08–09 | 映射身份共享与 Project 私有资产边界，验证跨 Project 读写/下载均受授权约束 |
 | TRACK-012d | Construction 唯一写者与人工内容保护验收 | 待开始 | 01、02-02/02-04、04–05、08–09 | 验证只有成功 ConstructionRun 发布知识版本、迟到 Worker 无写资格，且 Agent 不覆盖人工确认/编辑内容 |
 | TRACK-012e | P0 运行验收与缺项报告 | 待开始 | TRACK-012a–012d；新核心建立后确认安装/测试入口 | 在隔离测试环境执行相关自动化与端到端验收，报告命令、结果、失败项和未覆盖范围 |
-| TRACK-018 | 资产复用与读取一致性实现 | 待开始 | [02-02 §2.5](design/02-02_construction_versioning_appendix.md#25-不可变逻辑快照与资产复用边界)、04/05/06/07、[09 §4.1](design/09_quality_observability.md#41-不可变快照一致性验收) | 将已确认的资产复用、索引/图谱隔离、发布可见性及回收竞争边界落实到存储与读取路径；历史保留时长与容量政策另行决策；版本绑定和 KV-I01–I09 由 TRACK-012b 跟踪 |
+| TRACK-018 | 资产复用与读取一致性实现 | task049已验证首版及兼容增量的正式 pin、同版读取与继承引用保护；增量子范围已获接受，重算、清理/回收仍开放 | [02-02 §2.5](design/02-02_construction_versioning_appendix.md#25-不可变逻辑快照与资产复用边界)、04/05/06/07、[09 §4.1](design/09_quality_observability.md#41-不可变快照一致性验收) | 将已确认的资产复用、索引/图谱隔离、发布可见性及回收竞争边界落实到存储与读取路径；历史保留时长与容量政策另行决策；版本绑定和 KV-I01–I09 由 TRACK-012b 跟踪 |
 | TRACK-019 | 引用有效性与版本选择实现验收 | 待开始 | [设计评审](workorders/knowledge_citation_selection_review_2026-10-16.md)、02-02 §2.6–2.7、04-01 §5.1、09 §4.2 | 按已细化设计实现不可变引用解析、目标版本新引用、范围/风险投影及显式版本选择；执行 KV-C01–C05/KV-V01–V05；跨 Project 联合引用不在范围；引用规范与空版本消费已按R1/R3及补充决定关闭，后续验收不得恢复旧覆盖率或空版创建禁令 |
 | TRACK-021 | 资料策略跨层契约与实现接入 | Q1–Q4已闭合；A05修复待人工接受；A06设计获限定接受且S7收口，运行待收口 | [08-01 §11](design/08-01_agent_data_access_policy.md#11-闭合检查与剩余工作) | A05设置/分类/错误子集及来源只读字段见[task007审核包](workorders/task007_a05_review_2026-10-22.md)；A06内部设计已获接受并收口，见[task008审核包](workorders/task008_internal_contract_review_2026-10-23.md)；G01/G03剩余完整载体与可信来源运行消费、G02缓存/派发/提交及迁移验证仍开放；不再请求Q1–Q4决定。G04已按用户决定关闭：P1互联网公开来源自动public，内网通常不纳入，见08-01 §4.4；工程收口仍需落实自动来源记录和对应测试；见[检查记录](workorders/agent_data_policy_closure_2026-10-21.md) |
 | TRACK-022 | 运行目标OPS-D01 | 方案A已定；数值目标待明确 | [10 §9](design/10_operations_deployment.md#9-待决策的运行目标)；TRACK-007c/009b/011b | 已选单部署、管理员始终可授权计划停机、人工恢复；不采纳前轮示例RPO/RTO/备份周期，实际部署前再明确必要目标；实际证据复用既有跟踪项 |

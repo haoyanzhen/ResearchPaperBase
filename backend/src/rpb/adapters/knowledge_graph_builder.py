@@ -1,4 +1,4 @@
-"""Build an isolated, evidence-bearing graph from a sealed first-version vector view."""
+"""Build an isolated, evidence-bearing graph from a sealed vector view."""
 
 import copy
 import hashlib
@@ -14,7 +14,11 @@ import sqlalchemy as sa
 
 from rpb.adapters.immutable_files import ImmutableFileStore
 from rpb.adapters.knowledge_baseline_papers import content_digest
-from rpb.adapters.knowledge_build_failure import record_failure
+from rpb.adapters.knowledge_build_failure import (
+    BuildClaimChanged,
+    record_failure,
+    require_publication_claim,
+)
 from rpb.adapters.knowledge_build_tables import (
     chunks,
     graph_edges,
@@ -25,6 +29,12 @@ from rpb.adapters.knowledge_build_tables import (
     graph_views,
 )
 from rpb.adapters.knowledge_chunk_integrity import verify_chunk_closure
+from rpb.adapters.knowledge_graph_baseline import (
+    BaselineGraph,
+    copy_graph_members,
+    metadata_dependency,
+    read_baseline_graph,
+)
 from rpb.adapters.knowledge_graph_seal import seal_graph_view, verify_graph_view
 from rpb.adapters.knowledge_object_stage import require_build_protection
 from rpb.adapters.knowledge_paper_stage import stage_paper
@@ -33,7 +43,7 @@ from rpb.adapters.knowledge_vector_builder import build_vector_view
 from rpb.adapters.knowledge_vector_seal import verify_vector_view
 from rpb.adapters.run_tables import runs
 from rpb.adapters.search_term_worker import TermWorker
-from rpb.adapters.search_terms import allowed, classification, load, policy_view
+from rpb.adapters.search_terms import classification, load, policy_view
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.knowledge.domain.graph_validation import validate_extraction
 
@@ -49,18 +59,32 @@ def build_graph_view(
     *,
     publish: bool = False,
     tokenizer_factory: Any = None,
+    publication_claim_id: str | None = None,
 ) -> dict[str, Any]:
     """Run validated extraction per chunk; graph and vector remain unpublished."""
 
     def no_model(_permit: Any) -> Any:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
 
-    vector = build_vector_view(store, file_root, actor, project_id, run_id, attempt_id, no_model)
+    vector = build_vector_view(
+        store,
+        file_root,
+        actor,
+        project_id,
+        run_id,
+        attempt_id,
+        no_model,
+        publication_claim_id=publication_claim_id,
+    )
     files, guard = ImmutableFileStore(file_root), TermWorker(store.terms, None)
     chunk_ids = {UUID(x) for x in vector["chunks"]}
 
-    def current(conn: Any) -> tuple[Any, list[Any], str, str]:
+    def current(
+        conn: Any, verified: BaselineGraph | None = None
+    ) -> tuple[Any, list[Any], str, str, BaselineGraph | None]:
         initial = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == run_id))
+        if initial and publication_claim_id is not None:
+            require_publication_claim(initial, publication_claim_id)
         if not initial or initial.get("vector_build") != vector:
             raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
         selected = initial["ingestion_confirmation"]["preview"]["valid_papers"]
@@ -73,20 +97,32 @@ def build_graph_view(
         run = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == run_id))
         if run.get("vector_build") != vector:
             raise AccountError("STATE_REVISION_CONFLICT", 409)
-        verify_vector_view(conn, project_id, UUID(vector["view_id"]), chunk_ids)
         project = store.terms.project(conn, actor, project_id, write=True)
         state = load(conn, project)
         by_asset = {item["project_paper_id"]: cid for cid, item in identities.items()}
         material, dependencies, metadata_dependencies, secret = [], {}, {}, None
+        baseline = None
+        new_chunks = chunk_ids
+        if run["input_snapshot"]["base_knowledge_version_id"] is not None:
+            baseline = read_baseline_graph(
+                conn, files, project, actor, state, run, vector["profile_id"], verified
+            )
+            if not baseline.fragments.keys() <= chunk_ids:
+                raise AccountError("STATE_REVISION_CONFLICT", 409)
+            new_chunks = chunk_ids - baseline.fragments.keys()
+            dependencies.update(baseline.text_dependencies)
+            metadata_dependencies.update(baseline.metadata_dependencies)
+        if verified is None:
+            verify_vector_view(conn, project_id, UUID(vector["view_id"]), chunk_ids)
         closures: dict[UUID, dict[str, Any]] = {}
         rows = list(
             conn.execute(
                 sa.select(chunks)
-                .where(chunks.c.project_id == project_id, chunks.c.id.in_(chunk_ids))
+                .where(chunks.c.project_id == project_id, chunks.c.id.in_(new_chunks))
                 .order_by(chunks.c.id)
             ).mappings()
         )
-        if len(rows) != len(chunk_ids) or {str(row["asset_id"]) for row in rows} != set(by_asset):
+        if len(rows) != len(new_chunks) or {str(row["asset_id"]) for row in rows} != set(by_asset):
             raise AccountError("STORAGE_FILE_UNAVAILABLE", 410)
         for row in rows:
             candidate_id = by_asset.get(str(row["asset_id"]))
@@ -96,16 +132,8 @@ def build_graph_view(
             ):
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
             candidate = next(c for c in run["candidates"] if c["id"] == candidate_id)
-            if not allowed(state, actor, project, candidate_id):
-                raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
-            metadata_source = classification(state, project, candidate_id)
-            metadata_dependency = {
-                "source_ids": [candidate_id],
-                "source_revisions": {candidate_id: metadata_source["source"]["content_revision"]},
-                "classification_revisions": {candidate_id: metadata_source["revision"]},
-                "policy_revision": policy_view(state, actor, project)["revision"],
-            }
-            metadata_dependencies[candidate_id] = metadata_dependency
+            meta_deps = metadata_dependency(state, actor, project, candidate_id)
+            metadata_dependencies[candidate_id] = meta_deps
             obj = (
                 conn.execute(
                     sa.select(paper_objects).where(
@@ -177,7 +205,7 @@ def build_graph_view(
                     "chunk": dict(row),
                     "candidate": copy.deepcopy(candidate),
                     "text": fragment,
-                    "metadata_dependencies": metadata_dependency,
+                    "metadata_dependencies": meta_deps,
                 }
             )
         for closure in closures.values():
@@ -194,20 +222,21 @@ def build_graph_view(
             material,
             content_digest({"text": dependencies, "metadata": metadata_dependencies}),
             secret,
+            baseline,
         )
 
     if publish:
         from rpb.modules.knowledge.domain.chunking import split_text
 
         with store.account.engine.begin() as conn:
-            initial, frozen, frozen_digest, _ = current(conn)
+            initial, frozen, frozen_digest, _, _ = current(conn)
             if not initial.get("graph_build") or not tokenizer_factory:
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
 
         @contextmanager
         def tokenizer_permit() -> Any:
             with store.account.engine.begin() as conn:
-                _, actual, digest, _ = current(conn)
+                _, actual, digest, _, _ = current(conn)
                 if actual != frozen or digest != frozen_digest:
                     raise AccountError("STATE_REVISION_CONFLICT", 409)
                 yield
@@ -235,7 +264,9 @@ def build_graph_view(
                 ]:
                     raise AccountError("STORAGE_FILE_UNAVAILABLE", 410)
     with store.account.engine.begin() as conn:
-        run, material, dependency_digest, secret = current(conn)
+        run, material, dependency_digest, secret, baseline = current(conn)
+        if publish and (material != frozen or dependency_digest != frozen_digest):
+            raise AccountError("STATE_REVISION_CONFLICT", 409)
         previous = run.get("graph_build")
         if previous:
             view = (
@@ -265,7 +296,8 @@ def build_graph_view(
                     project_id,
                     UUID(previous["view_id"]),
                     chunk_ids,
-                    {item["chunk"]["id"]: item["text"] for item in material},
+                    (baseline.fragments if baseline else {})
+                    | {item["chunk"]["id"]: item["text"] for item in material},
                 )
                 != previous["digest"]
             ):
@@ -273,32 +305,43 @@ def build_graph_view(
             if publish:
                 from rpb.adapters.first_publication import prepare_verified
 
-                return prepare_verified(conn, file_root, run, material, vector, previous)
+                project = store.terms.project(conn, actor, project_id, write=True)
+                return prepare_verified(
+                    conn,
+                    file_root,
+                    run,
+                    material,
+                    vector,
+                    previous,
+                    project,
+                    load(conn, project),
+                    publication_claim_id,
+                )
             return copy.deepcopy(previous)
         if publish:
             raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
         if run.get("graph_build_claim"):
             raise AccountError("LOCK_CONTENT_BUSY", 409)
         claim_id = str(uuid4())
-        run["graph_build_claim"] = {
+        expected_claim = {
             "id": claim_id,
             "attempt_id": str(attempt_id),
             "state": "running",
         }
         from rpb.adapters.runs import persist
 
+        run["graph_build_claim"] = expected_claim
         persist(conn, run)
 
     @contextmanager
     def permit() -> Any:
         with store.account.engine.begin() as conn:
-            live, actual, digest, credential = current(conn)
+            live, actual, digest, credential, _ = current(conn, baseline)
             if (
                 actual != material
                 or digest != dependency_digest
                 or credential != secret
-                or (live.get("graph_build_claim") or {}).get("id") != claim_id
-                or (live.get("graph_build_claim") or {}).get("state") != "running"
+                or live.get("graph_build_claim") != expected_claim
             ):
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
             yield
@@ -325,11 +368,12 @@ def build_graph_view(
             proposals.append((item, checked[0], checked[1], content_digest(proposal)))
 
         with store.account.engine.begin() as conn:
-            live, actual, digest, _ = current(conn)
+            live, actual, digest, _, live_base = current(conn)
             if (
                 actual != material
+                or live_base != baseline
                 or digest != dependency_digest
-                or (live.get("graph_build_claim") or {}).get("id") != claim_id
+                or live.get("graph_build_claim") != expected_claim
             ):
                 raise AccountError("STATE_REVISION_CONFLICT", 409)
             view_id = uuid4()
@@ -346,7 +390,9 @@ def build_graph_view(
                     dependency_digest=dependency_digest,
                 )
             )
-            node_ids: dict[tuple[str, str], UUID] = {}
+            node_ids = (
+                copy_graph_members(conn, project_id, live_base.view, view_id) if live_base else {}
+            )
 
             def node(kind: str, identity: str) -> UUID:
                 key = (kind, identity)
@@ -512,7 +558,8 @@ def build_graph_view(
                 project_id,
                 view_id,
                 chunk_ids,
-                {item["chunk"]["id"]: item["text"] for item in actual},
+                (live_base.fragments if live_base else {})
+                | {item["chunk"]["id"]: item["text"] for item in actual},
             )
             live["graph_build"] = {
                 "view_id": str(view_id),
@@ -531,8 +578,19 @@ def build_graph_view(
     except BaseException as failure:
         try:
             record_failure(
-                store, actor, project_id, run_id, attempt_id, "graph_build_claim", claim_id, failure
+                store,
+                actor,
+                project_id,
+                run_id,
+                attempt_id,
+                "graph_build_claim",
+                claim_id,
+                failure,
+                expected_claim=expected_claim,
+                publication_claim_id=publication_claim_id,
             )
+        except BuildClaimChanged:
+            raise
         except Exception:
             # A revoked write fence may prevent any diagnostic update.
             pass

@@ -11,6 +11,20 @@ from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
 from rpb.adapters.construction_slots import is_current
 from rpb.adapters.project import projects
 from rpb.adapters.run_tables import runs, slots
+from rpb.modules.account_config.application.ports import AccountError
+
+
+class BuildClaimChanged(AccountError):
+    """The caller no longer owns this build result or its failure transition."""
+
+    def __init__(self) -> None:
+        super().__init__("STATE_OPERATION_NOT_ALLOWED", 409)
+
+
+def require_publication_claim(run: Any, claim_id: str | None) -> None:
+    claim = run.get("publication_claim")
+    if claim != ({"id": claim_id, "state": "running"} if claim_id else None):
+        raise BuildClaimChanged()
 
 
 def record_failure(
@@ -22,6 +36,8 @@ def record_failure(
     claim_key: str,
     claim_id: str,
     failure: BaseException,
+    expected_claim: dict[str, Any] | None = None,
+    publication_claim_id: str | None = None,
 ) -> None:
     from rpb.adapters.runs import persist, transition
 
@@ -48,7 +64,11 @@ def record_failure(
         if row is None:
             return
         run = copy.deepcopy(row[0])
+        if publication_claim_id is not None:
+            require_publication_claim(run, publication_claim_id)
         claim = run.get(claim_key) or {}
+        if expected_claim is not None and claim != expected_claim:
+            raise BuildClaimChanged()
         if not (
             run["status"] == "running"
             and run["owner_id"] == str(actor)

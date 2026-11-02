@@ -1,9 +1,20 @@
 # Task049：M-P0-18 手动论文入库与知识版本发布
 
-文档版本：v1.12
+文档版本：v1.18
 更新日期：2026-11-02
 
 ## 8. 最新检查点
+
+2026-11-02 用户继续授权 task049。手动增量检索已接通入库预览确认、构建 Worker、就绪证明和原子发布。适用范围是保留基线全部论文，至少新增一篇确认论文，配置和依赖兼容。浏览器验证同一 Project 的第二次发布：预览列出基线和新增数量，新版读出新旧两篇论文，旧版继续按原修订读取人工分析。2026-11-02 用户明确接受「手动论文增量发布」子范围并要求本地提交；整体里程碑、零新增/no_change、清理、显式移除与重算仍开放。首版人工接受基线仍为 `a07f21d`。
+
+此前内部候选图谱已验证只抽取新增片段，同时保留每篇论文自己的支持与定位。
+
+前一切片完成增量向量构建。普通增量检索有新增论文且配置和依赖匹配时，内部向量构建器已能从永久发布引用读取基线视图，引用旧 embedding ID，只为新增文本计算向量，并封存完整的候选视图。撤权或保留文本损坏会阻止封存，默认版本仍指向原版。
+
+前一切片完成论文保留清单的内部确认与暂存核验。
+
+上一切片承接 PUB-G02 的冻结配置与迟到写入。已从正常 Worker 入口验证，向量执行凭据变化后，旧结果无法封存，也无法通过失败处理结束当前 Run 或释放槽位。本子项工程收口，首版人工接受基线仍为 `a07f21d`。
+
 
 2026-11-01 用户指定的手动论文首版子验收点已跑通，2026-11-02 用户明确验收通过。新 Project 的浏览器入库确认走既有幂等命令，获槽的 Worker 构建，独立连接比对分块、对象与封存视图，冻结清单及就绪证明，短事务重验当前身份、来源政策、基线、attempt/epoch/租约和依赖保护；一次登记版本、正式 pin、默认指针、永久视图引用及发布事件、Run 成功并释放槽。浏览器打开该版后从不可变论文修订读取人工分析。当前范围是手动论文首版，图谱质量、后续增量/no_change、显式清理/历史删除、非论文与全里程碑验收另行跟踪。失败记录保留与重新运行沿已批准规则。
 
@@ -21,12 +32,16 @@
 | A09文本分块 | Unicode原文偏移、段落边界、最多384正文token和64重叠、编码上限失败；chunking-test2 4项通过，独立反例及修复复审、真实E5 tokenizer烟测通过 | 已接首版内部向量构建；完整定位闭包和增量版本待验证 |
 | 构建槽与迟到写入 | slot-test5 6项和slot-regression3隔离PG 202项通过；独立复验迁移、取消、迟到写入、租约过期保持槽位 | 首版已接发布并复验过期执行者保槽；增量发布竞争待覆盖 |
 | 候选锁的基础防护 | candidate-guard-test2单元4项、candidate-guard-test3数据库2项；guard3-review2独立验证旧快照并发及取消后锁保持 | 手动首版公开受理已接锁；确认与编辑竞争仍待专项验证 |
-| 预览确认凭据 | ingestion-proof-test2及proof-review2验证主体、范围、风险、修订、尝试和忙状态；早期仅发放受阻凭据，首版已接可受理凭据 | 首版公开命令已重验并保存；已有基线的确认保持受阻 |
+| 预览确认凭据 | ingestion-proof-test2及proof-review2验证主体、范围、风险、修订、尝试和忙状态；早期仅发放受阻凭据，首版已接可受理凭据 | 普通兼容纯论文增量现已开放确认，非增量重建与零新增入口仍受限 |
 | 确认事务内部原语 | ingestion-accept-test3通过3项，accept-review与accept3-review验证跨主体、取消竞争、真实head比较；同事务保存确认和内容锁 | 首版公开确认已接入既有命令幂等与构建 Worker，浏览器自动验证及首版人工验收通过 |
-| 本地模型和构建存储 | 固定E5权重摘要校验、real-e5-inference1真实推理；build-store-test4隔离PG17/pgvector 4项及store4-review独立约束检查通过；vector-seal-test2和vector-review2核对空视图及延迟外键成员 | 首版读回与发布证明已接线，增量基线待实现 |
-| PUB-G02 首版构建配置 | 向量构建器取得写资格后、首次分块前持久化配置；封存时比对，重放时核对配置及摘要。见[profile2](../docs/workorders/evidence/task049_ingestion_2026-10-31/profile2/)的六项隔离回归，含配置字段、摘要与成功重放 | 待补确定性交错：分块开始时从独立事务读回冻结配置；封存前篡改配置或撤销资格须拒绝且无可发布结果。首版就绪已用固定tokenizer重分块；增量基线和前述交错仍需专项证据；归PUB-G02，交PUB-G03消费 |
+| 本地模型和构建存储 | 固定E5权重摘要校验、real-e5-inference1真实推理；build-store-test4隔离PG17/pgvector 4项及store4-review独立约束检查通过；vector-seal-test2和vector-review2核对空视图及延迟外键成员 | 首版读回与发布证明已接线，增量向量保留见下项 |
+| 增量论文成员保留 | 确认核对已绑定版本清单、实际论文修订和版本 pin，冻结全部资产与修订配对；暂存重验 pin，拒绝遗漏、换配或未支持的输入 | 仅常规检索与纯论文基线，兼容向量、图谱及发布见下项 |
+| 增量向量成员 | test_incremental_vector_members 从真正发布的首版启动第二次检索，在内部受理后核验新旧向量成员并集、重放无模型调用、历史视图及默认指针；配置改变、撤权和保留文本丢失均拒绝 | 兼容配置且有新增论文的常规增量分支已工程收口；依赖或配置变化后的重算及 no_change 另验，兼容增量发布见下项 |
+| 增量图谱成员 | test_incremental_graph_members 通过实际首版和第二次检索验证共同实体归并、各论文独立支持、零新增语义断言、历史成员逐行守恒及重放；旧标题单独撤权、不一致的证明、迟到 claim 均阻止写入 | 有新增且完整保留基线的内部视图工程收口。兼容增量发布见下项；删除/替换、rebuild 另行跟踪 |
+| 增量论文公开发布 | test_incremental_publication 及浏览器 test_pab01 验证普通命令重放、完整清单/对象/视图、保留全文 PDF、同版读取、事务故障回滚、默认指针竞争、准备后撤权、凭据替换和证明篡改 | 受控模型、隔离库及浏览器通过；本子范围获用户限定接受 |
+| PUB-G02 首版构建配置 | 向量构建器取得写资格后、首次分块前持久化配置；封存时比对，重放时核对配置及摘要。见[profile2](../docs/workorders/evidence/task049_ingestion_2026-10-31/profile2/)的六项隔离回归，含配置字段、摘要与成功重放 | 首次分块从独立事务读回冻结配置；模型派发前或封存前改变配置、执行状态或尝试归属均拒绝，Run 和槽位保留。见第5节 vector-fence。增量基线仍开放 |
 | 图谱抽取和文件存储基础 | graph-provider-test2 24项；provider-review2复验终态缺失反例；filestore-test2 3项与file-review2复验FIFO | 首版内部图谱和文件暂存已接线并局部验证；首版保护转换及发布已验证，显式清理仍开放 |
-| FR-026确认、锁定、隔离写入、向量/图谱、发布与故障并发 | 按01 FR-026、02-02 §10、06 A09、07 §5–6逐项落实，含实际持久化及竞争 | 首版公开链路与原子发布已验证，增量及全任务验证未完成 |
+| FR-026确认、锁定、隔离写入、向量/图谱、发布与故障并发 | 按01 FR-026、02-02 §10、06 A09、07 §5–6逐项落实，含实际持久化及竞争 | 首版和兼容纯论文增量发布已自动验证；增量子范围已获接受，全任务仍未完成 |
 
 ### PUB-G04 手动失败记录与清理边界
 
@@ -37,6 +52,18 @@
 | 删除历史记录。历史记录所有者处理明确删除请求，已发布版本和必要来源依据继续可读 | 与清理临时数据分别验收。须补精确入口、鉴权、引用保护及失败回滚测试；未经授权不执行删除。生产备份周期、容量与恢复目标仍归 H03 |
 
 ## 5. 验证与限制
+
+[手动增量发布执行证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-publication/)含入场工作树、baseline / candidate3、完整日志和实际退出码。S1 执行状态/权威性 read、task049 entry；publication-Nov2 独立 ledger 记录授权、06 A09.6、DELIVERY_TOOLS §5 的定向读取。S2 覆盖真实首版与第二次检索，复用现有确认与查看入口；完整论文/文本/文件读回后，Worker 携带预期证明摘要进入提交事务。S3 独立探针在早期实现复现过期发布凭据仍能设 head、被改写的视图 ID 能进入事件。修复提交和构建失败路径的执行凭据校验，证明重放绑定已发布记录。S4 补入 PDF 丢失、计数与本地摘要一起被改写、模型在途失败和真实 head 竞争。review/final3-summary.json 的四项独立 PG 复验通过。S5 复用相同来源许可检查，提交事务只比较元数据和保护引用，不重读文件字节。
+
+S6 在启用 pgvector 的临时 PostgreSQL 17 上运行 final2/run.json 的命令，使用受控模型。对 final2/tests.xml 执行 delivery_summary，共 97 项通过、无跳过；库已停止移除。backend 目录运行 `.venv/bin/python -m pytest tests/unit -q --junitxml=…`，unit/summary.json 记录 542 项通过。frontend 构建、4 项 Vitest、API 契约静态检查及 static2 的 Ruff/132 源文件 mypy 均通过。早期 static 与 final-static 的类型、行宽失败已保留。本轮未评估真实模型质量或发送发布邮件。S7 工程收口；人工验收材料见[增量预览](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-publication/browser-final/preview.png)、[新版本](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-publication/browser-final/incremental.png)和[原版本](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-publication/browser-final/original.png)。
+
+增量图谱的[执行证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-graph/)保留初始工作树、baseline / candidate4 快照及最终 JUnit 和退出码。S1 用状态/设计索引 read、task049 entry、context graph-Nov2 的独立 ledger 读取任务授权、06 A09.6 和 DELIVERY_TOOLS §5。S2 用受控抽取器与真实隔离 PG17/pgvector 构建两次 Run。S3 独立审查要求额外核对发布证明的依赖摘要、候选修订及四类图谱计数；review 的独立事务探针复验替换执行凭据后旧结果不能写图或释放槽。S4 检查元数据来源与正文来源分离时的撤权、空抽取、重放及旧版不变。S5 模型派发仅重验基线元数据、来源及当前权限，完整文件/视图读回留在开始和封存事务。final2/final3 的故障注入触发器跨测试污染，已替换为本例 engine listener 并在 finally 移除。S6 最终执行 final4/run.json 中的隔离命令，对 JUnit 运行 delivery_summary，38 项通过，无跳过，隔离库已移除；static6 的 Ruff 与后端 mypy 通过。S7 结论仅覆盖本内部切片；本轮使用模拟模型，未测真实抽取质量或大图性能。
+
+增量向量的[本轮证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-vector/)记录实际源码快照、退出码、日志与摘要。S1 执行状态/权威性 read、task049 entry，再以 ledger.json / vector-Nov2 读取授权、06 A09.6 及 DELIVERY_TOOLS §5。S2 在隔离 PG17/pgvector 内发布首版、运行第二次检索，使用受控嵌入与图谱服务。前两次测试夹具分别命中检索节流和命令键复用，修复隔离夹具后 slice3 正常运行。S3 独立审查发现必须先重验旧来源再读文本及向量；修复过程 candidate / affected 因残留旧变量出现四例失败。S4 增加撤权后读取监测、文件丢失反例；S5 复用原有封存校验和同事务成员写入，模型派发仅重验当前权限及输入，不逐片重新扫描旧向量。S6 对 candidate2 的 final/tests.xml 实际执行 delivery_summary，32 项通过、无跳过，隔离库已移除。static2 的 Ruff 与后端 mypy 通过。review/fix-summary.json 记录独立探针在撤权后零次读取旧文本。本切片仅封存候选向量视图，使用受控模型，未进入增量发布或人工验收。
+
+增量保留清单的[执行证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-baseline/)含完整入场状态、baseline / candidate3 快照、实际命令、退出码及摘要。执行状态与设计索引 read、task049 entry，再用 context increment-Nov2 定向读取授权、06 A09.6 及 DELIVERY_TOOLS §5，见 ledger.json。red 复现错误接受缺失成员的缓存；digest-red 复现清单自带摘要矛盾时仍通过检索确认。S3 独立审查补入非论文资料、未支持输入与旧首版兼容场景；review/ 的隔离探针验证交换配对被拒绝和新旧摘要格式共存。S4 核对确认前后写入、旧版指针和 pin，S5 暂存按项目/版本只读取 pin 指向的两列身份。S6 的 final3/run.json 使用隔离 PG17/pgvector、模拟服务，JUnit 执行 delivery_summary，28 项通过、无跳过，数据库已移除。final2 的 1 项失败定位到原契约漏列 410；本轮补齐阶段确认和论文列表两处，api-contract3 检查通过。api-compat 的保守比较退出 1，compatibility-scope 已单独核对操作与共享契约的差异仅为这两处新增 410 响应。Ruff 和后端 mypy 通过。S7 仅收口内部成员保留切片；首版接受不延伸到增量或 no_change。
+
+PUB-G02 冻结配置专项。按 `delivery_context.py entry tasks/049-ingestion-publication.md` 恢复，定向读取授权、DELIVERY_TOOLS §5 及 06 A09.6（context cont-one）。[本轮证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/vector-fence/)保留 ledger、入场与 candidate3 快照。旧实现 red3 四例中三例错误封存；red/red2 因本机 PostgreSQL 缺少 vector 扩展未进入测试。改用现有隔离 PG17/pgvector，按 final3/run.json 的命令及 PYTEST_ADDOPTS 执行，再对 JUnit 运行 `delivery_summary.py --exit-code 0`，20 项通过、无跳过，数据库已移除。模型受控。独立审查发现外层 Worker 会把过期结果记作 Run 失败；修复后以独立的 unknown 状态交错在修复前后分别得到失败和通过，详见 review。S4 核对正常封存、重放、真实失败及迟到写入的禁止副作用，S5 复用同一冻结凭据比较；static3 的 Ruff 与全后端 mypy 通过。
 
 执行说明第5节通过delivery_context实际读取，记录见root-ledger；完整命令、退出码及delivery_summary结果在[evidence](../docs/workorders/evidence/task049_ingestion_2026-10-30/)：preview-test1通过1项；preview-test2因确认对象机器契约不匹配失败并保留，补契约后preview-test3/4通过；前一快照regression1隔离PG/浏览器116项通过；preview-finalcandidate-snapshot上focused1为2项通过、0跳过，build2和lint3退出0。contract1及contract-tests1使用backend环境缺少openapi_spec_validator失败；contract-tests2误用契约环境的pytest未安装而未生成JUnit；contract2在正确环境发现覆盖清单未同步而失败。同步后contract3通过（87个部分操作、28个仅请求；未做旧版兼容比较），contract-tests3的48项unittest通过。独立S3发现确认投影、失败漏报和契约/覆盖问题；复审再发现过期筛选及来源错误遗漏；修复后独立复审限定通过，独立ledger和反例日志保存在evidence；清单补充后的受影响复审通过（reviewer-contract-ledger）。上述只证明预览切片，未完成本任务完整S3/S4/S6。真实模型和pgvector隔离烟测已通过，完整构建和发布未验证。
 
@@ -80,3 +107,7 @@ regression-full1最终750项通过，属于regression-full-snapshot而非后续�
 ## 2026-11-02 首版发布子范围人工接受
 
 用户明确接受浏览器确认、首版原子发布与同版本读取，并授权本地提交。接受基线为 first-publication-final，72 项受影响回归及上述独立复验有效。提交前业务源码与最终快照逐文件一致。增量构建、no_change、显式清理及整个 M-P0-18 的验收继续开放。
+
+## 手动论文增量发布子范围人工接受（2026-11-02）
+
+用户指令为“ok，验收通过，并进行一次git提交。然后继续推进”。接受基线为 incremental-publication/candidate3；97 项集成回归、542 项后端单元、4 项前端测试及 4 项独立探针沿用原执行证据。提交前从 a07f21d 检查空暂存区，逐文件比对业务产物，混合状态文件只选取本业务范围。实际核验见[提交记录](../docs/workorders/evidence/task049_ingestion_2026-11-02/accepted-increment/)。

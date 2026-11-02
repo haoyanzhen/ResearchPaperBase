@@ -21,7 +21,26 @@ def content_digest(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def baseline_papers(conn: Any, run: Any) -> list[dict[str, str]]:
+def pinned_revisions(project_id: UUID, version_id: UUID) -> sa.Select[Any]:
+    return (
+        sa.select(paper_revisions)
+        .select_from(
+            version_paper_pins.join(
+                paper_revisions,
+                sa.and_(
+                    version_paper_pins.c.project_id == paper_revisions.c.project_id,
+                    version_paper_pins.c.paper_revision_id == paper_revisions.c.id,
+                ),
+            )
+        )
+        .where(
+            version_paper_pins.c.project_id == project_id,
+            version_paper_pins.c.version_id == version_id,
+        )
+    )
+
+
+def baseline_papers(conn: Any, run: Any, *, papers_only: bool = False) -> list[dict[str, str]]:
     snapshot = run.get("input_snapshot")
     if not isinstance(snapshot, dict) or "base_knowledge_version_id" not in snapshot:
         raise AccountError("STORAGE_FILE_UNAVAILABLE", 410)
@@ -48,28 +67,13 @@ def baseline_papers(conn: Any, run: Any) -> list[dict[str, str]]:
             raise ValueError("baseline manifest unavailable")
         if content_digest(manifest) != version["manifest_digest"]:
             raise ValueError("baseline manifest digest mismatch")
+        if papers_only and manifest.get("materials", []) != []:
+            raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
         entries = manifest["papers"]
         expected = {(UUID(x["project_paper_id"]), UUID(x["paper_revision_id"])) for x in entries}
         if len(expected) != len(entries) or len({x[0] for x in expected}) != len(expected):
             raise ValueError("duplicate baseline membership")
-        rows = list(
-            conn.execute(
-                sa.select(paper_revisions)
-                .select_from(
-                    version_paper_pins.join(
-                        paper_revisions,
-                        sa.and_(
-                            version_paper_pins.c.project_id == paper_revisions.c.project_id,
-                            version_paper_pins.c.paper_revision_id == paper_revisions.c.id,
-                        ),
-                    )
-                )
-                .where(
-                    version_paper_pins.c.project_id == project_id,
-                    version_paper_pins.c.version_id == version_id,
-                )
-            ).mappings()
-        )
+        rows = list(conn.execute(pinned_revisions(project_id, version_id)).mappings())
         count = conn.scalar(
             sa.select(sa.func.count())
             .select_from(version_paper_pins)
@@ -80,7 +84,16 @@ def baseline_papers(conn: Any, run: Any) -> list[dict[str, str]]:
         )
         if len(rows) != count or {(x["project_paper_id"], x["id"]) for x in rows} != expected:
             raise ValueError("baseline membership mismatch")
-        if any(content_digest(row["content"]) != row["digest"] for row in rows):
+        manifest_digests = {
+            UUID(entry["paper_revision_id"]): entry["digest"]
+            for entry in entries
+            if "digest" in entry
+        }
+        if any(
+            content_digest(row["content"]) != row["digest"]
+            or manifest_digests.get(row["id"], row["digest"]) != row["digest"]
+            for row in rows
+        ):
             raise ValueError("baseline paper digest mismatch")
         return sorted(
             [

@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from rpb.adapters.analysis_lineage import currently_usable
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
 from rpb.adapters.construction_slots import is_current
-from rpb.adapters.knowledge_baseline_papers import content_digest
+from rpb.adapters.knowledge_baseline_papers import content_digest, pinned_revisions
 from rpb.adapters.knowledge_paper_tables import (
     paper_identities,
     paper_identity_titles,
@@ -194,7 +194,22 @@ def stage_paper(
         if own_identities
         else set()
     )
-    active_papers = {UUID(item["project_paper_id"]) for item in run.get("baseline_papers", [])}
+    # The baseline is immutable. Staging needs its pinned IDs, not the full paper contents.
+    retained = []
+    if latest is not None:
+        pinned = (
+            pinned_revisions(project_id, latest)
+            .with_only_columns(paper_revisions.c.project_paper_id, paper_revisions.c.id)
+            .order_by(paper_revisions.c.project_paper_id)
+        )
+        retained = [
+            {"project_paper_id": str(asset), "paper_revision_id": str(revision)}
+            for asset, revision in conn.execute(pinned)
+        ]
+    # First-version attempts accepted before retained membership was recorded have no base.
+    if retained != confirmation.get("retained_papers", [] if latest is None else None):
+        raise AccountError("STATE_REVISION_CONFLICT", 409)
+    active_papers = {UUID(item["project_paper_id"]) for item in retained}
     if own_papers - active_papers or (own_papers and not distinct):
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     unresolved = not distinct and not own_identities and len(identities) > 1
@@ -236,9 +251,7 @@ def stage_paper(
             project_papers.c.identity_id == identity,
         )
     )
-    if project_paper and any(
-        x["project_paper_id"] == str(project_paper) for x in run.get("baseline_papers", [])
-    ):
+    if project_paper in active_papers:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if project_paper is None:
         project_paper = uuid4()

@@ -954,7 +954,8 @@ def test_internal_confirmation_atomically_freezes_candidate_without_publishing(
         )
 
 
-def test_confirmed_full_text_stages_separate_private_text_and_pdf(subject, tmp_path):
+@pytest.fixture
+def accepted_full_text_run(subject):
     from test_paper_processing import Prepared, confirmed_score, pdf
     from test_paper_screening import classify
 
@@ -996,6 +997,18 @@ def test_confirmed_full_text_stages_separate_private_text_and_pdf(subject, tmp_p
     actor, project, identity = (UUID(before[key]) for key in ("owner_id", "project_id", "id"))
     with engine.begin() as conn:
         accepted = accept_locked(conn, app.state.run_store, actor, project, identity, body)
+    return (actor, project, identity, accepted), candidate, pdf_bytes
+
+
+def test_confirmed_full_text_stages_separate_private_text_and_pdf(
+    subject, tmp_path, accepted_full_text_run
+):
+    _, _, _, app, engine, _ = subject
+    (actor, project, identity, accepted), candidate, pdf_bytes = accepted_full_text_run
+    with engine.begin() as conn:
+        # A first-version attempt accepted by the prior release has no retained list.
+        assert accepted["ingestion_confirmation"].pop("retained_papers") == []
+        persist(conn, accepted)
     attempt, candidate_id = UUID(accepted["attempt_id"]), UUID(candidate["id"])
     staged = stage_objects(
         app.state.run_store, tmp_path, actor, project, identity, attempt, candidate_id
@@ -1007,8 +1020,8 @@ def test_confirmed_full_text_stages_separate_private_text_and_pdf(subject, tmp_p
         assert data == (b"Actual full text" if item["kind"] == "text" else pdf_bytes)
 
 
-@pytest.mark.parametrize("revoke", [False, True])
-def test_vector_failure_records_diagnostic_and_releases_writer(subject, tmp_path, revoke):
+@pytest.fixture
+def accepted_vector_run(subject):
     client, headers, root, app, engine, _ = subject
     url = ready(subject)
     assert generate(client, headers, url).status_code == 202
@@ -1029,6 +1042,106 @@ def test_vector_failure_records_diagnostic_and_releases_writer(subject, tmp_path
     actor, project, identity = (UUID(before[key]) for key in ("owner_id", "project_id", "id"))
     with engine.begin() as conn:
         accepted = accept_locked(conn, app.state.run_store, actor, project, identity, body)
+
+    return actor, project, identity, accepted
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        "profile_body",
+        "profile_id",
+        "claim_state",
+        "claim_attempt",
+        "missing_attempt",
+        "worker_replaced",
+        "before_tokenize",
+    ],
+)
+def test_vector_seal_requires_frozen_profile_and_live_claim(
+    subject, accepted_vector_run, tmp_path, changed
+):
+    _, _, _, app, engine, _ = subject
+    actor, project, identity, accepted = accepted_vector_run
+    observed = []
+
+    class InterleavedPort(FakePort):
+        def offsets(self, text):
+            if not observed:
+                with engine.connect() as conn:
+                    run = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == identity))
+                    claim = run["vector_build_claim"]
+                    assert claim["state"] == "running"
+                    assert claim["build_profile"]["embedding"] == self.profile
+                    assert claim["build_profile_id"] == content_digest(claim["build_profile"])
+                    observed.append(claim["build_profile_id"])
+            if changed == "before_tokenize":
+                self.change_claim()
+                with self.permit():
+                    pytest.fail("tokenizer dispatch accepted a changed build profile")
+            return super().offsets(text)
+
+        def __exit__(self, *args):
+            assert observed
+            if changed != "before_tokenize":
+                self.change_claim()
+
+        def change_claim(self):
+            with engine.begin() as conn:
+                run = conn.scalar(
+                    sa.select(runs.c.payload).where(runs.c.id == identity).with_for_update()
+                )
+                claim = run["vector_build_claim"]
+                if changed == "profile_body":
+                    claim["build_profile"]["chunker_revision"] += "-changed"
+                elif changed in {"profile_id", "before_tokenize"}:
+                    claim["build_profile_id"] = "0" * 64
+                elif changed in {"claim_attempt", "worker_replaced"}:
+                    claim["attempt_id"] = str(uuid4())
+                elif changed == "missing_attempt":
+                    del claim["attempt_id"]
+                else:
+                    claim["state"] = "unknown"
+                persist(conn, run)
+
+    if changed == "worker_replaced":
+        from rpb.adapters.first_publication_worker import FirstPublicationWorker
+
+        worker = FirstPublicationWorker(app.state.run_store, tmp_path, InterleavedPort, None)
+        assert worker.run_once()
+    else:
+        with pytest.raises(AccountError) as denied:
+            build_vector_view(
+                app.state.run_store,
+                tmp_path,
+                actor,
+                project,
+                identity,
+                UUID(accepted["attempt_id"]),
+                InterleavedPort,
+            )
+        assert denied.value.code == "STATE_OPERATION_NOT_ALLOWED"
+    with engine.connect() as conn:
+        run = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == identity))
+        assert not run.get("vector_build")
+        assert run["status"] == "running"
+        assert run["vector_build_claim"]["state"] == (
+            "unknown" if changed == "claim_state" else "running"
+        )
+        assert (
+            conn.scalar(sa.select(slots.c.occupant_run_id).where(slots.c.project_id == project))
+            == identity
+        )
+        for table in (vector_views, chunks, embeddings, versions):
+            assert conn.scalar(sa.select(sa.func.count()).select_from(table)) == 0
+
+
+@pytest.mark.parametrize("revoke", [False, True])
+def test_vector_failure_records_diagnostic_and_releases_writer(
+    subject, accepted_vector_run, tmp_path, revoke
+):
+    client, headers, root, app, engine, _ = subject
+    actor, project, identity, accepted = accepted_vector_run
 
     def fail_worker(permit):
         if revoke:

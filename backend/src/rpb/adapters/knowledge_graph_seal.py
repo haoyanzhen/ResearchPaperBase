@@ -54,6 +54,8 @@ def verify_graph_view(
     view_id: UUID,
     expected_chunks: set[UUID],
     chunk_texts: dict[UUID, str] | None = None,
+    *,
+    expected_counts: dict[str, int] | None = None,
 ) -> str:
     view = (
         conn.execute(
@@ -66,7 +68,7 @@ def verify_graph_view(
     )
     if view is None or not view["sealed"]:
         raise GraphViewIncomplete("sealed view unavailable")
-    digest = _digest(conn, project_id, view_id, expected_chunks, view, chunk_texts)
+    digest = _digest(conn, project_id, view_id, expected_chunks, view, chunk_texts, expected_counts)
     if digest != view["digest"]:
         raise GraphViewIncomplete("sealed view digest mismatch")
     return digest
@@ -79,6 +81,7 @@ def _digest(
     expected_chunks: set[UUID],
     view: Any,
     chunk_texts: dict[UUID, str] | None,
+    expected_counts: dict[str, int] | None = None,
 ) -> str:
     tables = (graph_extractions, graph_nodes, graph_labels, graph_edges, graph_supports)
     records = {}
@@ -90,6 +93,17 @@ def _digest(
                 .order_by(*table.primary_key.columns)
             ).mappings()
         )
+    if expected_counts is not None:
+        for key, table in (
+            ("nodes", graph_nodes),
+            ("assertions", graph_edges),
+            ("supports", graph_supports),
+            ("extractions", graph_extractions),
+        ):
+            if type(expected_counts.get(key)) is not int or expected_counts[key] != len(
+                records[table.name]
+            ):
+                raise GraphViewIncomplete("graph counts differ from published proof")
     extraction_rows = records[graph_extractions.name]
     if {row["chunk_id"] for row in extraction_rows} != expected_chunks:
         raise GraphViewIncomplete("extractions differ from frozen chunks")

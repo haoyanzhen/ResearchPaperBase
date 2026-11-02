@@ -1,6 +1,6 @@
 {
-  "version": "1.21",
-  "date": "2026-11-01",
+  "version": "1.23",
+  "date": "2026-11-02",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -715,7 +715,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "bbdc7db4b5acf2b9019b9e12c6190909ea8fd876abb2c8d8db4af681e39e5d8c",
+    "04-01_p0_operation_contracts.md": "d5e0a856a5f2a7c1bee37d08e47b9417a02e7181f931e9f96f7fa90233401ad5",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -3229,7 +3229,7 @@
     "task": "tasks/048-paper-analysis.md"
   },
   "construction_ingestion_preview": {
-    "scope": "Read-only paper preview; no ingestion confirmation or publication",
+    "scope": "Manual paper preview and publication, including additive retrieval over a compatible paper baseline with at least one new confirmed paper. Rebuild, removal and no_change remain open.",
     "task": "tasks/049-ingestion-publication.md"
   }
 }

@@ -2,8 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.17",
-    "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
+    "version": "1.18",
+    "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json.",
+    "x-updated": "2026-11-02"
   },
   "servers": [
     {
@@ -5319,6 +5320,9 @@
           },
           "415": {
             "$ref": "#/components/responses/PublicError415"
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
           }
         },
         "requestBody": {
@@ -12882,6 +12886,9 @@
           },
           "415": {
             "$ref": "#/components/responses/PublicError415"
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
           }
         }
       }

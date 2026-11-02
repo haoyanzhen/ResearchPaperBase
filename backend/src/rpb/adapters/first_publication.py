@@ -1,4 +1,4 @@
-"""Commit the first Project version from verified, sealed construction artifacts."""
+"""Commit a Project paper version from verified, sealed construction artifacts."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,6 +9,7 @@ import sqlalchemy as sa
 
 from rpb.adapters.immutable_files import ImmutableFileStore
 from rpb.adapters.knowledge_baseline_papers import content_digest
+from rpb.adapters.knowledge_build_failure import BuildClaimChanged, require_publication_claim
 from rpb.adapters.knowledge_build_tables import (
     graph_edges,
     graph_extractions,
@@ -25,25 +26,33 @@ from rpb.adapters.knowledge_paper_tables import (
     version_object_pins,
     version_paper_pins,
 )
+from rpb.adapters.knowledge_publication_baseline import checked_base, retained_inputs
 from rpb.adapters.knowledge_tables import heads, versions
 from rpb.modules.account_config.application.ports import AccountError
 
 
 def prepare_verified(
-    conn: Any, root: Path, run: Any, material: list[Any], vector: Any, graph: Any
+    conn: Any,
+    root: Path,
+    run: Any,
+    material: list[Any],
+    vector: Any,
+    graph: Any,
+    project_record: Any,
+    state: Any,
+    claim_id: str | None,
 ) -> dict[str, Any]:
     """Called under the graph read barrier, after the committed views are verified."""
     from rpb.adapters.runs import persist
 
     project, identity, attempt = (UUID(run[key]) for key in ("project_id", "id", "attempt_id"))
-    if (
-        run["input_snapshot"]["base_knowledge_version_id"] is not None
-        or conn.scalar(sa.select(heads.c.version_id).where(heads.c.project_id == project))
-        is not None
-    ):
-        raise AccountError("STATE_REVISION_CONFLICT", 409)
+    require_publication_claim(run, claim_id)
+    base = checked_base(conn, project, run)
     files = ImmutableFileStore(root)
-    papers, digests = [], {}
+    inherited = retained_inputs(
+        conn, project_record, UUID(run["owner_id"]), state, base, run, files
+    )
+    papers, digests = list(inherited.papers), dict(inherited.digests)
     members = {item["chunk"]["asset_revision"]: item for item in material}
     for revision, item in sorted(members.items()):
         candidate, asset = item["candidate"], item["chunk"]["asset_id"]
@@ -105,7 +114,7 @@ def prepare_verified(
         "vector_digest": vector["digest"],
         "graph_digest": graph["digest"],
     }
-    counts = {"papers": len(papers), "texts": len(papers), "chunks": len(material)}
+    counts = {"papers": len(papers), "texts": len(papers), "chunks": len(vector["chunks"])}
     for name, table, view in (
         ("vectors", vector_members, vector),
         ("nodes", graph_nodes, graph),
@@ -118,9 +127,12 @@ def prepare_verified(
             .select_from(table)
             .where(table.c.project_id == project, table.c.view_id == UUID(view["view_id"]))
         )
+    if counts["chunks"] != counts["vectors"] or counts["chunks"] != counts["extractions"]:
+        raise AccountError("STORAGE_FILE_UNAVAILABLE", 410)
     at = datetime.now(UTC)
     proof = {
         "project_id": str(project),
+        "base_version_id": str(base) if base else None,
         "run_id": str(identity),
         "attempt_id": str(attempt),
         "candidate_revision": run["candidate_revision"],
@@ -137,6 +149,8 @@ def prepare_verified(
     run["publication_ready"] = {
         "manifest": manifest,
         "proof": proof,
+        "publication_claim_id": claim_id,
+        "readback_digest": content_digest(proof),
         "input_revision": run["effective_input_revision"],
         "slot_epoch": run["slot_epoch"],
         "vector": vector,
@@ -144,11 +158,18 @@ def prepare_verified(
     }
     run["candidate_version"]["state"] = "ready_to_publish"
     persist(conn, run)
-    return {"read_barrier_id": proof["read_barrier_id"]}
+    return {"read_barrier_id": proof["read_barrier_id"], "readback_digest": content_digest(proof)}
 
 
 def commit_ready(
-    store: Any, actor: UUID, project: UUID, identity: UUID, attempt: UUID, barrier: str
+    store: Any,
+    actor: UUID,
+    project: UUID,
+    identity: UUID,
+    attempt: UUID,
+    barrier: str,
+    claim_id: str | None = None,
+    expected_readback_digest: str | None = None,
 ) -> str:
     from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
     from rpb.adapters.knowledge_paper_stage import stage_paper
@@ -176,10 +197,47 @@ def commit_ready(
         if proof.get("read_barrier_id") != barrier:
             raise AccountError("STATE_REVISION_CONFLICT", 409)
         if run["status"] == "succeeded":
-            return str(UUID(run["published_knowledge_version_id"]))
+            decision = conn.scalar(
+                sa.select(versions.c.id)
+                .join(publication_events, publication_events.c.version_id == versions.c.id)
+                .where(
+                    versions.c.project_id == project,
+                    versions.c.source_run_id == identity,
+                    versions.c.sealed,
+                    versions.c.ready_proof["read_barrier_id"].astext == barrier,
+                )
+            )
+            if not decision or str(decision) != run["published_knowledge_version_id"]:
+                raise AccountError("STATE_REVISION_CONFLICT", 409)
+            return str(decision)
+        require_publication_claim(run, claim_id)
+        if claim_id and expected_readback_digest != content_digest(proof):
+            raise AccountError("STATE_REVISION_CONFLICT", 409)
+        if ready.get("publication_claim_id") != claim_id:
+            raise BuildClaimChanged()
         manifest = ready["manifest"]
         if (
-            content_digest(manifest) != proof["manifest_digest"]
+            (
+                (
+                    "readback_digest" in ready
+                    or run["input_snapshot"]["base_knowledge_version_id"] is not None
+                )
+                and ready.get("readback_digest") != content_digest(proof)
+            )
+            or proof["project_id"] != str(project)
+            or proof["run_id"] != str(identity)
+            or proof["attempt_id"] != str(attempt)
+            or proof["vector_view_id"] != manifest["vector_view_id"]
+            or proof["graph_view_id"] != manifest["graph_view_id"]
+            or proof["vector_view_id"] != ready["vector"]["view_id"]
+            or proof["graph_view_id"] != ready["graph"]["view_id"]
+            or proof["build_profile_id"] != ready["vector"]["profile_id"]
+            or proof["build_profile_id"] != ready["graph"]["profile_id"]
+            or proof["dependency_set_digest"] != ready["graph"]["dependency_digest"]
+            or manifest["build_profile"] != ready["vector"]["profile"]
+            or manifest["graph_digest"] != ready["graph"]["digest"]
+            or manifest["vector_digest"] != ready["vector"]["digest"]
+            or content_digest(manifest) != proof["manifest_digest"]
             or run["candidate_revision"] != proof["candidate_revision"]
             or run["effective_input_revision"] != ready["input_revision"]
             or run["slot_epoch"] != ready["slot_epoch"]
@@ -187,6 +245,9 @@ def commit_ready(
             or ready["graph"] != run["graph_build"]
             or run["candidate_version"]["state"] != "ready_to_publish"
         ):
+            raise AccountError("STATE_REVISION_CONFLICT", 409)
+        base = checked_base(conn, project, run)
+        if proof.get("base_version_id") != (str(base) if base else None):
             raise AccountError("STATE_REVISION_CONFLICT", 409)
         state = load(conn, proj)
         policy = policy_view(state, actor, proj)["revision"]
@@ -227,15 +288,28 @@ def commit_ready(
                         "config": run["model_config"],
                     },
                 )
+        if not members:
+            raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+        inherited = retained_inputs(conn, proj, actor, state, base, run)
+        text_deps.update(inherited.text_dependencies)
+        meta_deps.update(inherited.metadata_dependencies)
+        members.update(UUID(p["paper_revision_id"]) for p in inherited.papers)
+        by_revision = {p["paper_revision_id"]: p for p in manifest["papers"]}
         if (
-            not members
+            any(by_revision.get(p["paper_revision_id"]) != p for p in inherited.papers)
+            or len(by_revision) != len(manifest["papers"])
             or members != {UUID(x["paper_revision_id"]) for x in manifest["papers"]}
             or content_digest({"text": text_deps, "metadata": meta_deps})
             != proof["dependency_set_digest"]
         ):
             raise AccountError("STATE_REVISION_CONFLICT", 409)
         digests = proof["object_digests"]
-        for oid in sorted(digests):
+        object_ids = {oid for paper in manifest["papers"] for oid in paper["objects"].values()}
+        if set(digests) != object_ids or any(
+            digests.get(oid) != sha for oid, sha in inherited.digests.items()
+        ):
+            raise AccountError("STATE_REVISION_CONFLICT", 409)
+        for oid in sorted(digests.keys() - inherited.digests.keys()):
             require_build_protection(
                 conn, project, UUID(oid), identity, attempt, run["slot_epoch"], run["lease_until"]
             )
@@ -246,6 +320,7 @@ def commit_ready(
                 id=version,
                 project_id=project,
                 source_run_id=identity,
+                base_version_id=base,
                 manifest=manifest,
                 manifest_digest=proof["manifest_digest"],
                 ready_proof=proof,
@@ -275,7 +350,17 @@ def commit_ready(
                 )
             )
         conn.execute(versions.update().where(versions.c.id == version).values(sealed=True))
-        conn.execute(heads.insert().values(project_id=project, version_id=version))
+        if base is None:
+            conn.execute(heads.insert().values(project_id=project, version_id=version))
+        elif (
+            conn.execute(
+                heads.update()
+                .where(heads.c.project_id == project, heads.c.version_id == base)
+                .values(version_id=version)
+            ).rowcount
+            != 1
+        ):
+            raise AccountError("STATE_REVISION_CONFLICT", 409)
         if datetime.fromisoformat(run["lease_until"]) <= datetime.now(UTC):
             raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
         run["published_knowledge_version_id"] = str(version)

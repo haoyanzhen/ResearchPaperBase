@@ -1,7 +1,4 @@
-"""Build an isolated vector view for a confirmed first-version paper set.
-
-Published baseline reuse and ready-proof construction are separate obligations.
-"""
+"""Build an isolated vector view for confirmed papers and compatible retained members."""
 
 import copy
 import hashlib
@@ -17,7 +14,11 @@ from sqlalchemy.dialects.postgresql import insert
 
 from rpb.adapters.immutable_files import ImmutableFileStore
 from rpb.adapters.knowledge_baseline_papers import content_digest
-from rpb.adapters.knowledge_build_failure import record_failure
+from rpb.adapters.knowledge_build_failure import (
+    BuildClaimChanged,
+    record_failure,
+    require_publication_claim,
+)
 from rpb.adapters.knowledge_build_tables import (
     chunks,
     embeddings,
@@ -28,10 +29,11 @@ from rpb.adapters.knowledge_build_tables import (
 from rpb.adapters.knowledge_object_stage import require_build_protection, stage_objects
 from rpb.adapters.knowledge_paper_stage import stage_paper
 from rpb.adapters.knowledge_paper_tables import objects as paper_objects
+from rpb.adapters.knowledge_vector_baseline import BaselineVectors, read_baseline_vectors
 from rpb.adapters.knowledge_vector_seal import seal_vector_view, verify_vector_view
 from rpb.adapters.local_embeddings import valid_profile
 from rpb.adapters.run_tables import runs
-from rpb.adapters.search_terms import classification, load, policy_view
+from rpb.adapters.search_terms import allowed, classification, load, policy_view
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.knowledge.domain.chunking import split_text
 
@@ -64,6 +66,8 @@ def build_vector_view(
     run_id: UUID,
     attempt_id: UUID,
     port_factory: Callable[..., Any],
+    *,
+    publication_claim_id: str | None = None,
 ) -> dict[str, Any]:
     """Construct only isolated artifacts, with rechecks at every dispatch and commit."""
     files = ImmutableFileStore(file_root)
@@ -77,7 +81,10 @@ def build_vector_view(
     if (
         not isinstance(snapshot, dict)
         or "base_knowledge_version_id" not in snapshot
-        or snapshot["base_knowledge_version_id"] is not None
+        or (
+            snapshot["base_knowledge_version_id"] is not None
+            and snapshot.get("graph_mode") != "incremental"
+        )
     ):
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     selected = (
@@ -86,21 +93,64 @@ def build_vector_view(
     if not selected:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     for candidate in selected:
-        stage_objects(store, file_root, actor, project_id, run_id, attempt_id, UUID(candidate))
+        stage_objects(
+            store,
+            file_root,
+            actor,
+            project_id,
+            run_id,
+            attempt_id,
+            UUID(candidate),
+            publication_claim_id=publication_claim_id,
+        )
 
-    def current(conn: Any) -> tuple[Any, list[Any], str]:
+    base_id = snapshot["base_knowledge_version_id"]
+    baseline: BaselineVectors | None = None
+
+    def current(conn: Any, *, verify_baseline: bool = False) -> tuple[Any, list[Any], str]:
+        nonlocal baseline
         identities = []
         for candidate in selected:
             identities.append(
                 stage_paper(conn, store, actor, project_id, run_id, attempt_id, UUID(candidate))
             )
         run = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == run_id))
+        if publication_claim_id is not None:
+            require_publication_claim(run, publication_claim_id)
         if run["ingestion_confirmation"]["preview"]["valid_papers"] != selected:
             raise AccountError("STATE_REVISION_CONFLICT", 409)
         project = store.terms.project(conn, actor, project_id, write=True)
         state = load(conn, project)
         materials = []
         dependencies = {}
+        if run["input_snapshot"]["base_knowledge_version_id"] != base_id:
+            raise AccountError("STATE_REVISION_CONFLICT", 409)
+        if base_id is not None and verify_baseline:
+            checked = read_baseline_vectors(
+                conn,
+                project_id,
+                UUID(base_id),
+                run["ingestion_confirmation"]["retained_papers"],
+            )
+            if baseline is not None and baseline != checked:
+                raise AccountError("STATE_REVISION_CONFLICT", 409)
+            baseline = checked
+        if baseline is not None:
+            for sid, revision in baseline.source_revisions.items():
+                source = classification(state, project, sid)
+                if source["source"]["content_revision"] != revision or not allowed(
+                    state, actor, project, sid
+                ):
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                dependencies[sid] = {
+                    "source": source["source"],
+                    "classification_revision": source["revision"],
+                    "policy_revision": policy_view(state, actor, project)["revision"],
+                }
+            if content_digest(dependencies) != baseline.dependency_digest:
+                raise AccountError("STATE_REVISION_CONFLICT", 409)
+            if verify_baseline:
+                baseline.verify_artifacts(conn, files, project_id)
         for candidate_id, identity in zip(selected, identities, strict=True):
             candidate = next(c for c in run["candidates"] if c["id"] == candidate_id)
             obj = (
@@ -158,7 +208,7 @@ def build_vector_view(
         return run, materials, content_digest(dependencies)
 
     with store.account.engine.begin() as conn:
-        frozen_run, materials, dependency_digest = current(conn)
+        frozen_run, materials, dependency_digest = current(conn, verify_baseline=True)
         material_digest = content_digest(
             [
                 {
@@ -196,6 +246,12 @@ def build_vector_view(
                 or view["input_revision"] != UUID(frozen_run["effective_input_revision"])
                 or view["candidate_revision"] != UUID(frozen_run["candidate_revision"])
                 or not valid_profile(saved_profile["embedding"])
+                or (
+                    baseline is not None
+                    and (
+                        saved_profile != baseline.profile or not baseline.members.keys() <= expected
+                    )
+                )
                 or saved_profile != expected_build_profile
                 or view["build_profile_id"] != content_digest(previous["profile"])
                 or previous["profile_id"] != view["build_profile_id"]
@@ -214,7 +270,7 @@ def build_vector_view(
         if frozen_run.get("vector_build_claim"):
             raise AccountError("LOCK_CONTENT_BUSY", 409)
         claim_id = str(uuid4())
-        frozen_run["vector_build_claim"] = {
+        expected_claim: dict[str, Any] = {
             "id": claim_id,
             "attempt_id": str(attempt_id),
             "state": "running",
@@ -223,6 +279,7 @@ def build_vector_view(
         }
         from rpb.adapters.runs import persist
 
+        frozen_run["vector_build_claim"] = expected_claim
         persist(conn, frozen_run)
 
     @contextmanager
@@ -233,8 +290,7 @@ def build_vector_view(
                 live_digest != dependency_digest
                 or live_materials != materials
                 or live_run["attempt_id"] != str(attempt_id)
-                or (live_run.get("vector_build_claim") or {}).get("id") != claim_id
-                or (live_run.get("vector_build_claim") or {}).get("state") != "running"
+                or live_run.get("vector_build_claim") != expected_claim
             ):
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
             yield
@@ -245,20 +301,23 @@ def build_vector_view(
             if not valid_profile(profile):
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
             build_profile = _build_profile(frozen_run, profile)
+            if baseline is not None and build_profile != baseline.profile:
+                raise AccountError("STATE_REVISION_CONFLICT", 409)
             profile_id = content_digest(build_profile)
             with store.account.engine.begin() as conn:
                 live, actual, digest = current(conn)
-                claim = live.get("vector_build_claim") or {}
                 if (
-                    claim.get("id") != claim_id
-                    or claim.get("state") != "running"
+                    live.get("vector_build_claim") != expected_claim
                     or actual != materials
                     or digest != dependency_digest
                 ):
                     raise AccountError("STATE_REVISION_CONFLICT", 409)
-                claim["build_profile_id"] = profile_id
-                claim["build_profile"] = copy.deepcopy(build_profile)
+                frozen_claim = dict(
+                    expected_claim, build_profile_id=profile_id, build_profile=build_profile
+                )
+                live["vector_build_claim"] = frozen_claim
                 persist(conn, live)
+            expected_claim = frozen_claim
             prepared = []
             for material in materials:
                 for piece in split_text(material["text"], port):
@@ -277,14 +336,10 @@ def build_vector_view(
             if not prepared:
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
         with store.account.engine.begin() as conn:
-            run, live_materials, live_digest = current(conn)
+            run, live_materials, live_digest = current(conn, verify_baseline=True)
             if live_materials != materials or live_digest != dependency_digest:
                 raise AccountError("STATE_REVISION_CONFLICT", 409)
-            if (
-                run.get("vector_build")
-                or (run.get("vector_build_claim") or {}).get("build_profile") != build_profile
-                or (run.get("vector_build_claim") or {}).get("id") != claim_id
-            ):
+            if run.get("vector_build") or run.get("vector_build_claim") != expected_claim:
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
             conn.execute(
                 insert(profiles)
@@ -313,7 +368,20 @@ def build_vector_view(
                     profile_id=profile["profile_id"],
                 )
             )
-            expected_chunks = set()
+            expected_chunks = set(baseline.members) if baseline is not None else set()
+            if baseline is not None and baseline.members:
+                conn.execute(
+                    vector_members.insert(),
+                    [
+                        dict(
+                            project_id=project_id,
+                            view_id=view_id,
+                            embedding_id=embedding,
+                            profile_id=profile["profile_id"],
+                        )
+                        for embedding in baseline.members.values()
+                    ],
+                )
             for material, piece, text, vector, locators in prepared:
                 chunk_id, embedding_id = uuid4(), uuid4()
                 expected_chunks.add(chunk_id)
@@ -379,7 +447,11 @@ def build_vector_view(
                 "vector_build_claim",
                 claim_id,
                 failure,
+                expected_claim=expected_claim,
+                publication_claim_id=publication_claim_id,
             )
+        except BuildClaimChanged:
+            raise
         except Exception:
             # A revoked write fence may prevent any diagnostic update.
             pass

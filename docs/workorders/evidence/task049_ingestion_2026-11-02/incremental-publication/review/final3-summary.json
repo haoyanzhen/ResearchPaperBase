@@ -1,0 +1,16 @@
+{
+  "report": "/private/tmp/pub-review.lXn6Q0/final3.xml",
+  "exit_code": 0,
+  "status": "reported_pass",
+  "counts": {
+    "tests": 4,
+    "passed": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

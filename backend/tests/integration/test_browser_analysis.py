@@ -1,6 +1,8 @@
 """PA06: real browser/HTTP/PostgreSQL, controlled model and file providers."""
 
+import os
 import re
+from pathlib import Path
 
 from playwright.sync_api import expect
 from test_browser_business import browser_app  # noqa: F401
@@ -137,4 +139,53 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
         == 409
     )
     assert not worker.run_once()
+    from uuid import UUID
+
+    import sqlalchemy as sa
+    from test_incremental_vector_view import second_preview
+
+    from rpb.adapters.run_tables import runs
+
+    store = app.state.run_store
+    engine = store.account.engine
+    with engine.connect() as conn:
+        first = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == UUID(run["id"])))
+    inputs = {
+        k: first["request"][k]
+        for k in ("selected_terms", "retrieval_range", "model_selection", "result_limit_per_source")
+    }
+    second_url, _ = second_preview(client, headers, root, store, engine, inputs)
+    second_run = client.get(second_url).json()["data"]
+    page.reload()
+
+    def open_run(item):
+        region.get_by_role("list").first.get_by_role(
+            "button", name=re.compile(re.escape(item["created_at"]))
+        ).click()
+
+    evidence = os.environ.get("PUBLICATION_BROWSER_EVIDENCE_DIR")
+    open_run(second_run)
+    preview = region.get_by_role("region", name="入库预览")
+    expect(preview).to_contain_text("本轮拟新增论文：1")
+    expect(preview).to_contain_text(published["published_knowledge_version_id"])
+    if evidence:
+        preview.screenshot(path=str(Path(evidence) / "preview.png"))
+    region.get_by_role("button", name="接受上述风险并确认入库", exact=True).click()
+    expect(region.get_by_role("heading", name="正在构建知识版本", exact=True)).to_be_visible()
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="查看已发布版本", exact=True).click()
+    latest = client.get(second_url).json()["data"]["published_knowledge_version_id"]
+    assert latest and latest != published["published_knowledge_version_id"]
+    expect(version).to_contain_text(latest)
+    expect(version).to_contain_text("graph")
+    expect(version).to_contain_text("用户保留的分析结论")
+    if evidence:
+        version.screenshot(path=str(Path(evidence) / "incremental.png"))
+    open_run(published)
+    region.get_by_role("button", name="查看已发布版本", exact=True).click()
+    expect(version).to_contain_text(published["published_knowledge_version_id"])
+    expect(version).not_to_contain_text("graph")
+    if evidence:
+        version.screenshot(path=str(Path(evidence) / "original.png"))
     page.close()

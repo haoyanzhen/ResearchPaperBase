@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task049_ingestion_2026-11-02/accepted-increment/precommit/output.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 69,
+  "read_start_byte": 0,
+  "text": "Accepted business paths: 24 other staged records: 34 parent: a07f21d\n",
+  "truncated": false
+}
