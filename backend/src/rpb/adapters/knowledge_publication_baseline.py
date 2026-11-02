@@ -16,6 +16,7 @@ from rpb.modules.account_config.application.ports import AccountError
 
 @dataclass
 class RetainedInputs:
+    file_stamps: dict[str, Any] = field(default_factory=dict)
     papers: list[Any] = field(default_factory=list)
     digests: dict[str, str] = field(default_factory=dict)
     text_dependencies: dict[str, Any] = field(default_factory=dict)
@@ -39,6 +40,8 @@ def retained_inputs(
     version: UUID | None,
     run: Any,
     files: ImmutableFileStore | None = None,
+    *,
+    capture_stamps: bool = False,
 ) -> RetainedInputs:
     retained = RetainedInputs()
     if version is None:
@@ -134,7 +137,12 @@ def retained_inputs(
         baseline_papers(conn, run, papers_only=True)
         for oid, row in actual.items():
             try:
+                stamp = files.stamp(project_id, row["attempt_id"], oid) if capture_stamps else None
                 data = files.read(project_id, row["attempt_id"], oid, row["sha256"])
+                if stamp is not None:
+                    if files.stamp(project_id, row["attempt_id"], oid) != stamp:
+                        raise unavailable
+                    retained.file_stamps[str(oid)] = [str(row["attempt_id"]), stamp]
             except OSError, ValueError:
                 raise unavailable from None
             if len(data) != row["size_bytes"]:

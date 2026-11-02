@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.18",
+    "version": "1.20",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json.",
     "x-updated": "2026-11-02"
   },
@@ -23243,6 +23243,31 @@
                   "verified_knowledge_version_id"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "const": "no_change"
+                  },
+                  "verified_knowledge_version_id": {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  "checked_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "checked_scope": {
+                    "$ref": "#/components/schemas/RetrievalSnapshot"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "checked_at",
+                  "checked_scope",
+                  "verified_knowledge_version_id"
+                ],
+                "additionalProperties": false
               }
             ]
           },
@@ -23308,7 +23333,10 @@
                         "type": "object",
                         "properties": {
                           "code": {
-                            "const": "cancelled"
+                            "enum": [
+                              "cancelled",
+                              "no_change"
+                            ]
                           },
                           "message": {
                             "type": "string"
@@ -23586,6 +23614,28 @@
           },
           "rerun_of": {
             "$ref": "#/components/schemas/ID"
+          },
+          "baseline_match_preview": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "base_knowledge_version_id",
+              "candidate_count",
+              "matched_paper_count"
+            ],
+            "properties": {
+              "base_knowledge_version_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "candidate_count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "matched_paper_count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
           }
         },
         "required": [

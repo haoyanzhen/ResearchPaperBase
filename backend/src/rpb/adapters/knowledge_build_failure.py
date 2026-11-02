@@ -89,6 +89,11 @@ def record_failure(
             claim.update(state="unknown", error="PROVIDER_RESULT_UNKNOWN")
             transition(run, "running", "PROVIDER_RESULT_UNKNOWN")
         else:
+            if (
+                run.get("ingestion_confirmation", {}).get("verify_existing")
+                and run["candidate_version"]["state"] == "ready_to_publish"
+            ):
+                run["candidate_version"]["state"] = "preparing"
             fallback = claim_key.removesuffix("_build_claim").upper() + "_BUILD_FAILED"
             claim.update(state="failed", error=getattr(failure, "code", fallback))
             transition(run, "failed", getattr(failure, "code", "PROVIDER_RESPONSE_INVALID"))

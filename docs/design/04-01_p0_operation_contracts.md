@@ -1,6 +1,6 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.32
+文档版本：v1.34
 更新日期：2026-11-02
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
@@ -209,6 +209,7 @@ Workspace 草稿保存不是章节/检索词内容保存；业务写入必须调
 - `StepView={id:ID,kind:string,state:string,result_summary:object,error:object|null}`；`WaitingItem={id:ID,kind:search_terms|retrieval|screening|processing|analysis|ingestion_preview,revision:Revision,confirmation:主文完整确认对象,allowed_actions:string[]}`。
 - `CandidateView=Resource+{kind:paper|material,title:string|null,source_refs:SourceRef[],deduplication:{decision:string,reason:string,matched_project_asset_id:ID|null},screening:ScreeningView,processing:ProcessingView,analysis:PaperAnalysis|MaterialAnalysis|null,content_state:string,confirmed_revision:Revision|null}`。论文 analysis 包含 `one_sentence_summary,highlights[],relevance_points[],methods,innovations[]`；资料 analysis 为 `important_summary,relevance_points[]`。
 - `CandidatePatch={expected_revision!,metadata?:部分PaperMetadata或MaterialMetadata,screening?:{score?:number,valid?:boolean,reason:string!},analysis?:PaperAnalysis或MaterialAnalysis}`；metadata 限 SupplementPatch 已允许字段，资料仅标题/格式识别修正；修改使依赖下游结果失效，不改变启动配置。
+- 手动增量 Run 详情在筛选等待时可返回只读 `baseline_match_preview={base_knowledge_version_id,candidate_count,matched_paper_count}`。它统计本轮完整来源结果和已匹配的不同基线论文，用户可继续修正。启用核验 Worker 时，用户可先确认全部匹配，再确认核验入库预览中列出的基线。无变化成功依 02-02 §10.4 单独核验；原文、向量或图谱不可用时保留失败诊断。
 - `IngestionPreview={revision:Revision,base_knowledge_version_id:ID|null,valid_papers:ID[],valid_materials:ID[],skipped:object[],failed:object[],degraded:object[],non_knowledge_items:object[],risks:object[],waiting_item:WaitingItem}`。
 
 

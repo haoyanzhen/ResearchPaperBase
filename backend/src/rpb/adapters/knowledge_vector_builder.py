@@ -38,7 +38,7 @@ from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.knowledge.domain.chunking import split_text
 
 
-def _build_profile(run: Any, embedding: Any) -> dict[str, Any]:
+def vector_build_profile(run: Any, embedding: Any) -> dict[str, Any]:
     snapshot = run["config_snapshot"]
     return {
         "embedding": copy.deepcopy(embedding),
@@ -226,7 +226,7 @@ def build_vector_view(
         previous = frozen_run.get("vector_build")
         if previous:
             saved_profile = previous["profile"]
-            expected_build_profile = _build_profile(frozen_run, saved_profile["embedding"])
+            expected_build_profile = vector_build_profile(frozen_run, saved_profile["embedding"])
             view_id = UUID(previous["view_id"])
             view = (
                 conn.execute(
@@ -300,7 +300,7 @@ def build_vector_view(
             profile = copy.deepcopy(port.profile)
             if not valid_profile(profile):
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
-            build_profile = _build_profile(frozen_run, profile)
+            build_profile = vector_build_profile(frozen_run, profile)
             if baseline is not None and build_profile != baseline.profile:
                 raise AccountError("STATE_REVISION_CONFLICT", 409)
             profile_id = content_digest(build_profile)

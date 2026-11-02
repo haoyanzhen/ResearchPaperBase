@@ -269,6 +269,7 @@ class RunWorker:
         if not selected:
             return False
         candidates, results = [], []
+        exhausted_sources = []
         budgets = {
             k: selected["request"]["result_limit_per_source"] for k in selected["source_configs"]
         }
@@ -313,6 +314,10 @@ class RunWorker:
                         skipped_date=output.get("skipped_date", 0),
                         limited=output.get("limited", False),
                     )
+                    if output.get("exhausted") is True:
+                        exhausted_sources.append(
+                            (term["term_id"], ref["source"], ref["config_id"], result["count"])
+                        )
                     for metadata in output["items"]:
                         candidates.append(
                             {
@@ -383,6 +388,7 @@ class RunWorker:
                     not in rejected_bindings
                 ]
                 run["candidates"], run["source_results"] = candidates, results
+                run["exhausted_sources"] = exhausted_sources
                 if any(r["status"] == "succeeded" for r in results):
                     revision = str(uuid4())
                     run["candidate_revision"] = revision

@@ -188,4 +188,56 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
     expect(version).not_to_contain_text("graph")
     if evidence:
         version.screenshot(path=str(Path(evidence) / "original.png"))
+    from uuid import uuid4
+
+    from test_construction_runs import Papers
+    from test_search_terms import post
+
+    from rpb.adapters.source_tables import dispatch_limits
+
+    headers["X-CSRF-Token"] = client.get("/api/v1/auth/csrf").json()["data"]["csrf_token"]
+    third = post(client, headers, root + "/construction-runs", inputs, str(uuid4()))
+    assert third.status_code == 202
+    with engine.begin() as conn:
+        conn.execute(dispatch_limits.delete())
+    assert RunWorker(store, Papers()).run_once()
+    third_url = root + "/construction-runs/" + third.json()["data"]["run"]["id"]
+    page.reload()
+    open_run(client.get(third_url).json()["data"])
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    zero = region.get_by_role("region", name="零新增预览")
+    expect(zero).to_contain_text("本轮拟新增论文：0")
+    expect(zero).to_contain_text(latest)
+    expect(region.get_by_role("button", name="确认入库", exact=True)).to_have_count(0)
+    if evidence:
+        zero.screenshot(path=str(Path(evidence) / "baseline-match.png"))
+    region.get_by_label("纠正理由").fill("核对后作为不同论文保留")
+    region.get_by_role("button", name="保存去重决定").click()
+    expect(zero).to_have_count(0)
+    detail = client.get(third_url).json()["data"]
+    assert detail["status"] == "waiting_user" and detail["completion"] is None
+    assert "baseline_match_preview" not in detail
+    match_id = next(
+        p["id"]
+        for p in client.get(root + "/papers").json()["data"]["items"]
+        if p["title"] == "graph"
+    )
+    region.get_by_label("其他已有论文 ID（可选）").fill(match_id)
+    region.get_by_label("纠正理由").fill("再次核对，与既有论文一致")
+    region.get_by_role("button", name="保存去重决定").click()
+    expect(zero).to_be_visible()
+    region.get_by_role("button", name="确认全部匹配，查看核验范围", exact=True).click()
+    expect(region.get_by_role("region", name="入库预览")).to_contain_text(latest)
+    region.get_by_role("button", name="确认核验既有版本", exact=True).click()
+    expect(region.get_by_role("heading", name="正在核验既有版本", exact=True)).to_be_visible()
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    expect(region.get_by_role("heading", name="检查成功，无知识变化", exact=True)).to_be_visible()
+    verified = region.get_by_role("region", name="核验结果")
+    expect(verified).to_contain_text("检索词：graph")
+    expect(verified).to_contain_text("核验时间")
+    expect(verified).to_contain_text(latest)
+    expect(region.get_by_role("button", name="查看已发布版本", exact=True)).to_have_count(0)
+    if evidence:
+        verified.screenshot(path=str(Path(evidence) / "no-change.png"))
     page.close()

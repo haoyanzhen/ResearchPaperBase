@@ -1,0 +1,1 @@
+{"command": ["contracts/.venv/bin/python", "scripts/check_api_contracts.py", "--baseline", "/tmp/rpb-ncc-old-api.json"], "exit_code": 1}

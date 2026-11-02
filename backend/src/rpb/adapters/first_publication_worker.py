@@ -41,7 +41,10 @@ class FirstPublicationWorker:
                             snapshot["pending_revision_ids"] == [],
                             snapshot["supplement_ids"] == [],
                             sa.func.jsonb_typeof(selected) == "array",
-                            selected != [],
+                            sa.or_(
+                                selected != [],
+                                runs.c.payload["ingestion_confirmation"].has_key("verify_existing"),
+                            ),
                         ),
                     ),
                     sa.or_(
@@ -75,6 +78,12 @@ class FirstPublicationWorker:
             persist(conn, run)
         args = (self.store, self.root, actor, project, identity, attempt)
         try:
+            if "verify_existing" in run["ingestion_confirmation"]:
+                from rpb.adapters.no_change import commit_no_change, prepare_no_change
+
+                proof = prepare_no_change(*args, claim, self.embedding)
+                commit_no_change(*args, claim, proof)
+                return True
             build_vector_view(*args, self.embedding, publication_claim_id=claim)
             build_graph_view(*args, self.graph, publication_claim_id=claim)
             ready = build_graph_view(

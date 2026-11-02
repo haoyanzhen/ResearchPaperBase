@@ -152,3 +152,36 @@ def test_cr_provider_semantic_scholar_metadata_and_arxiv_xml():
     assert search(HTTP([feed]), "arxiv")["items"][0]["arxiv_id"] == "2601.1"
     with pytest.raises(ProviderFailure):
         search(HTTP([b"<!DOCTYPE feed><feed/>"]), "arxiv")
+
+
+@pytest.mark.parametrize(
+    "pages",
+    [
+        [(2, [ads()]), (2, [])],
+        [(2, [ads()]), (1, [])],
+        [(0, [ads()])],
+        [(2, [ads()]), (2, [ads()])],
+    ],
+)
+def test_inconsistent_paging_keeps_results_without_proving_exhaustion(pages):
+    http = HTTP([{"response": {"numFound": total, "docs": docs}} for total, docs in pages])
+    result = search(http)
+    assert result["items"]
+    assert result["limited"] is True
+    assert result["exhausted"] is False
+
+
+def test_paging_exhaustion_requires_a_consistent_complete_window():
+    first = ads()
+    second = ads("Second") | {"bibcode": "2026Other"}
+    result = search(
+        HTTP([{"response": {"numFound": 2, "docs": [item]}} for item in (first, second)])
+    )
+    assert not result["limited"] and result["exhausted"] is True
+
+
+def test_unidentified_row_preserves_result_without_attesting_pagination():
+    http = HTTP([{"total": 1, "data": [{"title": "No external ID", "authors": []}]}])
+    result = search(http, "semantic_scholar")
+    assert [row["title"] for row in result["items"]] == ["No external ID"]
+    assert result["limited"] is False and result["exhausted"] is False

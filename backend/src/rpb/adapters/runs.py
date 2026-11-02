@@ -18,6 +18,7 @@ from rpb.adapters import paper_analysis as analysis
 from rpb.adapters import paper_deduplication as dedup
 from rpb.adapters import paper_processing as processing
 from rpb.adapters import paper_screening as screening
+from rpb.adapters.baseline_match_preview import baseline_match_preview, match_scope_digest
 from rpb.adapters.llm import event_record, require_revision, uuid_value
 from rpb.adapters.llm import public_error as config_error
 from rpb.adapters.run_tables import commands, runs
@@ -198,11 +199,14 @@ class RunStore:
                 and snapshot.get("mode") == "retrieval"
                 and snapshot.get("pending_revision_ids") == []
                 and snapshot.get("supplement_ids") == []
-                and bool((run.get("analysis_confirmation") or {}).get("candidate_ids"))
+                and (
+                    bool((run.get("analysis_confirmation") or {}).get("candidate_ids"))
+                    or bool(run.get("matched_screening"))
+                )
             )
         )
 
-    def waiting(self, run: Any) -> list[Any]:
+    def waiting(self, run: Any, *, matched: dict[str, Any] | None = None) -> list[Any]:
         if run["status"] != "waiting_user":
             return []
         wait = run["waiting"]
@@ -217,7 +221,7 @@ class RunStore:
             or (
                 run.get("phase") == "screening"
                 and (
-                    not processing.eligible(run)
+                    (not matched and not processing.eligible(run))
                     or any(
                         c.get("deduplication", {}).get("state") == "needs_existing_resolution"
                         for c in run["candidates"]
@@ -247,6 +251,8 @@ class RunStore:
         basis = ":".join(
             [run["owner_id"], run["project_id"], wait["id"], wait["revision"], expires]
         )
+        if matched:
+            basis += ":" + match_scope_digest(run, matched)
         token = hmac.new(run["confirmation_secret"].encode(), basis.encode(), "sha256").hexdigest()
         ingestion = kind == "ingestion_preview"
         blocked = ingestion and not self.publication_available(run)
@@ -494,7 +500,15 @@ class RunStore:
                 run = copy.deepcopy(row["payload"])
                 self.revoke(conn, project, run)
                 if operation == "read_run":
-                    return self.view(run)
+                    detail = self.view(run)
+                    preview = baseline_match_preview(conn, run)
+                    if preview is not None:
+                        detail["baseline_match_preview"] = preview
+                        if actor == UUID(run["owner_id"]) and getattr(
+                            self, "first_publication_enabled", False
+                        ):
+                            detail["waiting_items"] = self.waiting(run, matched=preview)
+                    return detail
                 if operation == "ingestion_preview":
                     return ingestion_preview.preview(
                         run, self.waiting(run)[0] if run.get("status") == "waiting_user" else None
@@ -690,6 +704,11 @@ class RunStore:
                 basis = ":".join(
                     [run["owner_id"], run["project_id"], wait["id"], wait["revision"], expires]
                 )
+                matched = (
+                    baseline_match_preview(conn, run) if run.get("phase") == "screening" else None
+                )
+                if matched:
+                    basis += ":" + match_scope_digest(run, matched)
                 expected = hmac.new(
                     run["confirmation_secret"].encode(), basis.encode(), "sha256"
                 ).hexdigest()
@@ -709,7 +728,27 @@ class RunStore:
                     analysis.confirm(run, actor)
                     transition(run, "waiting_user")
                 elif run.get("phase") == "screening":
-                    processing.accept(run, actor)
+                    if matched is None:
+                        processing.accept(run, actor)
+                    else:
+                        if (
+                            str(actor) != run["owner_id"]
+                            or not getattr(self, "first_publication_enabled", False)
+                            or screening.busy(run)
+                            or processing.busy(run)
+                            or analysis.busy(run)
+                        ):
+                            raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                        run["matched_screening"] = {
+                            "scope": matched,
+                            "digest": match_scope_digest(run, matched),
+                            "actor_id": str(actor),
+                            "at": now(),
+                            "candidate_revision": run["candidate_revision"],
+                        }
+                        run["phase"] = "ingestion_preview"
+                        run["waiting"] = {"id": str(uuid4()), "revision": str(uuid4())}
+                        transition(run, "waiting_user")
                 elif run.get("phase") == "processing":
                     processing.confirm(run, actor)
                     transition(run, "waiting_user")

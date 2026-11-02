@@ -122,6 +122,10 @@ def test_baseline_match_blocks_processing_and_allows_explicit_correction(subject
     assert len(item["deduplication"]["baseline_matches"]) == member_count
     assert not item.get("processing")
     run = client.get(url).json()["data"]
+    if member_count == 1:
+        assert run["baseline_match_preview"]["matched_paper_count"] == 1
+    else:
+        assert "baseline_match_preview" not in run
     rejected = post(
         client,
         headers,
@@ -149,6 +153,7 @@ def test_baseline_match_blocks_processing_and_allows_explicit_correction(subject
     assert matched.status_code == 200, matched.text
     item = matched.json()["data"]
     assert item["deduplication"]["state"] == "match_existing"
+    assert client.get(url).json()["data"]["baseline_match_preview"]["matched_paper_count"] == 1
     assert item["deduplication"]["history"][-1]["matched_project_asset_id"] == str(members[0][1])
     response = post(
         client,
@@ -163,6 +168,7 @@ def test_baseline_match_blocks_processing_and_allows_explicit_correction(subject
     )
     assert response.status_code == 200, response.text
     assert response.json()["data"]["deduplication"]["state"] == "distinct"
+    assert "baseline_match_preview" not in client.get(url).json()["data"]
 
 
 @pytest.mark.parametrize(

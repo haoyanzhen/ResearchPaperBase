@@ -1,9 +1,15 @@
 # Task049：M-P0-18 手动论文入库与知识版本发布
 
-文档版本：v1.18
+文档版本：v1.21
 更新日期：2026-11-02
 
 ## 8. 最新检查点
+
+2026-11-02 用户要求继续推进。已完成手动普通增量检索中「来源完整返回、至少一条候选且全部命中冻结纯论文基线」的 no_change 成功决定。用户可修正去重，也可确认匹配范围，再确认核验既有版本。系统检查受保护论文与文件、文本分块和定位、模型配置、向量及证据图谱。成功时同一事务记录所核验的版本、范围和时间，将候选标为已废弃／核验无变化，释放本 Run 写槽。版本、默认指针与发布事件保持原值。工程收口，2026-11-02 用户明确验收通过本全匹配子范围。[浏览器核验结果](../docs/workorders/evidence/task049_ingestion_2026-11-02/no-change-completion/browser-final/no-change.png)。尚未覆盖来源真正返回零条、筛选后全部排除、配置变化后的重建及清理。
+
+2026-11-02 用户接受普通手动增量发布，本地提交 `2795d91`（M-P0-18 限定范围）。核对提交树和接受基线的 24 个业务文件，一致；原工作区的流程、历史记录及其他任务改动保留。此次授权的一次提交已完成。[提交后核验](../docs/workorders/evidence/task049_ingestion_2026-11-02/accepted-increment/postcommit/summary.json)。
+
+此前零新增预览切片。筛选等待中，只有完整取回本轮来源且每条候选都已匹配冻结版本的论文时，Run 详情显示候选条数及不同基线论文数。用户仍可拆分误合并，拆分后预览消失。此阶段没有入库确认、知识状态写入或成功决定。[浏览器实测](../docs/workorders/evidence/task049_ingestion_2026-11-02/no-change-preview/browser-verified/baseline-match.png)。其后续正式核验见本页最新检查点。
 
 2026-11-02 用户继续授权 task049。手动增量检索已接通入库预览确认、构建 Worker、就绪证明和原子发布。适用范围是保留基线全部论文，至少新增一篇确认论文，配置和依赖兼容。浏览器验证同一 Project 的第二次发布：预览列出基线和新增数量，新版读出新旧两篇论文，旧版继续按原修订读取人工分析。2026-11-02 用户明确接受「手动论文增量发布」子范围并要求本地提交；整体里程碑、零新增/no_change、清理、显式移除与重算仍开放。首版人工接受基线仍为 `a07f21d`。
 
@@ -38,6 +44,8 @@
 | 增量论文成员保留 | 确认核对已绑定版本清单、实际论文修订和版本 pin，冻结全部资产与修订配对；暂存重验 pin，拒绝遗漏、换配或未支持的输入 | 仅常规检索与纯论文基线，兼容向量、图谱及发布见下项 |
 | 增量向量成员 | test_incremental_vector_members 从真正发布的首版启动第二次检索，在内部受理后核验新旧向量成员并集、重放无模型调用、历史视图及默认指针；配置改变、撤权和保留文本丢失均拒绝 | 兼容配置且有新增论文的常规增量分支已工程收口；依赖或配置变化后的重算及 no_change 另验，兼容增量发布见下项 |
 | 增量图谱成员 | test_incremental_graph_members 通过实际首版和第二次检索验证共同实体归并、各论文独立支持、零新增语义断言、历史成员逐行守恒及重放；旧标题单独撤权、不一致的证明、迟到 claim 均阻止写入 | 有新增且完整保留基线的内部视图工程收口。兼容增量发布见下项；删除/替换、rebuild 另行跟踪 |
+| 零新增预览 | test_preview_is_bound_to_candidates_sources_and_pins、test_baseline_match_blocks_processing_and_allows_explicit_correction 及浏览器 test_pab01 验证多个来源记录命中一个资产、歧义/人工修正、来源拒绝、结果不完整和旧记录无分页证据。检查 Run、指针、槽和事件无预览副作用 | 预览本身保持只读；全匹配场景的人工确认与成功决定见下项 |
+| S28–S30 全部检索候选命中基线 | test_no_change_completion、浏览器 test_pab01 验证两次确认、冻结范围、时限及归属、完整图文与向量读回、读回后撤权/文件替换、取消先后顺序、失败回滚、重复执行、后续新版本及归档后查证 | 真正零条等其他无新增原因仍开放，本全匹配子范围已获人工接受 |
 | 增量论文公开发布 | test_incremental_publication 及浏览器 test_pab01 验证普通命令重放、完整清单/对象/视图、保留全文 PDF、同版读取、事务故障回滚、默认指针竞争、准备后撤权、凭据替换和证明篡改 | 受控模型、隔离库及浏览器通过；本子范围获用户限定接受 |
 | PUB-G02 首版构建配置 | 向量构建器取得写资格后、首次分块前持久化配置；封存时比对，重放时核对配置及摘要。见[profile2](../docs/workorders/evidence/task049_ingestion_2026-10-31/profile2/)的六项隔离回归，含配置字段、摘要与成功重放 | 首次分块从独立事务读回冻结配置；模型派发前或封存前改变配置、执行状态或尝试归属均拒绝，Run 和槽位保留。见第5节 vector-fence。增量基线仍开放 |
 | 图谱抽取和文件存储基础 | graph-provider-test2 24项；provider-review2复验终态缺失反例；filestore-test2 3项与file-review2复验FIFO | 首版内部图谱和文件暂存已接线并局部验证；首版保护转换及发布已验证，显式清理仍开放 |
@@ -52,6 +60,12 @@
 | 删除历史记录。历史记录所有者处理明确删除请求，已发布版本和必要来源依据继续可读 | 与清理临时数据分别验收。须补精确入口、鉴权、引用保护及失败回滚测试；未经授权不执行删除。生产备份周期、容量与恢复目标仍归 H03 |
 
 ## 5. 验证与限制
+
+[全匹配 no_change 执行证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/no-change-completion/)记录完整工作区、baseline 与 candidate2/candidate3 快照。S1 执行状态/权威性 read、task049 entry，使用 nc-completion / ledger 定向读取授权、02-02 §10.4、06 A09.6 及工具 §5。S2 沿用已有确认命令，首阶段签名绑定实际范围，第二阶段记录人工决定与候选快照。就绪时读回永久 pin、正文/PDF、分块定位、注册 profile、向量和图谱，短事务重验权限、head、claim、attempt/租约、人工依据、文件身份与证明摘要。S3 独立测试复现旧实现准备后确认快照被换仍成功、已归档可读项目重放被写权限阻断，修复后四项隔离 PG 独立复测通过，见 review/final-summary.json。S4 覆盖失败、过时基线、准备后文件同尺寸改写、确认/证明失配、坏计数、取消、迟到执行者、原子回滚及重放。S5 复用既有发布校验，提交阶段核对文件身份和时间戳，避免重复加载全文。
+
+S6 的 final/run.json 与 JUnit（candidate2）记录 110 项受影响集成回归通过；candidate3 仅调整导入顺序，final-focused 对其重跑 12 项 no_change 用例通过。两轮均使用隔离 PG17/pgvector，库已停止移除；所有 JUnit 均按真实退出码运行 delivery_summary。unit-final 的 548 项后端单元、前端构建及 4 项测试、static4 的 Ruff/134 个后端源文件 mypy、契约检查均通过。guard 记录了缺少 SQL 选择列导致的四个失败；browser-test 读取旧构建未找到核验结果区。修复并构建后的真实浏览器在 final 通过。对照本轮入场基线，保守兼容检查指出 RetrievalRunView 枚举扩展；严格校验响应的客户端需要契约 1.20。S7 结论仅覆盖上述全匹配场景，使用受控模型，未测大库吞吐。本轮没有新的 Git 提交。
+
+[零新增预览的执行证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/no-change-preview/)以 `2795d91` 为新 S1，沿用已读启动状态、设计权威性，并执行 task049 entry 和新上下文 nochange-nov2 的 DELIVERY_TOOLS §5、06 A09.6、02-02 §10.4 定向读取。S2 根据冻结检索词和来源配置逐项比对分页完成证据、来源结果及原始候选，再核对去重组、真实基线 pin 和修订。S3 独立审查复现提前空页错误；page-red 的失败用例及独立 probe 保存原行为。分页器遇总数漂移、提前空页、超限或相同来源记录重复不出具穷尽证据；没有稳定标识的条目保持可用，旧 Run 不补写证据。S4 用真实适配器、受控 HTTP 与隔离 PG 对照完整页和提前空页，两例独立复测通过。S5 详情可选字段驱动 UI，读取不修改候选、执行资格或版本状态。一次测试的 rejected 来源缺少契约必填字段，source-proof 记录该失败，已补正确夹具。S6 最终 candidate3 的 final2/run.json 及对应 JUnit 运行 delivery_summary，63 项受影响集成回归通过，unit-final 的 548 项后端单元通过，无跳过；前端构建及 4 项测试、static3 的 Ruff/mypy 和契约检查通过。对照 2795d91 的兼容检查返回 1，contract-scope 单独核对仅 RetrievalRunView 增加可选投影。使用旧版严格响应 schema 的客户端需升级到 1.19 才可接受含该字段的详情。S7 仅完成只读预览；本阶段未提交。
 
 [手动增量发布执行证据](../docs/workorders/evidence/task049_ingestion_2026-11-02/incremental-publication/)含入场工作树、baseline / candidate3、完整日志和实际退出码。S1 执行状态/权威性 read、task049 entry；publication-Nov2 独立 ledger 记录授权、06 A09.6、DELIVERY_TOOLS §5 的定向读取。S2 覆盖真实首版与第二次检索，复用现有确认与查看入口；完整论文/文本/文件读回后，Worker 携带预期证明摘要进入提交事务。S3 独立探针在早期实现复现过期发布凭据仍能设 head、被改写的视图 ID 能进入事件。修复提交和构建失败路径的执行凭据校验，证明重放绑定已发布记录。S4 补入 PDF 丢失、计数与本地摘要一起被改写、模型在途失败和真实 head 竞争。review/final3-summary.json 的四项独立 PG 复验通过。S5 复用相同来源许可检查，提交事务只比较元数据和保护引用，不重读文件字节。
 
@@ -111,3 +125,5 @@ regression-full1最终750项通过，属于regression-full-snapshot而非后续�
 ## 手动论文增量发布子范围人工接受（2026-11-02）
 
 用户指令为“ok，验收通过，并进行一次git提交。然后继续推进”。接受基线为 incremental-publication/candidate3；97 项集成回归、542 项后端单元、4 项前端测试及 4 项独立探针沿用原执行证据。提交前从 a07f21d 检查空暂存区，逐文件比对业务产物，混合状态文件只选取本业务范围。实际核验见[提交记录](../docs/workorders/evidence/task049_ingestion_2026-11-02/accepted-increment/)。
+
+全匹配提交核验使用 no-change-completion/candidate3 及最终测试和独立审查证据；本次只更新验收记录，沿用原业务验证。核验清单见 matched-acceptance/scope.json。

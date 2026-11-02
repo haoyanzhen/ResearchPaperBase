@@ -60,6 +60,7 @@ def read_baseline_vectors(
             vector_views.c.attempt_id,
             vector_views.c.id,
             vector_views.c.build_profile_id,
+            vector_views.c.profile_id,
             vector_views.c.dependency_digest,
         )
         .select_from(
@@ -92,6 +93,7 @@ def read_baseline_vectors(
         or proof["manifest_digest"] != row.manifest_digest
         or manifest["vector_view_id"] != str(row.id)
         or proof["vector_view_id"] != str(row.id)
+        or row.profile_id != manifest["build_profile"]["embedding"]["profile_id"]
         or content_digest(manifest["build_profile"]) != row.build_profile_id
         or row.build_profile_id != proof["build_profile_id"]
     ):

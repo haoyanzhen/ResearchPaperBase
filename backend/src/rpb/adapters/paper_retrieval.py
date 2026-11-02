@@ -25,6 +25,11 @@ class PaperRetrieval:
         rows: list[dict[str, Any]] = []
         offset, skipped = 0, 0
         cursor = "*"
+        seen_cursors = {cursor}
+        seen_ids: set[str] = set()
+        first_total = None
+        consistent = True
+        identifiable = True
         lower, upper = instant(window["published_from"]), instant(window["published_until"])
         while len(rows) < limit:
             count = min(100, limit - len(rows))
@@ -97,7 +102,17 @@ class PaperRetrieval:
                 batch, total, next_cursor = self.normalize(provider, response)
                 if len(batch) > count or type(total) is not int or total < 0:
                     raise ValueError("size")
+                if first_total is None:
+                    first_total = total
+                consistent = consistent and total == first_total
                 for item in batch:
+                    identity = item["url"] or item["arxiv_id"] or item["doi"]
+                    if not identity:
+                        identifiable = False
+                    elif identity in seen_ids:
+                        consistent = False
+                    else:
+                        seen_ids.add(identity)
                     published = item.pop("published_at")
                     if lower or upper:
                         if not published:
@@ -115,10 +130,16 @@ class PaperRetrieval:
                     break
                 if offset >= 1000:
                     # Provider's bounded search window cannot prove further coverage.
-                    return {"items": rows, "skipped_date": skipped, "limited": True}
+                    return {
+                        "items": rows,
+                        "skipped_date": skipped,
+                        "limited": True,
+                        "exhausted": False,
+                    }
                 if provider == "openalex":
-                    if not next_cursor or next_cursor == cursor:
+                    if not next_cursor or next_cursor in seen_cursors:
                         raise ValueError("cursor")
+                    seen_cursors.add(next_cursor)
                     cursor = next_cursor
             except (
                 ValueError,
@@ -130,7 +151,13 @@ class PaperRetrieval:
                 ET.ParseError,
             ):
                 raise ProviderFailure("PROVIDER_RESPONSE_INVALID") from None
-        return {"items": rows, "skipped_date": skipped, "limited": len(rows) == limit}
+        limited = not consistent or offset != first_total or len(rows) == limit
+        return {
+            "items": rows,
+            "skipped_date": skipped,
+            "limited": limited,
+            "exhausted": not limited and identifiable,
+        }
 
     def normalize(self, provider: str, response: Any) -> Any:
         result = []

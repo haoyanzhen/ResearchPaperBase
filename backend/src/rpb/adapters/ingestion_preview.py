@@ -18,7 +18,7 @@ def preview(run: Any, waiting_item: Any) -> dict[str, Any]:
         or not screening.baseline_ready(run)
     ):
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
-    confirmation = run.get("analysis_confirmation") or {}
+    confirmation = run.get("analysis_confirmation") or run.get("matched_screening") or {}
     if confirmation.get("candidate_revision") != run.get("candidate_revision"):
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     confirmed = set(confirmation.get("candidate_ids", []))

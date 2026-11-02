@@ -24,6 +24,7 @@ class Papers:
         if self.failure:
             raise ProviderFailure("PROVIDER_TIMEOUT")
         return {
+            "exhausted": True,
             "items": [
                 {
                     "title": query,
@@ -34,7 +35,7 @@ class Papers:
                     "arxiv_id": "2601.00001",
                     "url": "https://arxiv.org/abs/2601.00001",
                 }
-            ]
+            ],
         }
 
 

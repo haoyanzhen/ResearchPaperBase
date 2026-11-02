@@ -41,6 +41,16 @@ class ImmutableFileStore:
             for fd in reversed(descriptors):
                 os.close(fd)
 
+    def stamp(self, project: UUID, attempt: UUID, object_id: UUID) -> list[int]:
+        """Identify an immutable file without loading its bytes at commit."""
+        if not isinstance(object_id, UUID):
+            raise FileIntegrityError("invalid object identity")
+        with self._attempt_dir(project, attempt, False) as directory:
+            info = os.stat(str(object_id), dir_fd=directory, follow_symlinks=False)
+        if not stat.S_ISREG(info.st_mode):
+            raise FileIntegrityError("invalid object")
+        return [info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns]
+
     def read(self, project: UUID, attempt: UUID, object_id: UUID, expected_digest: str) -> bytes:
         if not isinstance(object_id, UUID):
             raise FileIntegrityError("invalid object identity")

@@ -18,8 +18,9 @@ from rpb.adapters.knowledge_build_tables import (
     graph_views,
     publication_events,
 )
+from rpb.adapters.knowledge_chunk_integrity import verify_chunk_closure
 from rpb.adapters.knowledge_graph_seal import verify_graph_view
-from rpb.adapters.knowledge_paper_tables import paper_revisions
+from rpb.adapters.knowledge_paper_tables import objects, paper_revisions
 from rpb.adapters.knowledge_tables import versions
 from rpb.adapters.knowledge_vector_baseline import read_baseline_vectors
 from rpb.adapters.search_terms import allowed, classification, policy_view
@@ -73,6 +74,8 @@ def read_baseline_graph(
     run: Any,
     profile_id: str,
     verified: BaselineGraph | None = None,
+    *,
+    verify_locators: bool = False,
 ) -> BaselineGraph:
     project_id = project["id"]
     version = UUID(run["input_snapshot"]["base_knowledge_version_id"])
@@ -156,6 +159,32 @@ def read_baseline_graph(
                 ).where(chunks.c.project_id == project_id, chunks.c.id.in_(base.members))
             )
         }
+        if verify_locators:
+            grouped: dict[UUID, list[Any]] = {}
+            for chunk in conn.execute(
+                sa.select(chunks).where(
+                    chunks.c.project_id == project_id, chunks.c.id.in_(base.members)
+                )
+            ).mappings():
+                grouped.setdefault(chunk["text_revision_id"], []).append(chunk)
+            for obj in conn.execute(
+                sa.select(
+                    objects,
+                    paper_revisions.c.content["processing"]["text_source_kind"].astext.label(
+                        "source_kind"
+                    ),
+                )
+                .join(
+                    paper_revisions,
+                    sa.and_(
+                        objects.c.project_id == paper_revisions.c.project_id,
+                        objects.c.paper_revision_id == paper_revisions.c.id,
+                    ),
+                )
+                .where(objects.c.project_id == project_id, objects.c.id.in_(texts))
+            ).mappings():
+                rows = grouped[obj["id"]]
+                verify_chunk_closure(texts[obj["id"]], obj, obj["source_kind"], rows)
         digest = verify_graph_view(
             conn,
             project_id,

@@ -13,6 +13,7 @@ import sqlalchemy as sa
 from rpb.adapters import ingestion_preview
 from rpb.adapters.analysis_lineage import currently_usable
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
+from rpb.adapters.baseline_match_preview import match_scope_digest, matched_baseline_scope
 from rpb.adapters.construction_slots import is_current
 from rpb.adapters.knowledge_baseline_papers import baseline_papers
 from rpb.adapters.knowledge_tables import heads
@@ -46,6 +47,9 @@ def signature(run: Any, actor: str, expires: str) -> str:
         "candidates": run["candidates"],
         "expires_at": expires,
     }
+    if run.get("matched_screening"):
+        basis["matched_screening"] = run["matched_screening"]
+        basis["scope_digest"] = match_scope_digest(run, run["matched_screening"]["scope"])
     encoded = json.dumps(basis, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     return hmac.new(run["confirmation_secret"].encode(), encoded, hashlib.sha256).hexdigest()
 
@@ -122,6 +126,15 @@ def accept_locked(
         raise AccountError("STATE_CONFIRMATION_STALE", 409)
     state = load(conn, project)
     selected = set(preview["valid_papers"])
+    decision = run.get("matched_screening")
+    if decision and (
+        selected
+        or preview["failed"]
+        or decision["actor_id"] != str(actor)
+        or decision["digest"] != match_scope_digest(run, run["matched_screening"]["scope"])
+        or decision["scope"] != matched_baseline_scope(conn, run)
+    ):
+        raise AccountError("STATE_CONFIRMATION_STALE", 409)
     if (not selected and preview["base_knowledge_version_id"] is None) or any(
         not currently_usable(run, candidate, state, project, actor)
         for candidate in run["candidates"]
@@ -159,6 +172,8 @@ def accept_locked(
         "candidate_snapshot": copy.deepcopy(run["candidates"]),
         "acknowledged_risk_ids": copy.deepcopy(body["acknowledged_risk_ids"]),
     }
+    if decision:
+        run["ingestion_confirmation"]["verify_existing"] = decision["digest"]
     run["candidate_version"]["content_locked"] = True
     run["phase"] = "knowledge_build"
     transition(run, "running")
