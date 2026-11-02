@@ -164,6 +164,16 @@ def test_cr03_all_failed_no_waiting_or_success(subject):
     assert run["status"] == "failed" and run["completion"] is None
     assert run["steps"][0]["result_summary"]["sources"][0]["error"] == "PROVIDER_TIMEOUT"
 
+    path = root + "/construction-runs"
+    command = {"rerun_of": run["id"], "expected_revision": run["revision"]}
+    result = post(c, h, path, command, "construction-rerun-0001")
+    assert result.status_code == 202, result.text
+    new = result.json()["data"]["run"]
+    assert new["id"] != run["id"] and new["rerun_of"] == run["id"] and new["status"] == "queued"
+    assert new["input_snapshot"] is None
+    assert post(c, h, path, command, "construction-rerun-0001").json()["data"]["run"] == new
+    assert c.get(path + "/" + run["id"]).json()["data"] == run
+
 
 def test_cr04_late_provider_after_cancel_cannot_commit(subject):
     c, h, root, app, engine, _ = subject
@@ -303,14 +313,20 @@ def test_cr07_two_queued_workers_one_claim_and_cancel_progress(subject):
 
 def test_cr08_expired_attempt_not_resent(subject):
     from datetime import UTC, datetime, timedelta
+    from uuid import UUID
 
+    from rpb.adapters.construction_slots import acquire
     from rpb.adapters.runs import persist
 
     c, h, root, app, engine, _ = subject
     body, _ = setup(subject)
     post(c, h, root + "/construction-runs", body, "construction-start-0001")
+    queued = post(c, h, root + "/construction-runs", body, "construction-start-0002").json()[
+        "data"
+    ]["run"]
     with engine.begin() as conn:
-        run = conn.scalar(sa.select(runs.c.payload))
+        run = conn.scalar(sa.select(runs.c.payload).where(runs.c.id != UUID(queued["id"])))
+        acquire(conn, run)
         run.update(
             status="running", lease_until=(datetime.now(UTC) - timedelta(seconds=1)).isoformat()
         )
@@ -319,8 +335,14 @@ def test_cr08_expired_attempt_not_resent(subject):
     assert not RunWorker(app.state.run_store, provider).run_once()
     assert provider.calls == []
     with engine.connect() as conn:
-        value = conn.scalar(sa.select(runs.c.payload))
-        assert value["status"] == "failed" and value["error"] == "PROVIDER_RESULT_UNKNOWN"
+        value = conn.scalar(sa.select(runs.c.payload).where(runs.c.id != UUID(queued["id"])))
+        assert value["status"] == "running" and value["error"] == "PROVIDER_RESULT_UNKNOWN"
+        from rpb.adapters.construction_slots import is_current
+
+        assert is_current(conn, value)
+        assert (
+            conn.scalar(sa.select(runs.c.status).where(runs.c.id == UUID(queued["id"]))) == "queued"
+        )
 
 
 def test_cr09_invalid_wire_never_creates_run(subject):
@@ -528,6 +550,27 @@ def test_cr14_db_unique_writer_and_nonempty_downgrade_protection(subject, db):
         with engine.begin() as conn:
             conn.execute(runs.insert().values(**record))
     _, cfg = db
+    with pytest.raises(
+        RuntimeError, match="cannot downgrade while a Construction slot is occupied"
+    ):
+        with engine.begin() as conn:
+            cfg.attributes["connection"] = conn
+            command.downgrade(cfg, "0015_processing_objects")
+    # The copied record has a new id; cancel the original persisted run.
+    with engine.connect() as conn:
+        original_id = str(conn.scalar(sa.select(runs.c.id)))
+    url = root + "/construction-runs/" + original_id
+    current = c.get(url).json()["data"]
+    assert (
+        post(
+            c,
+            h,
+            url + "/cancel",
+            {"expected_revision": current["revision"], "attempt_id": current["task"]["attempt_id"]},
+            "slot-downgrade-cancel",
+        ).status_code
+        == 200
+    )
     with pytest.raises(RuntimeError, match="Refusing to discard durable Run facts"):
         with engine.begin() as conn:
             cfg.attributes["connection"] = conn
@@ -535,7 +578,7 @@ def test_cr14_db_unique_writer_and_nonempty_downgrade_protection(subject, db):
     with engine.connect() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
 
 
@@ -703,3 +746,62 @@ def test_cr18_cumulative_source_budget_and_candidate_cursor_invalidation(subject
         c.get(url + "/candidates", params={"cursor": cursor}).json()["error"]["code"]
         == "VALIDATION_CURSOR_MISMATCH"
     )
+
+
+def test_failed_rerun_rechecks_scope_revision_and_config(subject):
+    from test_project_commands import create
+
+    c, h, root, app, *_ = subject
+    body, _ = setup(subject)
+    path = root + "/construction-runs"
+    old = post(c, h, path, body, "rerun-initial-start").json()["data"]["run"]
+    command = {"rerun_of": old["id"], "expected_revision": old["revision"]}
+    assert post(c, h, path, command, "rerun-active-denied").status_code == 409
+    assert RunWorker(app.state.run_store, Papers(failure=True)).run_once()
+    assert post(c, h, path, command, "rerun-stale-denied").status_code == 412
+    old = c.get(path + "/" + old["id"]).json()["data"]
+    command["expected_revision"] = old["revision"]
+    other = create(c, h, key="rerun-foreign-project").json()["data"]["id"]
+    assert (
+        post(
+            c, h, f"/api/v1/projects/{other}/construction-runs", command, "rerun-foreign-source"
+        ).status_code
+        == 404
+    )
+    assert c.post(path, json=command).status_code == 403
+    src = c.get("/api/v1/me/data-source-configs").json()["data"]["items"][0]
+    assert (
+        c.patch(
+            "/api/v1/me/data-source-configs/" + src["id"],
+            headers=h,
+            json={"expected_revision": src["revision"], "enabled": False},
+        ).status_code
+        == 200
+    )
+    assert post(c, h, path, command, "rerun-config-denied").status_code == 409
+    assert c.get(path).json()["data"]["items"] == [old]
+
+
+def test_failed_rerun_concurrent_same_key(subject):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    c, h, root, app, *_ = subject
+    body, _ = setup(subject)
+    path = root + "/construction-runs"
+    old = post(c, h, path, body, "rerun-concurrent-start").json()["data"]["run"]
+    assert RunWorker(app.state.run_store, Papers(failure=True)).run_once()
+    old = c.get(path + "/" + old["id"]).json()["data"]
+    command = {"rerun_of": old["id"], "expected_revision": old["revision"]}
+    barrier = Barrier(2)
+
+    def submit(_):
+        barrier.wait(10)
+        result = post(c, h, path, command, "rerun-concurrent-command")
+        assert result.status_code == 202, result.text
+        return result.json()["data"]["run"]["id"]
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        ids = list(pool.map(submit, range(2)))
+    assert ids[0] == ids[1]
+    assert len(c.get(path).json()["data"]["items"]) == 2

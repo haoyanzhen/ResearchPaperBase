@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.13",
+    "version": "1.17",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json."
   },
   "servers": [
@@ -11207,7 +11207,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RetrievalRunStart"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RetrievalRunStart"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "rerun_of": {
+                        "$ref": "#/components/schemas/ID"
+                      },
+                      "expected_revision": {
+                        "$ref": "#/components/schemas/ID"
+                      }
+                    },
+                    "required": [
+                      "rerun_of",
+                      "expected_revision"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
               }
             }
           }
@@ -12612,6 +12632,258 @@
           }
         },
         "x-coverage": "request-success-errors-partial"
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/ingestion-preview": {
+      "get": {
+        "operationId": "Construction.PreviewIngestion",
+        "x-use-case": "Construction.PreviewIngestion",
+        "x-fr": [
+          "FR-026"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read-only paper ingestion preview; confirmation blocked until construction is available.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/IngestionPreview"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/papers": {
+      "get": {
+        "operationId": "Knowledge.ListPapers",
+        "x-use-case": "Knowledge.ListPapers",
+        "x-fr": [
+          "FR-012"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "knowledge_version_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published papers at the selected Project version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "knowledge_version_id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PublishedPaperView"
+                          }
+                        }
+                      },
+                      "required": [
+                        "knowledge_version_id",
+                        "items"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          }
+        }
       }
     }
   },
@@ -21796,7 +22068,14 @@
             ]
           },
           "base_knowledge_version_id": {
-            "type": "null"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "frozen_at": {
             "$ref": "#/components/schemas/Time"
@@ -22630,7 +22909,8 @@
               "running",
               "waiting_user",
               "failed",
-              "cancelled"
+              "cancelled",
+              "succeeded"
             ]
           },
           "status_url": {
@@ -22707,7 +22987,8 @@
               "screening",
               "processing",
               "analysis",
-              "ingestion_preview"
+              "ingestion_preview",
+              "knowledge_build"
             ]
           },
           "business_state": {
@@ -22716,7 +22997,8 @@
               "running",
               "waiting_user",
               "failed",
-              "cancelled"
+              "cancelled",
+              "succeeded"
             ]
           },
           "waiting_items": {
@@ -22891,7 +23173,8 @@
               "running",
               "waiting_user",
               "failed",
-              "cancelled"
+              "cancelled",
+              "succeeded"
             ]
           },
           "phase": {
@@ -22900,17 +23183,61 @@
               "screening",
               "processing",
               "analysis",
-              "ingestion_preview"
+              "ingestion_preview",
+              "knowledge_build"
             ]
           },
           "base_knowledge_version_id": {
-            "type": "null"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "published_knowledge_version_id": {
-            "type": "null"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "completion": {
-            "type": "null"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "const": "published"
+                  },
+                  "verified_knowledge_version_id": {
+                    "type": "null"
+                  },
+                  "checked_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "checked_scope": {
+                    "$ref": "#/components/schemas/RetrievalSnapshot"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "checked_at",
+                  "checked_scope",
+                  "verified_knowledge_version_id"
+                ],
+                "additionalProperties": false
+              }
+            ]
           },
           "input_snapshot": {
             "anyOf": [
@@ -22960,7 +23287,9 @@
                   "state": {
                     "enum": [
                       "preparing",
-                      "discarded"
+                      "discarded",
+                      "ready_to_publish",
+                      "published"
                     ]
                   },
                   "revision": {
@@ -22988,6 +23317,9 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "content_locked": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -23244,6 +23576,9 @@
             "items": {
               "$ref": "#/components/schemas/PaperAnalysisTaskView"
             }
+          },
+          "rerun_of": {
+            "$ref": "#/components/schemas/ID"
           }
         },
         "required": [
@@ -23394,7 +23729,8 @@
                 "confirm_retrieval",
                 "confirm_screening",
                 "confirm_processing",
-                "confirm_analysis"
+                "confirm_analysis",
+                "confirm_ingestion_preview"
               ]
             }
           },
@@ -23402,6 +23738,9 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RetrievalConfirmation"
+              },
+              {
+                "$ref": "#/components/schemas/BlockedIngestionConfirmation"
               },
               {
                 "type": "null"
@@ -23468,6 +23807,15 @@
                     }
                   ]
                 },
+                "matched_project_asset_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "inherited_from_candidate_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "inherited_from_revision": {
+                  "$ref": "#/components/schemas/Revision"
+                },
                 "previous_group_id": {
                   "anyOf": [
                     {
@@ -23513,10 +23861,52 @@
               }
             ]
           },
+          "matched_project_asset_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_resolution": {
+            "enum": [
+              "distinct",
+              "match",
+              null
+            ]
+          },
+          "baseline_matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "project_paper_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "paper_revision_id": {
+                  "$ref": "#/components/schemas/Revision"
+                },
+                "normalized_title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "project_paper_id",
+                "paper_revision_id",
+                "normalized_title"
+              ],
+              "additionalProperties": false
+            }
+          },
           "state": {
             "enum": [
               "distinct",
               "match",
+              "match_existing",
+              "needs_existing_resolution",
               "needs_title"
             ]
           }
@@ -23553,6 +23943,9 @@
           },
           "matched_candidate_revision": {
             "$ref": "#/components/schemas/Revision"
+          },
+          "matched_project_asset_id": {
+            "$ref": "#/components/schemas/ID"
           }
         },
         "required": [
@@ -23571,9 +23964,37 @@
               }
             },
             "then": {
-              "required": [
-                "matched_candidate_id",
-                "matched_candidate_revision"
+              "oneOf": [
+                {
+                  "required": [
+                    "matched_candidate_id",
+                    "matched_candidate_revision"
+                  ],
+                  "not": {
+                    "required": [
+                      "matched_project_asset_id"
+                    ]
+                  }
+                },
+                {
+                  "required": [
+                    "matched_project_asset_id"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "matched_candidate_id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "matched_candidate_revision"
+                        ]
+                      }
+                    ]
+                  }
+                }
               ]
             },
             "else": {
@@ -23587,6 +24008,11 @@
                   {
                     "required": [
                       "matched_candidate_revision"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "matched_project_asset_id"
                     ]
                   }
                 ]
@@ -23806,7 +24232,8 @@
               "running",
               "waiting_user",
               "failed",
-              "cancelled"
+              "cancelled",
+              "succeeded"
             ]
           },
           "waiting_items": {
@@ -25130,7 +25557,8 @@
               "running",
               "waiting_user",
               "failed",
-              "cancelled"
+              "cancelled",
+              "succeeded"
             ]
           },
           "waiting_items": {
@@ -25410,6 +25838,425 @@
         "required": [
           "expected_revision",
           "action"
+        ],
+        "additionalProperties": false
+      },
+      "BlockedIngestionConfirmation": {
+        "type": "object",
+        "properties": {
+          "confirmation_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "action": {
+            "const": "confirm_ingestion_preview"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "waiting_item"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "subject_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "impact_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "knowledge_version_id": {
+            "type": "null"
+          },
+          "candidate_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "confirmation_token": {
+            "type": "string"
+          },
+          "affected_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "retained_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "blocked_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "confirmation_id",
+          "action",
+          "target",
+          "subject_revision",
+          "impact_revision",
+          "knowledge_version_id",
+          "candidate_revision",
+          "risks",
+          "expires_at",
+          "confirmation_token",
+          "affected_items",
+          "retained_items",
+          "blocked_reasons"
+        ],
+        "additionalProperties": false
+      },
+      "IngestionPreview": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "base_knowledge_version_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "valid_papers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "valid_materials": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "candidate_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "term_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "config_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "candidate_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "term_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "config_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "degraded": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "candidate_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "term_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "config_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "non_knowledge_items": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "waiting_item": {
+            "$ref": "#/components/schemas/RetrievalWaiting"
+          }
+        },
+        "required": [
+          "revision",
+          "base_knowledge_version_id",
+          "valid_papers",
+          "valid_materials",
+          "skipped",
+          "failed",
+          "degraded",
+          "non_knowledge_items",
+          "risks",
+          "waiting_item"
+        ],
+        "additionalProperties": false
+      },
+      "PublishedPaperView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "knowledge_version_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "asset_revision": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "title": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "authors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "year": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9999
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "abstract": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "doi": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "arxiv_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "authors",
+              "year",
+              "abstract",
+              "doi",
+              "arxiv_id",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/PaperAnalysis"
+          },
+          "screening": {
+            "$ref": "#/components/schemas/PaperScreeningView"
+          },
+          "processing": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": [
+                  "available",
+                  "degraded"
+                ]
+              },
+              "text_source_kind": {
+                "enum": [
+                  "full_text",
+                  "abstract_fallback"
+                ]
+              },
+              "failure_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "participates_in_knowledge": {
+                "const": true
+              }
+            },
+            "required": [
+              "status",
+              "text_source_kind",
+              "failure_reason",
+              "participates_in_knowledge"
+            ],
+            "additionalProperties": false
+          },
+          "graph_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "document_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          "unavailable_reason": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "knowledge_version_id",
+          "asset_revision",
+          "title",
+          "metadata",
+          "analysis",
+          "screening",
+          "processing",
+          "graph_refs",
+          "document_refs",
+          "unavailable_reason"
         ],
         "additionalProperties": false
       }

@@ -75,6 +75,7 @@ def test_ui06_demo_terminal_interrupt_removes_real_cluster(request, tmp_path):
                 "demo",
                 "--postgres-bin",
                 target["binary_dir"],
+                "--pgvector",
             ],
             stdout=stream,
             stderr=subprocess.STDOUT,

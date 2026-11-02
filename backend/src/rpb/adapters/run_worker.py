@@ -11,9 +11,11 @@ from cryptography.fernet import InvalidToken
 
 from rpb.adapters import source_tables, system_source_tables
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
+from rpb.adapters.construction_slots import acquire
+from rpb.adapters.knowledge_tables import heads
 from rpb.adapters.llm_provider import ProviderFailure
 from rpb.adapters.project import projects
-from rpb.adapters.run_tables import runs
+from rpb.adapters.run_tables import runs, slots
 from rpb.adapters.runs import ACTIVE, RunStore, persist, transition
 from rpb.adapters.search_terms import now
 from rpb.adapters.source_worker import SourceWorker
@@ -135,7 +137,11 @@ class RunWorker:
                     .with_for_update()
                 ).mappings()
             )
-            occupied = {r["project_id"] for r in rows if r["status"] in {"running", "waiting_user"}}
+            occupied = set(
+                conn.scalars(
+                    sa.select(slots.c.project_id).where(slots.c.occupant_run_id.is_not(None))
+                )
+            )
             for row in rows:
                 run = copy.deepcopy(row["payload"])
                 project = (
@@ -145,16 +151,22 @@ class RunWorker:
                 )
                 self.store.revoke(conn, project, run)
                 if run["status"] not in ACTIVE:
-                    occupied.discard(row["project_id"])
+                    still_occupied = conn.scalar(
+                        sa.select(slots.c.occupant_run_id).where(
+                            slots.c.project_id == row["project_id"]
+                        )
+                    )
+                    if still_occupied is None:
+                        occupied.discard(row["project_id"])
                     continue
                 if run.get("phase", "retrieval") != "retrieval":
                     continue
                 if run["status"] == "running" and datetime.fromisoformat(
                     run["lease_until"]
                 ) <= datetime.now(UTC):
-                    transition(run, "failed", "PROVIDER_RESULT_UNKNOWN")
-                    persist(conn, run)
-                    occupied.discard(row["project_id"])
+                    if run.get("error") != "PROVIDER_RESULT_UNKNOWN":
+                        transition(run, "running", "PROVIDER_RESULT_UNKNOWN")
+                        persist(conn, run)
                     continue
                 if selected or run["status"] != "queued" or row["project_id"] in occupied:
                     continue
@@ -196,6 +208,10 @@ class RunWorker:
                             "budget_limits": new_budget()["limits"],
                         }
                     stamp = now()
+                    acquire(conn, run)
+                    base_id = conn.scalar(
+                        sa.select(heads.c.version_id).where(heads.c.project_id == project["id"])
+                    )
                     run["input_snapshot"] = {
                         "mode": "retrieval",
                         "selected_terms": terms,
@@ -218,7 +234,7 @@ class RunWorker:
                             for r in source_configs.values()
                         ],
                         "graph_mode": run["request"]["graph_mode"],
-                        "base_knowledge_version_id": None,
+                        "base_knowledge_version_id": str(base_id) if base_id else None,
                         "frozen_at": stamp,
                     }
                     run["config_snapshot"] = {
@@ -246,6 +262,8 @@ class RunWorker:
                     transition(run, "failed", "CONFIG_CONNECTION_FAILED")
                     persist(conn, run)
                 except (AccountError, ProviderFailure) as exc:
+                    if exc.code == "LOCK_CONSTRUCTION_OCCUPIED":
+                        continue
                     transition(run, "failed", exc.code)
                     persist(conn, run)
         if not selected:
@@ -346,7 +364,7 @@ class RunWorker:
             if run["status"] != "running" or run["attempt_id"] != selected["attempt_id"]:
                 return True
             if datetime.fromisoformat(run["lease_until"]) <= datetime.now(UTC):
-                transition(run, "failed", "PROVIDER_RESULT_UNKNOWN")
+                transition(run, "running", "PROVIDER_RESULT_UNKNOWN")
             else:
                 rejected_bindings = set()
                 for result in results:

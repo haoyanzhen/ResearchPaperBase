@@ -1,0 +1,24 @@
+...................F....................................
+======================================================================
+FAIL: test_cr02_pagination_and_secret_fields_are_closed (test_construction_contracts.RetrievalContracts.test_cr02_pagination_and_secret_fields_are_closed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_construction_contracts.py", line 28, in test_cr02_pagination_and_secret_fields_are_closed
+    self.assertEqual(SCHEMAS['RetrievalWaiting']['properties']['allowed_actions']['items'], {'enum': ['confirm_retrieval', 'confirm_screening', 'confirm_processing', 'confirm_analysis']})
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'enu[55 chars]_processing', 'confirm_analysis', 'confirm_ingestion_preview']} != {'enu[55 chars]_processing', 'confirm_analysis']}
+  {'enum': ['confirm_retrieval',
+            'confirm_screening',
+            'confirm_processing',
+-           'confirm_analysis',
+?                             ^
+
++           'confirm_analysis']}
+?                             ^^
+
+-           'confirm_ingestion_preview']}
+
+----------------------------------------------------------------------
+Ran 56 tests in 29.346s
+
+FAILED (failures=1)

@@ -35,6 +35,7 @@ def main() -> None:
         ],
     )
     parser.add_argument("--postgres-bin", type=Path)
+    parser.add_argument("--pgvector", action="store_true")
     args = parser.parse_args()
     action = args.action
     if action == "install":
@@ -117,7 +118,14 @@ def main() -> None:
             # Replace the wrappers so terminal SIGINT reaches one supervisor and
             # its API child without uv forwarding a second interrupt mid-cleanup.
             interpreter = subprocess.check_output(
-                ["uv", "run", "--locked", "python", "-c", "import sys; print(sys.executable)"],
+                [
+                    "uv",
+                    "run",
+                    "--locked",
+                    "python",
+                    "-c",
+                    "import sys; print(sys.executable)",
+                ],
                 cwd=ROOT / "backend",
                 text=True,
             ).strip()
@@ -129,6 +137,7 @@ def main() -> None:
                     "--postgres-bin",
                     str(args.postgres_bin.resolve()),
                     "--demo",
+                    *(["--pgvector"] if args.pgvector else []),
                 ],
             )
         backend(
@@ -137,6 +146,7 @@ def main() -> None:
             "--postgres-bin",
             str(args.postgres_bin.resolve()),
             *(["--demo"] if action == "demo" else []),
+            *(["--pgvector"] if args.pgvector else []),
         )
     elif action == "migration-history":
         backend("alembic", "history")

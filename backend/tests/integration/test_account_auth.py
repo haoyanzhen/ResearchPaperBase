@@ -596,7 +596,7 @@ def test_au07_session_writer_downgrade_race_preserves_committed_row(db):
         assert conn.scalar(sa.select(sessions.c.token_hash)) == "a" * 64
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
 
 

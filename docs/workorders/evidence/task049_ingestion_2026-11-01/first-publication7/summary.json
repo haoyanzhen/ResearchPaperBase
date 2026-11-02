@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task049_ingestion_2026-11-01/first-publication7/tests.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 72,
+    "passed": 71,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "tests.integration.test_browser_analysis::test_pab01_generate_edit_reject_overwrite_confirm_refresh",
+      "message": "KeyError: 'data'\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cf1c050>\nrequest = <FixtureRequest for <Function test_pab01_generate_edit_reject_overwrite_confirm_refresh>>\ntmp_path = PosixPath('/private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/pytest-of-qingyue/pytest-243/test_pab01_generate_edit_rejec0')\n\n    def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, request, tmp_path):\n        page, region, app, client, headers, root = configured_browser(m",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

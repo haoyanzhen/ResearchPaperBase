@@ -76,9 +76,8 @@ def test_pc01_create_read_real_atomic_facts(db):
         from rpb.adapters.run_tables import runs
 
         assert conn.scalar(sa.select(sa.func.count()).select_from(runs)) == 0
-        assert not {"tasks", "outbox", "knowledge_versions"} & set(
-            sa.inspect(conn).get_table_names()
-        )
+        assert not {"tasks", "outbox"} & set(sa.inspect(conn).get_table_names())
+        assert conn.scalar(sa.text("SELECT count(*) FROM knowledge_versions")) == 0
 
 
 @pytest.mark.parametrize("first_name", ["First", "Second"])

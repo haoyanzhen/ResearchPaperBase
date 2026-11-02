@@ -41,6 +41,11 @@ def accept(run: Any, actor: Any) -> None:
     from rpb.adapters.runs import transition
 
     screening.writable(run)
+    if any(
+        c.get("deduplication", {}).get("state") == "needs_existing_resolution"
+        for c in run["candidates"]
+    ):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     chosen = eligible(run)
     if not chosen:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
@@ -92,6 +97,9 @@ def accept(run: Any, actor: Any) -> None:
 
 
 def confirm(run: Any, actor: Any) -> None:
+    screening.require_unlocked(run)
+    if not screening.baseline_ready(run):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if busy(run) or run.get("phase") != "processing":
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if not any(
@@ -215,6 +223,8 @@ class ProcessingWorker:
         self.store, self.provider = store, provider
 
     def check(self, conn: Any, project: Any, run: Any, identity: str) -> None:
+        if screening.content_locked(run) or not screening.baseline_ready(run):
+            raise ProviderFailure("STATE_REVISION_CONFLICT")
         job = run.get("processing_job", {})
         if (
             not self.store.terms.llm.permitted_actor(conn, UUID(run["owner_id"]))

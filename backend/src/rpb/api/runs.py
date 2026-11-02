@@ -55,6 +55,10 @@ def router_for(service: TermService) -> APIRouter:
     def read(request: Request, project_id: UUID, run_id: UUID) -> Any:
         return call(request, project_id, "read_run", {"run_id": str(run_id)})
 
+    @router.get("/{run_id}/ingestion-preview")
+    def ingestion_preview(request: Request, project_id: UUID, run_id: UUID) -> Any:
+        return call(request, project_id, "ingestion_preview", {"run_id": str(run_id)})
+
     @router.get("/{run_id}/candidates")
     def candidates(
         request: Request,

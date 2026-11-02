@@ -1,0 +1,10 @@
+src/rpb/adapters/immutable_files.py:20: error: Function is missing a return type annotation  [no-untyped-def]
+src/rpb/adapters/local_embeddings.py:55: error: Returning Any from function declared to return "bool"  [no-any-return]
+src/rpb/adapters/local_embeddings.py:178: error: Incompatible return value type (got "Any | None", expected "list[float]")  [return-value]
+src/rpb/adapters/knowledge_build_tables.py:4: error: Skipping analyzing "pgvector.sqlalchemy": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+src/rpb/adapters/knowledge_build_tables.py:4: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+src/rpb/adapters/ingestion_confirmation.py:152: error: Returning Any from function declared to return "dict[str, Any]"  [no-any-return]
+src/rpb/adapters/first_publication.py:155: error: Module "rpb.adapters.runs" does not explicitly export attribute "runs"  [attr-defined]
+src/rpb/adapters/first_publication.py:178: error: Returning Any from function declared to return "str"  [no-any-return]
+src/rpb/adapters/knowledge_graph_builder.py:490: error: Invalid index type "str | int" for "list[UUID]"; expected type "SupportsIndex"  [index]
+Found 8 errors in 6 files (checked 129 source files)

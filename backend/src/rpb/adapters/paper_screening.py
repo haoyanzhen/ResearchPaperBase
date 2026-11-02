@@ -34,10 +34,33 @@ def busy(run: Any) -> bool:
     return any(j["state"] in {"queued", "running"} for j in run.get("scoring_jobs", {}).values())
 
 
+def content_locked(run: Any) -> bool:
+    return (run.get("candidate_version") or {}).get("content_locked") is True
+
+
+def baseline_ready(run: Any) -> bool:
+    snapshot = run.get("input_snapshot")
+    return bool(
+        isinstance(snapshot, dict)
+        and "base_knowledge_version_id" in snapshot
+        and "baseline_loaded_version_id" in run
+        and isinstance(run.get("baseline_papers"), list)
+        and run["baseline_loaded_version_id"] == snapshot["base_knowledge_version_id"]
+    )
+
+
+def require_unlocked(run: Any) -> None:
+    if content_locked(run):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+
+
 def writable(run: Any) -> None:
     from rpb.adapters.paper_analysis import busy as analysis_busy
     from rpb.adapters.paper_processing import busy as processing_busy
 
+    require_unlocked(run)
+    if not baseline_ready(run):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if processing_busy(run) or analysis_busy(run):
         raise AccountError("LOCK_CONTENT_BUSY", 409)
     if run["status"] != "waiting_user" or run.get("phase") not in {

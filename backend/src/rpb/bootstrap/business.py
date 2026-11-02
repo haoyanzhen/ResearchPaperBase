@@ -73,6 +73,9 @@ def create_business_app(
     terms = TermStore(account, encryption_key)
     app.state.term_store = terms
     run_store = RunStore(terms)
+    from rpb.api.published_papers import router_for as published_router
+
+    app.include_router(published_router(run_store))
     app.state.run_store = run_store
     app.include_router(runs_router(TermService(run_store, origin)))
     app.include_router(terms_router(TermService(terms, origin)))

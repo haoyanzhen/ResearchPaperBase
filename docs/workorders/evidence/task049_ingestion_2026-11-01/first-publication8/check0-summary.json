@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task049_ingestion_2026-11-01/first-publication8/check0.log",
+  "exit_code": 1,
+  "report_type": "log",
+  "status": "failed",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 1265,
+  "read_start_byte": 0,
+  "text": "d to return \"dict[str, Any]\"  [no-any-return]\nsrc/rpb/adapters/first_publication.py:155: error: Module \"rpb.adapters.runs\" does not explicitly export attribute \"runs\"  [attr-defined]\nsrc/rpb/adapters/first_publication.py:178: error: Returning Any from function declared to return \"str\"  [no-any-return]\nsrc/rpb/adapters/knowledge_graph_builder.py:490: error: Invalid index type \"str | int\" for \"list[UUID]\"; expected type \"SupportsIndex\"  [index]\nFound 8 errors in 6 files (checked 129 source files)\n",
+  "truncated": true
+}

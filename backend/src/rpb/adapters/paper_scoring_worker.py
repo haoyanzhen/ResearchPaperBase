@@ -97,6 +97,8 @@ class ScoreWorker:
         self.guard = TermWorker(store.terms, None)
 
     def check(self, conn: Any, project: Any, run: Any, job: Any, boundary: str) -> str:
+        if screening.content_locked(run) or not screening.baseline_ready(run):
+            raise ProviderFailure("STATE_REVISION_CONFLICT")
         if (
             run["status"] != "waiting_user"
             or run.get("phase") != "screening"

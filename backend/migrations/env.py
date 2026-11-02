@@ -4,6 +4,7 @@ from alembic import context
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from rpb.adapters import knowledge_build_tables, knowledge_paper_tables, knowledge_tables  # noqa: F401
 from rpb.adapters.llm_tables import metadata
 
 ERROR = "Migration execution unavailable: verified isolated test connection required"

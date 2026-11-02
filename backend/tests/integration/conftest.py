@@ -79,6 +79,9 @@ def db(storage):
         conn.execute(sa.text("DELETE FROM auth_sessions"))
         conn.execute(sa.text("DELETE FROM construction_workspaces"))
         conn.execute(sa.text("DELETE FROM projects"))
+        conn.execute(sa.text("DELETE FROM paper_identity_titles"))
+        conn.execute(sa.text("DELETE FROM paper_identities"))
+        conn.execute(sa.text("DELETE FROM knowledge_embedding_profiles"))
         conn.execute(sa.text("DELETE FROM accounts"))
         conn.execute(sa.text("DELETE FROM source_dispatch_limits"))
     yield engine, cfg
@@ -111,5 +114,8 @@ def db(storage):
         conn.execute(sa.text("DELETE FROM auth_sessions"))
         conn.execute(sa.text("DELETE FROM construction_workspaces"))
         conn.execute(sa.text("DELETE FROM projects"))
+        conn.execute(sa.text("DELETE FROM paper_identity_titles"))
+        conn.execute(sa.text("DELETE FROM paper_identities"))
+        conn.execute(sa.text("DELETE FROM knowledge_embedding_profiles"))
         conn.execute(sa.text("DELETE FROM accounts"))
         conn.execute(sa.text("DELETE FROM source_dispatch_limits"))

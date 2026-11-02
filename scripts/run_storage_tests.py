@@ -17,7 +17,7 @@ from psycopg import sql
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run_tests(binary_dir: Path, demo: bool = False) -> int:
+def run_tests(binary_dir: Path, demo: bool = False, pgvector: bool = False) -> int:
     binary_dir = binary_dir.resolve(strict=True)
     env = {
         k: v
@@ -99,6 +99,15 @@ def run_tests(binary_dir: Path, demo: bool = False) -> int:
                     sql.Identifier(run_id), sql.Literal(run_id)
                 )
             )
+        if pgvector:
+            with psycopg.connect(
+                host=str(root),
+                dbname=run_id,
+                user="fixture_admin",
+                password=admin_password,
+                autocommit=True,
+            ) as admin:
+                admin.execute("CREATE EXTENSION vector")
         target = root / "target.json"
         target.write_text(
             json.dumps(
@@ -169,10 +178,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--postgres-bin", required=True, type=Path)
     parser.add_argument(
+        "--pgvector",
+        action="store_true",
+        help="install vector in the isolated test database",
+    )
+    parser.add_argument(
         "--demo", action="store_true", help="30-minute disposable loopback browser demo"
     )
     args = parser.parse_args()
     try:
-        raise SystemExit(run_tests(args.postgres_bin, demo=args.demo))
+        raise SystemExit(
+            run_tests(args.postgres_bin, demo=args.demo, pgvector=args.pgvector)
+        )
     except KeyboardInterrupt:
         raise SystemExit(130) from None

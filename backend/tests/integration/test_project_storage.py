@@ -48,7 +48,7 @@ def test_ps01_upgrade_existing_account_and_metadata(db):
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
 
 
@@ -78,6 +78,30 @@ def test_ps02_pair_commits_defaults_and_independent_read(db):
             "construction_term_states",
             "construction_runs",
             "construction_processing_objects",
+            "construction_project_slots",
+            "knowledge_versions",
+            "knowledge_project_heads",
+            "paper_identities",
+            "paper_identity_titles",
+            "knowledge_project_papers",
+            "knowledge_paper_revisions",
+            "knowledge_version_paper_pins",
+            "knowledge_paper_objects",
+            "knowledge_object_lifecycle",
+            "knowledge_object_build_pins",
+            "knowledge_publication_events",
+            "knowledge_version_object_pins",
+            "knowledge_embedding_profiles",
+            "knowledge_chunks",
+            "knowledge_embeddings",
+            "knowledge_vector_views",
+            "knowledge_vector_view_members",
+            "knowledge_graph_views",
+            "knowledge_graph_extractions",
+            "knowledge_graph_nodes",
+            "knowledge_graph_labels",
+            "knowledge_graph_edges",
+            "knowledge_graph_supports",
             "construction_run_commands",
             "alembic_version",
             "auth_sessions",
@@ -223,7 +247,7 @@ def test_ps05_populated_downgrade_refused_empty_preserves_account(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
         conn.execute(cw.delete())
         conn.execute(projects.delete())
@@ -302,7 +326,7 @@ def test_ps06_committing_writer_blocks_destructive_downgrade(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
 
 

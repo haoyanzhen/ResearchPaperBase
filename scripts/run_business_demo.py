@@ -15,7 +15,6 @@ from cryptography.fernet import Fernet
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
 from rpb.adapters.auth import AccountStore
 from rpb.adapters.llm import LLMStore
 from rpb.adapters.llm_provider import HTTPProvider
@@ -75,7 +74,9 @@ def create_demo(
         with engine.begin() as conn:
             cfg = Config(str(ROOT / "backend/alembic.ini"))
             cfg.attributes.update(connection=conn, test_run_id=run_id)
-            command.upgrade(cfg, "head")  # Checks database, role, marker and privileges.
+            command.upgrade(
+                cfg, "head"
+            )  # Checks database, role, marker and privileges.
         app = create_business_app(engine, f"http://127.0.0.1:{port}", encryption_key)
         app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
@@ -116,8 +117,12 @@ def main() -> None:
     stopped = Event()
     worker = LLMWorker(LLMStore(AccountStore(engine), key), HTTPProvider())
 
-    system_worker = LLMWorker(LLMStore(AccountStore(engine), key, system=True), HTTPProvider())
-    source_worker = SourceWorker(SourceStore(AccountStore(engine), key), SourceProvider())
+    system_worker = LLMWorker(
+        LLMStore(AccountStore(engine), key, system=True), HTTPProvider()
+    )
+    source_worker = SourceWorker(
+        SourceStore(AccountStore(engine), key), SourceProvider()
+    )
 
     system_source_worker = SourceWorker(
         SourceStore(AccountStore(engine), key, system=True), SourceProvider()
@@ -129,7 +134,43 @@ def main() -> None:
     analysis_worker = AnalysisWorker(app.state.run_store, AnalysisProvider())
     score_worker = ScoreWorker(app.state.run_store, ScoreProvider())
     processing_worker = ProcessingWorker(app.state.run_store, PDFProvider())
-    cleanup_worker = CleanupWorker(app.state.run_store, PDFProvider(), CleanupProvider())
+    cleanup_worker = CleanupWorker(
+        app.state.run_store, PDFProvider(), CleanupProvider()
+    )
+
+    publication_worker = None
+    if os.environ.get("RPB_EMBEDDING_PYTHON") and os.environ.get(
+        "RPB_EMBEDDING_MODEL_DIR"
+    ):
+        from rpb.adapters.first_publication_worker import FirstPublicationWorker
+        from rpb.adapters.graph_extraction_provider import GraphExtractionProvider
+        from rpb.adapters.local_embeddings import LocalEmbeddings
+
+        def embedding(permit):
+            env = dict(
+                os.environ,
+                HF_HUB_OFFLINE="1",
+                TRANSFORMERS_OFFLINE="1",
+                RPB_EMBEDDING_WEIGHTS_SHA256="a18a44fad1d0b46ded15928144138cff1135d5cc8233bdd90be5f18822de09a7",
+            )
+            return LocalEmbeddings(
+                [
+                    env["RPB_EMBEDDING_PYTHON"],
+                    str(
+                        Path(__file__).resolve().parents[1]
+                        / "embedding-runtime/worker.py"
+                    ),
+                ],
+                env,
+                permit,
+            )
+
+        publication_worker = FirstPublicationWorker(
+            app.state.run_store,
+            args.target.resolve().parent / "knowledge-files",
+            embedding,
+            GraphExtractionProvider(),
+        )
 
     def work() -> None:
         while not stopped.is_set():
@@ -145,6 +186,7 @@ def main() -> None:
                 or processing_worker.run_once()
                 or cleanup_worker.run_once()
                 or analysis_worker.run_once()
+                or (publication_worker is not None and publication_worker.run_once())
             )
             if not (
                 llm_work

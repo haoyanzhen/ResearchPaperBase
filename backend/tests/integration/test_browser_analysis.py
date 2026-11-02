@@ -1,7 +1,6 @@
 """PA06: real browser/HTTP/PostgreSQL, controlled model and file providers."""
 
 import re
-from pathlib import Path
 
 from playwright.sync_api import expect
 from test_browser_business import browser_app  # noqa: F401
@@ -16,8 +15,20 @@ from rpb.adapters.paper_processing import ProcessingWorker
 from rpb.adapters.run_worker import RunWorker
 
 
-def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, request):
+def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, request, tmp_path):
     page, region, app, client, headers, root = configured_browser(monkeypatch, request)
+    from test_ingestion_preview import embedding_factory
+
+    from rpb.adapters.first_publication_worker import FirstPublicationWorker
+
+    class EmptyGraph:
+        def extract(self, config, model, secret, text, metadata, authorize):
+            with authorize():
+                return [], []
+
+    worker = FirstPublicationWorker(
+        app.state.run_store, tmp_path / "objects", embedding_factory(), EmptyGraph()
+    )
     region.get_by_label("graph", exact=True).check()
     region.get_by_role("button", name="启动检索", exact=True).click()
     expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
@@ -63,8 +74,10 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
     expect(section.get_by_label("一句话总结", exact=True)).to_have_value("用户保留的分析结论")
     region.get_by_role("button", name="确认有效分析（失败项不纳入）", exact=True).click()
     expect(
-        region.get_by_role("heading", name="分析已确认，等待入库能力", exact=True)
+        region.get_by_role("heading", name="分析已确认，等待入库确认", exact=True)
     ).to_be_visible()
+    expect(region.get_by_role("region", name="入库预览")).to_contain_text("拟纳入论文：1")
+    expect(region.get_by_role("button", name="确认检索并去重", exact=True)).to_have_count(0)
     page.reload()
     region.get_by_role("list").first.get_by_role("button").first.click()
     expect(section.get_by_label("一句话总结", exact=True)).to_have_value("用户保留的分析结论")
@@ -75,6 +88,53 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
     expect(section.get_by_label("创新点 2", exact=True)).to_have_count(0)
     page.set_viewport_size({"width": 390, "height": 844})
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
-    folder = Path(__file__).parents[3] / "docs/workorders/evidence/task048_next_stage_2026-10-30"
-    page.screenshot(path=str(folder / "analysis-mobile.png"), full_page=True)
+    page.screenshot(path=str(tmp_path / "analysis-mobile.png"), full_page=True)
+    region.get_by_role("button", name="接受上述风险并确认入库", exact=True).click()
+    expect(region.get_by_role("heading", name="正在构建知识版本", exact=True)).to_be_visible()
+    assert worker.run_once()
+    published = client.get(url).json()["data"]
+    from jsonschema import Draft202012Validator
+    from test_account_auth import SPEC
+
+    Draft202012Validator(
+        {"$ref": "#/components/schemas/RetrievalRunView", "components": SPEC["components"]}
+    ).validate(published)
+    assert published["status"] == "succeeded", published["steps"]
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    region.get_by_role("button", name="查看已发布版本", exact=True).click()
+    version = region.get_by_role("region", name="已发布版本")
+    expect(version).to_contain_text(published["published_knowledge_version_id"])
+    expect(version).to_contain_text(candidates(client, url)[0]["metadata"]["title"])
+    expect(version).to_contain_text("用户保留的分析结论")
+    papers = client.get(root + "/papers").json()["data"]
+    Draft202012Validator(
+        {"$ref": "#/components/schemas/PublishedPaperView", "components": SPEC["components"]}
+    ).validate(papers["items"][0])
+    assert papers["knowledge_version_id"] == published["published_knowledge_version_id"]
+    assert papers["items"][0]["analysis"]["one_sentence_summary"] == "用户保留的分析结论"
+    from test_project_commands import create
+
+    headers["X-CSRF-Token"] = client.get("/api/v1/auth/csrf").json()["data"]["csrf_token"]
+    other_response = create(
+        client, headers, {"name": "Other publication project"}, key="published-scope-isolation1"
+    )
+    assert other_response.status_code == 201, other_response.text
+    other = other_response.json()["data"]["id"]
+    foreign = client.get(
+        f"/api/v1/projects/{other}/papers",
+        params={"knowledge_version_id": papers["knowledge_version_id"]},
+    )
+    assert foreign.status_code == 404 and "用户保留的分析结论" not in foreign.text
+    assert (
+        client.post(
+            url + "/cancel",
+            headers=headers | {"Idempotency-Key": "late-publish-cancel1"},
+            json={
+                "expected_revision": published["revision"],
+                "attempt_id": published["task"]["attempt_id"],
+            },
+        ).status_code
+        == 409
+    )
+    assert not worker.run_once()
     page.close()

@@ -477,3 +477,19 @@ def test_plb01_real_pdf_classification_auto_continue_compare_and_confirm(monkeyp
     )
     page.screenshot(path=str(output / "cleanup-mobile.png"), full_page=True)
     page.close()
+
+
+def test_failed_run_can_start_a_separate_run(monkeypatch, request):
+    page, region, app, client, _, root = configured_browser(monkeypatch, request)
+    region.get_by_label("graph", exact=True).check()
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    assert RunWorker(app.state.run_store, Papers(failure=True)).run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    expect(region.get_by_role("heading", name="失败", exact=True)).to_be_visible()
+    old = client.get(root + "/construction-runs").json()["data"]["items"][0]
+    region.get_by_role("button", name="重新运行", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    expect(region.get_by_text("来源构建：" + old["id"], exact=False)).to_be_visible()
+    assert client.get(root + "/construction-runs/" + old["id"]).json()["data"] == old
+    page.close()

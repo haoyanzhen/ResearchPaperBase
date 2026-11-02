@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 
 from rpb.adapters import paper_analysis as analysis
+from rpb.adapters import paper_screening as screening
 from rpb.adapters.llm_provider import ProviderFailure
 from rpb.adapters.project import projects
 from rpb.adapters.run_tables import runs
@@ -25,6 +26,8 @@ class AnalysisWorker:
         self.guard = TermWorker(store.terms, None)
 
     def check(self, conn: Any, project: Any, run: Any, job: Any, boundary: str) -> str:
+        if screening.content_locked(run) or not screening.baseline_ready(run):
+            raise ProviderFailure("STATE_REVISION_CONFLICT")
         if run["status"] != "waiting_user" or run.get("phase") not in {
             "analysis",
             "ingestion_preview",
@@ -187,7 +190,23 @@ class AnalysisWorker:
             if error:
                 c["analysis_error"] = error
             else:
-                analysis.save_content(run, c, result, job["owner_id"], "agent_draft")
+                analysis.save_content(
+                    run,
+                    c,
+                    result,
+                    job["owner_id"],
+                    "agent_draft",
+                    {
+                        "kind": "agent",
+                        "job_id": live["id"],
+                        "attempt_id": live["attempt_id"],
+                        "source_ids": copy.deepcopy(live["source_ids"]),
+                        "source_revisions": copy.deepcopy(live["source_revisions"]),
+                        "material_audit": copy.deepcopy(live.get("material_audit", [])),
+                        "model_selection": copy.deepcopy(live["model_selection"]),
+                        "config_revision": live["config_revision"],
+                    },
+                )
             self.guard.finish(live, "failed" if error else "succeeded", error)
             transition(run, "waiting_user")
             persist(conn, run)

@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 
+from rpb.adapters import construction_slots, ingestion_preview
 from rpb.adapters import paper_analysis as analysis
 from rpb.adapters import paper_deduplication as dedup
 from rpb.adapters import paper_processing as processing
@@ -81,6 +82,32 @@ def page(items: list[Any], data: Any, secret: str, scope: list[str]) -> Any:
 
 
 def persist(conn: Any, run: Any) -> None:
+    has_slot = isinstance(run.get("slot_epoch"), int)
+    if has_slot and not construction_slots.is_current(conn, run):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+    previous_row = (
+        conn.execute(
+            sa.select(runs.c.status, runs.c.payload)
+            .where(runs.c.id == UUID(run["id"]))
+            .with_for_update()
+        )
+        .mappings()
+        .one_or_none()
+    )
+    previous = previous_row["status"] if previous_row else None
+    if (
+        previous_row
+        and screening.content_locked(previous_row["payload"])
+        and not screening.content_locked(run)
+    ):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+    if has_slot:
+        if previous not in {"queued", "running", "waiting_user"}:
+            raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+    elif run["status"] in {"running", "waiting_user", "succeeded"} or previous != "queued":
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+    if run["status"] in {"failed", "cancelled", "succeeded"}:
+        construction_slots.release(conn, run)
     conn.execute(
         runs.update()
         .where(runs.c.id == UUID(run["id"]))
@@ -93,6 +120,10 @@ def transition(run: Any, status: str, error: str | None = None) -> None:
     if status in {"failed", "cancelled"}:
         run["finished_at"] = now()
     if status == "cancelled":
+        for key in ("vector_build_claim", "graph_build_claim"):
+            claim = run.get(key)
+            if claim and claim.get("state") in {"running", "unknown"}:
+                claim.update(state="cancelled", error=error)
         run["deduplication_summary"] = dedup.summary(run)
         run["screening_summary"] = screening.summary(run)
         from rpb.adapters.search_term_worker import TermWorker
@@ -165,14 +196,20 @@ class RunStore:
         if (
             processing.busy(run)
             or analysis.busy(run)
-            or run.get("phase") == "ingestion_preview"
+            or screening.busy(run)
             or (
                 run.get("phase") == "analysis"
                 and not any(analysis.valid(c) for c in processing.eligible(run))
             )
             or (
                 run.get("phase") == "screening"
-                and (screening.busy(run) or not processing.eligible(run))
+                and (
+                    not processing.eligible(run)
+                    or any(
+                        c.get("deduplication", {}).get("state") == "needs_existing_resolution"
+                        for c in run["candidates"]
+                    )
+                )
             )
             or (
                 run.get("phase") == "processing"
@@ -198,26 +235,47 @@ class RunStore:
             [run["owner_id"], run["project_id"], wait["id"], wait["revision"], expires]
         )
         token = hmac.new(run["confirmation_secret"].encode(), basis.encode(), "sha256").hexdigest()
+        ingestion = kind == "ingestion_preview"
+        blocked = ingestion and (
+            not getattr(self, "first_publication_enabled", False)
+            or run["input_snapshot"]["base_knowledge_version_id"] is not None
+        )
+        if ingestion:
+            from rpb.adapters.ingestion_confirmation import signature
+
+            token = signature(run, run["owner_id"], expires)
         return [
             {
                 "id": wait["id"],
                 "kind": kind,
                 "revision": wait["revision"],
-                "allowed_actions": [action],
+                "allowed_actions": [] if blocked else [action],
                 "confirmation": {
                     "confirmation_id": stable(token),
                     "action": action,
                     "target": {"type": "waiting_item", "id": wait["id"]},
-                    "subject_revision": run["effective_input_revision"],
+                    "subject_revision": run["candidate_revision"]
+                    if ingestion
+                    else run["effective_input_revision"],
                     "impact_revision": wait["revision"],
                     "knowledge_version_id": None,
                     "candidate_revision": run["candidate_revision"],
-                    "risks": [],
+                    "risks": (
+                        [{"id": "ABSTRACT_ONLY", "message": "部分论文使用摘要降级文本"}]
+                        if ingestion
+                        and any(
+                            c.get("processing", {}).get("status") == "degraded"
+                            and c["id"]
+                            in run.get("analysis_confirmation", {}).get("candidate_ids", [])
+                            for c in run["candidates"]
+                        )
+                        else []
+                    ),
                     "expires_at": expires,
                     "confirmation_token": expires + "." + token,
                     "affected_items": [],
                     "retained_items": [],
-                    "blocked_reasons": [],
+                    "blocked_reasons": ["知识构建和发布能力尚未就绪"] if blocked else [],
                 },
             }
         ]
@@ -290,10 +348,13 @@ class RunStore:
                     "effective_input_revision",
                 )
             },
+            **({"rerun_of": run["rerun_of"]} if run.get("rerun_of") else {}),
             "phase": run.get("phase", "retrieval"),
-            "base_knowledge_version_id": None,
-            "published_knowledge_version_id": None,
-            "completion": None,
+            "base_knowledge_version_id": (run.get("input_snapshot") or {}).get(
+                "base_knowledge_version_id"
+            ),
+            "published_knowledge_version_id": run.get("published_knowledge_version_id"),
+            "completion": run.get("completion"),
             "steps": [
                 {
                     "id": run["task_id"],
@@ -424,6 +485,10 @@ class RunStore:
                 self.revoke(conn, project, run)
                 if operation == "read_run":
                     return self.view(run)
+                if operation == "ingestion_preview":
+                    return ingestion_preview.preview(
+                        run, self.waiting(run)[0] if run.get("status") == "waiting_user" else None
+                    )
                 if operation in {"file_access", "file_download"}:
                     return processing.file_view(conn, run, data, operation == "file_download")
                 if operation == "processing_text":
@@ -490,8 +555,29 @@ class RunStore:
                     raise AccountError("STATE_IDEMPOTENCY_CONFLICT", 409)
                 return old["payload"]
             if operation == "start":
+                source_id = None
+                requested = body
+                if "rerun_of" in body:
+                    if set(body) != {"rerun_of", "expected_revision"}:
+                        raise AccountError("VALIDATION_FIELD_INVALID", 422)
+                    source = conn.scalar(
+                        sa.select(runs.c.payload)
+                        .where(
+                            runs.c.project_id == project["id"],
+                            runs.c.owner_id == actor,
+                            runs.c.id == uuid_value(body["rerun_of"]),
+                        )
+                        .with_for_update()
+                    )
+                    if source is None:
+                        raise AccountError("PERMISSION_RESOURCE_UNAVAILABLE", 404)
+                    require_revision(source["revision"], body["expected_revision"])
+                    if source["status"] != "failed":
+                        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                    source_id = source["id"]
+                    requested = copy.deepcopy(source["request"])
                 try:
-                    inputs = start_input(body)
+                    inputs = start_input(requested)
                 except RunInputError:
                     raise AccountError("VALIDATION_FIELD_INVALID", 422) from None
                 self.resolve(conn, actor, project, inputs)
@@ -518,6 +604,7 @@ class RunStore:
                     "task_id": task_id,
                     "attempt_id": str(uuid4()),
                     "request": inputs,
+                    **({"rerun_of": source_id} if source_id else {}),
                     "input_snapshot": None,
                     "config_snapshot": None,
                     "effective_input_revision": None,
@@ -544,6 +631,25 @@ class RunStore:
                     )
                 )
                 value = {"run": self.view(run), "task": self.task(run)}
+            elif (
+                operation == "confirm_retrieval" and run and run.get("phase") == "ingestion_preview"
+            ):
+                from rpb.adapters.ingestion_confirmation import accept_locked
+
+                if (
+                    not getattr(self, "first_publication_enabled", False)
+                    or run["input_snapshot"]["base_knowledge_version_id"] is not None
+                ):
+                    raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+                accepted = accept_locked(
+                    conn,
+                    self,
+                    actor,
+                    project["id"],
+                    UUID(run["id"]),
+                    {k: v for k, v in body.items() if k != "run_id"},
+                )
+                value = {"run": self.view(accepted), "task": self.task(accepted)}
             elif operation == "confirm_retrieval" and run:
                 required = {
                     "run_id",
@@ -609,7 +715,9 @@ class RunStore:
                     }
                     screening.register_sources(run, state)
                     save(conn, project, state)
-                    dedup.initialize(run)
+                    from rpb.adapters.knowledge_baseline_papers import baseline_papers
+
+                    dedup.initialize(run, baseline_papers(conn, run))
                     transition(run, "waiting_user")
                 persist(conn, run)
                 value = {"run": self.view(run), "task": self.task(run)}

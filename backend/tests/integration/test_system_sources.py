@@ -375,7 +375,7 @@ def test_ss09_audit_rollback_and_downgrade_refusal(system, db, monkeypatch):
     with db[0].connect() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
         assert sa.inspect(conn).has_table("system_source_audit")
 

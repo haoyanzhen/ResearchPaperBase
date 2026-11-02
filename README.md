@@ -1,11 +1,11 @@
 # Research Paper Base
 
-文档版本：v1.19
-更新日期：2026-10-26
+文档版本：v1.21
+更新日期：2026-11-01
 
 面向深度检索与学术研究的工作空间项目，目标包含论文库构建、基于知识版本的研究对话和文献综述。
 
-当前交付范围与验证结果见[项目状态](docs/PROJECT_STATUS.md)和[第一批骨架审核单](tasks/005-engineering-skeleton.md)。默认api/ui命令保留无库工程预览；注册登录和Project创建/本人读取已有独立本地演示入口，见下方M-P0-01。个人LLM和数据源连接测试已接入持久任务；知识构建尚未接入。
+当前交付范围与验证结果见[项目状态](docs/PROJECT_STATUS.md)和[第一批骨架审核单](tasks/005-engineering-skeleton.md)。默认api/ui命令保留无库工程预览；注册登录和Project创建/本人读取已有独立本地演示入口，见下方M-P0-01。个人LLM和数据源连接测试已接入持久任务；手动论文首版发布的本地演示配置见下文。
 
 ## 当前入口
 
@@ -82,10 +82,10 @@ python3 scripts/engineering.py e2e
 `python3 scripts/engineering.py migration-history` 可查看 `0001_account → 0002_project → 0003_auth_sessions → 0004_project_commands → 0005_project_lifecycle → 0006_account_profile → 0007_llm_configuration → 0008_source_configuration → 0009_account_governance → 0010_system_llm → 0011_system_sources` 单链。执行真实存储测试：
 
 ```bash
-python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
+python3 scripts/engineering.py integration --postgres-bin /path/to/postgresql17-with-pgvector/bin --pgvector
 ```
 
-`--postgres-bin` 必须显式指向 PostgreSQL 17 的二进制目录（其他机器替换路径）。命令创建仅 Unix socket 可达的临时实例、独立测试库和非管理员角色；测试内部提交保留到本轮结束，随后停止进程并删除该实例。未传目标的 `integration` 和直接 `alembic upgrade head` 仍拒绝，忽略业务 DATABASE_URL；没有生产迁移入口。默认 `check` 执行无数据库测试，真实存储测试须另行运行且缺目标为失败，不是跳过。[task015](tasks/015-account-storage-migration.md)记录最初Account存储范围；后续[task017](tasks/017-account-authentication.md)/[task018](tasks/018-project-create-runtime.md)提供显式装配的注册登录、当前会话及Project创建/本人读取；完整Project生命周期与生产迁移未交付；当前账号治理见下节。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
+`--postgres-bin` 必须显式指向已安装 pgvector 0.8 的 PostgreSQL 17 二进制目录，示例路径需替换为本机路径。`--pgvector` 只在新建的临时测试库中安装扩展；0018迁移要求该扩展已预置。命令创建仅 Unix socket 可达的临时实例、独立测试库和非管理员角色；测试内部提交保留到本轮结束，随后停止进程并删除该实例。未传目标的 `integration` 和直接 `alembic upgrade head` 仍拒绝，忽略业务 DATABASE_URL；没有生产迁移入口。默认 `check` 执行无数据库测试，真实存储测试须另行运行且缺目标为失败，不是跳过。[task015](tasks/015-account-storage-migration.md)记录最初Account存储范围；后续[task017](tasks/017-account-authentication.md)/[task018](tasks/018-project-create-runtime.md)提供显式装配的注册登录、当前会话及Project创建/本人读取；完整Project生命周期与生产迁移未交付；当前账号治理见下节。构建产物在 `backend/dist/` 和 `frontend/dist/`，不隐式迁移。
 
 本次修订（2026-10-22）：增加首批工程安装、启停、检查和构建入口；审核结论由人工记录。
 
@@ -108,9 +108,11 @@ python3 scripts/delivery_snapshot.py verify --directory docs/workorders/evidence
 
 ```bash
 uv run --project backend playwright install chromium
-python3 scripts/engineering.py integration --postgres-bin /opt/homebrew/opt/postgresql@17/bin
-python3 scripts/engineering.py demo --postgres-bin /opt/homebrew/opt/postgresql@17/bin
+python3 scripts/engineering.py integration --postgres-bin /path/to/postgresql17-with-pgvector/bin --pgvector
+python3 scripts/engineering.py demo --postgres-bin /path/to/postgresql17-with-pgvector/bin --pgvector
 ```
+
+首版论文入库演示需给上述 demo 进程设置 `RPB_EMBEDDING_PYTHON`（独立嵌入环境 Python 可执行文件）与 `RPB_EMBEDDING_MODEL_DIR`（已校验的固定 E5 模型目录）。应用在临时数据库所在目录暂存 Project 私有文件。选择有效模型并完成分析确认后，在入库预览核对论文与降级风险，确认入库，待后台完成后刷新本次结果并选择“查看已发布版本”。图谱抽取使用当前获准的 Run 模型配置，正常演示会调用所配置的模型服务。自动化验收使用隔离数据库和受控图谱服务。
 
 最后一条在 `http://127.0.0.1:8765/workspace` 提供独立临时演示，最长30分钟；Ctrl-C退出，API停止后清理本轮数据库。不是持久开发库，不会保存演示输入；不读取DATABASE_URL，不连接Homebrew默认业务集群。端口被占用时启动失败并清理，不终止其他进程。`demo`需要现有frontend/dist；修改前端后先build，不自动使用旧源码冒充新产物。集成测试同样消费构建产物，执行前应先build。
 

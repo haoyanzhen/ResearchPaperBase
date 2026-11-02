@@ -458,6 +458,23 @@ def test_pp22_processing_projection_schema_and_migration_refusal(subject, db):
             {"$ref": "#/components/schemas/" + name, "components": spec["components"]}
         ).validate(value)
     _, cfg = db
+    with pytest.raises(
+        RuntimeError, match="cannot downgrade while a Construction slot is occupied"
+    ):
+        with engine.begin() as conn:
+            cfg.attributes["connection"] = conn
+            command.downgrade(cfg, "0015_processing_objects")
+    current = c.get(url).json()["data"]
+    assert (
+        post(
+            c,
+            h,
+            url + "/cancel",
+            {"expected_revision": current["revision"], "attempt_id": current["task"]["attempt_id"]},
+            "slot-processing-cancel",
+        ).status_code
+        == 200
+    )
     with pytest.raises(RuntimeError, match="Refusing to discard processing objects"):
         with engine.begin() as conn:
             cfg.attributes["connection"] = conn
@@ -465,7 +482,7 @@ def test_pp22_processing_projection_schema_and_migration_refusal(subject, db):
     with engine.connect() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
 
 

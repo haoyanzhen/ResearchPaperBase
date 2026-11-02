@@ -4,7 +4,7 @@
 import copy
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 import sqlalchemy as sa
@@ -13,9 +13,12 @@ from test_paper_processing import Prepared, confirm, confirmed_score
 from test_paper_screening import edit as edit_score
 from test_search_terms import post, subject  # noqa: F401
 
+from rpb.adapters.analysis_lineage import currently_usable
 from rpb.adapters.paper_analysis_worker import AnalysisWorker
 from rpb.adapters.paper_processing import ProcessingWorker
+from rpb.adapters.project import projects
 from rpb.adapters.run_tables import commands, runs
+from rpb.adapters.search_terms import load
 
 
 def output():
@@ -105,6 +108,70 @@ def test_pa10_confirmed_text_generation_basis_and_no_publish(subject):
         assert set(
             x["boundary"] for x in next(iter(run["analysis_jobs"].values()))["material_audit"]
         ) == {"read", "dispatch", "commit"}
+
+
+def test_analysis_revision_records_actual_job_and_manual_parent_dependencies(subject):
+    c, h, _, app, engine, _ = subject
+    url = ready(subject)
+    assert generate(c, h, url).status_code == 202
+    assert AnalysisWorker(app.state.run_store, Generated()).run_once()
+    with engine.connect() as conn:
+        run = conn.scalar(sa.select(runs.c.payload))
+        project = (
+            conn.execute(sa.select(projects).where(projects.c.id == UUID(run["project_id"])))
+            .mappings()
+            .one()
+        )
+        state = load(conn, project)
+    candidate = run["candidates"][0]
+    revision = candidate["analysis_basis"]["analysis_revision"]
+    record = run["analysis_lineage"][revision]
+    job = run["analysis_jobs"][record["dependencies"]["job_id"]]
+    assert record["parent_analysis_revision"] is None
+    assert record["dependencies"]["attempt_id"] == job["attempt_id"]
+    assert record["dependencies"]["source_revisions"] == job["source_revisions"]
+    assert record["dependencies"]["model_selection"] == job["model_selection"]
+    assert currently_usable(run, candidate, state, project, UUID(run["owner_id"]))
+    tampered = copy.deepcopy(run)
+    tampered["analysis_lineage"][revision]["dependencies"]["material_audit"] = []
+    assert not currently_usable(tampered, candidate, state, project, UUID(run["owner_id"]))
+    tampered = copy.deepcopy(run)
+    dep = tampered["analysis_lineage"][revision]["dependencies"]
+    bad_job = tampered["analysis_jobs"][dep["job_id"]]
+    dep["material_audit"].append("corrupt")
+    bad_job["material_audit"] = copy.deepcopy(dep["material_audit"])
+    assert not currently_usable(tampered, candidate, state, project, UUID(run["owner_id"]))
+    tampered = copy.deepcopy(run)
+    dep = tampered["analysis_lineage"][revision]["dependencies"]
+    bad_job = tampered["analysis_jobs"][dep["job_id"]]
+    for entry in dep["material_audit"]:
+        entry.pop("classification_revision")
+    bad_job["material_audit"] = copy.deepcopy(dep["material_audit"])
+    assert not currently_usable(tampered, candidate, state, project, UUID(run["owner_id"]))
+    tampered = copy.deepcopy(run)
+    dep = tampered["analysis_lineage"][revision]["dependencies"]
+    bad_job = tampered["analysis_jobs"][dep["job_id"]]
+    removed = dep["source_ids"].pop()
+    dep["source_revisions"].pop(removed)
+    dep["material_audit"] = [
+        x for x in dep["material_audit"] if x["source"]["source_id"] != removed
+    ]
+    for key in ("source_ids", "source_revisions", "material_audit"):
+        bad_job[key] = copy.deepcopy(dep[key])
+    assert not currently_usable(tampered, candidate, state, project, UUID(run["owner_id"]))
+    assert {entry["boundary"] for entry in record["dependencies"]["material_audit"]} == {
+        "read",
+        "dispatch",
+        "commit",
+    }
+    assert manual(c, h, url).status_code == 200
+    with engine.connect() as conn:
+        edited = conn.scalar(sa.select(runs.c.payload))
+    new_revision = edited["candidates"][0]["analysis_basis"]["analysis_revision"]
+    inherited = edited["analysis_lineage"][new_revision]
+    assert inherited["parent_analysis_revision"] == revision
+    assert inherited["dependencies"] == record["dependencies"]
+    assert currently_usable(edited, edited["candidates"][0], state, project, UUID(run["owner_id"]))
 
 
 def test_pa11_manual_fill_overwrite_rejection_and_failed_regeneration(subject):

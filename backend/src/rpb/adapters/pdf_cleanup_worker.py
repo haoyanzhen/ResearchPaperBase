@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 
+from rpb.adapters import paper_screening as screening
 from rpb.adapters import pdf_cleanup_budget as budget
 from rpb.adapters.llm_provider import ProviderFailure
 from rpb.adapters.paper_processing import ProcessingWorker
@@ -54,6 +55,8 @@ class CleanupWorker:
         return run, project, load(conn, project)
 
     def check(self, conn: Any, project: Any, run: Any, job_id: str) -> None:
+        if screening.content_locked(run) or not screening.baseline_ready(run):
+            raise ProviderFailure("STATE_REVISION_CONFLICT")
         job = run.get("processing_job", {})
         if (
             not self.store.terms.llm.permitted_actor(conn, UUID(run["owner_id"]))

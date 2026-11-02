@@ -1,6 +1,6 @@
 {
-  "version": "1.18",
-  "date": "2026-10-30",
+  "version": "1.21",
+  "date": "2026-11-01",
   "source_rows": [
     {
       "signature": "`CW/search-terms/action-preview`",
@@ -633,7 +633,9 @@
     "Construction.DownloadUnpublishedFile",
     "Construction.ReadProcessingText",
     "Construction.GenerateAnalysis",
-    "Construction.PreviewAnalysisGeneration"
+    "Construction.PreviewAnalysisGeneration",
+    "Construction.PreviewIngestion",
+    "Knowledge.ListPapers"
   ],
   "request_only_operations": [
     "Admin.TestSystemSource",
@@ -713,7 +715,7 @@
   ],
   "normative_fingerprints": {
     "04_api_contracts.md": "26ab1c1cc17f49b2c7faf955e534fe03b0ebb63e4f461886415b6c632f1730f4",
-    "04-01_p0_operation_contracts.md": "576d68ea404fb3da13e5ac760139b7b123056b054b1760123f5c0626976d82e4",
+    "04-01_p0_operation_contracts.md": "bbdc7db4b5acf2b9019b9e12c6190909ea8fd876abb2c8d8db4af681e39e5d8c",
     "04-02_transport_task_file_contracts.md": "5173c67502da03698cf4b705e3dc24c9a8fd2f25201a70c1263640d4ed6f4c96"
   },
   "operation_coverage": {
@@ -1507,6 +1509,20 @@
       "status": "request-success-errors-partial",
       "gaps": [
         "GAP-RUNTIME"
+      ]
+    },
+    "Construction.PreviewIngestion": {
+      "status": "request-success-errors-partial",
+      "scope": "Read-only confirmed paper preview; ingestion confirmation blocked until construction is implemented",
+      "gaps": [
+        "Publication, non-paper and complete error binding remain open"
+      ]
+    },
+    "Knowledge.ListPapers": {
+      "status": "request-success-errors-partial",
+      "scope": "Published version-bound manual papers; first release.",
+      "gaps": [
+        "Advanced paper filters, materials and full knowledge browsing"
       ]
     }
   },
@@ -2348,14 +2364,11 @@
     },
     {
       "source_row_index": 72,
-      "status": "not-typed",
-      "typed_operations": {},
-      "remaining": [
-        {
-          "use_case_or_route": "Construction.PreviewIngestion",
-          "gap": "GAP-REMAINING"
-        }
-      ]
+      "status": "partial",
+      "typed_operations": {
+        "Construction.PreviewIngestion": "request-success-errors-partial"
+      },
+      "remaining": []
     },
     {
       "source_row_index": 73,
@@ -3214,5 +3227,9 @@
   "construction_analysis": {
     "scope": "Run-local paper analysis only; material and knowledge publication remain open",
     "task": "tasks/048-paper-analysis.md"
+  },
+  "construction_ingestion_preview": {
+    "scope": "Read-only paper preview; no ingestion confirmation or publication",
+    "task": "tasks/049-ingestion-publication.md"
   }
 }

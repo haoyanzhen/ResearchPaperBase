@@ -1,0 +1,10 @@
+{"postgres": "postgres (PostgreSQL) 17.11", "run_id": "rpb_test_b97001ae0e674ad28f92822b89853b3e", "root": "/private/tmp/rpb-db-p2vyjch8", "tcp": false, "role_superuser": false}
+.......
+=============================== warnings summary ===============================
+../../../../../Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+7 passed, 760 deselected, 1 warning in 11.73s
+{"run_id": "rpb_test_b97001ae0e674ad28f92822b89853b3e", "server_stopped": true, "root_removed": true}

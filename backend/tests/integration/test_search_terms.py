@@ -642,7 +642,7 @@ def test_st08_nonempty_migration_downgrade_refused_and_project_cleanup_cascades(
     with engine.begin() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0015_processing_objects"
+            == "0018_knowledge_build_views"
         )
         conn.execute(
             sa.text("DELETE FROM project_create_commands WHERE project_id=:id"),

@@ -31,6 +31,9 @@ def candidate(run: Any, identity: str) -> Any:
 
 
 def writable(run: Any, body: Any) -> Any:
+    screening.require_unlocked(run)
+    if not screening.baseline_ready(run):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if busy(run) or screening.busy(run) or processing.busy(run):
         raise AccountError("LOCK_CONTENT_BUSY", 409)
     if run["status"] != "waiting_user" or run.get("phase") not in {"analysis", "ingestion_preview"}:
@@ -219,7 +222,9 @@ def valid(c: Any) -> bool:
     )
 
 
-def save_content(run: Any, c: Any, value: Any, actor: str, source: str) -> None:
+def save_content(
+    run: Any, c: Any, value: Any, actor: str, source: str, lineage: Any = None
+) -> None:
     value = paper_analysis(value)
     if c.get("analysis"):
         c.setdefault("analysis_history", []).append(
@@ -232,6 +237,16 @@ def save_content(run: Any, c: Any, value: Any, actor: str, source: str) -> None:
             }
         )
     basis = c["processing"]["basis"]
+    previous_revision = (c.get("analysis_basis") or {}).get("analysis_revision")
+    lineage_records = run.setdefault("analysis_lineage", {})
+    previous_lineage = copy.deepcopy(
+        (lineage_records.get(previous_revision) or {}).get("dependencies")
+    )
+    revision = str(uuid4())
+    lineage_records[revision] = {
+        "parent_analysis_revision": previous_revision if source == "manual_edit" else None,
+        "dependencies": copy.deepcopy(lineage) if lineage is not None else previous_lineage,
+    }
     c.update(
         analysis=value,
         analysis_state=source,
@@ -239,7 +254,7 @@ def save_content(run: Any, c: Any, value: Any, actor: str, source: str) -> None:
         analysis_modified_by=actor,
         analysis_modified_at=now(),
         analysis_basis={
-            "analysis_revision": str(uuid4()),
+            "analysis_revision": revision,
             "candidate_revision": c["revision"],
             "processing_revision": basis["processing_revision"],
             "processing_confirmation_revision": basis["confirmed_revision"],
@@ -267,6 +282,9 @@ def edit(run: Any, body: Any, actor: Any) -> Any:
 
 
 def confirm(run: Any, actor: Any) -> None:
+    screening.require_unlocked(run)
+    if not screening.baseline_ready(run):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     if busy(run) or run.get("phase") != "analysis":
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     chosen = [c for c in processing.eligible(run) if valid(c)]

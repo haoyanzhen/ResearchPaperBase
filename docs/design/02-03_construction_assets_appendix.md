@@ -1,7 +1,7 @@
 # Domain 附录：Construction 资产入库
 
-文档版本：v1.9
-更新日期：2026-10-29
+文档版本：v1.10
+更新日期：2026-10-30
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义 Construction 的检索词、候选论文与资料、去重筛选、手动补充、文本处理和分析确认的业务对象与不变量。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -89,6 +89,7 @@ Construction 不变量：
 - 单个数据源失败不得破坏其他成功数据源结果；失败数据源、失败原因和受影响检索词必须可诊断。
 - D-CW-01 A（2026-10-27）：Construction检索构建的身份、Project资格及所需LLM等全局必需配置失败时拒绝整个Run；数据源按检索词解析。all_resolvable使用可用来源并记录拒绝项；selected中任一显式来源失效则整条词失败，不执行该词的其他来源，但不阻断其他可执行词。至少一条词有可执行来源才受理，全部不可执行则拒绝启动。显式失效来源不替换，个人禁用不回落。取得独占构建资格后、冻结并派发前重新校验；此时全部不可执行则终止且不外发。失败项与原因必须可见并随本轮输入依据保存，不以部分执行冒充完整范围。
 - 普通检索命中当前 Project 已有关联论文的重复候选项不得进入下载、解析、AI 分析、入库、图谱更新或推送流程；已发布论文不再接受补全文本、元数据或分析修订，更改须移除成功后重新导入；人工排除承接 [02-02](02-02_construction_versioning_appendix.md) 的待纳入修订与人工决定接口。
+- 2026-10-30用户澄清：其他Project对同标题论文的人工区分不改变当前Project的新候选展示或入库流程，不显示特殊提示；当前Project无关联时正常建立关联。全局身份无法唯一确定时内部保持未确定，不合并或改写其他Project身份、人工决定和私有资产；当前Project已有关联和历史重导仍按自身规则去重与沿用身份。
 - 命中当前 Project 已有 ProjectMaterial 的候选资料不得创建新资料条目；重复来源仅记录为独立候选来源线索，不改变已发布资料元数据或版本内 `candidate_sources`；`candidate_sources` 的知识构建资格承接 [02-02](02-02_construction_versioning_appendix.md)。
 - 论文去重、评分、筛选和人工修正必须形成 DeduplicationDecision 或 PaperScreeningDecision；评分阈值来源、去重依据、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选论文和操作者。
 - Project 资料去重、评分、筛选和人工修正必须形成 MaterialDeduplicationDecision 或 MaterialScreeningDecision；标题归一化、`content_format_group`、人工调整和误合并撤销必须可追溯到 ConstructionRun、候选资料和操作者。

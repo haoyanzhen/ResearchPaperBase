@@ -1,7 +1,7 @@
 # Domain 附录：Run / Session 恢复与清理
 
-文档版本：v1.4
-更新日期：2026-10-16  
+文档版本：v1.5
+更新日期：2026-11-01
 依据文档：[功能需求](01_functional_requirements.md)、[Domain Core](02_domain_core.md)  
 用途：定义重试、重连、重跑、Construction 断点和 Research 回复恢复的业务对象、不变量及临时产物清理边界。本文不定义 UI 布局、API 路径、数据库字段、Provider SDK、队列实现或文件存储实现。
 
@@ -50,10 +50,10 @@ FR-018 的 P0 版本采用操作、与 P1 通用重跑的区别及基线失配�
 
 Construction 恢复不变量：
 
-- ConstructionRun 失败后的发布限制承接 [02-02](02-02_construction_versioning_appendix.md)；手动失败 Run 的未发布中间写入只能用于断点续连，用户放弃恢复或超时未处理后必须清理，并保持当前已发布 KnowledgeVersion 边界，不回滚其他成果；自动 ConstructionRun 不得进入等待用户处理状态，达到应用层失败清理条件后必须直接清理未发布中间写入和临时文件。
+- ConstructionRun 失败后的发布限制承接 [02-02](02-02_construction_versioning_appendix.md)；手动失败 Run 的未发布中间写入只能用于断点续连，P0 默认持续保留，用户明确清理时核验归属和共享依赖，只回收可释放产物，并保持当前已发布 KnowledgeVersion 边界，不回滚其他成果；自动 ConstructionRun 不得进入等待用户处理状态，达到应用层失败清理条件后必须直接清理未发布中间写入和临时文件。
 - 用户选择重连继续构建时，新的 ConstructionRun attempt 必须基于 ConstructionCheckpoint 从已成功写入且状态一致的位置断点续连；不得重复写入已成功子内容或跳过未完成子内容。
 - ConstructionCheckpoint 必须记录正式写入进度、未发布中间写入、中间临时文件引用、可续连位置、失败原因、重试次数和清理状态；断点或临时文件不一致时不得重连。
-- 手动 ConstructionRun 中，用户明确放弃失败 Run 的恢复，或超过应用层定义的失败恢复等待窗口仍无操作时，系统应删除所有可续连 ConstructionCheckpoint、失败 Run 的未发布中间写入和不再需要的中间临时文件，保持当前已发布知识状态；不得回滚其他已完成成果或清除独立保存的待纳入修订；Run 保持 failed 并记录放弃/清理结果及关闭恢复资格，不转 cancelled；系统保留失败记录、错误日志和历史 Run 诊断。自动 ConstructionRun 达到应用层失败清理条件时必须执行同等清理，不等待用户操作。
+- 手动 ConstructionRun 中，用户明确要求清理失败 Run 的临时数据时，系统应删除所有可续连 ConstructionCheckpoint、失败 Run 的未发布中间写入和不再需要的中间临时文件，保持当前已发布知识状态；不得回滚其他已完成成果或清除独立保存的待纳入修订；Run 保持 failed 并记录放弃/清理结果及关闭恢复资格，不转 cancelled；系统保留失败记录、错误日志和历史 Run 诊断。自动 ConstructionRun 达到应用层失败清理条件时必须执行同等清理，不等待用户操作。
 - ConstructionRun 重连成功且结果为 published 后，必须将临时文件收敛为正式 DocumentAsset、ProjectMaterial、向量、Graph 或日志诊断引用，随后清理不再需要的临时文件；清理结果必须可诊断。
 
 - ConstructionRun 以 no_change 成功收尾时，保留本次核验及既有版本关联记录，候选按 02-02 收尾为已废弃；未采用的临时文件按所属关系清理，不生成新的正式知识资产，不清理复用的既有版本资产。
