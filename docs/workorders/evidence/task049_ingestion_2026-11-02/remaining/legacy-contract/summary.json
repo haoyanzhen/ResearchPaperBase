@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task049_ingestion_2026-11-02/remaining/legacy-contract/output.log",
+  "exit_code": 1,
+  "report_type": "log",
+  "status": "failed",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 1033,
+  "read_start_byte": 0,
+  "text": "F\n======================================================================\nFAIL: test_er08_existing_requests_success_and_bindings_preserved (test_public_errors.PublicErrorTests.test_er08_existing_requests_success_and_bindings_preserved)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/qingyue/projects/ResearchPaperBase_codex/scripts/tests/test_public_errors.py\", line 130, in test_er08_existing_requests_success_and_bindings_preserved\n    elif name not in llm_changed: self.assertEqual(schema,SCHEMAS[name],name)\n                                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'typ[317 chars]l'}]}}, 'required': ['source', 'config_id', 'm[80 chars]alse} != {'typ[317 chars]l'}]}, 'context_window_tokens': {'type': 'inte[277 chars]alse}\nDiff is 1313 characters long. Set self.maxDiff to None to see it. : ModelOption\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+  "truncated": false
+}

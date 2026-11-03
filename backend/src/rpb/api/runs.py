@@ -10,7 +10,8 @@ from rpb.modules.construction.application.terms import TermService
 
 
 def router_for(service: TermService) -> APIRouter:
-    router = APIRouter(prefix="/api/v1/projects/{project_id}/construction-runs")
+    project_router = APIRouter(prefix="/api/v1/projects/{project_id}")
+    router = APIRouter(prefix="/construction-runs")
 
     def call(
         request: Request, project_id: UUID, operation: str, data: Any = None, write: bool = False
@@ -27,15 +28,33 @@ def router_for(service: TermService) -> APIRouter:
             request.headers.get("x-expected-actor"),
         )
         meta = {"request_id": request.state.request_id}
-        if write and operation not in {"preview_score", "preview_analysis"}:
+        if write and operation not in {"preview_score", "preview_analysis", "preview_removal"}:
             meta["idempotency_expires_at"] = value["expires_at"]
             if value["original_request_id"] != request.state.request_id:
                 meta["original_request_id"] = value["original_request_id"]
             value = value["value"]
-        if operation in {"list_runs", "candidates", "input_revisions"}:
+        if operation in {"list_runs", "candidates", "input_revisions", "pending_removals"}:
             cursor = value.pop("next_cursor")
             meta.update(next_cursor=cursor, has_more=cursor is not None)
         return {"data": value, "meta": meta}
+
+    @project_router.get("/construction-workspace/pending-revisions")
+    def pending_removals(
+        request: Request, project_id: UUID, page_size: int = 20, cursor: str | None = None
+    ) -> Any:
+        if set(request.query_params) - {"page_size", "cursor"}:
+            raise AccountError("VALIDATION_BAD_REQUEST", 400)
+        return call(
+            request, project_id, "pending_removals", {"page_size": page_size, "cursor": cursor}
+        )
+
+    @project_router.post("/construction-workspace/association-clear-preview")
+    def preview_removal(request: Request, project_id: UUID, body: dict[str, Any]) -> Any:
+        return call(request, project_id, "preview_removal", body, True)
+
+    @project_router.post("/construction-workspace/association-clear-confirm", status_code=202)
+    def confirm_removal(request: Request, project_id: UUID, body: dict[str, Any]) -> Any:
+        return call(request, project_id, "confirm_removal", body, True)
 
     @router.get("")
     def listing(
@@ -154,6 +173,12 @@ def router_for(service: TermService) -> APIRouter:
             {"run_id": str(run_id), "page_size": page_size, "cursor": cursor},
         )
 
+    @router.post("/{run_id}/temporary-cleanup", status_code=202)
+    def cleanup(request: Request, project_id: UUID, run_id: UUID, body: dict[str, Any]) -> Any:
+        if "run_id" in body:
+            raise AccountError("VALIDATION_UNKNOWN_FIELD", 422)
+        return call(request, project_id, "temporary_cleanup", {**body, "run_id": str(run_id)}, True)
+
     @router.post("/{run_id}/cancel")
     def cancel(request: Request, project_id: UUID, run_id: UUID, body: dict[str, Any]) -> Any:
         if "run_id" in body:
@@ -259,4 +284,5 @@ def router_for(service: TermService) -> APIRouter:
             True,
         )
 
-    return router
+    project_router.include_router(router)
+    return project_router

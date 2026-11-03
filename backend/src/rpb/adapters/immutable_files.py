@@ -103,3 +103,21 @@ class ImmutableFileStore:
             finally:
                 os.unlink(temporary, dir_fd=directory)
         return digest
+
+    def discard(self, project: UUID, attempt: UUID, object_id: UUID) -> None:
+        """Remove an already marked staging object without following symlinks."""
+        if not isinstance(object_id, UUID):
+            raise FileIntegrityError("invalid object identity")
+        # A missing root indicates a storage outage, not a completed deletion.
+        if not self.root.is_dir():
+            raise FileIntegrityError("storage unavailable")
+        try:
+            with self._attempt_dir(project, attempt, False) as directory:
+                try:
+                    os.unlink(str(object_id), dir_fd=directory)
+                except FileNotFoundError:
+                    pass
+                os.fsync(directory)
+        except FileNotFoundError:
+            if not self.root.is_dir():
+                raise

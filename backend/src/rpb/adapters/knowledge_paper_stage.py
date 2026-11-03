@@ -28,17 +28,15 @@ from rpb.modules.construction.domain.paper_identity import normalized_paper_titl
 from rpb.modules.construction.domain.runs import RunInputError
 
 
-def stage_paper(
+def locked_build_run(
     conn: Any,
     store: Any,
     actor: UUID,
     project_id: UUID,
     run_id: UUID,
     attempt_id: UUID,
-    candidate_id: UUID,
-) -> dict[str, str]:
-    """Caller supplies an authenticated transaction; this does not publish a version."""
-    from rpb.adapters.runs import persist
+) -> tuple[Any, Any]:
+    """Lock and verify the candidate even when all members come from the baseline."""
 
     conn.execute(sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK})
     project = store.terms.project(conn, actor, project_id, write=True)
@@ -84,6 +82,23 @@ def stage_paper(
         str(latest) if latest else None
     ):
         raise AccountError("STATE_REVISION_CONFLICT", 409)
+    return project, run
+
+
+def stage_paper(
+    conn: Any,
+    store: Any,
+    actor: UUID,
+    project_id: UUID,
+    run_id: UUID,
+    attempt_id: UUID,
+    candidate_id: UUID,
+) -> dict[str, str]:
+    """Caller supplies an authenticated transaction; this does not publish a version."""
+    from rpb.adapters.runs import persist
+
+    project, run = locked_build_run(conn, store, actor, project_id, run_id, attempt_id)
+    confirmation = run["ingestion_confirmation"]
     candidate = next((c for c in run["candidates"] if c["id"] == str(candidate_id)), None)
     if candidate is None or str(candidate_id) not in confirmation["preview"]["valid_papers"]:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
@@ -196,6 +211,8 @@ def stage_paper(
     )
     # The baseline is immutable. Staging needs its pinned IDs, not the full paper contents.
     retained = []
+    base = run["input_snapshot"]["base_knowledge_version_id"]
+    latest = UUID(base) if base else None
     if latest is not None:
         pinned = (
             pinned_revisions(project_id, latest)

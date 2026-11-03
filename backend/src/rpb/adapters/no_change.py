@@ -18,6 +18,7 @@ from rpb.adapters.knowledge_build_failure import require_publication_claim
 from rpb.adapters.knowledge_build_tables import profiles
 from rpb.adapters.knowledge_graph_baseline import read_baseline_graph
 from rpb.adapters.knowledge_publication_baseline import retained_inputs
+from rpb.adapters.knowledge_rebuild import verify_retained_service
 from rpb.adapters.knowledge_tables import heads, versions
 from rpb.adapters.knowledge_vector_baseline import read_baseline_vectors
 from rpb.adapters.knowledge_vector_builder import vector_build_profile
@@ -101,7 +102,7 @@ def prepare_no_change(
     attempt: UUID,
     claim: str,
     embedding: Any,
-) -> str:
+) -> str | None:
     args = store, actor, project, identity, attempt
 
     @contextmanager
@@ -123,6 +124,20 @@ def prepare_no_change(
         base = _check(conn, proj, run, claim, "preparing")
         state = load(conn, proj)
         inherited = retained_inputs(conn, proj, actor, state, base, run, files, capture_stamps=True)
+        if run["input_snapshot"].get("graph_mode") == "rebuild":
+            verify_retained_service(conn, store, proj, state, run, inherited.text_dependencies)
+            published = conn.execute(
+                sa.select(versions.c.manifest, versions.c.ready_proof).where(
+                    versions.c.project_id == project, versions.c.id == base, versions.c.sealed
+                )
+            ).one()
+            if (
+                published.manifest["build_profile"] != vector_build_profile(run, embedding_profile)
+                or published.ready_proof["dependency_set_digest"]
+                != run["ingestion_confirmation"]["rebuild_dependency_digest"]
+            ):
+                # The user explicitly confirmed rebuilding this complete, non-empty baseline.
+                return None
         vector = read_baseline_vectors(
             conn, project, base, run["ingestion_confirmation"]["retained_papers"]
         )
@@ -213,7 +228,10 @@ def commit_no_change(
                 raise AccountError("STATE_REVISION_CONFLICT", 409)
             return str(proof["base"])
         base = _check(conn, proj, run, claim, "ready_to_publish")
-        inherited = retained_inputs(conn, proj, actor, load(conn, proj), base, run)
+        state = load(conn, proj)
+        inherited = retained_inputs(conn, proj, actor, state, base, run)
+        if run["input_snapshot"].get("graph_mode") == "rebuild":
+            verify_retained_service(conn, store, proj, state, run, inherited.text_dependencies)
         if (
             proof["base"] != str(base)
             or proof["epoch"] != run["slot_epoch"]

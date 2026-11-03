@@ -1,0 +1,1 @@
+{"command": ["contracts/.venv/bin/python", "docs/workorders/evidence/task049_ingestion_2026-11-02/remaining/check_legacy_contract.py"], "pytest": null, "exit_code": 1}

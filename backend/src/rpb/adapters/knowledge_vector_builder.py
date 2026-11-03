@@ -27,8 +27,9 @@ from rpb.adapters.knowledge_build_tables import (
     vector_views,
 )
 from rpb.adapters.knowledge_object_stage import require_build_protection, stage_objects
-from rpb.adapters.knowledge_paper_stage import stage_paper
+from rpb.adapters.knowledge_paper_stage import locked_build_run, stage_paper
 from rpb.adapters.knowledge_paper_tables import objects as paper_objects
+from rpb.adapters.knowledge_rebuild import rebuild_requested, retained_materials
 from rpb.adapters.knowledge_vector_baseline import BaselineVectors, read_baseline_vectors
 from rpb.adapters.knowledge_vector_seal import seal_vector_view, verify_vector_view
 from rpb.adapters.local_embeddings import valid_profile
@@ -83,14 +84,15 @@ def build_vector_view(
         or "base_knowledge_version_id" not in snapshot
         or (
             snapshot["base_knowledge_version_id"] is not None
-            and snapshot.get("graph_mode") != "incremental"
+            and snapshot.get("graph_mode") not in {"incremental", "rebuild"}
         )
     ):
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     selected = (
         (initial.get("ingestion_confirmation") or {}).get("preview", {}).get("valid_papers", [])
     )
-    if not selected:
+    rebuild = rebuild_requested(initial)
+    if not selected and not rebuild:
         raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
     for candidate in selected:
         stage_objects(
@@ -109,6 +111,8 @@ def build_vector_view(
 
     def current(conn: Any, *, verify_baseline: bool = False) -> tuple[Any, list[Any], str]:
         nonlocal baseline
+        if rebuild and not selected:
+            locked_build_run(conn, store, actor, project_id, run_id, attempt_id)
         identities = []
         for candidate in selected:
             identities.append(
@@ -121,11 +125,15 @@ def build_vector_view(
             raise AccountError("STATE_REVISION_CONFLICT", 409)
         project = store.terms.project(conn, actor, project_id, write=True)
         state = load(conn, project)
-        materials = []
-        dependencies = {}
+        materials: list[Any] = []
+        dependencies: dict[str, Any] = {}
         if run["input_snapshot"]["base_knowledge_version_id"] != base_id:
             raise AccountError("STATE_REVISION_CONFLICT", 409)
-        if base_id is not None and verify_baseline:
+        if rebuild:
+            materials, dependencies = retained_materials(
+                conn, store, files, project, actor, state, run
+            )
+        elif base_id is not None and verify_baseline:
             checked = read_baseline_vectors(
                 conn,
                 project_id,
@@ -383,34 +391,50 @@ def build_vector_view(
                     ],
                 )
             for material, piece, text, vector, locators in prepared:
-                chunk_id, embedding_id = uuid4(), uuid4()
+                chunk_data = dict(
+                    project_id=project_id,
+                    asset_id=UUID(material["identity"]["project_paper_id"]),
+                    asset_revision=UUID(material["identity"]["paper_revision_id"]),
+                    text_revision_id=material["object"]["id"],
+                    start_offset=piece.start,
+                    end_offset=piece.end,
+                    text_digest=hashlib.sha256(text.encode()).hexdigest(),
+                    source_kind=material["candidate"]["processing"]["text_source_kind"],
+                    chunker_revision="paragraph-token-v1",
+                    locators=locators,
+                    dependencies=material["object"]["dependencies"],
+                )
+                # Recomputed output may have the exact same immutable semantic key.
+                # Share its physical row only after equality of every content field.
+                chunk_id = conn.scalar(
+                    insert(chunks)
+                    .values(id=uuid4(), run_id=run_id, **chunk_data)
+                    .on_conflict_do_nothing(constraint="uq_chunk_identity")
+                    .returning(chunks.c.id)
+                )
+                if chunk_id is None:
+                    chunk_id = conn.scalar(sa.select(chunks.c.id).filter_by(**chunk_data))
+                if chunk_id is None or chunk_id in expected_chunks:
+                    raise AccountError("STATE_REVISION_CONFLICT", 409)
                 expected_chunks.add(chunk_id)
-                conn.execute(
-                    chunks.insert().values(
-                        id=chunk_id,
-                        project_id=project_id,
-                        run_id=run_id,
-                        asset_id=UUID(material["identity"]["project_paper_id"]),
-                        asset_revision=UUID(material["identity"]["paper_revision_id"]),
-                        text_revision_id=material["object"]["id"],
-                        start_offset=piece.start,
-                        end_offset=piece.end,
-                        text_digest=hashlib.sha256(text.encode()).hexdigest(),
-                        source_kind=material["candidate"]["processing"]["text_source_kind"],
-                        chunker_revision="paragraph-token-v1",
-                        locators=locators,
-                        dependencies=material["object"]["dependencies"],
-                    )
+                embedding_data = dict(
+                    project_id=project_id,
+                    chunk_id=chunk_id,
+                    profile_id=profile["profile_id"],
+                    embedding=vector,
                 )
-                conn.execute(
-                    embeddings.insert().values(
-                        id=embedding_id,
-                        project_id=project_id,
-                        chunk_id=chunk_id,
-                        profile_id=profile["profile_id"],
-                        embedding=vector,
-                    )
+                embedding_id = conn.scalar(
+                    insert(embeddings)
+                    .values(id=uuid4(), **embedding_data)
+                    .on_conflict_do_nothing(constraint="uq_embedding_identity")
+                    .returning(embeddings.c.id)
                 )
+                if embedding_id is None:
+                    embedding_id = conn.scalar(
+                        sa.select(embeddings.c.id).filter_by(**embedding_data)
+                    )
+                if embedding_id is None:
+                    raise AccountError("STATE_REVISION_CONFLICT", 409)
                 conn.execute(
                     vector_members.insert().values(
                         project_id=project_id,

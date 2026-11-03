@@ -1,0 +1,1 @@
+{"command": ["sh", "-c", "contracts/.venv/bin/python scripts/check_api_contracts.py && contracts/.venv/bin/python -m unittest discover -s scripts/tests"], "pytest": null, "exit_code": 1}

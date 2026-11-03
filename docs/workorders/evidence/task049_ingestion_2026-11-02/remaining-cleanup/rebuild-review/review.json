@@ -1,0 +1,22 @@
+{
+  "原始发现": [
+    "旧分块上新 embedding 留孤儿",
+    "文件写成功但登记事务失败留孤儿",
+    "文件删除后元数据 SQL 失败需能显示原因并重试"
+  ],
+  "修复复验": [
+    "final-pin/summary.json",
+    "sql-red2/summary.json"
+  ],
+  "结论": "11 项专项含两种竞争顺序、生命周期保护、历史版本和人工资料、失败和取消、旧数据迁移。独立 SQL 探针在文件实际删除后注入除零，验证失败状态和第二次成功，2 项通过。前端两步确认放弃恢复，展示清理结果及原业务状态。",
+  "范围": "已运行的 PG17 + pgvector、受控外部服务、本地不可变文件。早期 sql-red 探针结尾使用 pytest.skip，仅作开发观察，从通过证据排除。",
+  "artifacts_sha256": {
+    "backend/src/rpb/adapters/run_temporary_cleanup.py": "4dfad6774f6ba9099ce5519d18643fa061a9e5c67f98abf08674b54adb231ae6",
+    "backend/src/rpb/adapters/immutable_files.py": "da3a9a937c3c3594b5b28c361ffc3d1fbe62a087a8e4b4673bf9e2982ad8eb00",
+    "backend/migrations/versions/0019_run_temporary_cleanup.py": "4c4f1c9e0818bd2bc5f4a9c01e0f2f334c158f3fbd2c1adcbd6e72101925b011",
+    "frontend/src/ConstructionRuns.tsx": "4984cefedb02641bc31f5482ee3ec6335d38c3c95ccbecaef5844bc4ba932265",
+    "backend/tests/integration/test_run_temporary_cleanup.py": "eaaa20aab2ea74f4e82c81423b5698f5281483df27321862084a5f039c971ea4"
+  },
+  "工具": "独立 delivery_context 原文及 ledger、entry；隔离库 run_storage_tests.py、各运行 exit_code / JUnit / delivery_summary.py 摘要见各子目录。",
+  "浏览器复验": "remaining-cleanup/rebuild-review/independent-browser/summary.json：Playwright + HTTP + 隔离库，重建输入、清理两步确认与失败 Run、移除影响预览和空版结果，1/1 通过。"
+}

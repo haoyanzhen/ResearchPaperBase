@@ -27,6 +27,7 @@ from rpb.adapters.paper_scoring_worker import ScoreProvider, ScoreWorker
 from rpb.adapters.pdf_cleanup_provider import CleanupProvider
 from rpb.adapters.pdf_cleanup_worker import CleanupWorker
 from rpb.adapters.pdf_processing import PDFProvider
+from rpb.adapters.run_temporary_cleanup import process_one as reclaim_temporary_assets
 from rpb.adapters.run_worker import RunWorker
 from rpb.adapters.search_term_worker import TermProvider, TermWorker
 from rpb.adapters.smtp_worker import SMTPWorker
@@ -138,7 +139,7 @@ def main() -> None:
         app.state.run_store, PDFProvider(), CleanupProvider()
     )
 
-    publication_worker = None
+    knowledge_root = args.target.resolve().parent / "knowledge-files"
     if os.environ.get("RPB_EMBEDDING_PYTHON") and os.environ.get(
         "RPB_EMBEDDING_MODEL_DIR"
     ):
@@ -167,10 +168,15 @@ def main() -> None:
 
         publication_worker = FirstPublicationWorker(
             app.state.run_store,
-            args.target.resolve().parent / "knowledge-files",
+            knowledge_root,
             embedding,
             GraphExtractionProvider(),
         )
+
+    else:
+        from rpb.adapters.association_removal_worker import AssociationRemovalWorker
+
+        publication_worker = AssociationRemovalWorker(app.state.run_store, knowledge_root)
 
     def work() -> None:
         while not stopped.is_set():
@@ -186,7 +192,8 @@ def main() -> None:
                 or processing_worker.run_once()
                 or cleanup_worker.run_once()
                 or analysis_worker.run_once()
-                or (publication_worker is not None and publication_worker.run_once())
+                or publication_worker.run_once()
+                or reclaim_temporary_assets(engine, knowledge_root)
             )
             if not (
                 llm_work

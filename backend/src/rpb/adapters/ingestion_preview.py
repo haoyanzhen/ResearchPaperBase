@@ -41,6 +41,16 @@ def preview(run: Any, waiting_item: Any) -> dict[str, Any]:
                     if c["screening"].get("valid") is False
                     else "去重或筛选尚未完成"
                 )
+                if state == "distinct" and (confirmation.get("scope") or {}).get(
+                    "excluded_paper_count"
+                ):
+                    rationale = c["screening"].get("reason")
+                    if not isinstance(rationale, str) or not rationale.strip():
+                        failed.append(
+                            {"candidate_id": identity, "reason": "筛选排除理由缺失，请重新核对"}
+                        )
+                        continue
+                    reason = "筛选排除：" + rationale
                 skipped.append({"candidate_id": identity, "reason": reason})
         elif (
             identity in confirmed

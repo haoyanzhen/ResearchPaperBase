@@ -34,7 +34,15 @@ class EmptyGraph:
             return [], []
 
 
-def published_baseline_and_second_run(subject, accepted_vector_run, tmp_path, graph_provider):
+def published_baseline_and_second_run(
+    subject,
+    accepted_vector_run,
+    tmp_path,
+    graph_provider,
+    *,
+    graph_mode="incremental",
+    after_preview=None,
+):
     client, headers, root, app, engine, _ = subject
     store = app.state.run_store
     actor, project, _, first = accepted_vector_run
@@ -48,6 +56,7 @@ def published_baseline_and_second_run(subject, accepted_vector_run, tmp_path, gr
         k: first["request"][k]
         for k in ("selected_terms", "retrieval_range", "model_selection", "result_limit_per_source")
     }
+    request["graph_mode"] = graph_mode
     url, identity = second_preview(client, headers, root, store, engine, request)
     wait = client.get(url + "/ingestion-preview").json()["data"]["waiting_item"]
     assert wait["allowed_actions"] == ["confirm_ingestion_preview"]
@@ -60,6 +69,14 @@ def published_baseline_and_second_run(subject, accepted_vector_run, tmp_path, gr
         acknowledged_risk_ids=["ABSTRACT_ONLY"],
     )
     command = url + "/waiting-items/" + wait["id"] + "/confirm"
+    if after_preview:
+        after_preview()
+        stale = post(client, headers, command, body, str(uuid4()))
+        assert (
+            stale.status_code == 409 and stale.json()["error"]["code"] == "STATE_CONFIRMATION_STALE"
+        )
+        current = client.get(url + "/ingestion-preview").json()["data"]["waiting_item"]
+        body["confirmation_token"] = current["confirmation"]["confirmation_token"]
     key = str(uuid4())
     accepted = post(client, headers, command, body, key)
     assert accepted.status_code == 200, accepted.text

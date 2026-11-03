@@ -1,0 +1,45 @@
+{
+  "context": "remove1",
+  "task": "task049 explicit association removal from published paper-only versions",
+  "reads": [
+    "entry.json",
+    "ledger.json",
+    "removal-rules.json",
+    "DELIVERY_TOOLS.md.json"
+  ],
+  "baseline": "baseline/source-manifest.json",
+  "latest_snapshot": "final-snapshot/source-manifest.json",
+  "diff": "final-diff.json",
+  "commands": {
+    "database": "backend/.venv/bin/python scripts/run_storage_tests.py --postgres-bin /tmp/rpb49-pg17/bin --pgvector (PYTEST_ADDOPTS=-k <scope> --junitxml=<evidence>/tests.xml -x)",
+    "summary": "python3 scripts/delivery_summary.py <evidence>/tests.xml --exit-code <actual>",
+    "contract": "contracts/.venv/bin/python scripts/check_api_contracts.py",
+    "contract_tests": "contracts/.venv/bin/python -m unittest discover -s scripts/tests -p '*contracts.py'"
+  },
+  "results": [
+    "overlap/summary.json",
+    "final3/summary.json",
+    "contract2.json",
+    "contract-tests.json",
+    "static-focused/summary.json",
+    "compat.json"
+  ],
+  "coverage": [
+    "individual, selective and all; risk/CSRF/actor/foreign member/stale target conflict rejection",
+    "exact and overlapping confirmation replay; queue cancellation and frozen conflict cancellation",
+    "partial, legacy, no E5/LLM runtime; empty publication then ordinary retrieval cannot re-add excluded identity",
+    "read blocked for excluded text/PDF; stale retained source dependency fails; old versions/pins preserved",
+    "native DB transaction rollback, stale head and broadened targets; no orphan publication or changed default"
+  ],
+  "limits": [
+    "Published material members and ResearchSession/ReviewRun creation outside available runtime.",
+    "Current retrieval rejects historical excluded identity during staging; explicit re-import remains separate.",
+    "Compatibility comparison intentionally flags changed typed confirmation and Run projections.",
+    "Repo-wide Ruff also reports two pre-existing E501 long SQL literals in unchanged knowledge_build_tables.py."
+  ],
+  "review": [
+    "rebuild-review/restricted-source/summary.json",
+    "rebuild-review/restricted-green/summary.json",
+    "rebuild-review/final-all/summary.json"
+  ]
+}

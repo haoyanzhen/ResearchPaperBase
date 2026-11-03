@@ -19,6 +19,7 @@ from rpb.adapters import paper_deduplication as dedup
 from rpb.adapters import paper_processing as processing
 from rpb.adapters import paper_screening as screening
 from rpb.adapters.baseline_match_preview import baseline_match_preview, match_scope_digest
+from rpb.adapters.knowledge_rebuild import preview_dependency_digest, rebuild_requested
 from rpb.adapters.llm import event_record, require_revision, uuid_value
 from rpb.adapters.llm import public_error as config_error
 from rpb.adapters.run_tables import commands, runs
@@ -120,6 +121,10 @@ def transition(run: Any, status: str, error: str | None = None) -> None:
     run.update(status=status, revision=str(uuid4()), updated_at=now(), error=error)
     if status in {"failed", "cancelled"}:
         run["finished_at"] = now()
+    if status in {"cancelled", "succeeded"}:
+        from rpb.adapters.run_temporary_cleanup import new_job
+
+        run.setdefault("temporary_cleanup", new_job())
     if status == "cancelled":
         for key in ("vector_build_claim", "graph_build_claim"):
             claim = run.get(key)
@@ -137,6 +142,10 @@ def transition(run: Any, status: str, error: str | None = None) -> None:
             c.get("deduplication", {}).get("history")
             or screening.has_human_content(c)
             or analysis.protected(c)
+            or c.get("processing")
+            or c.get("cleanup_pending")
+            or c.get("document_refs")
+            or run.get("retrieval_confirmation")
             for c in run["candidates"]
         ):
             run["cleaned_candidate_count"] = len(run["candidates"])
@@ -195,7 +204,7 @@ class RunStore:
         return getattr(self, "first_publication_enabled", False) and (
             snapshot["base_knowledge_version_id"] is None
             or (
-                snapshot.get("graph_mode") == "incremental"
+                snapshot.get("graph_mode") in {"incremental", "rebuild"}
                 and snapshot.get("mode") == "retrieval"
                 and snapshot.get("pending_revision_ids") == []
                 and snapshot.get("supplement_ids") == []
@@ -255,7 +264,21 @@ class RunStore:
             basis += ":" + match_scope_digest(run, matched)
         token = hmac.new(run["confirmation_secret"].encode(), basis.encode(), "sha256").hexdigest()
         ingestion = kind == "ingestion_preview"
-        blocked = ingestion and not self.publication_available(run)
+        decision = run.get("matched_screening") or {}
+        stale_exclusion = (
+            ingestion
+            and (decision.get("scope") or {}).get("excluded_paper_count")
+            and decision.get("digest") != match_scope_digest(run, decision["scope"])
+        )
+        blocked = (
+            ["筛选排除依据已变化，请重新核对"]
+            if stale_exclusion
+            else ["保留论文的来源或访问依据不可用，请检查基线和当前权限"]
+            if ingestion and rebuild_requested(run) and not run.get("rebuild_preview_digest")
+            else ["知识构建和发布能力尚未就绪"]
+            if ingestion and not self.publication_available(run)
+            else []
+        )
         if ingestion:
             from rpb.adapters.ingestion_confirmation import signature
 
@@ -291,7 +314,7 @@ class RunStore:
                     "confirmation_token": expires + "." + token,
                     "affected_items": [],
                     "retained_items": [],
-                    "blocked_reasons": ["知识构建和发布能力尚未就绪"] if blocked else [],
+                    "blocked_reasons": blocked,
                 },
             }
         ]
@@ -371,10 +394,15 @@ class RunStore:
             ),
             "published_knowledge_version_id": run.get("published_knowledge_version_id"),
             "completion": run.get("completion"),
+            **(
+                {"temporary_cleanup": run["temporary_cleanup"]}
+                if run.get("temporary_cleanup")
+                else {}
+            ),
             "steps": [
                 {
                     "id": run["task_id"],
-                    "kind": "retrieval",
+                    "kind": "association_removal" if run.get("removal") else "retrieval",
                     "state": run["status"],
                     "result_summary": {
                         "candidate_count": len(run["candidates"])
@@ -471,6 +499,13 @@ class RunStore:
                     [str(actor), str(project["id"]), operation, data.get("run_id", ""), revision],
                 )
 
+            if operation == "pending_removals":
+                removals = conn.scalars(
+                    sa.select(runs.c.payload["removal"]["revisions"])
+                    .where(runs.c.project_id == project["id"], runs.c.payload.has_key("removal"))
+                    .order_by(runs.c.created_at.desc(), runs.c.id.desc())
+                )
+                return paginate([item for revisions in removals for item in revisions])
             if operation == "list_runs":
                 rows = conn.execute(
                     sa.select(runs)
@@ -485,20 +520,30 @@ class RunStore:
                 return paginate(result)
             run = None
             if "run_id" in data:
-                row = (
-                    conn.execute(
-                        sa.select(runs).where(
-                            runs.c.id == uuid_value(data["run_id"]),
-                            runs.c.project_id == project["id"],
-                        )
-                    )
-                    .mappings()
-                    .first()
+                lookup = sa.select(runs).where(
+                    runs.c.id == uuid_value(data["run_id"]), runs.c.project_id == project["id"]
                 )
+                if operation == "temporary_cleanup":
+                    lookup = lookup.with_for_update()
+                row = conn.execute(lookup).mappings().first()
                 if not row:
                     raise AccountError("PERMISSION_RESOURCE_UNAVAILABLE", 404)
                 run = copy.deepcopy(row["payload"])
                 self.revoke(conn, project, run)
+                if (
+                    operation in {"read_run", "ingestion_preview"}
+                    and run.get("phase") == "ingestion_preview"
+                    and run["status"] == "waiting_user"
+                    and actor == UUID(run["owner_id"])
+                    and rebuild_requested(run)
+                ):
+                    try:
+                        run["rebuild_preview_digest"] = preview_dependency_digest(
+                            conn, project, actor, run
+                        )
+                    except AccountError:
+                        # Keep cancellation available while the dependency is unavailable.
+                        pass
                 if operation == "read_run":
                     detail = self.view(run)
                     preview = baseline_match_preview(conn, run)
@@ -559,6 +604,14 @@ class RunStore:
                     )
             request_id = data.get("_request_id", str(uuid4()))
             body = {k: v for k, v in data.items() if k != "_request_id"}
+            if operation in {"preview_removal", "confirm_removal"} and not getattr(
+                self, "association_removal_enabled", False
+            ):
+                raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+            if operation == "preview_removal":
+                from rpb.adapters.association_removal import preview as preview_exclusion
+
+                return preview_exclusion(conn, actor, project, state, body)
             if operation == "preview_analysis" and run:
                 return analysis.preview(run, body)
             if operation == "preview_score" and run:
@@ -578,7 +631,11 @@ class RunStore:
                 if old["fingerprint"] != fingerprint:
                     raise AccountError("STATE_IDEMPOTENCY_CONFLICT", 409)
                 return old["payload"]
-            if operation == "start":
+            if operation == "confirm_removal":
+                from rpb.adapters.association_removal import confirm
+
+                value = confirm(conn, self, actor, project, state, body)
+            elif operation == "start":
                 source_id = None
                 requested = body
                 if "rerun_of" in body:
@@ -791,6 +848,11 @@ class RunStore:
                 value = copy.deepcopy(dedup.correct(run, body, actor))
                 transition(run, "waiting_user")
                 persist(conn, run)
+            elif operation == "temporary_cleanup" and run:
+                from rpb.adapters.run_temporary_cleanup import request_cleanup
+
+                request_cleanup(conn, actor, run, body)
+                value = {"run": self.view(run), "task": self.task(run)}
             elif operation == "cancel" and run:
                 if set(body) != {"run_id", "expected_revision", "attempt_id"}:
                     raise AccountError("VALIDATION_FIELD_INVALID", 422)

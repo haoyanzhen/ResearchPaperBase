@@ -262,4 +262,94 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
     region.get_by_role("button", name="刷新本次结果", exact=True).click()
     expect(verified).to_contain_text(latest)
     expect(verified).to_contain_text("检索词：graph")
+
+    class NewPaper(Papers):
+        def search(self, *args):
+            result = super().search(*args)
+            result["items"][0]["title"] = "Unrelated paper"
+            return result
+
+    headers["X-CSRF-Token"] = client.get("/api/v1/auth/csrf").json()["data"]["csrf_token"]
+    screened_run = post(client, headers, root + "/construction-runs", inputs, str(uuid4()))
+    assert screened_run.status_code == 202
+    with engine.begin() as conn:
+        conn.execute(dispatch_limits.delete())
+    assert RunWorker(store, NewPaper()).run_once()
+    page.reload()
+    open_run(screened_run.json()["data"]["run"])
+    region.get_by_role("button", name="确认检索并去重", exact=True).click()
+    form.get_by_label("有效性", exact=True).select_option("false")
+    form.get_by_label("判断理由", exact=True).fill("研究对象不在本项目范围")
+    form.get_by_role("button", name="保存人工评分", exact=True).click()
+    expect(zero).to_contain_text("1 篇论文均已排除")
+    region.get_by_role("button", name="确认筛选排除，查看核验范围").click()
+    preview = region.get_by_role("region", name="入库预览")
+    expect(preview).to_contain_text("筛选排除：研究对象不在本项目范围")
+    if evidence:
+        preview.screenshot(path=str(Path(evidence) / "excluded.png"))
+    region.get_by_role("button", name="确认核验既有版本", exact=True).click()
+    expect(region.get_by_role("heading", name="正在核验既有版本")).to_be_visible()
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果", exact=True).click()
+    expect(verified).to_contain_text(latest)
+    # A frozen rebuild request follows the same review path even with no additions.
+    region.get_by_label("graph", exact=True).check()
+    region.get_by_label("知识构建方式").select_option("rebuild")
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    with engine.begin() as conn:
+        conn.execute(dispatch_limits.delete())
+    assert RunWorker(store, ZeroPapers()).run_once()
+    region.get_by_role("button", name="刷新本次结果").click()
+    region.get_by_role("button", name="确认检索并去重").click()
+    region.get_by_role("button", name="确认检索零条，查看核验范围").click()
+    expect(preview).to_contain_text("本轮已选择重建")
+    if evidence:
+        preview.screenshot(path=str(Path(evidence) / "rebuild.png"))
+    region.get_by_role("button", name="确认按当前配置核验并构建版本").click()
+    building = region.get_by_role("heading", name=re.compile("^正在(构建知识版本|核验既有版本)$"))
+    expect(building).to_be_visible()
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果").click()
+    expect(verified).to_contain_text(latest)
+
+    # A failed Run keeps its diagnostics across the explicit cleanup command.
+    region.get_by_label("知识构建方式").select_option("incremental")
+    region.get_by_role("button", name="启动检索", exact=True).click()
+    expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+    with engine.begin() as conn:
+        conn.execute(dispatch_limits.delete())
+    assert RunWorker(store, Papers(failure=True)).run_once()
+    region.get_by_role("button", name="刷新本次结果").click()
+    region.get_by_role("button", name="清理临时资产", exact=True).click()
+    region.get_by_role("button", name="确认清理可释放的临时资产").click()
+    expect(region.get_by_role("status")).to_contain_text("等待回收")
+    from rpb.adapters.run_temporary_cleanup import process_one
+
+    while process_one(engine, tmp_path / "objects"):
+        pass
+    region.get_by_role("button", name="刷新本次结果").click()
+    expect(region.get_by_role("status")).to_contain_text("临时资产清理：已完成")
+    if evidence:
+        region.get_by_role("status").screenshot(path=str(Path(evidence) / "cleanup.png"))
+    expect(region.get_by_role("heading", name="失败", exact=True)).to_be_visible()
+
+    region.get_by_role("button", name="加载当前版本论文").click()
+    region.get_by_role("button", name="预览移除全部论文").click()
+    removal = region.get_by_role("region", name="移除影响预览")
+    expect(removal).to_contain_text("新版本将不含任何知识证据")
+    expect(removal).to_contain_text(latest)
+    if evidence:
+        removal.screenshot(path=str(Path(evidence) / "removal.png"))
+    removal.get_by_role("button", name="确认以上范围并启动移除构建").click()
+    expect(region.get_by_role("heading", name="等待发布移除结果")).to_be_visible()
+    assert worker.run_once()
+    region.get_by_role("button", name="刷新本次结果").click()
+    region.get_by_role("button", name="查看已发布版本").click()
+    expect(version).to_contain_text("此版本没有论文证据")
+    if evidence:
+        version.screenshot(path=str(Path(evidence) / "empty-version.png"))
+    open_run(published)
+    region.get_by_role("button", name="查看已发布版本").click()
+    expect(version).to_contain_text("用户保留的分析结论")
     page.close()

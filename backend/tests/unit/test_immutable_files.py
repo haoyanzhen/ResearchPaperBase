@@ -48,3 +48,21 @@ def test_fifo_object_is_rejected_without_waiting_for_a_writer(tmp_path):
     os.mkfifo(directory / str(identity))
     with pytest.raises(FileIntegrityError):
         ImmutableFileStore(tmp_path).read(project, attempt, identity, "not-a-digest")
+
+
+def test_discard_cannot_follow_symlink_and_repeated_missing_is_safe(tmp_path):
+    store = ImmutableFileStore(tmp_path)
+    project, attempt, identity = uuid4(), uuid4(), uuid4()
+    target = tmp_path / "unrelated"
+    target.write_bytes(b"keep")
+    scoped = tmp_path / str(project) / str(attempt)
+    scoped.mkdir(parents=True)
+    (scoped / str(identity)).symlink_to(target)
+    store.discard(project, attempt, identity)
+    store.discard(project, attempt, identity)
+    assert target.read_bytes() == b"keep"
+    scoped.rmdir()
+    scoped.symlink_to(tmp_path, target_is_directory=True)
+    with pytest.raises(OSError):
+        store.discard(project, attempt, identity)
+    assert target.read_bytes() == b"keep"

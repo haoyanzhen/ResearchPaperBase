@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-02",
+  "context": "cleanup-1",
+  "reader": [
+    "python3 scripts/delivery_context.py read docs/PROJECT_STATUS.md --section '2. 当前进度概览' --ledger docs/workorders/evidence/task049_ingestion_2026-11-02/remaining-cleanup/ledger.json --context cleanup-1 --chars 7000",
+    "python3 scripts/delivery_context.py read docs/design/README.md --section '1. 权威性规则' --ledger docs/workorders/evidence/task049_ingestion_2026-11-02/remaining-cleanup/ledger.json --context cleanup-1 --chars 7000",
+    "python3 scripts/delivery_context.py read docs/DELIVERY_TOOLS.md --section '5. 启动执行与交接必做步骤' --ledger docs/workorders/evidence/task049_ingestion_2026-11-02/remaining-cleanup/ledger.json --context cleanup-1 --chars 7000",
+    "python3 scripts/delivery_context.py read docs/design/02-04_run_recovery_appendix.md --section '4. Construction 断点与清理' --ledger docs/workorders/evidence/task049_ingestion_2026-11-02/remaining-cleanup/ledger.json --context cleanup-1 --chars 5000",
+    "python3 scripts/delivery_context.py entry tasks/049-ingestion-publication.md"
+  ],
+  "ledger": "ledger.json",
+  "actual_selected_text": [
+    "DELIVERY_TOOLS.md.json",
+    "README.md.json",
+    "PROJECT_STATUS.md.json",
+    "recovery.json",
+    "entry.json"
+  ],
+  "baseline": "baseline",
+  "candidate": "candidate",
+  "baseline_diff": "from-baseline.json",
+  "command": "run-focused.zsh final3 'run_temporary_cleanup or construction_runs or downgrade or metadata_and_rerun or knowledge_paper_storage'",
+  "test_summary": "python3 scripts/delivery_summary.py <run>/tests.xml --exit-code <actual exit> --chars 1200",
+  "commands_and_results": {
+    "final3": {
+      "tests": 51,
+      "passed": 51,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "unit": {
+      "tests": 4,
+      "passed": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "static-final": "command_succeeded",
+    "auth-final": {
+      "tests": 12,
+      "passed": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "scope": [
+    "FR-015/026 and PUB-G04. Explicit cleanup of failed runs, automatic cleanup for completed/cancelled runs, no TTL; keep history, effective input, errors and human content.",
+    "Staging, object pins, rollback-orphan files, detached vector and graph views; second pass revalidates pins and scope before unlinking. Failures are retryable.",
+    "Existing confirmed source bytes, published/shared files, inherited chunks/embeddings and identities remain readable. Legacy failed Runs await explicit cleanup."
+  ],
+  "independent_review": "rebuild-review/review.json, independent-browser/summary.json and tested hashes; all three findings corrected and rechecked",
+  "human_acceptance": "pending",
+  "latest_source": "final-source plus auth-delta.json (last test adds CSRF/account/project rejection)",
+  "latest_check": "run-focused.zsh auth-final run_temporary_cleanup"
+}

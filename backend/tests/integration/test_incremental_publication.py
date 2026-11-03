@@ -249,7 +249,7 @@ def test_incremental_publication(subject, accepted_full_text_run, tmp_path, monk
     assert {p["title"] for p in current["items"]} == {old["items"][0]["title"], "graph"}
 
 
-def test_publication_rejects_incremental_rebuild_at_confirmation(
+def test_rebuild_confirmation_rejects_restricted_retained_paper(
     subject, accepted_full_text_run, tmp_path
 ):
     client, headers, root, app, engine, _ = subject
@@ -265,6 +265,25 @@ def test_publication_rejects_incremental_rebuild_at_confirmation(
     }
     url, identity = second_preview(
         client, headers, root, store, engine, request | {"graph_mode": "rebuild"}
+    )
+    cid = first["ingestion_confirmation"]["preview"]["valid_papers"][0]
+    cls_path = root + "/material-sources/" + cid + "/classification"
+    classification = client.get(cls_path).json()["data"]
+    assert (
+        post(
+            client,
+            headers,
+            cls_path + "/correct",
+            {
+                "expected_revision": classification["revision"],
+                "content_revision": classification["source"]["content_revision"],
+                "classification": "private",
+                "basis": "Restrict retained material",
+                "explicit_confirmation": True,
+            },
+            str(uuid4()),
+        ).status_code
+        == 200
     )
     wait = client.get(url + "/ingestion-preview").json()["data"]["waiting_item"]
     assert not wait["allowed_actions"]

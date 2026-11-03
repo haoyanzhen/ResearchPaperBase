@@ -22,6 +22,12 @@ class RetainedInputs:
     text_dependencies: dict[str, Any] = field(default_factory=dict)
     metadata_dependencies: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def dependency_digest(self) -> str:
+        return content_digest(
+            {"text": self.text_dependencies, "metadata": self.metadata_dependencies}
+        )
+
 
 def checked_base(conn: Any, project: UUID, run: Any) -> UUID | None:
     version: UUID | None = conn.scalar(
@@ -123,14 +129,16 @@ def retained_inputs(
                     raise unavailable
             retained.digests[oid] = row["sha256"]
     retained.text_dependencies = current_text_dependencies(state, actor, project, source_revisions)
-    if (
-        retained.digests != record.ready_proof["object_digests"]
-        or len(actual) != len(retained.digests)
-        or content_digest(
-            {"text": retained.text_dependencies, "metadata": retained.metadata_dependencies}
-        )
-        != record.ready_proof["dependency_set_digest"]
+    if retained.digests != record.ready_proof["object_digests"] or len(actual) != len(
+        retained.digests
     ):
+        raise unavailable
+    digest = retained.dependency_digest
+    if run["input_snapshot"].get("graph_mode") == "rebuild":
+        confirmed_digest = run["ingestion_confirmation"].get("rebuild_dependency_digest")
+        if confirmed_digest is not None and digest != confirmed_digest:
+            raise AccountError("STATE_REVISION_CONFLICT", 409)
+    elif digest != record.ready_proof["dependency_set_digest"]:
         raise unavailable
     if files is not None:
         # Rehash the persisted paper contents after validating all source permissions.

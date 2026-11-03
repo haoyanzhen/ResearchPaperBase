@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.21",
+    "version": "1.24",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json.",
     "x-updated": "2026-11-02"
   },
@@ -4724,6 +4724,14 @@
             }
           },
           {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
             "name": "X-CSRF-Token",
             "in": "header",
             "required": true,
@@ -4744,8 +4752,71 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
+          "202": {
+            "description": "Project-scoped removal of confirmed published paper associations.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AssociationRemovalResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
           }
         },
         "requestBody": {
@@ -4758,7 +4829,7 @@
             }
           }
         },
-        "x-coverage": "request-only"
+        "x-coverage": "request-success-errors-partial"
       }
     },
     "/projects/{project_id}/construction-runs/{run_id}/append-search-terms": {
@@ -11588,7 +11659,14 @@
                                 "const": "initial"
                               },
                               "input_snapshot": {
-                                "$ref": "#/components/schemas/RetrievalSnapshot"
+                                "oneOf": [
+                                  {
+                                    "$ref": "#/components/schemas/RemovalSnapshot"
+                                  },
+                                  {
+                                    "$ref": "#/components/schemas/RetrievalSnapshot"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -12891,6 +12969,418 @@
             "$ref": "#/components/responses/PublicError410"
           }
         }
+      }
+    },
+    "/projects/{project_id}/construction-workspace/association-clear-preview": {
+      "post": {
+        "operationId": "Construction.PreviewClearAssociations",
+        "x-use-case": "Construction.PreviewClearAssociations",
+        "x-fr": [
+          "FR-023",
+          "FR-026"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "200": {
+            "description": "Project-scoped removal of confirmed published paper associations.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AssociationRemovalPreview"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssociationRemovalRequest"
+              }
+            }
+          }
+        },
+        "x-coverage": "request-success-errors-partial"
+      }
+    },
+    "/projects/{project_id}/construction-workspace/pending-revisions": {
+      "get": {
+        "operationId": "Construction.ListPendingRevisions",
+        "x-use-case": "Construction.ListPendingRevisions",
+        "x-fr": [
+          "FR-023",
+          "FR-026"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List accepted association removal revisions for this Project.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PendingAssociationRemoval"
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "410": {
+            "$ref": "#/components/responses/PublicError410"
+          }
+        },
+        "x-coverage": "request-success-errors-partial"
+      }
+    },
+    "/projects/{project_id}/construction-runs/{run_id}/temporary-cleanup": {
+      "post": {
+        "operationId": "Construction.CleanTemporaryAssets",
+        "x-use-case": "Construction.CleanTemporaryAssets",
+        "x-fr": [
+          "FR-015"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128,
+              "pattern": "^[\\x20-\\x7e]+$"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "202": {
+            "description": "Request accepted; see run.temporary_cleanup for the reclamation result.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrievalCommandResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expected_revision": {
+                    "$ref": "#/components/schemas/Revision"
+                  },
+                  "explicit_confirmation": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "expected_revision",
+                  "explicit_confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-coverage": "request-success-errors-partial"
       }
     }
   },
@@ -22995,7 +23485,8 @@
               "processing",
               "analysis",
               "ingestion_preview",
-              "knowledge_build"
+              "knowledge_build",
+              "association_removal"
             ]
           },
           "business_state": {
@@ -23191,7 +23682,8 @@
               "processing",
               "analysis",
               "ingestion_preview",
-              "knowledge_build"
+              "knowledge_build",
+              "association_removal"
             ]
           },
           "base_knowledge_version_id": {
@@ -23233,7 +23725,14 @@
                     "format": "date-time"
                   },
                   "checked_scope": {
-                    "$ref": "#/components/schemas/RetrievalSnapshot"
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/RetrievalSnapshot"
+                      },
+                      {
+                        "$ref": "#/components/schemas/RemovalSnapshot"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -23278,6 +23777,9 @@
               },
               {
                 "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RemovalSnapshot"
               }
             ]
           },
@@ -23335,6 +23837,7 @@
                           "code": {
                             "enum": [
                               "cancelled",
+                              "cleanup",
                               "no_change"
                             ]
                           },
@@ -23378,7 +23881,10 @@
                   "$ref": "#/components/schemas/ID"
                 },
                 "kind": {
-                  "const": "retrieval"
+                  "enum": [
+                    "retrieval",
+                    "association_removal"
+                  ]
                 },
                 "state": {
                   "type": "string"
@@ -23631,11 +24137,53 @@
                 "type": "integer",
                 "minimum": 0
               },
+              "excluded_paper_count": {
+                "type": "integer",
+                "minimum": 1
+              },
               "matched_paper_count": {
                 "type": "integer",
                 "minimum": 0
               }
             }
+          },
+          "temporary_cleanup": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "enum": [
+                  "queued",
+                  "completed",
+                  "failed"
+                ]
+              },
+              "attempts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reclaimed_objects": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "retained_objects": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "state",
+              "attempts",
+              "reclaimed_objects",
+              "retained_objects",
+              "error"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -26314,6 +26862,551 @@
           "graph_refs",
           "document_refs",
           "unavailable_reason"
+        ],
+        "additionalProperties": false
+      },
+      "AssociationRemovalRequest": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "selection": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "const": "selected"
+                  },
+                  "targets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "paper",
+                            "material"
+                          ]
+                        },
+                        "id": {
+                          "$ref": "#/components/schemas/ID"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                  }
+                },
+                "required": [
+                  "scope",
+                  "targets"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "const": "all"
+                  },
+                  "kind": {
+                    "enum": [
+                      "paper",
+                      "material",
+                      "all"
+                    ]
+                  }
+                },
+                "required": [
+                  "scope",
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "expected_revision",
+          "selection"
+        ],
+        "additionalProperties": false
+      },
+      "AssociationRemovalPreview": {
+        "type": "object",
+        "properties": {
+          "confirmation_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "action": {
+            "const": "clear_associations"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "construction_workspace"
+              },
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "subject_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "impact_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "knowledge_version_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "candidate_revision": {
+            "type": "null"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "confirmation_token": {
+            "type": "string"
+          },
+          "affected_items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "association_removal"
+                    },
+                    "object": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "enum": [
+                            "paper",
+                            "material"
+                          ]
+                        },
+                        "id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "project_id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "revision": {
+                          "$ref": "#/components/schemas/Revision"
+                        },
+                        "read_url": {
+                          "type": "null"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "project_id",
+                        "revision",
+                        "read_url"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "asset_kind": {
+                      "enum": [
+                        "paper",
+                        "material"
+                      ]
+                    },
+                    "asset_revision": {
+                      "$ref": "#/components/schemas/Revision"
+                    },
+                    "base_knowledge_version_id": {
+                      "$ref": "#/components/schemas/ID"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "object",
+                    "asset_kind",
+                    "asset_revision",
+                    "base_knowledge_version_id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "execution_revocation"
+                    },
+                    "object": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "const": "construction_run"
+                        },
+                        "id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "project_id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "revision": {
+                          "$ref": "#/components/schemas/Revision"
+                        },
+                        "read_url": {
+                          "type": "null"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "project_id",
+                        "revision",
+                        "read_url"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "attempt_id": {
+                      "$ref": "#/components/schemas/ID"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "object",
+                    "attempt_id",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "retained_items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "object"
+                    },
+                    "object": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "const": "knowledge_version"
+                        },
+                        "id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "project_id": {
+                          "$ref": "#/components/schemas/ID"
+                        },
+                        "revision": {
+                          "type": "null"
+                        },
+                        "read_url": {
+                          "type": "null"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "project_id",
+                        "revision",
+                        "read_url"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "object",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "protected_scope"
+                    },
+                    "scope": {
+                      "const": "shared_identity"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "scope",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "blocked_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "paper",
+                    "material"
+                  ]
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "asset_revision": {
+                  "$ref": "#/components/schemas/Revision"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "asset_revision"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1
+          },
+          "base_knowledge_version_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "conflicting_runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "run_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "revision": {
+                  "$ref": "#/components/schemas/Revision"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "run_id",
+                "revision",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "will_be_empty": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirmation_id",
+          "action",
+          "target",
+          "subject_revision",
+          "impact_revision",
+          "knowledge_version_id",
+          "candidate_revision",
+          "risks",
+          "expires_at",
+          "confirmation_token",
+          "affected_items",
+          "retained_items",
+          "blocked_reasons",
+          "targets",
+          "base_knowledge_version_id",
+          "conflicting_runs",
+          "will_be_empty"
+        ],
+        "additionalProperties": false
+      },
+      "PendingAssociationRemoval": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "target_kind": {
+            "enum": [
+              "paper",
+              "material"
+            ]
+          },
+          "target_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "base_asset_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "operation": {
+            "const": "exclude"
+          },
+          "changes": {
+            "const": {}
+          },
+          "reason": {
+            "type": "string"
+          },
+          "submitted_by": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "inclusion_status": {
+            "enum": [
+              "pending",
+              "processing",
+              "published"
+            ]
+          },
+          "assigned_run_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "published_version_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmations": {
+            "const": []
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "created_at",
+          "updated_at",
+          "target_kind",
+          "target_id",
+          "base_asset_revision",
+          "operation",
+          "changes",
+          "reason",
+          "submitted_by",
+          "inclusion_status",
+          "assigned_run_id",
+          "published_version_id",
+          "confirmations"
+        ],
+        "additionalProperties": false
+      },
+      "AssociationRemovalResult": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/RetrievalRunView"
+          },
+          "task": {
+            "$ref": "#/components/schemas/RetrievalTaskView"
+          },
+          "pending_revisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingAssociationRemoval"
+            }
+          }
+        },
+        "required": [
+          "run",
+          "task",
+          "pending_revisions"
+        ],
+        "additionalProperties": false
+      },
+      "RemovalSnapshot": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "const": "revision_only"
+          },
+          "pending_revision_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ID"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "supplement_ids": {
+            "const": []
+          },
+          "base_knowledge_version_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "frozen_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        },
+        "required": [
+          "mode",
+          "pending_revision_ids",
+          "supplement_ids",
+          "base_knowledge_version_id",
+          "frozen_at"
         ],
         "additionalProperties": false
       }

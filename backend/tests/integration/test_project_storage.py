@@ -48,7 +48,7 @@ def test_ps01_upgrade_existing_account_and_metadata(db):
         assert compare_metadata(MigrationContext.configure(conn), metadata) == []
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0018_knowledge_build_views"
+            == "0019_run_temporary_cleanup"
         )
 
 
@@ -247,7 +247,7 @@ def test_ps05_populated_downgrade_refused_empty_preserves_account(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0018_knowledge_build_views"
+            == "0019_run_temporary_cleanup"
         )
         conn.execute(cw.delete())
         conn.execute(projects.delete())
@@ -326,7 +326,7 @@ def test_ps06_committing_writer_blocks_destructive_downgrade(db):
         assert conn.scalar(sa.select(projects.c.id)) == pid
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0018_knowledge_build_views"
+            == "0019_run_temporary_cleanup"
         )
 
 

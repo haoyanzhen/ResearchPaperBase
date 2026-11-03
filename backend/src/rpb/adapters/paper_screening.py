@@ -311,6 +311,8 @@ def accept(run: Any, body: Any, state: Any, project: Any) -> Any:
 def bump(run: Any, changed_ids: set[str]) -> None:
     run["phase"] = "screening"
     run.pop("analysis_confirmation", None)
+    if decision := run.pop("matched_screening", None):
+        run.setdefault("screening_decision_history", []).append(decision)
     if run.get("processing_confirmation"):
         run.setdefault("processing_confirmation_history", []).append(
             run.pop("processing_confirmation")

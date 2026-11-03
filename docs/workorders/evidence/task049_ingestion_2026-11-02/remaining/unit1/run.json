@@ -1,0 +1,1 @@
+{"command": ["sh", "-c", "cd backend && .venv/bin/python -m pytest tests/unit -q --junitxml=../docs/workorders/evidence/task049_ingestion_2026-11-02/remaining/unit1/tests.xml"], "pytest": null, "exit_code": 0}

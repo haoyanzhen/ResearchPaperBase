@@ -27,6 +27,7 @@ from rpb.adapters.knowledge_paper_tables import (
     version_paper_pins,
 )
 from rpb.adapters.knowledge_publication_baseline import checked_base, retained_inputs
+from rpb.adapters.knowledge_rebuild import rebuild_requested, verify_retained_service
 from rpb.adapters.knowledge_tables import heads, versions
 from rpb.modules.account_config.application.ports import AccountError
 
@@ -50,11 +51,21 @@ def prepare_verified(
     base = checked_base(conn, project, run)
     files = ImmutableFileStore(root)
     inherited = retained_inputs(
-        conn, project_record, UUID(run["owner_id"]), state, base, run, files
+        conn,
+        project_record,
+        UUID(run["owner_id"]),
+        state,
+        base,
+        run,
+        files,
+        capture_stamps=rebuild_requested(run),
     )
     papers, digests = list(inherited.papers), dict(inherited.digests)
     members = {item["chunk"]["asset_revision"]: item for item in material}
+    retained_revisions = {UUID(p["paper_revision_id"]) for p in inherited.papers}
     for revision, item in sorted(members.items()):
+        if revision in retained_revisions:
+            continue
         candidate, asset = item["candidate"], item["chunk"]["asset_id"]
         paper = (
             conn.execute(
@@ -146,6 +157,20 @@ def prepare_verified(
         "validated_at": at.isoformat().replace("+00:00", "Z"),
         "read_barrier_id": str(uuid4()),
     }
+    if rebuild_requested(run):
+        proof["retained_file_stamps"] = inherited.file_stamps
+        if not run["ingestion_confirmation"]["preview"]["valid_papers"]:
+            old = conn.execute(
+                sa.select(versions.c.manifest, versions.c.ready_proof).where(
+                    versions.c.project_id == project, versions.c.id == base, versions.c.sealed
+                )
+            ).one()
+            if (
+                old.manifest["build_profile"] == vector["profile"]
+                and old.ready_proof["dependency_set_digest"] == inherited.dependency_digest
+            ):
+                # The runtime changed between the equivalence check and actual rebuilding.
+                raise AccountError("STATE_REVISION_CONFLICT", 409)
     run["publication_ready"] = {
         "manifest": manifest,
         "proof": proof,
@@ -170,11 +195,11 @@ def commit_ready(
     barrier: str,
     claim_id: str | None = None,
     expected_readback_digest: str | None = None,
+    file_root: Path | None = None,
 ) -> str:
     from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
-    from rpb.adapters.knowledge_paper_stage import stage_paper
+    from rpb.adapters.knowledge_paper_stage import locked_build_run, stage_paper
     from rpb.adapters.run_tables import runs
-    from rpb.adapters.runs import persist, transition
     from rpb.adapters.search_term_worker import TermWorker
     from rpb.adapters.search_terms import allowed, classification, load, policy_view
 
@@ -288,9 +313,28 @@ def commit_ready(
                         "config": run["model_config"],
                     },
                 )
-        if not members:
+        if rebuild_requested(run):
+            locked_build_run(conn, store, actor, project, identity, attempt)
+        elif not members:
             raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
         inherited = retained_inputs(conn, proj, actor, state, base, run)
+        if rebuild_requested(run):
+            stamps = proof.get("retained_file_stamps", {})
+            if (
+                file_root is None
+                or stamps.keys() != inherited.digests.keys()
+                or inherited.dependency_digest
+                != run["ingestion_confirmation"].get("rebuild_dependency_digest")
+            ):
+                raise AccountError("STATE_REVISION_CONFLICT", 409)
+            files = ImmutableFileStore(file_root)
+            try:
+                for object_id, (file_attempt, stamp) in stamps.items():
+                    if files.stamp(project, UUID(file_attempt), UUID(object_id)) != stamp:
+                        raise AccountError("STORAGE_FILE_UNAVAILABLE", 410)
+            except OSError, ValueError:
+                raise AccountError("STORAGE_FILE_UNAVAILABLE", 410) from None
+            verify_retained_service(conn, store, proj, state, run, inherited.text_dependencies)
         text_deps.update(inherited.text_dependencies)
         meta_deps.update(inherited.metadata_dependencies)
         members.update(UUID(p["paper_revision_id"]) for p in inherited.papers)
@@ -313,76 +357,105 @@ def commit_ready(
             require_build_protection(
                 conn, project, UUID(oid), identity, attempt, run["slot_epoch"], run["lease_until"]
             )
-        version = uuid4()
-        at = datetime.now(UTC)
-        conn.execute(
-            versions.insert().values(
-                id=version,
-                project_id=project,
-                source_run_id=identity,
-                base_version_id=base,
-                manifest=manifest,
-                manifest_digest=proof["manifest_digest"],
-                ready_proof=proof,
-                sealed=False,
-                published_at=at,
-            )
+        return persist_version(
+            conn, run, project, identity, attempt, base, manifest, proof, text_deps, meta_deps
         )
-        for revision in members:
-            conn.execute(
-                version_paper_pins.insert().values(
-                    project_id=project, version_id=version, paper_revision_id=revision
-                )
-            )
-        for object_id in digests:
-            conn.execute(
-                version_object_pins.insert().values(
-                    project_id=project, version_id=version, object_id=UUID(object_id)
-                )
-            )
-            conn.execute(
-                object_build_pins.delete().where(
-                    object_build_pins.c.project_id == project,
-                    object_build_pins.c.object_id == UUID(object_id),
-                    object_build_pins.c.run_id == identity,
-                    object_build_pins.c.attempt_id == attempt,
-                    object_build_pins.c.slot_epoch == run["slot_epoch"],
-                )
-            )
-        conn.execute(versions.update().where(versions.c.id == version).values(sealed=True))
-        if base is None:
-            conn.execute(heads.insert().values(project_id=project, version_id=version))
-        elif (
-            conn.execute(
-                heads.update()
-                .where(heads.c.project_id == project, heads.c.version_id == base)
-                .values(version_id=version)
-            ).rowcount
-            != 1
-        ):
-            raise AccountError("STATE_REVISION_CONFLICT", 409)
-        if datetime.fromisoformat(run["lease_until"]) <= datetime.now(UTC):
-            raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
-        run["published_knowledge_version_id"] = str(version)
-        conn.execute(
-            publication_events.insert().values(
-                version_id=version,
-                project_id=project,
-                graph_view_id=UUID(proof["graph_view_id"]),
-                vector_view_id=UUID(proof["vector_view_id"]),
-                embedding_profile_id=manifest["build_profile"]["embedding_profile_id"],
-                created_at=at,
-                state="pending",
-            )
-        )
-        run["completion"] = {
-            "outcome": "published",
-            "verified_knowledge_version_id": None,
-            "checked_at": at.isoformat().replace("+00:00", "Z"),
-            "checked_scope": run["input_snapshot"],
+
+
+def persist_version(
+    conn: Any,
+    run: Any,
+    project: UUID,
+    identity: UUID,
+    attempt: UUID,
+    base: UUID | None,
+    manifest: Any,
+    proof: Any,
+    text_dependencies: Any,
+    metadata_dependencies: Any,
+) -> str:
+    """Insert the verified snapshot, pins, publication event and default atomically."""
+    from rpb.adapters.runs import persist, transition
+
+    # A later subtraction can validate each retained source without accessing excluded evidence.
+    proof = proof | {
+        "source_dependency_digests": {
+            kind: {sid: content_digest(dependency) for sid, dependency in deps.items()}
+            for kind, deps in (("text", text_dependencies), ("metadata", metadata_dependencies))
         }
-        run["candidate_version"]["state"] = "published"
-        run["finished_at"] = at.isoformat().replace("+00:00", "Z")
-        transition(run, "succeeded")
-        persist(conn, run)
-        return str(version)
+    }
+    members = {UUID(p["paper_revision_id"]) for p in manifest["papers"]}
+    digests = proof["object_digests"]
+    version = uuid4()
+    at = datetime.now(UTC)
+    conn.execute(
+        versions.insert().values(
+            id=version,
+            project_id=project,
+            source_run_id=identity,
+            base_version_id=base,
+            manifest=manifest,
+            manifest_digest=proof["manifest_digest"],
+            ready_proof=proof,
+            sealed=False,
+            published_at=at,
+        )
+    )
+    for revision in members:
+        conn.execute(
+            version_paper_pins.insert().values(
+                project_id=project, version_id=version, paper_revision_id=revision
+            )
+        )
+    for object_id in digests:
+        conn.execute(
+            version_object_pins.insert().values(
+                project_id=project, version_id=version, object_id=UUID(object_id)
+            )
+        )
+        conn.execute(
+            object_build_pins.delete().where(
+                object_build_pins.c.project_id == project,
+                object_build_pins.c.object_id == UUID(object_id),
+                object_build_pins.c.run_id == identity,
+                object_build_pins.c.attempt_id == attempt,
+                object_build_pins.c.slot_epoch == run["slot_epoch"],
+            )
+        )
+    conn.execute(versions.update().where(versions.c.id == version).values(sealed=True))
+    if base is None:
+        conn.execute(heads.insert().values(project_id=project, version_id=version))
+    elif (
+        conn.execute(
+            heads.update()
+            .where(heads.c.project_id == project, heads.c.version_id == base)
+            .values(version_id=version)
+        ).rowcount
+        != 1
+    ):
+        raise AccountError("STATE_REVISION_CONFLICT", 409)
+    if datetime.fromisoformat(run["lease_until"]) <= datetime.now(UTC):
+        raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
+    run["published_knowledge_version_id"] = str(version)
+    conn.execute(
+        publication_events.insert().values(
+            version_id=version,
+            project_id=project,
+            graph_view_id=UUID(proof["graph_view_id"]),
+            vector_view_id=UUID(proof["vector_view_id"]),
+            embedding_profile_id=manifest["build_profile"]["embedding_profile_id"],
+            created_at=at,
+            state="pending",
+        )
+    )
+    run["completion"] = {
+        "outcome": "published",
+        "verified_knowledge_version_id": None,
+        "checked_at": at.isoformat().replace("+00:00", "Z"),
+        "checked_scope": run["input_snapshot"],
+    }
+    run["candidate_version"]["state"] = "published"
+    run["finished_at"] = at.isoformat().replace("+00:00", "Z")
+    transition(run, "succeeded")
+    persist(conn, run)
+    return str(version)

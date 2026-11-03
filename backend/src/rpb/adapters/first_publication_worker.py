@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 
+from rpb.adapters.association_removal_worker import AssociationRemovalWorker
 from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
 from rpb.adapters.knowledge_build_failure import BuildClaimChanged, record_failure
 from rpb.adapters.knowledge_graph_builder import build_graph_view
@@ -20,8 +21,11 @@ class FirstPublicationWorker:
         self.store, self.root, self.embedding, self.graph = store, root, embedding, graph
         self.root.mkdir(parents=True, exist_ok=True)
         store.first_publication_enabled = True
+        self.removals = AssociationRemovalWorker(store, root)
 
     def run_once(self) -> bool:
+        if self.removals.run_once():
+            return True
         with self.store.account.engine.begin() as conn:
             conn.execute(
                 sa.text("SELECT pg_advisory_xact_lock(:key)"), {"key": ACCOUNT_GOVERNANCE_LOCK}
@@ -37,7 +41,7 @@ class FirstPublicationWorker:
                         snapshot["base_knowledge_version_id"].astext.is_(None),
                         sa.and_(
                             snapshot["mode"].astext == "retrieval",
-                            snapshot["graph_mode"].astext == "incremental",
+                            snapshot["graph_mode"].astext.in_(["incremental", "rebuild"]),
                             snapshot["pending_revision_ids"] == [],
                             snapshot["supplement_ids"] == [],
                             sa.func.jsonb_typeof(selected) == "array",
@@ -82,8 +86,9 @@ class FirstPublicationWorker:
                 from rpb.adapters.no_change import commit_no_change, prepare_no_change
 
                 proof = prepare_no_change(*args, claim, self.embedding)
-                commit_no_change(*args, claim, proof)
-                return True
+                if proof is not None:
+                    commit_no_change(*args, claim, proof)
+                    return True
             build_vector_view(*args, self.embedding, publication_claim_id=claim)
             build_graph_view(*args, self.graph, publication_claim_id=claim)
             ready = build_graph_view(
@@ -104,6 +109,7 @@ class FirstPublicationWorker:
                 ready["read_barrier_id"],
                 claim,
                 ready["readback_digest"],
+                self.root,
             )
         except BuildClaimChanged:
             return True

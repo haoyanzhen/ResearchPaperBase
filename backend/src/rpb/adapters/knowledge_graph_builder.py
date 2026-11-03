@@ -37,8 +37,9 @@ from rpb.adapters.knowledge_graph_baseline import (
 )
 from rpb.adapters.knowledge_graph_seal import seal_graph_view, verify_graph_view
 from rpb.adapters.knowledge_object_stage import require_build_protection
-from rpb.adapters.knowledge_paper_stage import stage_paper
+from rpb.adapters.knowledge_paper_stage import locked_build_run, stage_paper
 from rpb.adapters.knowledge_paper_tables import objects as paper_objects
+from rpb.adapters.knowledge_rebuild import rebuild_requested, retained_materials
 from rpb.adapters.knowledge_vector_builder import build_vector_view
 from rpb.adapters.knowledge_vector_seal import verify_vector_view
 from rpb.adapters.run_tables import runs
@@ -88,6 +89,9 @@ def build_graph_view(
         if not initial or initial.get("vector_build") != vector:
             raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
         selected = initial["ingestion_confirmation"]["preview"]["valid_papers"]
+        rebuild = rebuild_requested(initial)
+        if rebuild and not selected:
+            locked_build_run(conn, store, actor, project_id, run_id, attempt_id)
         identities = {
             candidate: stage_paper(
                 conn, store, actor, project_id, run_id, attempt_id, UUID(candidate)
@@ -99,11 +103,19 @@ def build_graph_view(
             raise AccountError("STATE_REVISION_CONFLICT", 409)
         project = store.terms.project(conn, actor, project_id, write=True)
         state = load(conn, project)
-        by_asset = {item["project_paper_id"]: cid for cid, item in identities.items()}
+        candidates = {c["id"]: c for c in run["candidates"]}
+        pinned_texts = set()
         material, dependencies, metadata_dependencies, secret = [], {}, {}, None
         baseline = None
         new_chunks = chunk_ids
-        if run["input_snapshot"]["base_knowledge_version_id"] is not None:
+        if rebuild:
+            retained, _ = retained_materials(conn, store, files, project, actor, state, run)
+            for item in retained:
+                cid = item["candidate"]["id"]
+                candidates[cid] = item["candidate"]
+                identities[cid] = item["identity"]
+                pinned_texts.add(item["object"]["id"])
+        elif run["input_snapshot"]["base_knowledge_version_id"] is not None:
             baseline = read_baseline_graph(
                 conn, files, project, actor, state, run, vector["profile_id"], verified
             )
@@ -122,6 +134,7 @@ def build_graph_view(
                 .order_by(chunks.c.id)
             ).mappings()
         )
+        by_asset = {item["project_paper_id"]: cid for cid, item in identities.items()}
         if len(rows) != len(new_chunks) or {str(row["asset_id"]) for row in rows} != set(by_asset):
             raise AccountError("STORAGE_FILE_UNAVAILABLE", 410)
         for row in rows:
@@ -131,7 +144,7 @@ def build_graph_view(
                 or str(row["asset_revision"]) != identities[candidate_id]["paper_revision_id"]
             ):
                 raise AccountError("STATE_OPERATION_NOT_ALLOWED", 409)
-            candidate = next(c for c in run["candidates"] if c["id"] == candidate_id)
+            candidate = candidates[candidate_id]
             meta_deps = metadata_dependency(state, actor, project, candidate_id)
             metadata_dependencies[candidate_id] = meta_deps
             obj = (
@@ -148,15 +161,16 @@ def build_graph_view(
             )
             if obj is None or obj["dependencies"] != row["dependencies"]:
                 raise AccountError("STORAGE_FILE_UNAVAILABLE", 410)
-            require_build_protection(
-                conn,
-                project_id,
-                obj["id"],
-                run_id,
-                attempt_id,
-                run["slot_epoch"],
-                run["lease_until"],
-            )
+            if obj["id"] not in pinned_texts:
+                require_build_protection(
+                    conn,
+                    project_id,
+                    obj["id"],
+                    run_id,
+                    attempt_id,
+                    run["slot_epoch"],
+                    run["lease_until"],
+                )
             try:
                 text = files.read(project_id, obj["attempt_id"], obj["id"], obj["sha256"]).decode(
                     "utf-8"

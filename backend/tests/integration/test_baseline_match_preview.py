@@ -196,3 +196,56 @@ def test_zero_with_invalid_skipped_count_fails_at_retrieval(subject):
     )
     with engine.connect() as conn:
         assert conn.scalar(sa.select(heads.c.version_id)) == version
+
+
+def test_excluded_preview_requires_current_verdict_for_each_new_group(subject):
+    from test_paper_screening import edit
+
+    class Mixed(Papers):
+        def search(self, *args):
+            result = super().search(*args)
+            paper = result["items"][0]
+            result["items"] = [paper | {"title": t} for t in ("graph", "First", "FIRST!", "Second")]
+            return result
+
+    c, h, _, _, engine, _ = subject
+    url, base, _ = baseline_run(subject, 1, Mixed())
+    assert confirm(c, h, url)[0].status_code == 200
+    new = [v for v in candidates(c, url) if v["deduplication"]["state"] == "distinct"]
+    assert len(new) == 2
+    assert edit(c, h, url, new[0], valid=False).status_code == 200
+    assert "baseline_match_preview" not in c.get(url).json()["data"]
+    assert edit(c, h, url, new[1], valid=False).status_code == 200
+    assert c.get(url).json()["data"]["baseline_match_preview"] == {
+        "candidate_count": 4,
+        "matched_paper_count": 1,
+        "excluded_paper_count": 2,
+        "base_knowledge_version_id": str(base),
+    }
+    rid = UUID(url.rsplit("/", 1)[1])
+    with engine.connect() as conn:
+        original = conn.scalar(sa.select(runs.c.payload).where(runs.c.id == rid))
+    for field, changes in [
+        ("screening", {"screening_error": "PROVIDER_TIMEOUT"}),
+        ("screening", {"screening_stale": True}),
+        ("screening", {"screening_modified_by": str(uuid4())}),
+        ("screening", {"screening": original["candidates"][-1]["screening"] | {"valid": True}}),
+        (
+            "duplicate",
+            {"screening": original["candidates"][2]["screening"] | {"reason": "conflict"}},
+        ),
+        ("source", {"retrieval_proof_version": None}),
+        ("source", {"exhausted_sources": []}),
+    ]:
+        changed = copy.deepcopy(original)
+        if field == "source":
+            changed.update(changes)
+        else:
+            changed["candidates"][2 if field == "duplicate" else -1].update(changes)
+        with engine.begin() as conn:
+            conn.execute(runs.update().where(runs.c.id == rid).values(payload=changed))
+        assert "baseline_match_preview" not in c.get(url).json()["data"]
+    with engine.begin() as conn:
+        conn.execute(runs.update().where(runs.c.id == rid).values(payload=original))
+    assert correction(c, h, url, candidates(c, url)[1]).status_code == 200
+    assert "baseline_match_preview" not in c.get(url).json()["data"]

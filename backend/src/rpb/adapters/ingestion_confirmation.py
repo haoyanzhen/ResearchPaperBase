@@ -16,6 +16,7 @@ from rpb.adapters.auth import ACCOUNT_GOVERNANCE_LOCK
 from rpb.adapters.baseline_match_preview import match_scope_digest, matched_baseline_scope
 from rpb.adapters.construction_slots import is_current
 from rpb.adapters.knowledge_baseline_papers import baseline_papers
+from rpb.adapters.knowledge_rebuild import preview_dependency_digest, rebuild_requested
 from rpb.adapters.knowledge_tables import heads
 from rpb.adapters.run_tables import runs, slots
 from rpb.adapters.search_terms import load, now
@@ -47,6 +48,8 @@ def signature(run: Any, actor: str, expires: str) -> str:
         "candidates": run["candidates"],
         "expires_at": expires,
     }
+    if rebuild_requested(run):
+        basis["rebuild_dependency_digest"] = run.get("rebuild_preview_digest")
     if run.get("matched_screening"):
         basis["matched_screening"] = run["matched_screening"]
         basis["scope_digest"] = match_scope_digest(run, run["matched_screening"]["scope"])
@@ -111,6 +114,8 @@ def accept_locked(
     }
     if set(body) != required:
         raise AccountError("VALIDATION_FIELD_INVALID", 422)
+    if rebuild_requested(run):
+        run["rebuild_preview_digest"] = preview_dependency_digest(conn, project, actor, run)
     wait = run["waiting"]
     if (
         body["waiting_item_id"] != wait["id"]
@@ -172,6 +177,10 @@ def accept_locked(
         "candidate_snapshot": copy.deepcopy(run["candidates"]),
         "acknowledged_risk_ids": copy.deepcopy(body["acknowledged_risk_ids"]),
     }
+    if rebuild_requested(run):
+        run["ingestion_confirmation"]["rebuild_dependency_digest"] = run.pop(
+            "rebuild_preview_digest"
+        )
     if decision:
         run["ingestion_confirmation"]["verify_existing"] = decision["digest"]
     run["candidate_version"]["content_locked"] = True

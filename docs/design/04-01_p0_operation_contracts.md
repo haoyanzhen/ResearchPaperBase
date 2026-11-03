@@ -1,6 +1,6 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.35
+文档版本：v1.37
 更新日期：2026-11-02
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
@@ -209,7 +209,7 @@ Workspace 草稿保存不是章节/检索词内容保存；业务写入必须调
 - `StepView={id:ID,kind:string,state:string,result_summary:object,error:object|null}`；`WaitingItem={id:ID,kind:search_terms|retrieval|screening|processing|analysis|ingestion_preview,revision:Revision,confirmation:主文完整确认对象,allowed_actions:string[]}`。
 - `CandidateView=Resource+{kind:paper|material,title:string|null,source_refs:SourceRef[],deduplication:{decision:string,reason:string,matched_project_asset_id:ID|null},screening:ScreeningView,processing:ProcessingView,analysis:PaperAnalysis|MaterialAnalysis|null,content_state:string,confirmed_revision:Revision|null}`。论文 analysis 包含 `one_sentence_summary,highlights[],relevance_points[],methods,innovations[]`；资料 analysis 为 `important_summary,relevance_points[]`。
 - `CandidatePatch={expected_revision!,metadata?:部分PaperMetadata或MaterialMetadata,screening?:{score?:number,valid?:boolean,reason:string!},analysis?:PaperAnalysis或MaterialAnalysis}`；metadata 限 SupplementPatch 已允许字段，资料仅标题/格式识别修正；修改使依赖下游结果失效，不改变启动配置。
-- 手动增量 Run 详情在筛选等待时可返回只读 `baseline_match_preview={base_knowledge_version_id,candidate_count,matched_paper_count}`。它统计本轮完整来源结果和已匹配的不同基线论文，有候选时用户可继续修正。所有冻结检索词与来源均完整返回零条时，两项计数均为 0。缺少分页完成证据、日期过滤丢弃记录、来源失败或无既有基线时不提供零条核验入口。启用核验 Worker 时，用户可先确认检索零条或全部匹配，再确认核验入库预览中列出的基线。无变化成功依 02-02 §10.4 单独核验；原文、向量或图谱不可用时保留失败诊断。
+- 手动增量 Run 详情在筛选等待时可返回只读 `baseline_match_preview={base_knowledge_version_id,candidate_count,matched_paper_count}`。它统计本轮完整来源结果和已匹配的不同基线论文，有候选时用户可继续修正。所有冻结检索词与来源均完整返回零条时，两项计数均为 0。缺少分页完成证据、日期过滤丢弃记录、来源失败或无既有基线时不提供零条核验入口。启用核验 Worker 时，用户可先确认检索零条或全部匹配，再确认核验入库预览中列出的基线。若完整检索有结果，去重后所有待筛选论文均有当前有效的排除判断，预览另给出 excluded_paper_count（排除的不同论文数），入库预览逐篇列出理由。待判定、评分失败、依据失效或去重冲突时不能以筛选排除收尾。用户先确认排除范围，再确认核验既有版本。无变化成功依 02-02 §10.4 单独核验；原文、向量或图谱不可用时保留失败诊断。
 - `IngestionPreview={revision:Revision,base_knowledge_version_id:ID|null,valid_papers:ID[],valid_materials:ID[],skipped:object[],failed:object[],degraded:object[],non_knowledge_items:object[],risks:object[],waiting_item:WaitingItem}`。
 
 
@@ -269,6 +269,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 | GET `CR/ingestion-preview` | `Construction.PreviewIngestion` / 026 | 无 → IngestionPreview | 明列失败/降级等；失败或零结果不得伪造可发布，有意移除全部按统一确认及空版本发布规则 |
 | POST `CR/waiting-items/{waiting_item_id}/confirm` | `Construction.ConfirmStep` / 016,022,024–026 | `{expected_revision!,subject_revision!,candidate_revision!,confirmation_token!,acknowledged_risk_ids:string[]!}` → CommandResult | token绑定具体等待项、步骤及快照；风险未确认/候选已改拒绝 |
 | POST `CR/cancel` | `Construction.Cancel` / 015 | `{expected_revision!,attempt_id:ID\|null!}` → CommandResult | 无已分配执行身份时 attempt_id 才可为空，按 Run ID 和修订取消；与 published/no_change 完成排他裁决；旧 Worker 写资格先失效再释放槽；请求接收不等于清理完成；failed 放弃恢复不改 cancelled |
+| POST `CR/temporary-cleanup` | `Construction.CleanTemporaryAssets` / 015 | `{expected_revision!,explicit_confirmation:true!}` → CommandResult（202） | 失败构建的所有者可明确放弃恢复并回收可释放临时资产。清理失败可重试；Run 保留原业务终态、人工稿及诊断。详情 temporary_cleanup 展示排队、成功或失败、尝试次数及对象计数。 |
 
 输入冻结后新上传默认待下一轮；同 Run 返回检索只允许手动 retrieval Run 的筛选等待点追加已确认词，不允许其他阶段或 revision_only。保留原词、原解析来源集合、时间范围、每源总预算、模型、配置和知识基线；新词来源策略不得引入新来源，按剩余额度执行，额度已耗尽拒绝。只合并新增候选并重新去重/筛选，原人工决定及无关结果保留；受影响确认失效，旧执行资格撤销，迟到结果不得写入新输入修订。发布只由 Construction 内部执行。
 

@@ -1,6 +1,7 @@
 # ruff: noqa: F811
 """A real published paper baseline, explicit confirmations and an atomic no-change decision."""
 
+import copy
 from uuid import UUID, uuid4
 
 import pytest
@@ -27,10 +28,16 @@ from rpb.adapters.source_tables import dispatch_limits
     [
         "success",
         "zero",
+        "excluded",
+        "model_excluded",
         "cancel",
         "revoke",
         "pdf_missing",
         "profile_change",
+        "rebuild_changed",
+        "rebuild_equal",
+        "rebuild_service_prepare",
+        "rebuild_service_commit",
         "tamper",
         "confirmation",
         "late_file",
@@ -86,6 +93,10 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
         def search(self, *args):
             result = super().search(*args)
             result["items"][0]["title"] = first["candidates"][0]["metadata"]["title"]
+            if case in {"excluded", "model_excluded"}:
+                result["items"][0]["title"] = "Unrelated paper"
+            if case == "model_excluded":
+                result["items"].append(result["items"][0] | {"title": "UNRELATED PAPER!"})
             if case == "zero":
                 result["items"] = []
             return result
@@ -94,15 +105,49 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
         k: first["request"][k]
         for k in ("selected_terms", "retrieval_range", "model_selection", "result_limit_per_source")
     }
+    if case.startswith("rebuild_"):
+        request["graph_mode"] = "rebuild"
     path = root + "/construction-runs"
     start = post(c, h, path, request, str(uuid4()))
     identity = UUID(start.json()["data"]["run"]["id"])
     url = path + "/" + str(identity)
     assert RunWorker(store, Matched()).run_once()
     assert confirm(c, h, url)[0].status_code == 200
+    excluded = case in {"excluded", "model_excluded"}
+    if excluded:
+        from test_paper_deduplication import candidates
+        from test_paper_screening import Scores, classify, edit, score_request
+
+        from rpb.adapters.paper_scoring_worker import ScoreWorker
+
+        assert "baseline_match_preview" not in c.get(url).json()["data"]
+        item = candidates(c, url)[0]
+        if case == "excluded":
+            assert edit(c, h, url, item, valid=False, reason="Outside topic").status_code == 200
+            reason = "Outside topic"
+        else:
+            for member in candidates(c, url):
+                classify(c, h, root, member["id"])
+            scored = post(c, h, url + "/screening/score", score_request(c, url), str(uuid4()))
+            assert scored.status_code == 202
+            assert ScoreWorker(store, Scores([2])).run_once()
+            reason = "theory\ntech\ntopic"
     detail = c.get(url).json()["data"]
     assert detail["baseline_match_preview"]["base_knowledge_version_id"] == str(base)
     assert detail["waiting_items"][0]["allowed_actions"] == ["confirm_screening"]
+    if excluded:
+        assert detail["baseline_match_preview"]["excluded_paper_count"] == 1
+        assert detail["baseline_match_preview"]["matched_paper_count"] == 0
+    if case == "model_excluded":
+        with engine.begin() as conn:
+            row = runs.c.id == identity
+            original = conn.scalar(sa.select(runs.c.payload).where(row))
+            changed = copy.deepcopy(original)
+            changed["candidates"][0]["metadata"]["abstract"] = "Unscored replacement abstract"
+            conn.execute(runs.update().where(row).values(payload=changed))
+        assert "baseline_match_preview" not in c.get(url).json()["data"]
+        with engine.begin() as conn:
+            conn.execute(runs.update().where(row).values(payload=original))
     if case == "zero":
         assert detail["baseline_match_preview"] == {
             "base_knowledge_version_id": str(base),
@@ -134,9 +179,48 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
     preview = c.get(url + "/ingestion-preview").json()["data"]
     assert (
         preview["valid_papers"] == []
-        and len(preview["skipped"]) == (0 if case == "zero" else 1)
+        and len(preview["skipped"]) == ({"zero": 0, "model_excluded": 2}.get(case, 1))
         and not preview["failed"]
     )
+    if excluded:
+        assert {"candidate_id": item["id"], "reason": "筛选排除：" + reason} in preview["skipped"]
+        if case == "excluded":
+            with engine.begin() as conn:
+                row = runs.c.id == identity
+                original = conn.scalar(sa.select(runs.c.payload).where(row))
+                changed = copy.deepcopy(original)
+                changed["candidates"][0]["screening"]["reason"] = None
+                conn.execute(runs.update().where(row).values(payload=changed))
+            broken = c.get(url + "/ingestion-preview").json()["data"]
+            assert broken["failed"][0]["candidate_id"] == item["id"]
+            assert not broken["waiting_item"]["allowed_actions"]
+            assert confirm(c, h, url)[0].status_code == 409
+            with engine.begin() as conn:
+                conn.execute(runs.update().where(row).values(payload=original))
+            # Reopening a verdict invalidates the previously issued confirmation.
+            wait = preview["waiting_item"]
+            old = {
+                k: wait["confirmation"][k]
+                for k in ("subject_revision", "candidate_revision", "confirmation_token")
+            }
+            old.update(expected_revision=wait["revision"], acknowledged_risk_ids=[])
+            assert edit(c, h, url, candidates(c, url)[0], valid=True).status_code == 200
+            assert (
+                post(
+                    c, h, url + "/waiting-items/" + wait["id"] + "/confirm", old, str(uuid4())
+                ).status_code
+                == 409
+            )
+            assert "baseline_match_preview" not in c.get(url).json()["data"]
+            assert (
+                edit(
+                    c, h, url, candidates(c, url)[0], valid=False, reason="Updated rationale"
+                ).status_code
+                == 200
+            )
+            assert confirm(c, h, url)[0].status_code == 200
+            preview = c.get(url + "/ingestion-preview").json()["data"]
+            assert preview["skipped"][0]["reason"] == "筛选排除：Updated rationale"
     assert preview["waiting_item"]["allowed_actions"] == ["confirm_ingestion_preview"]
     assert not worker.run_once()
     key = str(uuid4())
@@ -144,15 +228,32 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
     assert accepted.status_code == 200, accepted.text
     assert post(c, h, command, body, key).json()["data"] == accepted.json()["data"]
 
+    def change_service():
+        from rpb.adapters.llm_tables import configs
+
+        cid = UUID(first["config_snapshot"]["model_selection"]["config_id"])
+        with engine.begin() as conn:
+            cfg = conn.scalar(sa.select(configs.c.data).where(configs.c.id == cid))
+            conn.execute(
+                configs.update()
+                .where(configs.c.id == cid)
+                .values(data=cfg | {"base_url": "https://changed.test"})
+            )
+
+    if case == "rebuild_service_prepare":
+        change_service()
+
     class VerifyOnly(FakePort):
         def __init__(self, permit):
             super().__init__(permit)
-            if case == "profile_change":
+            if case in {"profile_change", "rebuild_changed"}:
                 self.profile.pop("profile_id")
                 self.profile["runtime_digest"] = "2" * 64
                 self.profile["profile_id"] = content_digest(self.profile)
 
         def embed(self, text):
+            if case == "rebuild_changed":
+                return super().embed(text)
             pytest.fail("verification tried to create a new embedding")
 
     worker.embedding = VerifyOnly
@@ -165,6 +266,8 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
 
     def interleave(*args):
         commits.append(args)
+        if case == "rebuild_service_commit":
+            change_service()
         detail = c.get(url).json()["data"]
         assert detail["candidate_version"]["state"] == "ready_to_publish"
         if case == "cancel":
@@ -247,6 +350,19 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
     monkeypatch.setattr(no_change, "commit_no_change", interleave)
     assert worker.run_once() and not worker.run_once()
     detail = c.get(url).json()["data"]
+    if case == "rebuild_changed":
+        assert detail["status"] == "succeeded"
+        assert detail["published_knowledge_version_id"] and not commits
+        with engine.connect() as conn:
+            latest = conn.scalar(sa.select(heads.c.version_id))
+            assert str(latest) == detail["published_knowledge_version_id"] and latest != base
+            rebuilt = conn.scalar(sa.select(versions.c.manifest).where(versions.c.id == latest))
+            assert rebuilt["papers"] == manifest["papers"]
+            assert rebuilt["build_profile"] != manifest["build_profile"]
+            assert (
+                conn.scalar(sa.select(versions.c.manifest).where(versions.c.id == base)) == manifest
+            )
+        return
     assert detail["published_knowledge_version_id"] is None
     assert counts() == before
     with engine.connect() as conn:
@@ -256,8 +372,10 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
         assert conn.scalar(sa.select(slots.c.occupant_run_id)) == (
             identity if case == "lost_claim" else None
         )
-    assert bool(commits) == (case not in {"profile_change", "pdf_missing", "bad_count"})
-    if case in {"success", "rollback", "zero"}:
+    assert bool(commits) == (
+        case not in {"profile_change", "pdf_missing", "bad_count", "rebuild_service_prepare"}
+    )
+    if case in {"success", "rollback", "zero", "excluded", "model_excluded", "rebuild_equal"}:
         assert detail["status"] == "succeeded"
         assert detail["completion"]["outcome"] == "no_change" and detail["completion"][
             "verified_knowledge_version_id"

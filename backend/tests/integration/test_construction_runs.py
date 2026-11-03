@@ -579,7 +579,7 @@ def test_cr14_db_unique_writer_and_nonempty_downgrade_protection(subject, db):
     with engine.connect() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0018_knowledge_build_views"
+            == "0019_run_temporary_cleanup"
         )
 
 

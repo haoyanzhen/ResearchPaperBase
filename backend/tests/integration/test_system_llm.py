@@ -323,7 +323,7 @@ def test_sl09_failed_audit_rolls_back_and_downgrade_refused(system, db, monkeypa
     with db[0].connect() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0018_knowledge_build_views"
+            == "0019_run_temporary_cleanup"
         )
         assert sa.inspect(conn).has_table("system_source_audit")
     with db[0].connect() as conn:

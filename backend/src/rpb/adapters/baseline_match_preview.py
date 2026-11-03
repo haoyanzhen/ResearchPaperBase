@@ -6,7 +6,8 @@ from uuid import UUID
 
 from rpb.adapters.knowledge_baseline_papers import content_digest, pinned_revisions
 from rpb.adapters.knowledge_paper_tables import paper_revisions
-from rpb.adapters.paper_screening import baseline_ready
+from rpb.adapters.paper_screening import baseline_ready, proposal
+from rpb.modules.construction.domain.runs import initial_screening, instant
 
 
 def _complete_retrieval(run: Any) -> bool:
@@ -107,6 +108,75 @@ def match_scope_digest(run: Any, scope: dict[str, Any]) -> str:
     return content_digest({"scope": scope, "facts": {key: run.get(key) for key in keys}})
 
 
+def _excluded_group(run: Any, leader: Any, members: list[Any]) -> bool:
+    verdict = leader["screening"]
+    state = leader.get("screening_state")
+    if (
+        verdict["valid"] is not False
+        or not isinstance(verdict["reason"], str)
+        or not verdict["reason"].strip()
+        or any(
+            item.get("screening_stale") is not False
+            or item.get("screening_error") is not None
+            or item.get("screening_state") != state
+            or item["screening"] != verdict
+            for item in members
+        )
+    ):
+        return False
+    if state == "manual_edit":
+        return all(
+            item.get("screening_modified_by") == run["owner_id"]
+            and instant(item.get("screening_modified_at")) is not None
+            for item in members
+        )
+    if state != "agent_draft":
+        return False
+    basis = leader["screening_basis"]
+    job = run["scoring_jobs"][basis["task_id"]]
+    group_id = leader["deduplication"]["group_id"]
+    groups = [g for g in job["input"]["groups"] if g["group_id"] == group_id]
+    if len(groups) != 1 or groups[0]["candidate_id"] != leader["id"]:
+        return False
+    sources = groups[0]["sources"]
+    # The scoring worker timestamps each group member separately.
+    inputs = {k: v for k, v in basis.items() if k != "at"}
+    # Scoring changes candidate revisions. Compare the actual content sent for each source.
+    if (
+        basis["candidate_sources"] != sources
+        or basis["topic"] != job["input"]["topic"]
+        or len(members) != len(sources)
+        or any(
+            item["id"] != source["candidate_id"]
+            or item["metadata"] != source["metadata"]
+            or item["source"] != source["source"]
+            or instant(item["screening_basis"].get("at")) is None
+            or any(item["screening_basis"].get(k) != v for k, v in inputs.items())
+            for item, source in zip(members, sources, strict=True)
+        )
+    ):
+        return False
+    evidence = proposal(basis["reasons"])
+    expected = initial_screening(evidence["score"])
+    return (
+        job["state"] == "succeeded"
+        and job["owner_id"] == run["owner_id"]
+        and job["id"] == basis["task_id"]
+        and basis["model_selection"]
+        == job["model_selection"]
+        == run["config_snapshot"]["model_selection"]
+        and basis["config_revision"]
+        == job["config_revision"]
+        == run["config_snapshot"]["config_revision"]
+        and basis["threshold"] == expected["threshold"]
+        and expected["valid"] is False
+        and all(verdict[k] == expected[k] for k in ("score", "score_scale", "threshold_source"))
+        and verdict["reason"]
+        == "\n".join(evidence[k] for k in ("theoretical", "technical", "relevance"))
+        and {"candidate_id": leader["id"], "value": evidence, "error": None} in job["results"]
+    )
+
+
 def matched_baseline_scope(conn: Any, run: Any) -> dict[str, Any] | None:
     if not baseline_ready(run):
         return None
@@ -115,7 +185,8 @@ def matched_baseline_scope(conn: Any, run: Any) -> dict[str, Any] | None:
     if (
         not base
         or snapshot.get("mode") != "retrieval"
-        or snapshot.get("graph_mode") != "incremental"
+        or snapshot.get("graph_mode") not in {"incremental", "rebuild"}
+        or snapshot.get("graph_mode") != run.get("request", {}).get("graph_mode", "incremental")
         or snapshot.get("supplement_ids") != []
         or snapshot.get("pending_revision_ids") != []
         or not isinstance(run.get("candidates"), list)
@@ -123,14 +194,16 @@ def matched_baseline_scope(conn: Any, run: Any) -> dict[str, Any] | None:
     ):
         return None
     try:
-        decisions = {c["id"]: c["deduplication"] for c in run["candidates"] if c["kind"] == "paper"}
-        if len(decisions) != len(run["candidates"]):
+        candidates = {c["id"]: c for c in run["candidates"] if c["kind"] == "paper"}
+        if len(candidates) != len(run["candidates"]):
             return None
         assets = set()
-        for cid, decision in decisions.items():
+        excluded: dict[str, list[Any]] = {}
+        for cid, candidate in candidates.items():
+            decision = candidate["deduplication"]
             group = decision["group_id"]
             leader_id = run["dedup_group_leaders"][group]
-            leader = decisions[leader_id]
+            leader = candidates[leader_id]["deduplication"]
             if (
                 not group
                 or group != leader["group_id"]
@@ -140,11 +213,23 @@ def matched_baseline_scope(conn: Any, run: Any) -> dict[str, Any] | None:
             if decision["state"] == "match":
                 if decision["matched_candidate_id"] != leader_id or cid == leader_id:
                     return None
-            elif cid != leader_id or decision["state"] != "match_existing":
+            elif cid != leader_id:
                 return None
+            if leader["state"] == "distinct":
+                if leader["matched_project_asset_id"] is not None:
+                    return None
+                excluded.setdefault(leader_id, []).append(candidate)
+                continue
             if leader["state"] != "match_existing" or not leader["matched_project_asset_id"]:
                 return None
             assets.add(leader["matched_project_asset_id"])
+        if excluded and (
+            run.get("retrieval_proof_version") != 2
+            or not all(
+                _excluded_group(run, candidates[cid], members) for cid, members in excluded.items()
+            )
+        ):
+            return None
         if not _complete_retrieval(run):
             return None
         pinned = {
@@ -167,6 +252,7 @@ def matched_baseline_scope(conn: Any, run: Any) -> dict[str, Any] | None:
         return None
     return {
         "base_knowledge_version_id": base,
-        "candidate_count": len(decisions),
+        "candidate_count": len(candidates),
+        **({"excluded_paper_count": len(excluded)} if excluded else {}),
         "matched_paper_count": len(assets),
     }

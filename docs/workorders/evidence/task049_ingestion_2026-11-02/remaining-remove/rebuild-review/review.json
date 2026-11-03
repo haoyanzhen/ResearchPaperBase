@@ -1,0 +1,21 @@
+{
+  "原始反例": "restricted-source/summary.json，2 项失败；仅排除的文件不可读时，部分与全部移除均被阻塞。",
+  "修复复验": [
+    "restricted-green/summary.json",
+    "final-selected/summary.json",
+    "final-all/summary.json"
+  ],
+  "结论": "已确认只读取保留证据，校验保留依赖修订，不可证明等价时回滚。部分、全移与历史读取等 10 项通过，独立故障探针 2 项通过。前端显示基线、成员、风险和冲突，确认才提交。",
+  "范围": "纯论文已发布基线，含受控旧版数据。",
+  "artifacts_sha256": {
+    "backend/src/rpb/adapters/association_removal.py": "56c038aaff55dd11d85024c107c97b1b9500959fea7dd3607519b48882c42a85",
+    "backend/src/rpb/adapters/association_removal_worker.py": "bacf43dcd1f368646aa56cb19f4df689d7f8cfe8071a556f73e9e3af21065a6f",
+    "backend/src/rpb/adapters/association_removal_inputs.py": "aa757fd4aa20bc1e70728262cc802681b9a80411d9fabdebfee3899bcc0f8f45",
+    "backend/src/rpb/adapters/first_publication.py": "f92d8872c3744a8244f3b35c8796fbd4a4f156617e773adf7406cc524205397f",
+    "frontend/src/AssociationRemoval.tsx": "2e689edc8fcce41a6c626324e7cfbf03bd7a4ab70d6954b4198592f7e249d02f",
+    "backend/tests/integration/test_association_removal.py": "9efb90ea074c4986e7b5ea1d5f26d8ad64d33a68fcb608f4363d1b80e47a33bf"
+  },
+  "工具": "独立 delivery_context 原文及 ledger、entry；隔离库 run_storage_tests.py、各运行 exit_code / JUnit / delivery_summary.py 摘要见各子目录。",
+  "浏览器复验": "remaining-cleanup/rebuild-review/independent-browser/summary.json：Playwright + HTTP + 隔离库，重建输入、清理两步确认与失败 Run、移除影响预览和空版结果，1/1 通过。",
+  "补充复审": "overlap-final/summary.json：较大移除已发布后，持有同基线子集合确认返回同一既有发布及相应目标修订。1/1。"
+}

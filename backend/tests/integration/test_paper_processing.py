@@ -482,7 +482,7 @@ def test_pp22_processing_projection_schema_and_migration_refusal(subject, db):
     with engine.connect() as conn:
         assert (
             conn.scalar(sa.text("SELECT version_num FROM alembic_version"))
-            == "0018_knowledge_build_views"
+            == "0019_run_temporary_cleanup"
         )
 
 

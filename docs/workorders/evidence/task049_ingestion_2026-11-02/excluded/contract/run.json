@@ -1,0 +1,1 @@
+{"command": ["contracts/.venv/bin/python", "scripts/check_api_contracts.py"], "exit_code": 0}

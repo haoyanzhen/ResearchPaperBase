@@ -74,7 +74,7 @@ def check(spec, coverage):
         assert set(re.findall(r'{([^}]+)}', path)) <= names, path
         if method != 'get':
             assert 'X-CSRF-Token' in required_headers, op['operationId']
-        if method == 'post' and not path.startswith('/auth/') and not path.endswith('/action-preview'):
+        if method == 'post' and not path.startswith('/auth/') and not path.endswith(('/action-preview', '/association-clear-preview')):
             assert 'Idempotency-Key' in required_headers, op['operationId']
         if path.startswith('/admin/'):
             assert op['x-authorization'] == 'enabled-admin'
