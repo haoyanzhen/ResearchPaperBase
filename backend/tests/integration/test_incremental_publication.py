@@ -48,6 +48,8 @@ def test_incremental_publication(subject, accepted_full_text_run, tmp_path, monk
     base, before, second = published_baseline_and_second_run(
         subject, first_run, tmp_path, EmptyGraph()
     )
+    if case == "success":
+        assert client.get(root).json()["data"]["default_knowledge_version_id"] == str(base)
     old = client.get(root + "/papers", params={"knowledge_version_id": str(base)}).json()["data"]
     assert len(old["items"]) == 1
     run_id = UUID(second["id"])
@@ -200,6 +202,11 @@ def test_incremental_publication(subject, accepted_full_text_run, tmp_path, monk
             and str(latest) == run["published_knowledge_version_id"]
             and latest != base
         )
+        assert client.get(root).json()["data"]["default_knowledge_version_id"] == str(latest)
+        listing = client.get("/api/v1/projects").json()["data"]["items"]
+        assert next(p for p in listing if p["id"] == str(project))[
+            "default_knowledge_version_id"
+        ] == str(latest)
         record = conn.execute(sa.select(versions).where(versions.c.id == latest)).mappings().one()
         assert record["base_version_id"] == base
         papers = record["manifest"]["papers"]

@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task050_project_knowledge_head/red_deleted2/tests.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 1,
+    "passed": 0,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "tests.integration.test_project_maintenance_browser::test_head_poll_clears_unavailable_project_and_form",
+      "message": "AssertionError: Locator expected to have Value ''\nActual value: Private project name \nCall log:\n  - Expect \"to_have_value\" get_by_label(\"项目名称\", exact=True) with timeout 5000ms\n  - waiting for get_by_label(\"项目名称\", exact=True)\n    14 × locator resolved to <input required=\"\" maxlength=\"200\" value=\"Private project name\"/>\n       - unexpected value \"Private project name\"\n\nAria snapshot:\n- textbox \"项目名称\": Private project name\nbrowser_app = (<Browser type=<BrowserType name=chromium executable_path=/Use",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

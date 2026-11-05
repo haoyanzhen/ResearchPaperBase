@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.736" timestamp="2026-11-04T22:53:41.113109+08:00" hostname="qy.local"><testcase classname="tests.integration.test_incremental_publication" name="test_incremental_publication[success]" time="1.927"><failure message="AssertionError: assert None == '780f3883-80c3-466e-9eb9-13076575edaf'&#10; +  where '780f3883-80c3-466e-9eb9-13076575edaf' = str(UUID('780f3883-80c3-466e-9eb9-13076575edaf'))">subject = (&lt;test_search_terms.TermsClient object at 0x10f21fe00&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'NyASG99vk...4fa214c5cd791118c8?host=%2Fprivate%2Ftmp%2Frpb-db-xobxf4z6&amp;port=5432), b'pZCGHmBnk5TLWE7wDmC3VCAg6vT8qvi0LBnhhFehIpk=')
+accepted_full_text_run = ((UUID('03a3f9ad-f117-4fb6-8c2b-38c4b0e15b00'), UUID('c2bfb216-af05-47e5-bcdc-ed22d460d07c'), UUID('0f17383a-f40e-4999...0000000162 00000 n \n0000000343 00000 n \ntrailer\n&lt;&lt;\n/Size 6\n/Root 3 0 R\n/Info 1 0 R\n&gt;&gt;\nstartxref\n448\n%%EOF\n')
+tmp_path = PosixPath('/private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/pytest-of-qingyue/pytest-390/test_incremental_publication_s0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10f227360&gt;
+case = 'success'
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            "success",
+            "rollback",
+            "head_race",
+            "revoked",
+            "stale_claim",
+            "stale_proof",
+            "changed_counts",
+            "stale_nested",
+            "stale_before_staging",
+            "lost_pdf",
+        ],
+    )
+    def test_incremental_publication(subject, accepted_full_text_run, tmp_path, monkeypatch, case):
+        first_run = accepted_full_text_run[0]
+        client, headers, root, app, engine, _ = subject
+        actor, project, _, first = first_run
+        base, before, second = published_baseline_and_second_run(
+            subject, first_run, tmp_path, EmptyGraph()
+        )
+        if case == "success":
+&gt;           assert client.get(root).json()["data"]["default_knowledge_version_id"] == str(base)
+E           AssertionError: assert None == '780f3883-80c3-466e-9eb9-13076575edaf'
+E            +  where '780f3883-80c3-466e-9eb9-13076575edaf' = str(UUID('780f3883-80c3-466e-9eb9-13076575edaf'))
+
+tests/integration/test_incremental_publication.py:52: AssertionError</failure></testcase></testsuite></testsuites>

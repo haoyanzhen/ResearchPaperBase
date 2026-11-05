@@ -1,0 +1,1 @@
+{"command": ["python3", "scripts/delivery_snapshot.py", "diff", "--directory", "docs/workorders/evidence/task050_project_knowledge_head/source", "--limit", "12"], "filter": null, "exit_code": 0}

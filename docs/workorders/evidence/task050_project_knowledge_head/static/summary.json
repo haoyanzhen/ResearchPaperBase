@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task050_project_knowledge_head/static/output.log",
+  "exit_code": 1,
+  "report_type": "log",
+  "status": "failed",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 493,
+  "read_start_byte": 0,
+  "text": "E501 Line too long (101 > 100)\n   --> backend/tests/integration/test_no_change_completion.py:440:101\n    |\n438 |         project = c.get(root).json()[\"data\"]\n439 |         updated = c.patch(\n440 |             root, headers=h, json={\"expected_revision\": project[\"revision\"], \"description\": \"edited\"}\n    |                                                                                                     ^\n441 |         )\n442 |         assert updated.status_code == 200\n    |\n\nFound 1 error.\n",
+  "truncated": false
+}

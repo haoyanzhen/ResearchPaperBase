@@ -1,0 +1,25 @@
+{
+  "report": "/private/tmp/head-review-050/delete2.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 1,
+    "passed": 0,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "::test_head_probe",
+      "message": "AssertionError: Locator expected to have Value ''\nActual value: Private alpha detail \nCall log:\n  - Expect \"to_have_value\" locator(\"textarea\").first with timeout 5000ms\n  - waiting for locator(\"textarea\").first\n    14 × locator resolved to <textarea maxlength=\"10000\">Private alpha detail</textarea>\n       - unexpected value \"Private alpha detail\"\n\nAria snapshot:\n- textbox \"描述\": Private alpha detail\nbrowser_app = (<Browser type=<BrowserType name=chromium executable_path=/Users/qingyue/Library/Cac",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

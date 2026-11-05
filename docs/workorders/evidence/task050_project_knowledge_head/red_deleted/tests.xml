@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="3.049" timestamp="2026-11-04T22:58:37.815938+08:00" hostname="qy.local"><testcase classname="tests.integration.test_project_maintenance_browser" name="test_head_poll_clears_unavailable_project_and_form" time="2.476"><failure message="playwright._impl._errors.Error: Please use browser.new_context()">browser_app = (&lt;Browser type=&lt;BrowserType name=chromium executable_path=/Users/qingyue/Library/Caches/ms-playwright/chromium-1248/ch...da4a8f86d4c055f4b3943b?host=%2Fprivate%2Ftmp%2Frpb-db-mb5f_cig&amp;port=5432), 'rpb_test_c564c43ea8da4a8f86d4c055f4b3943b')
+
+    def test_head_poll_clears_unavailable_project_and_form(browser_app):
+        browser, base, _, _ = browser_app
+        page = browser.new_page()
+        open_project(page, base, "Private project name")
+&gt;       other = page.context.new_page()
+                ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_project_maintenance_browser.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.14/site-packages/playwright/sync_api/_generated.py:2746: in new_page
+    return mapping.from_impl(self._sync(self._impl_obj.new_page()))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;BrowserContext browser=&lt;Browser type=&lt;BrowserType name=chromium executable_path=/Users/qingyue/Library/Caches/ms-play...um-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing&gt; version=156.0.8078.4&gt;&gt;
+
+    async def new_page(self) -&gt; Page:
+        if self._owner_page:
+&gt;           raise Error("Please use browser.new_context()")
+E           playwright._impl._errors.Error: Please use browser.new_context()
+
+.venv/lib/python3.14/site-packages/playwright/_impl/_browser_context.py:352: Error</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="37.520" timestamp="2026-11-04T22:55:42.743236+08:00" hostname="qy.local"><testcase classname="tests.integration.test_browser_analysis" name="test_pab01_generate_edit_reject_overwrite_confirm_refresh" time="34.581"><failure message="playwright._impl._errors.TimeoutError: Locator.fill: Timeout 30000ms exceeded.&#10;Call log:&#10;  - waiting for get_by_role(&quot;region&quot;, name=&quot;项目维护&quot;).get_by_label(&quot;描述&quot;, exact=True)">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x109eb9cd0&gt;
+request = &lt;FixtureRequest for &lt;Function test_pab01_generate_edit_reject_overwrite_confirm_refresh&gt;&gt;
+tmp_path = PosixPath('/private/var/folders/dm/02d6bs4d6w169pdjfnwqxfq40000gn/T/pytest-of-qingyue/pytest-393/test_pab01_generate_edit_rejec0')
+
+    def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, request, tmp_path):
+        page, region, app, client, headers, root = configured_browser(monkeypatch, request)
+        from test_ingestion_preview import embedding_factory
+    
+        from rpb.adapters.first_publication_worker import FirstPublicationWorker
+    
+        class EmptyGraph:
+            def extract(self, config, model, secret, text, metadata, authorize):
+                with authorize():
+                    return [], []
+    
+        worker = FirstPublicationWorker(
+            app.state.run_store, tmp_path / "objects", embedding_factory(), EmptyGraph()
+        )
+        region.get_by_label("graph", exact=True).check()
+        region.get_by_role("button", name="启动检索", exact=True).click()
+        expect(region.get_by_role("heading", name="排队中", exact=True)).to_be_visible()
+        assert RunWorker(app.state.run_store, RepeatedPapers()).run_once()
+        region.get_by_role("button", name="刷新本次结果", exact=True).click()
+        region.get_by_role("button", name="确认检索并去重", exact=True).click()
+        form = region.get_by_role("form", name=re.compile("^调整评分 ")).first
+        form.get_by_label("有效性", exact=True).select_option("true")
+        form.get_by_label("判断理由", exact=True).fill("Human included paper")
+        form.get_by_role("button", name="保存人工评分", exact=True).click()
+        region.get_by_role("button", name="确认筛选并下载解析", exact=True).click()
+        expect(region.get_by_role("status")).to_contain_text("正在获取并解析")
+        assert ProcessingWorker(app.state.run_store, Prepared()).run_once()
+        region.get_by_role("button", name="刷新本次结果", exact=True).click()
+        region.get_by_role("button", name="确认处理结果", exact=True).click()
+        expect(region.get_by_role("heading", name="论文AI分析", exact=True)).to_be_visible()
+        headers["X-CSRF-Token"] = client.get("/api/v1/auth/csrf").json()["data"]["csrf_token"]
+        run = client.get(root + "/construction-runs").json()["data"]["items"][0]
+        url = root + "/construction-runs/" + run["id"]
+        ws = client.get(root + "/construction-workspace").json()["data"]
+        classify(client, headers, root, ws["topic_source"]["source_id"])
+        for item in candidates(client, url):
+            classify(client, headers, root, item["id"])
+        section = region.get_by_role("region", name=re.compile("^论文分析 ")).first
+        section.get_by_role("button", name="生成或重新生成分析").click()
+        region.get_by_role("button", name="确认生成分析", exact=True).click()
+        expect(region.get_by_text("分析任务：queued", exact=True)).to_be_visible()
+        assert AnalysisWorker(app.state.run_store, Generated()).run_once()
+        region.get_by_role("button", name="刷新本次结果", exact=True).click()
+        expect(section.get_by_label("一句话总结", exact=True)).to_have_value("研究结论")
+        section.get_by_label("一句话总结", exact=True).fill("用户保留的分析结论")
+        section.get_by_label("亮点解析 1", exact=True).fill("第一行亮点\n同一要点的第二行")
+        section.get_by_role("button", name="添加创新点", exact=True).click()
+        section.get_by_label("创新点 1", exact=True).fill("有依据的创新点")
+        section.get_by_role("button", name="添加创新点", exact=True).click()
+        section.get_by_label("创新点 2", exact=True).fill("移除这个草稿")
+        section.get_by_role("button", name="移除创新点 2", exact=True).click()
+        section.get_by_role("button", name="保存人工分析", exact=True).click()
+        expect(section.get_by_text("人工修改", exact=True)).to_be_visible()
+        section.get_by_role("button", name="生成或重新生成分析").click()
+        expect(region.get_by_text("将替换当前已保存或已确认的论文分析", exact=True)).to_be_visible()
+        region.get_by_role("button", name="取消分析确认", exact=True).click()
+        expect(section.get_by_label("一句话总结", exact=True)).to_have_value("用户保留的分析结论")
+        region.get_by_role("button", name="确认有效分析（失败项不纳入）", exact=True).click()
+        expect(
+            region.get_by_role("heading", name="分析已确认，等待入库确认", exact=True)
+        ).to_be_visible()
+        expect(region.get_by_role("region", name="入库预览")).to_contain_text("拟纳入论文：1")
+        expect(region.get_by_role("button", name="确认检索并去重", exact=True)).to_have_count(0)
+        page.reload()
+        region.get_by_role("list").first.get_by_role("button").first.click()
+        expect(section.get_by_label("一句话总结", exact=True)).to_have_value("用户保留的分析结论")
+        expect(section.get_by_label("亮点解析 1", exact=True)).to_have_value(
+            "第一行亮点\n同一要点的第二行"
+        )
+        expect(section.get_by_label("创新点 1", exact=True)).to_have_value("有依据的创新点")
+        expect(section.get_by_label("创新点 2", exact=True)).to_have_count(0)
+        page.set_viewport_size({"width": 390, "height": 844})
+        assert page.evaluate("document.documentElement.scrollWidth &lt;= innerWidth")
+        page.screenshot(path=str(tmp_path / "analysis-mobile.png"), full_page=True)
+        region.get_by_role("button", name="接受上述风险并确认入库", exact=True).click()
+        expect(region.get_by_role("heading", name="正在构建知识版本", exact=True)).to_be_visible()
+        expect(page.get_by_text("尚未构建知识版本", exact=True)).to_be_visible()
+        page.get_by_role("button", name="编辑信息", exact=True).click()
+        draft = page.get_by_role("region", name="项目维护").get_by_label("描述", exact=True)
+&gt;       draft.fill("保留未保存的项目描述")
+
+tests/integration/test_browser_analysis.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.14/site-packages/playwright/sync_api/_generated.py:11640: in fill
+    self._sync(
+.venv/lib/python3.14/site-packages/playwright/_impl/_locator.py:228: in fill
+    return await self._frame.fill(self._selector, strict=True, **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/playwright/_impl/_frame.py:641: in fill
+    await self._fill(**locals_to_params(locals()))
+.venv/lib/python3.14/site-packages/playwright/_impl/_frame.py:653: in _fill
+    await self._channel.send("fill", self._timeout, locals_to_params(locals()))
+.venv/lib/python3.14/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;playwright._impl._connection.Connection object at 0x10e9dfb60&gt;
+cb = &lt;function Channel.send.&lt;locals&gt;.&lt;lambda&gt; at 0x10f2e38a0&gt;
+is_internal = False, title = None
+
+    async def wrap_api_call(
+        self, cb: Callable[[], Any], is_internal: bool = False, title: str = None
+    ) -&gt; Any:
+        if self._api_zone.get():
+            return await cb()
+        task = asyncio.current_task(self._loop)
+        parsed_st = _attach_api_call_information(
+            getattr(task, "__pw_stack__", None) or _capture_stack_trace(),
+            is_internal,
+            title,
+        )
+        self._api_zone.set(parsed_st)
+        try:
+            return await cb()
+        except Exception as error:
+&gt;           raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E           playwright._impl._errors.TimeoutError: Locator.fill: Timeout 30000ms exceeded.
+E           Call log:
+E             - waiting for get_by_role("region", name="项目维护").get_by_label("描述", exact=True)
+
+.venv/lib/python3.14/site-packages/playwright/_impl/_connection.py:636: TimeoutError</failure></testcase><testcase classname="tests.integration.test_no_change_completion" name="test_no_change_completion[success]" time="2.201" /></testsuite></testsuites>

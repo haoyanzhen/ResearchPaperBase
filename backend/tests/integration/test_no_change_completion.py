@@ -407,6 +407,7 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
             assert detail["candidate_version"]["content_locked"]
 
     if case == "success":
+        assert c.get(root).json()["data"]["default_knowledge_version_id"] == str(base)
         from test_incremental_vector_view import second_preview
         from test_project_maintenance import archive, confirmed
         from test_project_maintenance import preview as project_preview
@@ -434,8 +435,18 @@ def test_no_change_completion(subject, accepted_full_text_run, tmp_path, monkeyp
             assert head and head != base
         after = counts()
         assert commit(*commits[0]) == str(base)
-        receipt = project_preview(c, h, root, c.get(root).json()["data"]).json()["data"]
-        assert archive(c, h, root, confirmed(receipt)).status_code == 200
+        project = c.get(root).json()["data"]
+        updated = c.patch(
+            root,
+            headers=h,
+            json={"expected_revision": project["revision"], "description": "edited"},
+        )
+        assert updated.status_code == 200
+        assert updated.json()["data"]["default_knowledge_version_id"] == str(head)
+        receipt = project_preview(c, h, root, updated.json()["data"]).json()["data"]
+        archived = archive(c, h, root, confirmed(receipt))
+        assert archived.status_code == 200
+        assert archived.json()["data"]["default_knowledge_version_id"] == str(head)
         assert commit(*commits[0]) == str(base)
         assert counts() == after
         with engine.connect() as conn:

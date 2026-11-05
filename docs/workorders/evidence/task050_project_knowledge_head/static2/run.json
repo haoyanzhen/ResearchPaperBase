@@ -1,0 +1,1 @@
+{"command": ["backend/.venv/bin/ruff", "check", "backend/src/rpb/adapters/project_commands.py", "backend/tests/integration/test_browser_analysis.py", "backend/tests/integration/test_incremental_publication.py", "backend/tests/integration/test_no_change_completion.py"], "filter": null, "exit_code": 0}

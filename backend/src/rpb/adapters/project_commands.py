@@ -13,6 +13,7 @@ from sqlalchemy.engine import Connection, RowMapping
 
 from rpb.adapters.auth import AccountStore
 from rpb.adapters.auth import metadata as metadata
+from rpb.adapters.knowledge_tables import heads
 from rpb.adapters.project import projects
 from rpb.modules.account_config.application.ports import AccountError
 from rpb.modules.construction.application.ports import ConstructionInitializer
@@ -104,6 +105,15 @@ lifecycle = sa.Table(
 )
 
 
+default_version = (
+    sa.select(heads.c.version_id)
+    .where(heads.c.project_id == projects.c.id)
+    .correlate(projects)
+    .scalar_subquery()
+    .label("default_knowledge_version_id")
+)
+
+
 class Transaction:
     def __init__(
         self, conn: Connection, actor_id: UUID, construction: ConstructionInitializer
@@ -138,7 +148,7 @@ class Transaction:
                 projects.update()
                 .where(projects.c.id == identity, projects.c.owner_id == self.actor_id)
                 .values(**data, revision=uuid4(), updated_at=now)
-                .returning(projects)
+                .returning(projects, default_version)
             )
             .mappings()
             .one()
@@ -156,7 +166,7 @@ class Transaction:
                     revision=uuid4(),
                     updated_at=now,
                 )
-                .returning(projects)
+                .returning(projects, default_version)
             )
             .mappings()
             .one()
@@ -209,7 +219,7 @@ class Transaction:
     def read_project(self, identity: UUID) -> dict[str, Any]:
         row = (
             self.conn.execute(
-                sa.select(projects)
+                sa.select(projects, default_version)
                 .where(projects.c.id == identity, projects.c.owner_id == self.actor_id)
                 .with_for_update()
             )
@@ -223,7 +233,7 @@ class Transaction:
     def list_projects(
         self, limit: int, boundary: tuple[datetime, UUID] | None
     ) -> list[dict[str, Any]]:
-        query = sa.select(projects).where(
+        query = sa.select(projects, default_version).where(
             projects.c.owner_id == self.actor_id, projects.c.status != "deleted"
         )
         if boundary is not None:
@@ -250,7 +260,7 @@ class Transaction:
             )
         }
         result.update(
-            default_knowledge_version_id=None,
+            default_knowledge_version_id=row["default_knowledge_version_id"],
             last_construction_at=None,
             last_activity_at=None,
             permissions={"access": True, "use": True, "delete": True},

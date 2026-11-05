@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task050_project_knowledge_head/red2/tests.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 1,
+    "passed": 0,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "tests.integration.test_incremental_publication::test_incremental_publication[success]",
+      "message": "AssertionError: assert None == '780f3883-80c3-466e-9eb9-13076575edaf'\n +  where '780f3883-80c3-466e-9eb9-13076575edaf' = str(UUID('780f3883-80c3-466e-9eb9-13076575edaf'))\nsubject = (<test_search_terms.TermsClient object at 0x10f21fe00>, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'NyASG99vk...4fa214c5cd791118c8?host=%2Fprivate%2Ftmp%2Frpb-db-xobxf4z6&port=5432), b'pZCGHmBnk5TLWE7wDmC3VCAg6vT8qvi0LBnhhFehIpk=')\naccepted_full_text_run = ((UUID('03a3f9ad-f117-4fb6-8c2b-38c4b0e15b00'), UUID(",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

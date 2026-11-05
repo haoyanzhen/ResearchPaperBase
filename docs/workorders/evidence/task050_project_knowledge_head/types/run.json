@@ -1,0 +1,1 @@
+{"command": ["sh", "-c", "cd backend && .venv/bin/mypy src"], "filter": null, "exit_code": 0}

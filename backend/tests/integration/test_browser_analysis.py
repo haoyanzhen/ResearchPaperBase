@@ -93,7 +93,15 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
     page.screenshot(path=str(tmp_path / "analysis-mobile.png"), full_page=True)
     region.get_by_role("button", name="接受上述风险并确认入库", exact=True).click()
     expect(region.get_by_role("heading", name="正在构建知识版本", exact=True)).to_be_visible()
+    expect(page.get_by_text("尚未构建知识版本", exact=True)).to_be_visible()
+    page.get_by_role("button", name="编辑信息", exact=True).click()
+    draft = page.get_by_label("项目名称", exact=True)
+    draft.fill("保留未保存的项目名称")
     assert worker.run_once()
+    expect(page.get_by_text("已有知识版本", exact=True)).to_be_visible(timeout=12000)
+    expect(draft).to_have_value("保留未保存的项目名称")
+    expect(draft).to_be_focused()
+    page.get_by_role("button", name="取消编辑").click()
     published = client.get(url).json()["data"]
     from jsonschema import Draft202012Validator
     from test_account_auth import SPEC
@@ -122,6 +130,12 @@ def test_pab01_generate_edit_reject_overwrite_confirm_refresh(monkeypatch, reque
     )
     assert other_response.status_code == 201, other_response.text
     other = other_response.json()["data"]["id"]
+    listing = {p["id"]: p for p in client.get("/api/v1/projects").json()["data"]["items"]}
+    assert listing[other]["default_knowledge_version_id"] is None
+    assert (
+        listing[root.rsplit("/", 1)[1]]["default_knowledge_version_id"]
+        == papers["knowledge_version_id"]
+    )
     foreign = client.get(
         f"/api/v1/projects/{other}/papers",
         params={"knowledge_version_id": papers["knowledge_version_id"]},

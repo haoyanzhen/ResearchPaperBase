@@ -72,6 +72,26 @@ def test_pm07_edit_cancel_archive_readonly_and_delete(browser_app):
     page.close()
 
 
+def test_head_poll_clears_unavailable_project_and_form(browser_app):
+    browser, base, _, _ = browser_app
+    context = browser.new_context()
+    page = context.new_page()
+    open_project(page, base, "Private project name")
+    other = context.new_page()
+    other.goto(page.url)
+    other.get_by_role("button", name="删除项目", exact=True).click()
+    group = other.get_by_role("group", name="操作确认")
+    group.get_by_role("checkbox").check()
+    group.get_by_role("button", name="确认执行").click()
+    expect(other.get_by_role("status")).to_have_text("Project 已软删除。")
+    other.close()
+    page.bring_to_front()
+    expect(page.get_by_role("alert")).to_have_text("资源不可用。", timeout=12000)
+    expect(page.get_by_label("项目名称", exact=True)).to_have_value("")
+    assert page.url == base + "/workspace"
+    context.close()
+
+
 def test_pm07_conflict_retains_draft_and_requires_explicit_reload(browser_app):
     browser, base, engine, _ = browser_app
     page = browser.new_page()

@@ -1,0 +1,1 @@
+{"command": ["git", "diff", "--check", "--", "backend", "frontend", "docs/PROJECT_STATUS.md"], "filter": null, "exit_code": 0}

@@ -229,6 +229,39 @@ export function BusinessApp() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
+  // The project badge only distinguishes an unpublished project from one with a version.
+  const projectId = project?.id;
+  const waitingForFirstVersion = project?.status === 'active' && !project.default_knowledge_version_id;
+  useEffect(() => {
+    if (!user || !projectId || !waitingForFirstVersion) return;
+    const controller = new AbortController();
+    let timer: number;
+    async function check() {
+      try {
+        if (!document.hidden) {
+          const latest = await json<Project>(`/api/v1/projects/${projectId}`, { signal: controller.signal });
+          if (controller.signal.aborted) return;
+          if (latest.default_knowledge_version_id) {
+            setProject(current => current && current.id === projectId
+              ? { ...current, default_knowledge_version_id: latest.default_knowledge_version_id }
+              : current);
+            return;
+          }
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
+          if (error.status !== 401) leaveProject();
+          explain(error);
+          return;
+        }
+      }
+      timer = window.setTimeout(check, 5000);
+    }
+    timer = window.setTimeout(check, 5000);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [user?.id, projectId, waitingForFirstVersion]);
+
   function restorePending(current: User) {
     try {
       const saved = sessionStorage.getItem(`rpb:create:${current.id}`);
@@ -241,6 +274,10 @@ export function BusinessApp() {
   function forgetPending() {
     try { if (user) sessionStorage.removeItem(`rpb:create:${user.id}`); } catch { /* In-memory state still clears. */ }
     setPending(null);
+  }
+  function leaveProject() {
+    setProject(null); setName(''); setDescription(''); setScope(''); setNotice('');
+    window.history.replaceState(null, '', '/workspace');
   }
   function clearPrivate(discardPending = false) {
     try { if (discardPending) for (const key of Object.keys(sessionStorage)) if (key.startsWith('rpb:create:')) sessionStorage.removeItem(key); } catch { /* Authentication state must clear even when storage is unavailable. */ }
@@ -361,7 +398,7 @@ export function BusinessApp() {
         <a href={`/workspace?project=${encodeURIComponent(project.id)}`}>项目链接</a>
         <SearchTerms envelope={envelope} key={user.id + project.id} project={project} actor={user.id} api={json} write={post} onAuthFailure={explain} />
         <ConstructionRuns envelope={envelope} key={"runs-" + user.id + project.id} project={project} actor={user.id} api={json} write={post} onAuthFailure={explain} />
-        <ProjectMaintenance key={project.id} project={project} actor={user.id} onChange={setProject} onBusy={setBusy} onAuthFailure={explain} onUnavailable={() => { setProject(null); setName(''); setDescription(''); setScope(''); setNotice(''); setError('资源不可用。'); window.history.replaceState(null, '', '/workspace'); }} onDeleted={() => { setProject(null); window.history.replaceState(null, '', '/workspace'); setNotice('Project 已软删除。'); }} />
+        <ProjectMaintenance key={project.id} project={project} actor={user.id} onChange={setProject} onBusy={setBusy} onAuthFailure={explain} onUnavailable={() => { leaveProject(); setError('资源不可用。'); }} onDeleted={() => { leaveProject(); setNotice('Project 已软删除。'); }} />
       </section> : <section className="form-card" aria-label="新建研究项目">
         <h2>新建 Project</h2><p className="hint">定义研究问题与范围，建立自己的研究容器。</p>
         <form onSubmit={event => void createProject(event)}>

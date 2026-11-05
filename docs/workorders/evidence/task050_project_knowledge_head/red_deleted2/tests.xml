@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="13.104" timestamp="2026-11-04T22:59:01.633375+08:00" hostname="qy.local"><testcase classname="tests.integration.test_project_maintenance_browser" name="test_head_poll_clears_unavailable_project_and_form" time="12.617"><failure message="AssertionError: Locator expected to have Value ''&#10;Actual value: Private project name &#10;Call log:&#10;  - Expect &quot;to_have_value&quot; get_by_label(&quot;项目名称&quot;, exact=True) with timeout 5000ms&#10;  - waiting for get_by_label(&quot;项目名称&quot;, exact=True)&#10;    14 × locator resolved to &lt;input required=&quot;&quot; maxlength=&quot;200&quot; value=&quot;Private project name&quot;/&gt;&#10;       - unexpected value &quot;Private project name&quot;&#10;&#10;Aria snapshot:&#10;- textbox &quot;项目名称&quot;: Private project name">browser_app = (&lt;Browser type=&lt;BrowserType name=chromium executable_path=/Users/qingyue/Library/Caches/ms-playwright/chromium-1248/ch...5e4e2284d17fa877ad560d?host=%2Fprivate%2Ftmp%2Frpb-db-70aokka9&amp;port=5432), 'rpb_test_7361b882cb5e4e2284d17fa877ad560d')
+
+    def test_head_poll_clears_unavailable_project_and_form(browser_app):
+        browser, base, _, _ = browser_app
+        context = browser.new_context()
+        page = context.new_page()
+        open_project(page, base, "Private project name")
+        other = context.new_page()
+        other.goto(page.url)
+        other.get_by_role("button", name="删除项目", exact=True).click()
+        group = other.get_by_role("group", name="操作确认")
+        group.get_by_role("checkbox").check()
+        group.get_by_role("button", name="确认执行").click()
+        expect(other.get_by_role("status")).to_have_text("Project 已软删除。")
+        other.close()
+        page.bring_to_front()
+        expect(page.get_by_role("alert")).to_have_text("资源不可用。", timeout=12000)
+&gt;       expect(page.get_by_label("项目名称", exact=True)).to_have_value("")
+E       AssertionError: Locator expected to have Value ''
+E       Actual value: Private project name 
+E       Call log:
+E         - Expect "to_have_value" get_by_label("项目名称", exact=True) with timeout 5000ms
+E         - waiting for get_by_label("项目名称", exact=True)
+E           14 × locator resolved to &lt;input required="" maxlength="200" value="Private project name"/&gt;
+E              - unexpected value "Private project name"
+E       
+E       Aria snapshot:
+E       - textbox "项目名称": Private project name
+
+tests/integration/test_project_maintenance_browser.py:90: AssertionError</failure></testcase></testsuite></testsuites>

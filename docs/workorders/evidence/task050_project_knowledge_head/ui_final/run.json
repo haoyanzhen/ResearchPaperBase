@@ -1,0 +1,1 @@
+{"command": ["npm", "--prefix", "frontend", "test"], "filter": null, "exit_code": 0}

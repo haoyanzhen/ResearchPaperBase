@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task050_project_knowledge_head/red_deleted/tests.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 1,
+    "passed": 0,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "tests.integration.test_project_maintenance_browser::test_head_poll_clears_unavailable_project_and_form",
+      "message": "playwright._impl._errors.Error: Please use browser.new_context()\nbrowser_app = (<Browser type=<BrowserType name=chromium executable_path=/Users/qingyue/Library/Caches/ms-playwright/chromium-1248/ch...da4a8f86d4c055f4b3943b?host=%2Fprivate%2Ftmp%2Frpb-db-mb5f_cig&port=5432), 'rpb_test_c564c43ea8da4a8f86d4c055f4b3943b')\n\n    def test_head_poll_clears_unavailable_project_and_form(browser_app):\n        browser, base, _, _ = browser_app\n        page = browser.new_page()\n        open_project(page, bas",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

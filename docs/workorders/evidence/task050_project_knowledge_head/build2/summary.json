@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task050_project_knowledge_head/build2/output.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 410,
+  "read_start_byte": 0,
+  "text": "\n> rpb-workspace@1.0.0 build\n> tsc --noEmit && vite build\n\nvite v8.3.5 building client environment for production...\ntransforming...\n✓ 27 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                   0.36 kB │ gzip:   0.27 kB\ndist/assets/index-UO5Jxu7J.css    5.45 kB │ gzip:   1.79 kB\ndist/assets/index-C4_HD_aY.js   344.53 kB │ gzip: 101.93 kB\n\n✓ built in 106ms\n",
+  "truncated": false
+}

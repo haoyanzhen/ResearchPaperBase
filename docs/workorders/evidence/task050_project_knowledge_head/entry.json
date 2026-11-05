@@ -1,0 +1,14 @@
+{
+  "checkpoint": {
+    "path": "/Users/qingyue/projects/ResearchPaperBase_codex/tasks/050-project-knowledge-head.md",
+    "start": 6,
+    "end": 8,
+    "sha256": "95517e0498c38fc3bd34893201ef881a62feff0f8d34f08715d91bbfa6552132",
+    "selected_sha256": "18c3f677a2ccaf9fcb0c38c1a2e36bc85fb60d72caed38b1a943175689260975",
+    "context": null,
+    "status": "complete",
+    "text": "## 8. 最新检查点\nS1，按用户“先对已实现的内容按照设计进行修改”处理 Project 列表、详情及首页的默认版本显示。\n\n"
+  },
+  "next": "Read referenced authorization/rules needed now; verify snapshot drift separately.",
+  "authority": "This entry is a locator, not approval or validation."
+}
