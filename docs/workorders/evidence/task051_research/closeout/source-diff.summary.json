@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/closeout/source-diff.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 958,
+  "read_start_byte": 0,
+  "text": "{\n  \"baseline\": \"/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/final/snapshot\",\n  \"root\": \"/Users/qingyue/projects/ResearchPaperBase_codex\",\n  \"counts\": {\n    \"added\": 0,\n    \"deleted\": 0,\n    \"modified\": 8\n  },\n  \"paths\": {\n    \"added\": [],\n    \"deleted\": [],\n    \"modified\": [\n      \"backend/migrations/versions/0020_research_sessions.py\",\n      \"backend/src/rpb/adapters/research.py\",\n      \"backend/src/rpb/api/research.py\",\n      \"backend/tests/integration/test_browser_research_sessions.py\",\n      \"backend/tests/integration/test_research_sessions.py\"\n    ]\n  },\n  \"omitted\": {\n    \"added\": 0,\n    \"deleted\": 0,\n    \"modified\": 3\n  },\n  \"full_report\": \"/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/closeout/source-diff.json\",\n  \"notice\": \"File differences only; unchanged dependencies may still be affected. Increase --limit or use --report for omitted paths.\"\n}\n",
+  "truncated": false
+}

@@ -1,0 +1,14 @@
+{
+  "added": [],
+  "deleted": [],
+  "modified": [
+    "backend/migrations/versions/0020_research_sessions.py",
+    "backend/src/rpb/adapters/research.py",
+    "backend/src/rpb/api/research.py",
+    "backend/tests/integration/test_browser_research_sessions.py",
+    "backend/tests/integration/test_research_sessions.py",
+    "docs/PROJECT_STATUS.md",
+    "frontend/src/ResearchSessions.tsx",
+    "tasks/051-research-version-binding.md"
+  ]
+}

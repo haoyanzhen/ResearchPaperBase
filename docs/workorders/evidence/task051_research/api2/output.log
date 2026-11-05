@@ -1,0 +1,201 @@
+{"postgres": "postgres (PostgreSQL) 17.11", "run_id": "rpb_test_7802971780d84ef2a1d0dfa9ed4b7c7f", "root": "/private/tmp/rpb-db-en1x91pv", "tcp": false, "role_superuser": false}
+....F
+=================================== FAILURES ===================================
+_____________________ test_research_candidate_not_readable _____________________
+
+self = <sqlalchemy.engine.base.Connection object at 0x10b44f890>
+
+    def _commit_impl(self) -> None:
+        if self._has_events or self.engine._has_events:
+            self.dispatch.commit(self)
+    
+        if self._echo:
+            if self._is_autocommit_isolation():
+                self._log_info(
+                    "COMMIT using DBAPI connection.commit(), "
+                    "has no effect due to autocommit mode"
+                )
+            else:
+                self._log_info("COMMIT")
+        try:
+>           self.engine.dialect.do_commit(self.connection)
+
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py:727: in do_commit
+    dbapi_connection.commit()
+.venv/lib/python3.14/site-packages/psycopg/connection.py:309: in commit
+    self.wait(self._commit_gen())
+.venv/lib/python3.14/site-packages/psycopg/connection.py:495: in wait
+    return waiting.wait(
+psycopg_binary/_psycopg/waiting.pyx:255: in psycopg_binary._psycopg.wait_c
+    ???
+.venv/lib/python3.14/site-packages/psycopg/_connection_base.py:592: in _commit_gen
+    yield from self._exec_command(b"COMMIT")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Connection [IDLE] (database=rpb_test_7802971780d84ef2a1d0dfa9ed4b7c7f) at 0x10c7ef0e0>
+command = b'COMMIT', result_format = <Format.TEXT: 0>
+
+    def _exec_command(
+        self, command: QueryNoTemplate, result_format: pq.Format = TEXT
+    ) -> PQGen[PGresult | None]:
+        """
+        Generator to send a command and receive the result to the backend.
+    
+        Only used to implement internal commands such as "commit", with eventual
+        arguments bound client-side. The cursor can do more complex stuff.
+        """
+        self._check_connection_ok()
+    
+        if isinstance(command, str):
+            command = command.encode(self.pgconn._encoding)
+        elif isinstance(command, Composable):
+            command = command.as_bytes(self)
+    
+        if self._pipeline:
+            cmd = partial(
+                self.pgconn.send_query_params,
+                command,
+                None,
+                result_format=result_format,
+            )
+            self._pipeline.command_queue.append(cmd)
+            self._pipeline.result_queue.append(None)
+            return None
+    
+        # Unless needed, use the simple query protocol, e.g. to interact with
+        # pgbouncer. In pipeline mode we always use the advanced query protocol
+        # instead, see #350
+        if result_format == TEXT:
+            self.pgconn.send_query(command)
+        else:
+            self.pgconn.send_query_params(command, None, result_format=result_format)
+    
+        results: list[PGresult] = (yield from generators.execute(self.pgconn))
+        if len(results) != 1:
+            raise e.InternalError(
+                f"received {len(results)} results from command {command.decode()!r}"
+            )
+    
+        result = results[0]
+        if result.status != COMMAND_OK and result.status != TUPLES_OK:
+            if result.status == FATAL_ERROR:
+>               raise e.error_from_result(result, encoding=self.pgconn._encoding)
+E               psycopg.errors.RaiseException: knowledge version draft must be sealed before commit
+E               CONTEXT:  PL/pgSQL function rpb_knowledge_version_must_seal() line 4 at RAISE
+
+.venv/lib/python3.14/site-packages/psycopg/_connection_base.py:487: RaiseException
+
+The above exception was the direct cause of the following exception:
+
+subject = (<test_search_terms.TermsClient object at 0x10d397360>, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'uEl6ntTk0...f2a1d0dfa9ed4b7c7f?host=%2Fprivate%2Ftmp%2Frpb-db-en1x91pv&port=5432), b'd3cHZKjCFMoyymZR6Ct_n6dj3Pl1YbUwpOXdwTJGMZI=')
+
+    def test_research_candidate_not_readable(subject):
+        c, h, root, _, engine, _ = subject
+>       seed_version(engine, root.split("/")[-1], sealed=False)
+
+tests/integration/test_research_sessions.py:167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_research_sessions.py:22: in seed_version
+    with engine.begin() as conn:
+         ^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py:148: in __exit__
+    next(self.gen)
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:3267: in begin
+    with conn.begin():
+         ^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/util.py:147: in __exit__
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py:122: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/util.py:145: in __exit__
+    self.commit()
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:2649: in commit
+    self._do_commit()
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:2754: in _do_commit
+    self._connection_commit_impl()
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:2725: in _connection_commit_impl
+    self.connection._commit_impl()
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1156: in _commit_impl
+    self._handle_dbapi_exception(e, None, None, None, None)
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1154: in _commit_impl
+    self.engine.dialect.do_commit(self.connection)
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py:727: in do_commit
+    dbapi_connection.commit()
+.venv/lib/python3.14/site-packages/psycopg/connection.py:309: in commit
+    self.wait(self._commit_gen())
+.venv/lib/python3.14/site-packages/psycopg/connection.py:495: in wait
+    return waiting.wait(
+psycopg_binary/_psycopg/waiting.pyx:255: in psycopg_binary._psycopg.wait_c
+    ???
+.venv/lib/python3.14/site-packages/psycopg/_connection_base.py:592: in _commit_gen
+    yield from self._exec_command(b"COMMIT")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Connection [IDLE] (database=rpb_test_7802971780d84ef2a1d0dfa9ed4b7c7f) at 0x10c7ef0e0>
+command = b'COMMIT', result_format = <Format.TEXT: 0>
+
+    def _exec_command(
+        self, command: QueryNoTemplate, result_format: pq.Format = TEXT
+    ) -> PQGen[PGresult | None]:
+        """
+        Generator to send a command and receive the result to the backend.
+    
+        Only used to implement internal commands such as "commit", with eventual
+        arguments bound client-side. The cursor can do more complex stuff.
+        """
+        self._check_connection_ok()
+    
+        if isinstance(command, str):
+            command = command.encode(self.pgconn._encoding)
+        elif isinstance(command, Composable):
+            command = command.as_bytes(self)
+    
+        if self._pipeline:
+            cmd = partial(
+                self.pgconn.send_query_params,
+                command,
+                None,
+                result_format=result_format,
+            )
+            self._pipeline.command_queue.append(cmd)
+            self._pipeline.result_queue.append(None)
+            return None
+    
+        # Unless needed, use the simple query protocol, e.g. to interact with
+        # pgbouncer. In pipeline mode we always use the advanced query protocol
+        # instead, see #350
+        if result_format == TEXT:
+            self.pgconn.send_query(command)
+        else:
+            self.pgconn.send_query_params(command, None, result_format=result_format)
+    
+        results: list[PGresult] = (yield from generators.execute(self.pgconn))
+        if len(results) != 1:
+            raise e.InternalError(
+                f"received {len(results)} results from command {command.decode()!r}"
+            )
+    
+        result = results[0]
+        if result.status != COMMAND_OK and result.status != TUPLES_OK:
+            if result.status == FATAL_ERROR:
+>               raise e.error_from_result(result, encoding=self.pgconn._encoding)
+E               sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) knowledge version draft must be sealed before commit
+E               CONTEXT:  PL/pgSQL function rpb_knowledge_version_must_seal() line 4 at RAISE
+E               (Background on this error at: https://sqlalche.me/e/20/f405)
+
+.venv/lib/python3.14/site-packages/psycopg/_connection_base.py:487: ProgrammingError
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /Users/qingyue/projects/ResearchPaperBase_codex/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_research_sessions.py::test_research_candidate_not_readable
+1 failed, 4 passed, 852 deselected, 1 warning in 18.82s
+{"run_id": "rpb_test_7802971780d84ef2a1d0dfa9ed4b7c7f", "server_stopped": true, "root_removed": true}

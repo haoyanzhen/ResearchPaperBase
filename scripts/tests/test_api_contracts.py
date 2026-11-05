@@ -55,6 +55,35 @@ class ContractTests(unittest.TestCase):
         self.assertFalse(valid('ConstructionAnalysisRequest', {'expected_revision':'r1','acknowledged_risk_ids':[], 'model_selection':{}}))
         self.assertFalse(valid('ChapterIssueResolution', {'expected_revision':'r1','issue_revision':'i1','action':'ignore','replacement_markdown':'overwrite'}))
 
+    def test_knowledge_versions_follow_work_admission_and_preserve_sources(self):
+        operations = {
+            op['operationId']: op
+            for route in SPEC_DATA['paths'].values()
+            for op in route.values()
+        }
+        for name in ('Research.SendMessage', 'Review.Create', 'Review.GenerateOutline',
+                     'Review.GenerateChapter', 'Review.ReviewFinal', 'Review.ReviewChapter',
+                     'Review.ReviewOutline', 'Review.RegenerateFinalComponents'):
+            with self.subTest(name=name):
+                self.assertEqual(operations[name]['x-version-binding'], 'latest-at-admission')
+        for name in ('Research.ContinueWithoutEvidence', 'Research.CancelResponse',
+                     'Review.CancelGeneration'):
+            self.assertEqual(operations[name]['x-version-binding'], 'admitted-task-version')
+        for name in ('Review.EditChapter', 'Review.ConfirmOutline', 'Review.EditFinal',
+                     'Review.ConfirmChapter', 'Review.ResolveChapterIssue', 'Review.Complete',
+                     'Review.ResolveFinalIssue', 'Review.RejectFinal'):
+            self.assertEqual(operations[name]['x-version-binding'], 'source-revision')
+        for prefix in ('Research', 'Review'):
+            for action in ('FixRange', 'PreviewAdoption', 'AdoptVersion'):
+                self.assertNotIn(f'{prefix}.{action}', operations)
+
+    def test_review_creation_rejects_user_selected_knowledge_version(self):
+        resource_id = '123e4567-e89b-12d3-a456-426614174000'
+        request = {'topic': 'Topic', 'model_selection': {
+            'source': 'user', 'config_id': resource_id, 'model_id': 'research-model'}}
+        self.assertTrue(valid('ReviewCreate', request))
+        self.assertFalse(valid('ReviewCreate', {**request, 'knowledge_version_id': resource_id}))
+
     def test_inline_schema_and_text_drift_fail(self):
         changed = copy.deepcopy(SPEC_DATA)
         changed['paths']['/me']['get']['responses']['200']['content']['application/json']['schema']['additionalProperties'] = True

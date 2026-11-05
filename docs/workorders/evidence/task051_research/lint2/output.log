@@ -1,0 +1,28 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> backend/src/rpb/adapters/research.py:3:1
+   |
+ 1 |   """Research session persistence through the current account and Project boundaries."""
+ 2 |
+ 3 | / import secrets
+ 4 | |
+ 5 | | from datetime import UTC, datetime, timedelta
+ 6 | | from typing import Any
+ 7 | | from uuid import UUID, uuid4
+ 8 | |
+ 9 | | import sqlalchemy as sa
+10 | |
+11 | | from rpb.adapters.knowledge_baseline_papers import content_digest
+12 | | from rpb.adapters.knowledge_read import latest_published
+13 | | from rpb.adapters.research_tables import catalogs, commands, sessions
+14 | | from rpb.adapters.runs import page
+15 | | from rpb.modules.account_config.application.ports import AccountError
+   | |_____________________________________________________________________^
+help: Organize imports
+  |
+3 | import secrets
+  -
+4 | from datetime import UTC, datetime, timedelta
+  |
+
+Found 1 error.
+[*] 1 fixable with `--fix`.

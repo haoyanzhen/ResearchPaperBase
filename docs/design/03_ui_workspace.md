@@ -1,7 +1,7 @@
 # UI / Workspace 设计
 
-文档版本：v1.25
-更新日期：2026-10-21
+文档版本：v1.26
+更新日期：2026-11-04
 依据文档：`00_layers.md`、`01_functional_requirements.md`、`02_domain_core.md`
 
 资料权限交互依据[08-01](08-01_agent_data_access_policy.md)：用户×Project持久设置与Workspace显示上下文分离，默认公开资料；开启私人资料提示风险。切换从下一受控操作双向生效，页面不得自动重跑任务或剪除历史；受限必需上下文明示阻断。文件接收/入库展示分类与确认，人工查看和必要静态接收仍沿原权限。具体字段/操作与04联动落实，详细政策不在UI复制。
@@ -33,7 +33,7 @@ Workspace Shell 必须绑定当前 Project，并分为以下稳定区域：
 | 顶层栏 | Projects 返回/选择器、系统级入口、用户菜单 |
 | 对象选择栏 | 首行显示当前 Project 名称和最小状态；下列 Construction Workspace、Research Session 列表、Review Run 列表 |
 | 主体流程栏 | 首次进入或点击 Project 名称时显示 Project Home；选择对象后替换为对象主工作区，不可折叠 |
-| Project 信息面板 | 只读论文库、Project 资料库、Graph、Knowledge Version、构建摘要和知识更新与采用新版本入口；自动更新设置在 Construction Workspace 维护 |
+| Project 信息面板 | 只读论文库、Project 资料库、Graph、Knowledge Version、构建摘要和知识变化查看入口；自动更新设置在 Construction Workspace 维护 |
 | Run/Session 信息面板 | 当前对象状态、配置快照、阶段、错误、引用、结果摘要 |
 
 Workspace 内不常驻其他 Project 列表；跨 Project 导航通过顶栏 Projects 返回 Project Hub 或打开选择器完成。
@@ -55,7 +55,7 @@ Workspace 内不常驻其他 Project 列表；跨 Project 导航通过顶栏 Pro
 
 模块线框的 Sessions/Review Runs 映射 Shell 对象栏，Evidence/Context/Citations/Final Check 映射 Object Info，不把完整三栏图嵌入 Main Workbench。Steps/Chapters/Document、构建阶段论文列表属于局部导航，只能在主体内按需展开，不替代或复制全局对象选择。
 
-Project Assets 的论文/PDF/Graph 详情可使用同一辅助区的展开覆盖层，关闭后回到原工作台；不另加永久侧栏、不卸载主编辑器、不切换对象绑定版本。P35 知识更新与 P36/P37 确认使用一次一个的对话框，关闭不改变业务状态。
+Project Assets 的论文/PDF/Graph 详情可使用同一辅助区的展开覆盖层，关闭后回到原工作台；不另加永久侧栏、不卸载主编辑器、保留在途操作和历史引用的证据版本。P35 在研究或综述工作台内显示非阻塞提示；P36/P37 业务确认仍一次只显示一个对话框。
 
 选择对象时以 Project 与对象标识同步主体、信息面板和引用上下文，过期异步响应不得覆盖新对象。草稿按用户/Project/对象隔离；切换前对未保存人工编辑提供保存、放弃、留在当前对象的选择，不因导航覆盖人工内容或取消后台任务。只读项目和无权限限制对所有布局槽位一致生效。
 
@@ -63,9 +63,9 @@ Project Assets 的论文/PDF/Graph 详情可使用同一辅助区的展开覆盖
 
 平板/窄屏优先保留 Main Workbench，对象栏变为“对象”抽屉，辅助区变为“资料/对象信息”抽屉；同一时刻最多打开一个辅助抽屉，提供明确关闭/返回入口。Review 章节目录与 Construction 步骤列表改用局部选择器，避免对象、章节、资料三套侧栏同时展开。
 
-断点由前端根据内容可用宽度实现，不以缩小字体或整页横向滚动承载三栏；表格可在自身容器内滚动。布局变化不清空输入草稿、改变对象/版本绑定或中止流式回复。展开详情时焦点进入面板，关闭后回到触发控件，键盘可完成对象切换、编辑、打开和关闭详情。
+断点由前端根据内容可用宽度实现，不以缩小字体或整页横向滚动承载三栏；表格可在自身容器内滚动。布局变化不清空输入草稿、改变对象或在途操作的版本或中止流式回复。展开详情时焦点进入面板，关闭后回到触发控件，键盘可完成对象切换、编辑、打开和关闭详情。
 
-默认显示当前任务、主要操作、等待原因和绑定版本；Construction 成功区分已发布与核验无变化，后者展示核验既有版本及范围，不触发知识升级提示，详细交互见 Construction 附录 P15/P20；配置快照、诊断、历史列表和完整资产详情按需打开。常见操作不要求用户先理解内部状态机。
+默认显示当前任务、主要操作、等待原因和当前操作使用的知识版本；Construction 成功区分已发布与核验无变化，后者展示核验既有版本及范围，不触发知识升级提示，详细交互见 Construction 附录 P15/P20；配置快照、诊断、历史列表和完整资产详情按需打开。常见操作不要求用户先理解内部状态机。
 
 ### 3.3 Shell 基准线框
 
@@ -81,7 +81,7 @@ Project Assets 的论文/PDF/Graph 详情可使用同一辅助区的展开覆盖
 │ active               │ │ Construction Workspace               │ │ Papers / Materials      │
 │                      │ │ current object / state / KV baseline │ │ Graph                   │
 │ > Construction       │ │                                      │ │ Default KV: KV-12       │
-│   Workspace          │ │ object-specific workflow content     │ │ Object KV: KV-12        │
+│   Workspace          │ │ object-specific workflow content     │ │ Evidence KV: KV-12        │
 │   Auto policy: on    │ │                                      │ │ Build / 调度未启用    │
 │   Terms: 6 active    │ │                                      │ │ [查看知识更新]       │
 │                      │ └──────────────────────────────────────┘ │                          │
@@ -125,9 +125,9 @@ P13 的 Auto policy 表示已保存的检索词策略；P0 摘要同时显示“
 
 P13 是进入某个 Project 后的唯一 Workspace Shell，不再展示其他 Project 列表；切换 Project 应通过顶栏 `Projects` 返回 Project Hub 或打开 Project 选择器完成。左侧栏首行显示当前 Project 名称和最小状态，点击 Project 名称或首次打开 Workspace 时，Main Workbench 显示 Project Home 概览；用户选择 Construction Workspace、Research Session 或 Review Run 后，Project Home 概览退出，不持续占用工作界面。
 
-Project Home 只用于快速查看 Project 编号、详细说明、论文数、资料数、最近构建时间、最近活动时间、默认 Knowledge Version 和自动更新摘要，并提供进入构建、深研或综述入口。左侧除 Project 名称外，只展示当前 Project 的唯一 Construction Workspace、Research Session 列表和 Review Run 列表；历史 Construction Run 不与 Session/Run 平级展示，只能在 Construction Workspace 内部查看。选择对象时，Main Workbench 和 Object Info 面板必须同步切换；Project Assets 面板保持只读，承载论文、Project 资料、Graph、默认 Knowledge Version、当前对象绑定 Knowledge Version、构建摘要和知识更新与采用新版本入口。
+Project Home 只用于快速查看 Project 编号、详细说明、论文数、资料数、最近构建时间、最近活动时间、默认 Knowledge Version 和自动更新摘要，并提供进入构建、深研或综述入口。左侧除 Project 名称外，只展示当前 Project 的唯一 Construction Workspace、Research Session 列表和 Review Run 列表；历史 Construction Run 不与 Session/Run 平级展示，只能在 Construction Workspace 内部查看。选择对象时，Main Workbench 和 Object Info 面板必须同步切换；Project Assets 面板保持只读，承载论文、Project 资料、Graph、默认 Knowledge Version、当前操作或引用的实际 Knowledge Version、构建摘要和知识变化查看入口。
 
-当 Project 为 archived 时，P13 保持可进入但进入只读模式，禁用新建、启动、继续生成、上传、删除、重跑和基于新知识创建关联会话或新版综述等写操作，并展示只读原因。没有可访问的已发布 Knowledge Version 时，Research Session 和 Review Run 的新建入口禁用；已发布空版本可浏览和新建，明确无项目证据，不隐式回退历史版本。Admin 入口仅对管理员显示；Project Workspace 内的系统级入口条件与 Project Hub 保持一致。
+当 Project 为 archived 时，P13 保持可进入但进入只读模式，禁用新建、启动、继续生成、上传、删除、重跑等写操作，并展示只读原因。没有可访问的已发布 Knowledge Version 时，Research Session 和 Review Run 的新建入口禁用；已发布空版本可浏览和新建，明确无项目证据，不隐式回退历史版本。Admin 入口仅对管理员显示；Project Workspace 内的系统级入口条件与 Project Hub 保持一致。
 
 ## 4. Workspace 对象入口
 
@@ -139,7 +139,7 @@ Project Home 只用于快速查看 Project 编号、详细说明、论文数、�
 
 ### 4.2 Research Session
 
-展示对话历史、当前绑定 Knowledge Version、Graph-RAG 引用和跳转。同一 Session 存在流式回复时，输入区进入等待态，展示取消或查看状态入口。
+展示对话历史、各轮实际使用的 Knowledge Version、Graph-RAG 引用和跳转。同一 Session 存在流式回复时，输入区进入等待态，展示取消或查看状态入口。
 
 ### 4.3 Review Run
 
@@ -152,7 +152,7 @@ Project 信息面板提供只读知识资产：
 - 论文及 Project 资料的统计、列表、筛选和详情；资料显示标题、content_format、重要摘要、处理状态及来源 Run。
 - PDF 或远程资源访问入口，必须使用鉴权或签名 URL。
 - Graph 图谱节点、关系和论文详情互跳。
-- Project 默认 Knowledge Version 与当前对象绑定版本。
+- Project 默认 Knowledge Version 与当前生成任务或所选引用的证据版本。
 - 缺失、过期、无权限、版本不匹配时的安全空态。
 
 不得提供上传、删除、重新下载、重新解析、重新评分、重新分析、入库、推送或图谱重建动作。
@@ -168,7 +168,7 @@ Project 信息面板提供只读知识资产：
 | 配置缺失/失效 | 任务启动按钮显示修复入口，指向用户设置或管理员设置 |
 | 构建槽已占用（含 paused Construction Run） | 允许登记下轮请求但不占槽、不启动第二个写入者，展示占槽 Run；显式继续沿用原实例及原槽，显式取消清除占槽，显式重跑撤销旧写资格并将旧 Run cancelled 后由新实例安全接管 |
 | 内容覆盖风险 | 弹出覆盖确认，说明将覆盖的内容来源和最后编辑者 |
-| 对象绑定历史 Knowledge Version | 展示“有更新可查看”或“已固定文献范围”，不把历史版本视为失效，不自动改写内容 |
+| 研究或综述中发布新 Knowledge Version | 就地提示“检测到知识库版本更新”；保留原对象、在途任务和人工输入，后续任务自动采用最新版。历史引用仍显示原证据 |
 
 内容保护的权威判断由 Application Use Cases 和后台状态执行。UI 只展示用户完成当前决策所需的最小反馈，例如禁用原因、覆盖确认、冲突对象、影响范围和最后编辑者；不得依赖前端状态绕过后台保护，也不展示完整内部状态机。
 
@@ -181,7 +181,7 @@ P0 恢复最近打开 Project、最近打开对象、基础面板展开状态和
 ## 8. UI 验收检查
 
 - 每个 P0 FR 都能找到用户入口或明确的后台入口。
-- P1/P2 默认进入后续清单；已明确边界的 P1 参考线框须标注分期。FR-018 版本刷新专用 Review 重跑与单条论文/资料补充属于 P0。
+- P1/P2 默认进入后续清单；已明确边界的 P1 参考线框须标注分期。FR-018 研究和综述自动跟随发布版本与单条论文/资料补充属于 P0。
 - UI 所有写操作对应一个 Application Use Case。
 - archived/已删除不可进入/无权限/配置缺失/锁冲突/知识更新均有可见反馈。
 - 知识资产面板只读。
@@ -219,7 +219,7 @@ P13 Shell 留在主文，作为模块组合基准。P 编号是稳定标识，�
 | Research 输出倾向、总结文件和导出 | FR-029, FR-030, P1 | 不在 P0 Research Session 顶栏展示 |
 | Project/Run/Session 导出中心 | FR-019, P1 | 后续补异步任务状态、批量/格式转换和失败报告；P0 单篇终稿 Markdown 下载由 FR-034 提供 |
 | Review 版本历史、差异和回退 | FR-036, P2 | 不在 P0 Review Run 入口展示 |
-| Run/Session 复制、通用重跑、归档和删除 | FR-014, FR-015, P1 | 不使用旧版统一实例操作弹窗；FR-018 版本刷新专用 Review 重跑为 P0，由 P35 承载 |
+| Run/Session 复制、通用重跑、归档和删除 | FR-014, FR-015, P1 | 不使用旧版统一实例操作弹窗；FR-018 研究和综述自动跟随发布版本为 P0，由 P35 承载 |
 | 批量补充论文/资料及数据表上传 | FR-023, P1 | P0 保留 Construction Workspace 内单条论文补充和支持格式单文件资料请求队列；多媒体为 P2 |
 
 ## 11. 更改记录

@@ -1,7 +1,7 @@
 # Domain Reference
 
-文档版本：v1.7
-更新日期：2026-10-21
+文档版本：v1.8
+更新日期：2026-11-04
 来源文档：[Domain Core](02_domain_core.md)、[知识库版本附录](02-02_construction_versioning_appendix.md)、[构建资产附录](02-03_construction_assets_appendix.md)、[运行恢复附录](02-04_run_recovery_appendix.md)
 用途：作为 Domain Core 的聚合边界、领域对象、关键链路和 FR 映射速查文件。本文是主文及其同规格领域附录的派生速查，不独立定义规则；如有冲突，以对应领域规范及 FR 为准。
 
@@ -14,7 +14,7 @@
 | 专题 | 领域规范来源 |
 | --- | --- |
 | 聚合边界、跨模块接口及其他领域规则 | [Domain Core](02_domain_core.md) |
-| 知识库版本、证据、发布、构建槽、并行构建和版本采用 | [02-02 知识库版本附录](02-02_construction_versioning_appendix.md) |
+| 知识库版本、证据、发布、构建槽、并行构建和知识更新 | [02-02 知识库版本附录](02-02_construction_versioning_appendix.md) |
 | 检索输入、论文/资料身份、去重筛选、补充、解析与分析确认 | [02-03 构建资产附录](02-03_construction_assets_appendix.md) |
 | 重试、重连、重跑、断点、清理和回复恢复 | [02-04 运行恢复附录](02-04_run_recovery_appendix.md) |
 
@@ -201,7 +201,7 @@ EmailPushJob
 - `DocumentAsset` 承载 Project 资料文件时同样受 Project 授权边界约束；不得因标题或格式相似自动暴露给其他 Project。
 - `ConstructionRun` 的写入资格与构建槽接口见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
 - `ConstructionRun` 成功结果区分 `published` 与 `no_change`，后者关联核验既有版本且不发布、不切换默认版本。failed 放弃恢复仍保留 failed；排队不占槽、暂停继续保槽、重跑新 Run 定向接管。状态机与候选转换统一见 [02-02 第 10 章](02-02_construction_versioning_appendix.md#10-构建与知识版本状态机)，恢复条件由 02-04 承载。
-- `ResearchSession` 和 `ReviewRun` 承接知识库版本绑定与版本采用接口；稳定绑定、旧依赖、确认边界和冲突裁决统一见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
+- `ResearchSession` 和 `ReviewRun` 保留对象身份；每轮提问及每次综述生成或审查受理时确定实际证据版本。历史操作和证据保留原版本，后续操作读取最新已发布版本。执行与引用边界统一见 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md)。
 - 引用跳转承接 [02-02 知识库版本附录](02-02_construction_versioning_appendix.md) 的 Project、KnowledgeVersion、Evidence 校验及安全空态接口。
 - Graph 和向量索引是 `KnowledgeVersion` 的可读资产投影与同步状态，不是独立聚合根。
 - Project 知识资产面板、Research 引用跳转和 Review 引用跳转都是只读探索入口，不得触发上传、删除、解析、入库、推送或图谱写入。

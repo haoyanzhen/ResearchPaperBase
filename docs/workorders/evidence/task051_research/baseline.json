@@ -1,0 +1,12 @@
+{
+  "backend/src/rpb/adapters/research.py": "f0104e66c6ef5c605f8bc7896ad7ab5c3a72005a8cbf4228f06905606d791ba1",
+  "backend/src/rpb/adapters/research_tables.py": "08ddfeb97deb00e92375c9e0f9128b187e3c5d2eebbfd3a21ba065a59275c4ec",
+  "backend/src/rpb/adapters/knowledge_read.py": "50ee01550d1f6932ab57509ffb699f3f034ab7fb9a93b6953185bb9450532201",
+  "backend/src/rpb/api/research.py": "b5562a4b34d3d3f538b4e0a5a92b7ff79fce7f73dbf3fa4099ed6581ad3d4f72",
+  "backend/src/rpb/modules/research/application/sessions.py": "6bfde1839bd04b03da72ca50cb9720ad94e27cc8a60565204a0918f61d771cc8",
+  "backend/src/rpb/bootstrap/business.py": "d155b73d9eaf320b180aa678dc62826dac0b65d8c35c2578820ddec2f544a631",
+  "backend/migrations/versions/0020_research_sessions.py": "fcfa6a62a9b9eb0355d3c0c6f8ad9331253ef8be3d79933ae97733d2331d63b1",
+  "backend/tests/integration/test_research_sessions.py": "d1edab49ca0f835d29edbf7fed41092127939b5a00e3ea6faa59c2e0332aede8",
+  "frontend/src/ResearchSessions.tsx": "670b6b1af144950ae18224edc9aa4232787196cf6527f08c9828bb3b66d7826b",
+  "frontend/src/BusinessApp.tsx": "5753103cd5128f62bb50ce1e6e069c3452124a782b7abfbc5caee4b91790a331"
+}

@@ -1,7 +1,7 @@
 # Research Paper Base 分层设计总览
 
-文档版本：v1.10
-更新日期：2026-10-21
+文档版本：v1.11
+更新日期：2026-11-04
 依据文档：`01_functional_requirements.md`、`00-00_layer_design_file_mapping.md`  
 用途：作为当前阶段分层设计的总览入口，明确最小必要架构、层间职责、横切约束和后续修订方向。
 
@@ -104,7 +104,7 @@ Infrastructure Adapters 实现端口；组合入口负责注入实现
 - Project 是长期容器，不等于某个 Agent 模式。
 - 每个 Project 有且仅有一个 Construction Workspace。
 - 同一 Project 同一时间只允许一个 Construction Run 占用构建槽并取得写资格；paused Run 仍占槽，释放与交接遵循 `02` 第 3.4 节。
-- Research Session 和 Review Run 创建时绑定某个 Knowledge Version，绑定后保持稳定；采用新知识创建关联新 Session 或新版 Review，旧研究不阻止基于最新已发布版本继续构建。详细不变量见 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)。
+- 研究按轮、综述按生成或审查任务，在受理时读取最新已发布 Knowledge Version。同一对象直接跟新，在途任务与历史成果保留实际版本。详细不变量见 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)。
 - 人工修改优先于人工确认，人工确认优先于 Agent 草稿。
 - 全局论文身份与 Project 私有关联分离，避免共享论文被误删。
 
@@ -181,7 +181,7 @@ agents / knowledge -> 各自端口 <- Infrastructure Adapters
 `agents/` 负责智能行为和流程：
 
 - Construction：检索词、论文检索、去重评分、PDF 下载解析、AI 分析、入库建议、向量化、图谱构建、Knowledge Version 发布准备。
-- Research：基于绑定 Knowledge Version 的 Graph-RAG 检索、流式回答、引用保存和跳转来源。
+- Research：基于本轮实际 Knowledge Version 的 Graph-RAG 检索、流式回答、引用保存和跳转来源。
 - Review：大纲、章节、审查、终稿和稿件下载。
 
 `knowledge/` 负责知识资产和证据基础：
@@ -235,7 +235,7 @@ agents / knowledge -> 各自端口 <- Infrastructure Adapters
 | AuthZ | 用户隔离、管理员边界、Project 权限、文件签名访问、archived 只读 | 先在 Application Use Cases 统一校验，UI 只负责展示原因 |
 | State & Locks | Project 状态、Run/Session 状态、任务状态、Project 写锁、流式回复锁、章节锁、调度锁 | 先覆盖 Construction 写锁、Research 流式锁、Review 章节锁和 Project archived/deleted 约束 |
 | Runtime Config Snapshot | 用户配置、系统默认、硬限制、LLM/数据源/SMTP/检索词策略快照 | 所有 Run/Session/Job 启动前生成快照，禁止 Agent 内部分散回落 |
-| Content & Version Protection | 人工修改保护、覆盖确认、Knowledge Version 绑定、知识变化与证据风险提示 | 先实现 Research/Review 绑定版本和 Review 内容覆盖确认，再扩展差异对比 |
+| Content & Version Protection | 人工修改保护、覆盖确认、Knowledge Version 绑定、知识变化与证据风险提示 | 先实现研究轮次/综述操作版本记录和 Review 内容覆盖确认，再扩展差异对比 |
 
 这些约束应体现在用例、领域规则、存储状态、测试和 UI 禁用原因中，而不是只写在前端按钮或文档备注里。
 
@@ -249,7 +249,7 @@ agents / knowledge -> 各自端口 <- Infrastructure Adapters
 - 长流程必须记录可诊断状态，包括运行中、等待用户、失败、取消、部分成功、降级和可重试信息。
 - 外部 Provider 失败不得静默混入成功结果。
 - LLM 输出、引用、章节、综述终稿等内容必须有结构化校验入口。
-- 手动修改、覆盖确认、采用新版本创建研究等受控动作必须具备测试用例。
+- 手动修改、覆盖确认、同对象后续操作自动跟新等受控动作必须具备测试用例。
 
 后续可以再把审计、健康检查、日志、指标、告警和 Inspector 设计展开为独立质量与可观测文档。
 
@@ -309,7 +309,7 @@ MVP 实施顺序：
 4. Research Session 的 Graph-RAG 对话、流式回复互斥和引用跳转。
 5. Review Run 的大纲、章节、人工确认、终稿和单篇 Markdown 下载。
 6. 自动构建调度、邮件推送、导出中心、审计和可观测增强。
-7. P1 批量上传和通用重跑等受控增强；P2 观点广场、综述版本差异、成本仪表盘等扩展。单条论文/资料补充为 P0；FR-018 的关联新 Research Session 和新版 Review 专用路径属于 P0，不等待通用重跑增强。
+7. P1 批量上传和通用重跑等受控增强；P2 观点广场、综述版本差异、成本仪表盘等扩展。单条论文/资料补充为 P0；FR-018 的同一会话/综述后续操作自动跟新属于 P0，不等待通用重跑增强。
 
 ## 变更记录
 

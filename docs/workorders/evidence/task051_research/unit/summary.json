@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/unit/tests.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 600,
+    "passed": 599,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "tests.architecture.test_boundaries::test_actual_import_graph",
+      "message": "SystemExit: rpb/api/published_papers.py:12: forbidden import rpb.adapters.knowledge_baseline_papers.baseline_papers\nrpb/api/published_papers.py:13: forbidden import rpb.adapters.knowledge_paper_tables.paper_revisions\nrpb/api/published_papers.py:14: forbidden import rpb.adapters.knowledge_tables.heads\nrpb/api/published_papers.py:15: forbidden import rpb.adapters.runs.page\nrpb/api/published_papers.py:53: forbidden import rpb.adapters.knowledge_tables.versions\nrpb/api/published_papers.py:54: forbidden import rpb.adapters.run_tables.runs\nrpb/api/published_papers.py:78: forbidden import rpb.adapters.knowledge_build_tables.graph_nodes\ndef test_actual_import_graph():\n>       checker.main()\n\ntests/architecture/test_boundaries.py:49: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n    def main() -> None:\n        root = Path(__file__).resolve().parents[1] / \"backend/src\"\n        errors = [\n            error\n            for path in root.rglob(\"*.py\")\n            for error in violations(path.relative_to(root).as_posix(), path.read_text())\n        ]\n        if errors:\n>           raise SystemExit(\"\\n\".join(errors))\nE           SystemExit: rpb/api/published_papers.py:12: forbidden import rpb.adapters.knowledge_baseline_papers.baseline_papers\nE           rpb/api/published_papers.py:13: forbidden import rpb.adapters.knowledge_paper_tables.paper_revisions\nE           rpb/api/published_papers.py:14: forbidden import rpb.adapters.knowledge_tables.heads\nE           rpb/api/published_papers.py:15: forbidden import rpb.adapters.runs.page\nE           rpb/api/published_papers.py:53: forbidden import rpb.adapters.knowledge_tables.versions\nE           rpb/api/published_papers.py:54: forbidden import rpb.adapters.run_tables.runs\nE           rpb/api/published_papers.py:78: forbidden import rpb.adapters.knowledge_build_tables.graph_nodes\n\n../scripts/check_architecture.py:70: SystemExit",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": false
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

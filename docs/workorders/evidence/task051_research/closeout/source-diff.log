@@ -1,0 +1,27 @@
+{
+  "baseline": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/final/snapshot",
+  "root": "/Users/qingyue/projects/ResearchPaperBase_codex",
+  "counts": {
+    "added": 0,
+    "deleted": 0,
+    "modified": 8
+  },
+  "paths": {
+    "added": [],
+    "deleted": [],
+    "modified": [
+      "backend/migrations/versions/0020_research_sessions.py",
+      "backend/src/rpb/adapters/research.py",
+      "backend/src/rpb/api/research.py",
+      "backend/tests/integration/test_browser_research_sessions.py",
+      "backend/tests/integration/test_research_sessions.py"
+    ]
+  },
+  "omitted": {
+    "added": 0,
+    "deleted": 0,
+    "modified": 3
+  },
+  "full_report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/closeout/source-diff.json",
+  "notice": "File differences only; unchanged dependencies may still be affected. Increase --limit or use --report for omitted paths."
+}

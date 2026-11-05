@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/final2/tests.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 143,
+    "passed": 142,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "tests.integration.test_research_sessions::test_research_actual_owner_revocation_and_read_no_writes",
+      "message": "sqlalchemy.exc.IntegrityError: (psycopg.errors.ForeignKeyViolation) update or delete on table \"projects\" violates foreign key constraint \"fk_create_owned_project\" on table \"project_create_commands\"\nDETAIL:  Key (id, owner_id)=(5662e8ac-3435-4f53-b978-2da2632dfa84, 6fb7ba4c-8e92-48aa-81ad-ef5f2fb5bf4e) is still referenced from table \"project_create_commands\".\n[SQL: UPDATE projects SET owner_id=%(owner_id)s::UUID WHERE projects.id = %(id_1)s::UUID]\n[SQL parameters hidden due to hide_parameters=True]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)\nself = <sqlalchemy.engine.base.Connection object at 0x110065310>\ndialect = <sqlalchemy.dialects.postgresql.psycopg.PGDialect_psycopg object at 0x11102d940>\ncontext = <sqlalchemy.dialects.postgresql.psycopg.PGExecutionContext_psycopg object at 0x115b5cb50>\nstatement = <sqlalchemy.dialects.postgresql.psycopg.PGCompiler_psycopg object at 0x116cf82d0>\nparameters = [{'owner_id': UUID('e1eb7dfe-00da-40fc-b4ce-06b583fc31ab'), 'id_1': UUID('5662e8ac-3435-4f53-b978-2da2632dfa84')}]\n\n    def _exec_single_context(\n        self,\n        dialect: Dialect,\n        context: ExecutionContext,\n        statement: Union[str, Compiled],\n        par",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

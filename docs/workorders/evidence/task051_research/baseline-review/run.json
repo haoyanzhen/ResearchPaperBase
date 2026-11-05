@@ -1,0 +1,1 @@
+{"command": ["git", "show", "--no-patch", "--format=%H%n%s", "12c408b"], "exit_code": 0}

@@ -1,0 +1,3 @@
+PASS: 95 request/success partial + 25 request-only operations; 247 schemas; 131 inventoried source rows; 5/6 SSE payload types
+COMPATIBILITY NOT CHECKED: no prior reviewed --baseline supplied.
+NOT VERIFIED: runtime authorization/state/transactions, runtime error sanitization/action eligibility, TaskView/output and uncovered operations; see coverage.

@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/frontend-tests/output.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 273,
+  "read_start_byte": 0,
+  "text": "\n> rpb-workspace@1.0.0 test\n> vitest run\n\n\n RUN  v5.0.5 /Users/qingyue/projects/ResearchPaperBase_codex/frontend\n\n\n Test Files  2 passed (2)\n      Tests  4 passed (4)\n   Start at  14:59:13\n   Duration  1.01s (environment 66%, setup 22%, tests 7%, transform 4%, import 1%)\n\n",
+  "truncated": false
+}

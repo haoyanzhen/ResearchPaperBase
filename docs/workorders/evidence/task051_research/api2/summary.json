@@ -1,0 +1,25 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/api2/tests.xml",
+  "exit_code": 1,
+  "status": "failed",
+  "counts": {
+    "tests": 5,
+    "passed": 4,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "issues": [
+    {
+      "test": "tests.integration.test_research_sessions::test_research_candidate_not_readable",
+      "message": "sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) knowledge version draft must be sealed before commit\nCONTEXT:  PL/pgSQL function rpb_knowledge_version_must_seal() line 4 at RAISE\n(Background on this error at: https://sqlalche.me/e/20/f405)\nself = <sqlalchemy.engine.base.Connection object at 0x10b44f890>\n\n    def _commit_impl(self) -> None:\n        if self._has_events or self.engine._has_events:\n            self.dispatch.commit(self)\n    \n        if self._echo:\n            if self._is_autocommit_isolation():\n                self._log_info(\n                    \"COMMIT using DBAPI connection.commit(), \"\n                    \"has no effect due to autocommit mode\"\n                )\n            else:\n                self._log_info(\"COMMIT\")\n        try:\n>           self.engine.dialect.do_commit(self.connection)\n\n.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1154: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py:727: in do_commit\n    dbapi_connection.commit()\n.venv/lib/python3.14/site-packages/psycopg/connection.py:309: in commit\n    self.wait(self._commit_gen())\n.venv/lib/python3.14/site-packages/psycopg/connection.py:495: in wait\n    return waiting.wait(\npsycopg_binary/_psycopg/waiting.pyx:255: in psycopg_binary._psycopg.wait_c\n    ???\n.venv/lib/python3.14/site-packages/psycopg/_connection_base.py:592: in _commit_gen\n    yield from self._exec_command(b\"COMMIT\")\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <psycopg.Connection [IDLE] (database=rpb_test_7802971780d84ef2a1d0dfa9ed4b7c7f) at 0x10c7ef0e0>\ncommand = b'COMMIT', result_format = <Format.TEXT: 0>\n\n    def _exec_command(\n        self, command: QueryNoTemplate, result_format: pq.Format = TEXT\n    ) -> PQGen[PGresult | None]:\n        \"\"\"\n        Generator to send a command and receive the result to the backend.\n    \n        Only used to implement internal commands such as \"commit\", with eventual\n        arguments bound client-side. The cursor can do more complex stuff.\n        \"\"\"\n        self._check_connection_ok()\n    \n        if isinstance(command, str):\n            command = command.encode(self.pgconn._encoding)\n        elif isinstance(command, Composable):\n            command = command.as_bytes(self)\n    \n        if self._pipeline:\n            cmd = partial(\n                self.pgconn.send_query_params,\n                command,\n                None,\n                result_format=result_format,\n            )\n            self._pipeline.command_queue.append(cmd)\n            self._pipeline.result_queue.append(None)\n            return None\n    \n        # Unless needed, use the simple query protocol, e.g. to interact with\n        # pgbouncer. In pipeline mode we always use the advanced query protocol\n        # instead, see #350\n        if result_format == TEXT:\n            self.pgconn.send_query(command)\n        else:\n            self.pgconn.send_query_params(command, None, result_format=result_format)\n    \n        results: list[PGresult] = (yield from generators.execute(self.pgconn))\n        if len(results) != 1:\n            raise e.InternalError(\n                f\"received {len(results)} results from command {command.decode()!r}\"\n            )\n    \n        result = results[0]\n        if result.status != COMMAND_OK and result.status != TUPLES_OK:\n            if result.status == FATAL_ERROR:\n>               raise e.erro",
+      "file": "",
+      "line": "",
+      "kind": "failures",
+      "truncated": true
+    }
+  ],
+  "omitted": 0,
+  "notice": "Only this report/exit code; verify run identity, baseline and required coverage separately.",
+  "consistent": true
+}

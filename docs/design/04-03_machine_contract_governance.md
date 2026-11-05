@@ -1,7 +1,7 @@
 # API 附录：机器契约、覆盖与变更规则
 
-文档版本：v1.6
-更新日期：2026-10-24
+文档版本：v1.7
+更新日期：2026-11-04
 适用项目大版本：v1
 
 ## 1. 权威与覆盖边界
@@ -26,7 +26,7 @@ task006 P2修复限定快照的机器覆盖为 **42 个操作的请求/成功响
 - `operationId` 沿用既有具名用例 ID；既有 `Admin.ManageSystemLLM` / `Admin.ManageSystemSources` 为多端点用例组，机器 ID 添加 `.List/.Create/.Read/.Update/.Delete` 后缀，`x-use-case` 仍引用原用例组。这是协议身份细分，不新增业务操作；已发布身份不得因重命名代码函数而改变。
 - JSON 中请求拒绝未知字段；响应 schema 用于检查服务端是否输出约定字段。客户端仍须按04忽略未知只读响应字段，不把服务端验证器当作拒收兼容新增字段的客户端策略。
 - OpenAPI 的 defaults 仅为创建约定；PATCH 不应用创建默认值。模型温度的允许区间取决于能力，schema 的 number 不能证明参数可执行。
-- 对象权限、修订来源和版本绑定继续引用业务规则；普通配置/Project操作标记 `not-applicable`；Research/Review既有对象操作标记 `bound-object`，Review创建标记 `explicit-or-default-at-creation`。这只是语义标注，schema不证明绑定正确。
+- 语义标注必须区分新执行受理时解析最新、在途任务固定、历史证据按来源读取。当前接口的机器覆盖和语义标签须与 04-01 同步；仅真实执行并发受理、幂等重放及历史证据场景才能证明业务规则。
 - 本批确定同源 Cookie 的 wire 名为 `rpb_session`，只是认证传输字段的工程细化；安全属性及会话轮换仍由04规定，不允许通过名字改变权限范围。
 
 ## 3. 兼容性和审查
@@ -71,3 +71,15 @@ Task目标/等待引用、ConfirmationPreview影响/保留联合及完整事件�
 ## B01 首个机器转写切片（task014）
 
 Project.Create按04 §3/5/7及04-01 §3补具名成功meta和适用错误/响应头，具体字段唯一见JSON。[task014](../../tasks/014-project-create-machine-contract.md)及[审核包](../workorders/task014_b01_review_2026-10-24.md)给出需求反例与兼容方向；并未生成应用或SDK。当前仍为47个请求/成功局部操作、40个仅请求、5/6 SSE payload；新增ProjectCreateMeta后173schema，源行131不变。此操作提高为request-success-errors-partial，运行GAP保留；其他操作覆盖不变。前文A07待审核为历史时点，task010已限定接受，机器转写仍待分片。
+
+### 2026-11-04 FR-018 兼容审查
+
+OpenAPI 1.25 和覆盖清单 1.30 随 Research/Review 自动跟随知识版本同步。相对入场契约（Git `b6d03b0:contracts/p0.openapi.json`）的定向审查如下。
+
+| 契约变化 | 影响 |
+| --- | --- |
+| 已覆盖的两条 fix-evidence-range 路由撤销；两个模块的四条 adoption-preview/adoptions 文档路由也撤销 | 调用旧路径的客户端需要移除调用。普通继续工作无需版本确认、范围固定或另建对象。 |
+| ReviewCreate 不再接收 knowledge_version_id | 请求含该字段将按未知字段拒绝。Research.Create 的对应限制见 04-01，其请求尚未机器转写。 |
+| 其余 19 个原有 Research/Review 操作重新标注版本语义 | 新提问及生成、审查受理时读取最新版本；继续无证据与取消操作定位已受理任务；人工编辑、确认和完成使用来源修订。启用这些规则不代表对应服务已实现。 |
+
+运行结构检查及脚本级契约回归后，当前覆盖为 92 个请求/成功局部操作、25 个仅请求操作、245 个 schema、131 条源行及 5/6 类 SSE payload。与入场 JSON 启动严格兼容检查返回 1，报告上述 21 个操作变化和 ReviewCreate 收窄。既有调用兼容性不能宣称通过；权限、并发顺序、重放、历史引用、通知及业务端到端仍待实现验证。

@@ -1,0 +1,23 @@
+{
+  "file": "backend/src/rpb/api/published_papers.py",
+  "same_as_HEAD": true,
+  "baseline_violations": [
+    "rpb/api/published_papers.py:12: forbidden import rpb.adapters.knowledge_baseline_papers.baseline_papers",
+    "rpb/api/published_papers.py:13: forbidden import rpb.adapters.knowledge_paper_tables.paper_revisions",
+    "rpb/api/published_papers.py:14: forbidden import rpb.adapters.knowledge_tables.heads",
+    "rpb/api/published_papers.py:15: forbidden import rpb.adapters.runs.page",
+    "rpb/api/published_papers.py:53: forbidden import rpb.adapters.knowledge_tables.versions",
+    "rpb/api/published_papers.py:54: forbidden import rpb.adapters.run_tables.runs",
+    "rpb/api/published_papers.py:78: forbidden import rpb.adapters.knowledge_build_tables.graph_nodes"
+  ],
+  "current_violations": [
+    "rpb/api/published_papers.py:12: forbidden import rpb.adapters.knowledge_baseline_papers.baseline_papers",
+    "rpb/api/published_papers.py:13: forbidden import rpb.adapters.knowledge_paper_tables.paper_revisions",
+    "rpb/api/published_papers.py:14: forbidden import rpb.adapters.knowledge_tables.heads",
+    "rpb/api/published_papers.py:15: forbidden import rpb.adapters.runs.page",
+    "rpb/api/published_papers.py:53: forbidden import rpb.adapters.knowledge_tables.versions",
+    "rpb/api/published_papers.py:54: forbidden import rpb.adapters.run_tables.runs",
+    "rpb/api/published_papers.py:78: forbidden import rpb.adapters.knowledge_build_tables.graph_nodes"
+  ],
+  "scope": "Pre-existing failures; not a passing full architecture check"
+}

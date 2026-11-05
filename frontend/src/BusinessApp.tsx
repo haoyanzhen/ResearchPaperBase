@@ -1,3 +1,4 @@
+import { ResearchSessions } from './ResearchSessions';
 import { SearchTerms } from './SearchTerms';
 import { ConstructionRuns } from './ConstructionRuns';
 import { SMTPSettings } from './SMTPSettings';
@@ -398,6 +399,7 @@ export function BusinessApp() {
         <a href={`/workspace?project=${encodeURIComponent(project.id)}`}>项目链接</a>
         <SearchTerms envelope={envelope} key={user.id + project.id} project={project} actor={user.id} api={json} write={post} onAuthFailure={explain} />
         <ConstructionRuns envelope={envelope} key={"runs-" + user.id + project.id} project={project} actor={user.id} api={json} write={post} onAuthFailure={explain} />
+        <ResearchSessions key={"research-" + user.id + project.id} project={project} actor={user.id} api={json} envelope={envelope} write={post} onAuthFailure={explain} />
         <ProjectMaintenance key={project.id} project={project} actor={user.id} onChange={setProject} onBusy={setBusy} onAuthFailure={explain} onUnavailable={() => { leaveProject(); setError('资源不可用。'); }} onDeleted={() => { leaveProject(); setNotice('Project 已软删除。'); }} />
       </section> : <section className="form-card" aria-label="新建研究项目">
         <h2>新建 Project</h2><p className="hint">定义研究问题与范围，建立自己的研究容器。</p>

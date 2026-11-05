@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="141" time="145.076" timestamp="2026-11-05T14:58:26.465027+08:00" hostname="qy.local"><testcase classname="tests.integration.test_browser_research_sessions" name="test_research_browser_create_restore_version_notice_and_revocation" time="18.163"><failure message="playwright._impl._errors.Error: Route.fulfill: Route is already handled!">browser_app = (&lt;Browser type=&lt;BrowserType name=chromium executable_path=/Users/qingyue/Library/Caches/ms-playwright/chromium-1248/ch...d04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), 'rpb_test_bb3130c7add04ef6aa3e1f1be4afff14')
+
+    def test_research_browser_create_restore_version_notice_and_revocation(browser_app):
+        browser, base, engine, _ = browser_app
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        register_ui(page, base)
+        login_ui(page)
+        page.get_by_label("项目名称", exact=True).fill("Research UI")
+        page.get_by_role("button", name="创建 Project", exact=True).click()
+        region = page.get_by_role("region", name="研究会话", exact=True)
+        expect(region.get_by_text("发布知识版本后可创建研究会话。")).to_be_visible()
+        with engine.connect() as conn:
+            project_id = conn.scalar(sa.select(projects.c.id).where(projects.c.name == "Research UI"))
+        v1 = seed_version(engine, project_id)
+        expect(region.get_by_role("button", name="创建研究会话", exact=True)).to_be_visible(
+            timeout=10000
+        )
+        region.get_by_label("研究会话标题").fill("可恢复研究")
+        region.get_by_role("button", name="创建研究会话", exact=True).click()
+        current = region.get_by_role("article", name="当前研究会话")
+        expect(current.get_by_text(v1, exact=True)).to_be_visible()
+        expect(
+            current.get_by_text("当前版本没有项目证据。后续问答需要显式选择无证据继续。")
+        ).to_be_visible()
+        page.reload()
+        expect(current.get_by_role("heading", name="可恢复研究")).to_be_visible()
+        title = region.get_by_label("研究会话标题")
+        title.fill("保留中的下一会话草稿")
+        title.focus()
+        # Hold the first poll's V1 response across multiple timer ticks. A second
+        # in-flight request would allow stale success/failure to overwrite V2.
+        held = []
+    
+        def hold_poll(route):
+            held.append((route, route.fetch()))
+    
+        page.route("**/research-sessions/*", hold_poll)
+        page.wait_for_timeout(3500)
+        assert len(held) == 1
+        v2 = seed_version(engine, project_id, empty=False)
+        page.wait_for_timeout(6500)
+        assert len(held) == 1
+        page.unroute("**/research-sessions/*", hold_poll)
+&gt;       held[0][0].fulfill(response=held[0][1])
+
+tests/integration/test_browser_research_sessions.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.14/site-packages/playwright/sync_api/_generated.py:22711: in fulfill
+    self._sync(
+.venv/lib/python3.14/site-packages/playwright/_impl/_network.py:430: in fulfill
+    await self._handle_route(
+.venv/lib/python3.14/site-packages/playwright/_impl/_network.py:508: in _handle_route
+    raise e
+.venv/lib/python3.14/site-packages/playwright/_impl/_network.py:504: in _handle_route
+    await callback()
+.venv/lib/python3.14/site-packages/playwright/_impl/_network.py:499: in _inner_fulfill
+    await self._race_with_page_close(self._channel.send("fulfill", None, params))
+.venv/lib/python3.14/site-packages/playwright/_impl/_network.py:604: in _race_with_page_close
+    raise cast(BaseException, fut.exception())
+.venv/lib/python3.14/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;playwright._impl._connection.Connection object at 0x1119dd940&gt;
+cb = &lt;function Channel.send.&lt;locals&gt;.&lt;lambda&gt; at 0x111ece1f0&gt;
+is_internal = False, title = None
+
+    async def wrap_api_call(
+        self, cb: Callable[[], Any], is_internal: bool = False, title: str = None
+    ) -&gt; Any:
+        if self._api_zone.get():
+            return await cb()
+        task = asyncio.current_task(self._loop)
+        parsed_st = _attach_api_call_information(
+            getattr(task, "__pw_stack__", None) or _capture_stack_trace(),
+            is_internal,
+            title,
+        )
+        self._api_zone.set(parsed_st)
+        try:
+            return await cb()
+        except Exception as error:
+&gt;           raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E           playwright._impl._errors.Error: Route.fulfill: Route is already handled!
+
+.venv/lib/python3.14/site-packages/playwright/_impl/_connection.py:636: Error</failure></testcase><testcase classname="tests.integration.test_browser_research_sessions" name="test_research_browser_lost_creation_response_reuses_command" time="2.219"><failure message="ValueError: badly formed hexadecimal UUID string">browser_app = (&lt;Browser type=&lt;BrowserType name=chromium executable_path=/Users/qingyue/Library/Caches/ms-playwright/chromium-1248/ch...d04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), 'rpb_test_bb3130c7add04ef6aa3e1f1be4afff14')
+
+    def test_research_browser_lost_creation_response_reuses_command(browser_app):
+        browser, base, engine, _ = browser_app
+        page = browser.new_page()
+        register_ui(page, base)
+        login_ui(page)
+        page.get_by_label("项目名称", exact=True).fill("Research retry")
+        page.get_by_role("button", name="创建 Project", exact=True).click()
+        region = page.get_by_role("region", name="研究会话", exact=True)
+        with engine.connect() as conn:
+            project_id = conn.scalar(sa.select(projects.c.id).where(projects.c.name == "Research retry"))
+&gt;       seed_version(engine, project_id)
+
+tests/integration/test_browser_research_sessions.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_research_sessions.py:22: in seed_version
+    project_id = UUID(str(project_id))
+                 ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;[AttributeError("'uuid.UUID' object has no attribute 'int'") raised in repr()] UUID object at 0x11322df90&gt;
+hex = 'None', bytes = None, bytes_le = None, fields = None, int = None
+version = None, is_safe = &lt;SafeUUID.unknown: None&gt;
+
+    def __init__(self, hex=None, bytes=None, bytes_le=None, fields=None,
+                       int=None, version=None,
+                       *, is_safe=SafeUUID.unknown):
+        r"""Create a UUID from either a string of 32 hexadecimal digits,
+        a string of 16 bytes as the 'bytes' argument, a string of 16 bytes
+        in little-endian order as the 'bytes_le' argument, a tuple of six
+        integers (32-bit time_low, 16-bit time_mid, 16-bit time_hi_version,
+        8-bit clock_seq_hi_variant, 8-bit clock_seq_low, 48-bit node) as
+        the 'fields' argument, or a single 128-bit integer as the 'int'
+        argument.  When a string of hex digits is given, curly braces,
+        hyphens, and a URN prefix are all optional.  For example, these
+        expressions all yield the same UUID:
+    
+        UUID('{12345678-1234-5678-1234-567812345678}')
+        UUID('12345678123456781234567812345678')
+        UUID('urn:uuid:12345678-1234-5678-1234-567812345678')
+        UUID(bytes='\x12\x34\x56\x78'*4)
+        UUID(bytes_le='\x78\x56\x34\x12\x34\x12\x78\x56' +
+                      '\x12\x34\x56\x78\x12\x34\x56\x78')
+        UUID(fields=(0x12345678, 0x1234, 0x5678, 0x12, 0x34, 0x567812345678))
+        UUID(int=0x12345678123456781234567812345678)
+    
+        Exactly one of 'hex', 'bytes', 'bytes_le', 'fields', or 'int' must
+        be given.  The 'version' argument is optional; if given, the resulting
+        UUID will have its variant and version set according to RFC 4122,
+        overriding the given 'hex', 'bytes', 'bytes_le', 'fields', or 'int'.
+    
+        is_safe is an enum exposed as an attribute on the instance.  It
+        indicates whether the UUID has been generated in a way that is safe
+        for multiprocessing applications, via uuid_generate_time_safe(3).
+        """
+    
+        if [hex, bytes, bytes_le, fields, int].count(None) != 4:
+            raise TypeError('one of the hex, bytes, bytes_le, fields, '
+                            'or int arguments must be given')
+        if int is not None:
+            pass
+        elif hex is not None:
+            hex = hex.replace('urn:', '').replace('uuid:', '')
+            hex = hex.strip('{}').replace('-', '')
+            if len(hex) != 32:
+&gt;               raise ValueError('badly formed hexadecimal UUID string')
+E               ValueError: badly formed hexadecimal UUID string
+
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/uuid.py:219: ValueError</failure></testcase><testcase classname="tests.integration.test_project_commands" name="test_pc01_create_read_real_atomic_facts" time="0.769" /><testcase classname="tests.integration.test_project_commands" name="test_pc02_concurrent_same_or_conflicting_commands[True-First]" time="0.667" /><testcase classname="tests.integration.test_project_commands" name="test_pc02_concurrent_same_or_conflicting_commands[True-Second]" time="0.663" /><testcase classname="tests.integration.test_project_commands" name="test_pc02_concurrent_same_or_conflicting_commands[False-First]" time="0.663" /><testcase classname="tests.integration.test_project_commands" name="test_pc02_concurrent_same_or_conflicting_commands[False-Second]" time="0.657" /><testcase classname="tests.integration.test_project_commands" name="test_pc03_each_write_failure_rolls_back_then_retry[projects]" time="0.763" /><testcase classname="tests.integration.test_project_commands" name="test_pc03_each_write_failure_rolls_back_then_retry[construction_workspaces]" time="0.758" /><testcase classname="tests.integration.test_project_commands" name="test_pc03_each_write_failure_rolls_back_then_retry[project_create_commands]" time="0.758" /><testcase classname="tests.integration.test_project_commands" name="test_pc03_committed_response_failure_replays" time="0.782" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_other_actor_and_admin_isolation" time="1.513" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_idempotency_key[None]" time="0.758" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_idempotency_key[short]" time="0.775" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_idempotency_key[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]" time="0.743" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_idempotency_key[xxxxxxxxxxxxxxx\t]" time="0.755" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_idempotency_key[xxxxxxxxxxxxxxx\n]" time="0.743" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body0]" time="0.749" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body1]" time="0.755" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body2]" time="0.774" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body3]" time="0.757" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body4]" time="0.758" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body5]" time="0.757" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body6]" time="0.758" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body7]" time="0.762" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body8]" time="0.786" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body9]" time="0.754" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_bad_body_or_missing_csrf_no_effect[body10]" time="0.750" /><testcase classname="tests.integration.test_project_commands" name="test_pc05_canonical_defaults_current_request_id_and_csrf" time="0.762" /><testcase classname="tests.integration.test_project_commands" name="test_pc06_retention_real_persistence_at_independent_times[offset0]" time="0.656" /><testcase classname="tests.integration.test_project_commands" name="test_pc06_retention_real_persistence_at_independent_times[offset1]" time="0.656" /><testcase classname="tests.integration.test_project_commands" name="test_pc06_retention_real_persistence_at_independent_times[offset2]" time="0.651" /><testcase classname="tests.integration.test_project_commands" name="test_pc06_http_expiry_matches_durable_receipt" time="0.747" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_migration_metadata_and_populated_downgrade" time="0.746"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'contains data'&#10;  Actual message: 'Research data requires explicit recovery; destructive downgrade refused'">db = (Engine(postgresql+psycopg://rpb_test_bb3130c7add04ef6aa3e1f1be4afff14:***@/rpb_test_bb3130c7add04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), &lt;alembic.config.Config object at 0x11154eba0&gt;)
+
+    def test_pc07_migration_metadata_and_populated_downgrade(db):
+        engine, cfg = db
+        c, h = signed_in(engine)
+        create(c, h)
+&gt;       with pytest.raises(RuntimeError, match="contains data"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'contains data'
+E         Actual message: 'Research data requires explicit recovery; destructive downgrade refused'
+
+tests/integration/test_project_commands.py:289: AssertionError</failure></testcase><testcase classname="tests.integration.test_project_commands" name="test_pc08_current_visibility_before_replay" time="0.777" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[id]" time="0.803" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[actor_id]" time="0.769" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[operation]" time="0.848" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[scope]" time="0.756" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[key]" time="0.756" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[fingerprint]" time="0.757" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[schema_version]" time="0.760" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[project_id]" time="0.782" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[result]" time="0.745" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[accepted_at]" time="0.748" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_required_fields_and_rollback[expires_at]" time="0.747" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta0]" time="0.753" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta1]" time="0.752" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta2]" time="0.757" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta3]" time="0.746" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta4]" time="0.801" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta5]" time="0.745" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta6]" time="0.751" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_receipt_domain_constraints[delta7]" time="0.762" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_retention_owner_fk_and_unique_key" time="1.505" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_upgrade_failure_restores_previous_schema_and_data" time="0.750"><failure message="RuntimeError: Research data requires explicit recovery; destructive downgrade refused">db = (Engine(postgresql+psycopg://rpb_test_bb3130c7add04ef6aa3e1f1be4afff14:***@/rpb_test_bb3130c7add04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), &lt;alembic.config.Config object at 0x11154eba0&gt;)
+
+    def test_pc07_upgrade_failure_restores_previous_schema_and_data(db):
+        engine, cfg = db
+        c, h = signed_in(engine)
+        # Existing identities survive this migration, and metadata registration is not create_all.
+&gt;       migrate(engine, cfg, "downgrade", "0003_auth_sessions")
+
+tests/integration/test_project_commands.py:394: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_account_storage.py:34: in migrate
+    getattr(command, action)(cfg, revision)
+.venv/lib/python3.14/site-packages/alembic/command.py:534: in downgrade
+    script.run_env()
+.venv/lib/python3.14/site-packages/alembic/script/base.py:550: in run_env
+    util.load_python_file(self.dir, "env.py")
+.venv/lib/python3.14/site-packages/alembic/util/pyfiles.py:114: in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/alembic/util/pyfiles.py:132: in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap_external&gt;:759: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:491: in _call_with_frames_removed
+    ???
+migrations/env.py:32: in &lt;module&gt;
+    context.run_migrations()
+&lt;string&gt;:8: in run_migrations
+    ???
+.venv/lib/python3.14/site-packages/alembic/runtime/environment.py:970: in run_migrations
+    self.get_context().run_migrations(**kw)
+.venv/lib/python3.14/site-packages/alembic/runtime/migration.py:616: in run_migrations
+    step.migration_fn(**kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def downgrade():
+&gt;       raise RuntimeError("Research data requires explicit recovery; destructive downgrade refused")
+E       RuntimeError: Research data requires explicit recovery; destructive downgrade refused
+
+migrations/versions/0020_research_sessions.py:20: RuntimeError</failure></testcase><testcase classname="tests.integration.test_project_commands" name="test_pc03_storage_failure_before_acceptance" time="0.763" /><testcase classname="tests.integration.test_project_commands" name="test_pc07_command_writer_blocks_downgrade" time="5.658"><failure message="Failed: command writer/downgrade interleaving absent">db = (Engine(postgresql+psycopg://rpb_test_bb3130c7add04ef6aa3e1f1be4afff14:***@/rpb_test_bb3130c7add04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), &lt;alembic.config.Config object at 0x11154eba0&gt;)
+
+    def test_pc07_command_writer_blocks_downgrade(db):
+        from alembic import command
+    
+        engine, cfg = db
+        service, token, ch = service_subject(engine)
+        inserted, release, pids = Event(), Event(), []
+    
+        def hold(conn, cursor, statement, parameters, context, executemany):
+            if statement.startswith("INSERT INTO project_create_commands"):
+                pids.append(conn.scalar(sa.text("SELECT pg_backend_pid()")))
+                inserted.set()
+                assert release.wait(8)
+    
+        def down():
+            with engine.begin() as conn:
+                conn.execute(sa.text("SET LOCAL lock_timeout='8s'"))
+                cfg.attributes["connection"] = conn
+                command.downgrade(cfg, "0003_auth_sessions")
+    
+        sa.event.listen(engine, "after_cursor_execute", hold)
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                writer = pool.submit(service.create, token, ch, KEY, DATA)
+                try:
+                    assert inserted.wait(5)
+                    downgrade = pool.submit(down)
+                    with engine.connect() as observer:
+                        deadline = time.monotonic() + 5
+                        while time.monotonic() &lt; deadline:
+                            observer.execute(sa.text("SELECT pg_stat_clear_snapshot()"))
+                            if observer.scalar(
+                                sa.text(
+                                    "SELECT count(*) FROM pg_stat_activity "
+                                    "WHERE :pid = ANY(pg_blocking_pids(pid))"
+                                ),
+                                {"pid": pids[0]},
+                            ):
+                                break
+                            time.sleep(0.01)
+                        else:
+&gt;                           pytest.fail("command writer/downgrade interleaving absent")
+E                           Failed: command writer/downgrade interleaving absent
+
+tests/integration/test_project_commands.py:476: Failed</failure></testcase><testcase classname="tests.integration.test_project_commands" name="test_pc07_unknown_persisted_payload_version_refuses_without_rewrite" time="0.779" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_exact_valid_key_boundaries[x-xxxxxxxxxxxxxxxx]" time="0.777" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_exact_valid_key_boundaries[x-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]" time="0.745" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_exact_valid_key_boundaries[\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d-xxxxxxxxxxxxxxxx]" time="0.748" /><testcase classname="tests.integration.test_project_commands" name="test_pc04_exact_valid_key_boundaries[\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]" time="0.753" /><testcase classname="tests.integration.test_project_commands" name="test_sim05_text_length_after_trimming_and_replay[name-200]" time="0.759" /><testcase classname="tests.integration.test_project_commands" name="test_sim05_text_length_after_trimming_and_replay[description-10000]" time="0.761" /><testcase classname="tests.integration.test_project_commands" name="test_sim05_text_length_after_trimming_and_replay[research_scope-10000]" time="0.756" /><testcase classname="tests.integration.test_project_commands" name="test_sim06_internal_whitespace_preserved" time="0.809" /><testcase classname="tests.integration.test_project_list" name="test_ph01_empty_owned_status_projection_and_no_writes" time="1.521" /><testcase classname="tests.integration.test_project_list" name="test_ph02_default_bounds_ties_insert_and_terminal" time="0.910" /><testcase classname="tests.integration.test_project_list" name="test_ph02_invalid_page_inputs[page_size=0]" time="0.753" /><testcase classname="tests.integration.test_project_list" name="test_ph02_invalid_page_inputs[page_size=101]" time="0.759" /><testcase classname="tests.integration.test_project_list" name="test_ph02_invalid_page_inputs[page_size=x]" time="0.762" /><testcase classname="tests.integration.test_project_list" name="test_ph02_invalid_page_inputs[page_size=1.5]" time="0.762" /><testcase classname="tests.integration.test_project_list" name="test_ph02_invalid_page_inputs[cursor=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]" time="0.761" /><testcase classname="tests.integration.test_project_list" name="test_ph03_unknown_query_and_malformed_cursor[sort=name]" time="0.756" /><testcase classname="tests.integration.test_project_list" name="test_ph03_unknown_query_and_malformed_cursor[owner_id=someone]" time="0.760" /><testcase classname="tests.integration.test_project_list" name="test_ph03_unknown_query_and_malformed_cursor[status=deleted]" time="0.779" /><testcase classname="tests.integration.test_project_list" name="test_ph03_unknown_query_and_malformed_cursor[cursor=garbage]" time="0.750" /><testcase classname="tests.integration.test_project_list" name="test_ph03_unknown_query_and_malformed_cursor[cursor=]" time="0.750" /><testcase classname="tests.integration.test_project_list" name="test_ph03_tamper_actor_and_current_authorization" time="1.822" /><testcase classname="tests.integration.test_project_list" name="test_ph03_expiry_and_process_restart" time="0.664" /><testcase classname="tests.integration.test_project_list" name="test_ph04_failure_safe_retry" time="0.758" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_partial_normalized_edit_noop_and_preserved_container" time="0.774" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change0]" time="0.814" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change1]" time="0.755" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change2]" time="0.777" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change3]" time="0.766" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change4]" time="0.766" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change5]" time="0.774" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change6]" time="0.763" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change7]" time="0.776" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change8]" time="0.767" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_reject_invalid_without_write[change9]" time="0.765" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm02_permissions_revision_and_states" time="1.877" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm02_concurrent_updates_have_one_winner" time="0.661" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm03_preview_has_exact_effects_and_no_business_writes[archive]" time="0.763" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm03_preview_has_exact_effects_and_no_business_writes[delete]" time="0.769" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_transition_audit_and_visibility[archive]" time="1.522" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_transition_audit_and_visibility[delete]" time="1.531" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_confirmation_binding_risks_and_revisions" time="0.795" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_expiry_and_pm05_replay_after_expiry" time="0.662" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm05_archive_duplicate_conflict_visibility" time="1.588" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_transaction_failure_has_no_partial_state[projects-archive]" time="0.767" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_transaction_failure_has_no_partial_state[projects-delete]" time="0.766" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_transaction_failure_has_no_partial_state[project_lifecycle_records-archive]" time="0.789" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_transaction_failure_has_no_partial_state[project_lifecycle_records-delete]" time="0.782" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_migration_data_preserved_and_downgrade_guard" time="0.766"><failure message="RuntimeError: Research data requires explicit recovery; destructive downgrade refused">db = (Engine(postgresql+psycopg://rpb_test_bb3130c7add04ef6aa3e1f1be4afff14:***@/rpb_test_bb3130c7add04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), &lt;alembic.config.Config object at 0x11154eba0&gt;)
+
+    def test_pm06_migration_data_preserved_and_downgrade_guard(db):
+        engine, cfg = db
+        c, h, p, url = subject(engine)
+&gt;       migrate(engine, cfg, "downgrade", "0004_project_commands")
+
+tests/integration/test_project_maintenance.py:423: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_account_storage.py:34: in migrate
+    getattr(command, action)(cfg, revision)
+.venv/lib/python3.14/site-packages/alembic/command.py:534: in downgrade
+    script.run_env()
+.venv/lib/python3.14/site-packages/alembic/script/base.py:550: in run_env
+    util.load_python_file(self.dir, "env.py")
+.venv/lib/python3.14/site-packages/alembic/util/pyfiles.py:114: in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/alembic/util/pyfiles.py:132: in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap_external&gt;:759: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:491: in _call_with_frames_removed
+    ???
+migrations/env.py:32: in &lt;module&gt;
+    context.run_migrations()
+&lt;string&gt;:8: in run_migrations
+    ???
+.venv/lib/python3.14/site-packages/alembic/runtime/environment.py:970: in run_migrations
+    self.get_context().run_migrations(**kw)
+.venv/lib/python3.14/site-packages/alembic/runtime/migration.py:616: in run_migrations
+    step.migration_fn(**kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def downgrade():
+&gt;       raise RuntimeError("Research data requires explicit recovery; destructive downgrade refused")
+E       RuntimeError: Research data requires explicit recovery; destructive downgrade refused
+
+migrations/versions/0020_research_sessions.py:20: RuntimeError</failure></testcase><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_pm05_pm06_archive_commit_serializes_competitors[archive]" time="0.663" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_pm05_pm06_archive_commit_serializes_competitors[update]" time="0.660" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_pm05_pm06_archive_commit_serializes_competitors[delete]" time="0.661" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm04_pm05_pm06_archive_commit_serializes_competitors[downgrade]" time="5.677"><failure message="Failed: competing transaction never blocked">db = (Engine(postgresql+psycopg://rpb_test_bb3130c7add04ef6aa3e1f1be4afff14:***@/rpb_test_bb3130c7add04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), &lt;alembic.config.Config object at 0x11154eba0&gt;)
+second_action = 'downgrade'
+
+    @pytest.mark.parametrize("second_action", ["archive", "update", "delete", "downgrade"])
+    def test_pm04_pm05_pm06_archive_commit_serializes_competitors(db, second_action):
+        engine, cfg = db
+        service, token, csrf = service_subject(engine)
+        p, _ = service.create(token, csrf, KEY, DATA)
+        a = service.preview(token, csrf, p["id"], str(p["revision"]), "archive")
+        d = service.preview(token, csrf, p["id"], str(p["revision"]), "delete")
+        args = (
+            token,
+            csrf,
+            p["id"],
+            "archive",
+            str(p["revision"]),
+            a["confirmation_token"],
+            ["archive_readonly"],
+            "archive-race-key-0001",
+        )
+        reached, release = Event(), Event()
+        pids = []
+    
+        def hold(conn, cursor, statement, parameters, context, executemany):
+            if statement.startswith("INSERT INTO project_lifecycle_records"):
+                pids.append(conn.scalar(sa.text("SELECT pg_backend_pid()")))
+                reached.set()
+                assert release.wait(8)
+    
+        sa.event.listen(engine, "after_cursor_execute", hold)
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(service.change_state, *args)
+                try:
+                    assert reached.wait(5)
+                    if second_action == "archive":
+                        second = pool.submit(service.change_state, *args)
+                    elif second_action == "update":
+                        second = pool.submit(
+                            service.update,
+                            token,
+                            csrf,
+                            p["id"],
+                            str(p["revision"]),
+                            {"name": "Forbidden late write"},
+                        )
+                    elif second_action == "delete":
+                        second = pool.submit(
+                            service.change_state,
+                            token,
+                            csrf,
+                            p["id"],
+                            "delete",
+                            str(p["revision"]),
+                            d["confirmation_token"],
+                            ["delete_unavailable"],
+                        )
+                    else:
+                        second = pool.submit(migrate, engine, cfg, "downgrade", "0004_project_commands")
+&gt;                   wait_for_blocker(engine, pids[0])
+
+tests/integration/test_project_maintenance.py:510: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+engine = Engine(postgresql+psycopg://rpb_test_bb3130c7add04ef6aa3e1f1be4afff14:***@/rpb_test_bb3130c7add04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432)
+pid = 23996
+
+    def wait_for_blocker(engine, pid):
+        with engine.connect() as observer:
+            deadline = time.monotonic() + 5
+            while time.monotonic() &lt; deadline:
+                observer.execute(sa.text("SELECT pg_stat_clear_snapshot()"))
+                if observer.scalar(
+                    sa.text(
+                        "SELECT count(*) FROM pg_stat_activity WHERE :pid = ANY(pg_blocking_pids(pid))"
+                    ),
+                    {"pid": pid},
+                ):
+                    return
+                time.sleep(0.01)
+&gt;       pytest.fail("competing transaction never blocked")
+E       Failed: competing transaction never blocked
+
+tests/integration/test_project_maintenance.py:451: Failed</failure></testcase><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change0]" time="0.774" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change1]" time="0.767" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change2]" time="0.774" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change3]" time="0.872" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change4]" time="0.782" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change5]" time="0.782" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change6]" time="0.800" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change7]" time="0.763" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change8]" time="0.759" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change9]" time="0.757" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change10]" time="0.764" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change11]" time="0.764" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change12]" time="0.764" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change13]" time="0.766" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change14]" time="0.842" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change15]" time="0.765" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change16]" time="0.774" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_record_constraints_preserve_audit[change17]" time="0.763" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm06_upgrade_ddl_failure_rolls_back_and_retry" time="0.766"><failure message="RuntimeError: Research data requires explicit recovery; destructive downgrade refused">db = (Engine(postgresql+psycopg://rpb_test_bb3130c7add04ef6aa3e1f1be4afff14:***@/rpb_test_bb3130c7add04ef6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), &lt;alembic.config.Config object at 0x11154eba0&gt;)
+
+    def test_pm06_upgrade_ddl_failure_rolls_back_and_retry(db):
+        engine, cfg = db
+        c, h, p, url = subject(engine)
+&gt;       migrate(engine, cfg, "downgrade", "0004_project_commands")
+
+tests/integration/test_project_maintenance.py:575: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_account_storage.py:34: in migrate
+    getattr(command, action)(cfg, revision)
+.venv/lib/python3.14/site-packages/alembic/command.py:534: in downgrade
+    script.run_env()
+.venv/lib/python3.14/site-packages/alembic/script/base.py:550: in run_env
+    util.load_python_file(self.dir, "env.py")
+.venv/lib/python3.14/site-packages/alembic/util/pyfiles.py:114: in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/alembic/util/pyfiles.py:132: in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap_external&gt;:759: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:491: in _call_with_frames_removed
+    ???
+migrations/env.py:32: in &lt;module&gt;
+    context.run_migrations()
+&lt;string&gt;:8: in run_migrations
+    ???
+.venv/lib/python3.14/site-packages/alembic/runtime/environment.py:970: in run_migrations
+    self.get_context().run_migrations(**kw)
+.venv/lib/python3.14/site-packages/alembic/runtime/migration.py:616: in run_migrations
+    step.migration_fn(**kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def downgrade():
+&gt;       raise RuntimeError("Research data requires explicit recovery; destructive downgrade refused")
+E       RuntimeError: Research data requires explicit recovery; destructive downgrade refused
+
+migrations/versions/0020_research_sessions.py:20: RuntimeError</failure></testcase><testcase classname="tests.integration.test_project_maintenance" name="test_pm02_metadata_write_failure_rolls_back" time="0.771" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm03_preview_and_delete_reject_foreign_disabled_body_and_unknown_action" time="1.557" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_each_field_trimmed_before_length_check[name-200]" time="0.774" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_each_field_trimmed_before_length_check[description-10000]" time="0.778" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm01_each_field_trimmed_before_length_check[research_scope-10000]" time="0.773" /><testcase classname="tests.integration.test_project_maintenance" name="test_pm05_key_scope_and_pm06_existing_foreign_owner" time="1.589" /><testcase classname="tests.integration.test_research_sessions" name="test_research_create_restore_latest_and_replay" time="0.768"><failure message="jsonschema.exceptions.ValidationError: '2026-11-05T07:00:48.264283+00:00' does not match 'Z$'&#10;&#10;Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:&#10;    {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}&#10;&#10;On instance['data']['created_at']:&#10;    '2026-11-05T07:00:48.264283+00:00'">subject = (&lt;test_search_terms.TermsClient object at 0x1125f8ad0&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': '7uTfdQcNQ...f6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), b'g7n75zPqNkeyf7bdONwErz9Sb7lyVQMoyA-MDgzbtHA=')
+
+    def test_research_create_restore_latest_and_replay(subject):
+        c, h, root, _, engine, _ = subject
+        path = root + "/research-sessions"
+        assert post(c, h, path, {}).status_code == 404
+        with engine.connect() as conn:
+            assert conn.scalar(sa.select(sa.func.count()).select_from(sessions)) == 0
+        v1 = seed_version(engine, root.split("/")[-1])
+&gt;       response = post(c, h, path, {"title": "证据研究"})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_research_sessions.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_search_terms.py:84: in post
+    return c.post(url, headers=h | {"Idempotency-Key": key}, json=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+tests/integration/test_search_terms.py:64: in request
+    ).validate(response.json())
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Draft202012Validator(schema={'additionalProperties': False, 'components': {'responses': {'PublicError400': {'content':...ecker=&lt;FormatChecker checkers=['date', 'email', 'idn-email', 'idn-hostname', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']&gt;)
+args = ({'data': {'id': 'baac9867-1554-4d45-8d23-56fc0e203eb1', 'project_id': '644b5f97-1e9c-4366-871c-dc543f961750', 'revisi...{'request_id': '35f93e44-f5da-45d8-92e5-9398e4e3ab1c', 'idempotency_expires_at': '2026-11-06T07:00:48.264283+00:00'}},)
+kwargs = {}
+
+    def validate(self, *args, **kwargs):
+        for error in self.iter_errors(*args, **kwargs):
+&gt;           raise error
+E           jsonschema.exceptions.ValidationError: '2026-11-05T07:00:48.264283+00:00' does not match 'Z$'
+E           
+E           Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:
+E               {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}
+E           
+E           On instance['data']['created_at']:
+E               '2026-11-05T07:00:48.264283+00:00'
+
+.venv/lib/python3.14/site-packages/jsonschema/validators.py:450: ValidationError</failure></testcase><testcase classname="tests.integration.test_research_sessions" name="test_research_validation_permissions_paging_and_archived" time="0.781"><failure message="jsonschema.exceptions.ValidationError: '2026-11-05T07:00:49.089205+00:00' does not match 'Z$'&#10;&#10;Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:&#10;    {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}&#10;&#10;On instance['data']['created_at']:&#10;    '2026-11-05T07:00:49.089205+00:00'">subject = (&lt;test_search_terms.TermsClient object at 0x117628b90&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'ASWSxKnFa...f6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), b'MBTS6zsl-yjBQTJORQez8LcKaVmZVo6lAc4qBCExKSs=')
+
+    def test_research_validation_permissions_paging_and_archived(subject):
+        c, h, root, _, engine, _ = subject
+        path = root + "/research-sessions"
+        seed_version(engine, root.split("/")[-1])
+        for body in (
+            {"title": " "},
+            {"title": "x" * 201},
+            {"knowledge_version_id": str(uuid4())},
+            {"title": None},
+        ):
+            assert post(c, h, path, body).status_code == 422
+        assert c.post(path, json={}, headers=h).status_code == 400
+        assert (
+            c.post(path, json={}, headers={"Idempotency-Key": "research-no-csrf1"}).status_code == 403
+        )
+        assert c.get(path, headers={"X-Expected-Actor": str(uuid4())}).status_code == 401
+&gt;       first = post(c, h, path, {"title": "one"}, "research-create-01").json()["data"]
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_research_sessions.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_search_terms.py:84: in post
+    return c.post(url, headers=h | {"Idempotency-Key": key}, json=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+tests/integration/test_search_terms.py:64: in request
+    ).validate(response.json())
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Draft202012Validator(schema={'additionalProperties': False, 'components': {'responses': {'PublicError400': {'content':...ecker=&lt;FormatChecker checkers=['date', 'email', 'idn-email', 'idn-hostname', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']&gt;)
+args = ({'data': {'id': 'd8c7f672-1d8d-4582-b6a0-176220e59efa', 'project_id': 'bd8cfa5a-52e6-4748-831d-ac7fe4d0874c', 'revisi...{'request_id': 'c87e2de7-fd8d-4a76-acb2-db334a040797', 'idempotency_expires_at': '2026-11-06T07:00:49.089205+00:00'}},)
+kwargs = {}
+
+    def validate(self, *args, **kwargs):
+        for error in self.iter_errors(*args, **kwargs):
+&gt;           raise error
+E           jsonschema.exceptions.ValidationError: '2026-11-05T07:00:49.089205+00:00' does not match 'Z$'
+E           
+E           Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:
+E               {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}
+E           
+E           On instance['data']['created_at']:
+E               '2026-11-05T07:00:49.089205+00:00'
+
+.venv/lib/python3.14/site-packages/jsonschema/validators.py:450: ValidationError</failure></testcase><testcase classname="tests.integration.test_research_sessions" name="test_research_rollback_duplicate_and_expiry" time="0.767"><failure message="jsonschema.exceptions.ValidationError: '2026-11-05T07:00:49.890381+00:00' does not match 'Z$'&#10;&#10;Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:&#10;    {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}&#10;&#10;On instance['data']['created_at']:&#10;    '2026-11-05T07:00:49.890381+00:00'">subject = (&lt;test_search_terms.TermsClient object at 0x116f82e90&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'O8IDqqeMn...f6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), b'Q0eja2mL9cCol3MniBujOAI0fCRsreg0IsuaLXVCtWg=')
+
+    def test_research_rollback_duplicate_and_expiry(subject):
+        c, h, root, _, engine, _ = subject
+        path = root + "/research-sessions"
+        seed_version(engine, root.split("/")[-1])
+    
+        def fail_receipt(conn, cursor, statement, parameters, context, executemany):
+            if statement.startswith("INSERT INTO research_create_commands"):
+                raise RuntimeError("injected receipt failure")
+    
+        sa.event.listen(engine, "before_cursor_execute", fail_receipt)
+        try:
+            assert post(c, h, path, {}).status_code == 500
+        finally:
+            sa.event.remove(engine, "before_cursor_execute", fail_receipt)
+        with engine.connect() as conn:
+            assert conn.scalar(sa.select(sa.func.count()).select_from(sessions)) == 0
+            assert conn.scalar(sa.select(sa.func.count()).select_from(commands)) == 0
+        with ThreadPoolExecutor(max_workers=2) as pool:
+&gt;           results = list(pool.map(lambda _: post(c, h, path, {}).json()["data"], range(2)))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_research_sessions.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:639: in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:311: in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:450: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:395: in __get_result
+    raise self._exception
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/thread.py:86: in run
+    result = ctx.run(self.task)
+             ^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/thread.py:73: in run
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+tests/integration/test_research_sessions.py:160: in &lt;lambda&gt;
+    results = list(pool.map(lambda _: post(c, h, path, {}).json()["data"], range(2)))
+                                      ^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_search_terms.py:84: in post
+    return c.post(url, headers=h | {"Idempotency-Key": key}, json=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+tests/integration/test_search_terms.py:64: in request
+    ).validate(response.json())
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Draft202012Validator(schema={'additionalProperties': False, 'components': {'responses': {'PublicError400': {'content':...ecker=&lt;FormatChecker checkers=['date', 'email', 'idn-email', 'idn-hostname', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']&gt;)
+args = ({'data': {'id': 'd22d02c8-f2a3-465a-9155-11af69ece5c5', 'title': '新研究会话', 'status': 'active', 'revision': 'e9b72946-1...ency_expires_at': '2026-11-06T07:00:49.890381+00:00', 'original_request_id': '245efee3-0527-4976-91c4-4fe3c1ab2a34'}},)
+kwargs = {}
+
+    def validate(self, *args, **kwargs):
+        for error in self.iter_errors(*args, **kwargs):
+&gt;           raise error
+E           jsonschema.exceptions.ValidationError: '2026-11-05T07:00:49.890381+00:00' does not match 'Z$'
+E           
+E           Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:
+E               {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}
+E           
+E           On instance['data']['created_at']:
+E               '2026-11-05T07:00:49.890381+00:00'
+
+.venv/lib/python3.14/site-packages/jsonschema/validators.py:450: ValidationError</failure></testcase><testcase classname="tests.integration.test_research_sessions" name="test_research_candidate_not_readable" time="0.753" /><testcase classname="tests.integration.test_research_sessions" name="test_research_actual_owner_revocation_and_read_no_writes" time="0.760"><failure message="jsonschema.exceptions.ValidationError: '2026-11-05T07:00:51.459828+00:00' does not match 'Z$'&#10;&#10;Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:&#10;    {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}&#10;&#10;On instance['data']['created_at']:&#10;    '2026-11-05T07:00:51.459828+00:00'">subject = (&lt;test_search_terms.TermsClient object at 0x111fac510&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'kwHQiutkB...f6aa3e1f1be4afff14?host=%2Fprivate%2Ftmp%2Frpb-db-4jfo9l1d&amp;port=5432), b'rKWQ2VNsJZbzlZ1CxnWQf95IyUiRT_aukb4QuVQNIO4=')
+
+    def test_research_actual_owner_revocation_and_read_no_writes(subject):
+        from fastapi.testclient import TestClient
+        from test_account_auth import ORIGIN, csrf, login, register
+    
+        c, h, root, app, engine, _ = subject
+        path = root + "/research-sessions"
+        version = seed_version(engine, root.split("/")[-1])
+&gt;       response = post(c, h, path, {"title": "private"})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_research_sessions.py:181: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_search_terms.py:84: in post
+    return c.post(url, headers=h | {"Idempotency-Key": key}, json=data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+tests/integration/test_search_terms.py:64: in request
+    ).validate(response.json())
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Draft202012Validator(schema={'additionalProperties': False, 'components': {'responses': {'PublicError400': {'content':...ecker=&lt;FormatChecker checkers=['date', 'email', 'idn-email', 'idn-hostname', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']&gt;)
+args = ({'data': {'id': '45acf2c2-52f1-45d1-91dc-ee95ad616d00', 'project_id': '6f525ff9-3a3a-4f0f-8581-fec109b63a32', 'revisi...{'request_id': 'dbca240d-e499-4aca-8709-c8010846c59e', 'idempotency_expires_at': '2026-11-06T07:00:51.459828+00:00'}},)
+kwargs = {}
+
+    def validate(self, *args, **kwargs):
+        for error in self.iter_errors(*args, **kwargs):
+&gt;           raise error
+E           jsonschema.exceptions.ValidationError: '2026-11-05T07:00:51.459828+00:00' does not match 'Z$'
+E           
+E           Failed validating 'pattern' in schema['properties']['data']['properties']['created_at']:
+E               {'type': 'string', 'format': 'date-time', 'pattern': 'Z$'}
+E           
+E           On instance['data']['created_at']:
+E               '2026-11-05T07:00:51.459828+00:00'
+
+.venv/lib/python3.14/site-packages/jsonschema/validators.py:450: ValidationError</failure></testcase></testsuite></testsuites>

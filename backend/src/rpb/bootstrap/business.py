@@ -76,6 +76,11 @@ def create_business_app(
     from rpb.api.published_papers import router_for as published_router
 
     app.include_router(published_router(run_store))
+    from rpb.adapters.research import ResearchStore
+    from rpb.api.research import router_for as research_router
+    from rpb.modules.research.application.sessions import ResearchService
+
+    app.include_router(research_router(ResearchService(ResearchStore(terms), origin)))
     app.state.run_store = run_store
     app.include_router(runs_router(TermService(run_store, origin)))
     app.include_router(terms_router(TermService(terms, origin)))

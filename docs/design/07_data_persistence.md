@@ -1,7 +1,7 @@
 # Data Persistence 设计
 
-文档版本：v1.15
-更新日期：2026-10-29
+文档版本：v1.16
+更新日期：2026-11-04
 依据文档：`00_layers.md`、`01_functional_requirements.md`
 
 ## 1. 设计目标
@@ -47,8 +47,8 @@ LLM模型发现结果与逐模型测试事实分开保存；测试事实关联�
 | AssetRevision、DocumentAsset、Text/Analysis/ChunkRevision / Construction | Project、来源 Run、来源输入、内容摘要、父依赖、处理配置/模型、文件/正文/分析引用、人工来源事实 | 发布修订不可原地修改；正文、切片、模型或分析改变产生新修订；物理复用不得复用授权；见 §5.1 |
 | CandidateManifest、PublishedManifest、KnowledgeVersion / Construction | Project、Run、基线、候选修订、完整成员/依赖清单摘要、索引/图谱视图、就绪证据、发布时间 | 清单必须完整可解析；发布后成员与依赖闭包不可变；version 的 source_run 唯一，且同 Project；空清单也是合法完整版本 |
 | EvidenceRef、Dependency / Research/Review 经 Knowledge 校验 | Project、版本、资产/文本/图谱修订、定位及校验；依赖方类型/id 与被依赖修订 | 同一证据 id 永不重指内容；跨版新引用用新 id；绑定创建与持久依赖登记同事务；见 §5.4 |
-| ResearchSession、Turn、ResponseAttempt / Research | 固定版本、会话修订、轮次顺序、用户输入、生成配置、attempt、成功正文/失败片段/证据关联 | 一 Session 仅一个追加资格；(session,turn_order) 唯一；失败片段与采纳正文分开，不因断线创建新 attempt |
-| ReviewRun、Outline、Chapter、Final、Issue / Review | 固定版本、内容修订与来源大纲/章节修订、确认依据、审查修订、accepted/rejected、最小修改追溯 | 当前稿一个可写 Markdown；不建独立导出快照状态机；审查不能自动适用于新修订；完成/编辑/任务启动互斥 |
+| ResearchSession、Turn、ResponseAttempt / Research | 会话修订、轮次顺序、每轮受理的版本及持久依赖、用户输入、attempt 和证据关联 | 一 Session 仅一个追加资格；(session,turn_order) 唯一；重放保留本轮版本，断线不创建新 attempt |
+| ReviewRun、Outline、Chapter、Final、Issue / Review | 各生成/审查操作受理时的版本、内容修订、来源大纲/章节修订、确认依据、accepted/rejected、最小修改追溯 | 一个当前可写稿；各来源独立保存实际证据版本；完成/编辑/任务启动互斥 |
 | Command、Task、Outbox、ResultCommit / Execution | 主体、具名操作、scope、key、参数摘要、持久输入引用、task/attempt、结果引用、提交身份、投递记录 | 命令作用域唯一；结果提交身份唯一；受理、任务及outbox一致；外部副作用不在长事务内执行 |
 | TaskEvent、OutputSnapshot / Execution | Task/attempt、event_id、sequence、修订、持久输出与证据/风险、event_cursor | event_id 与 (task,attempt,sequence) 唯一；快照和游标原子一致；SSE 仅投影已持久事实，不用流送达作为提交成功 |
 | ReadPin、ObjectRegistry、CleanupJob / 应用协调 | 读取/任务绑定、持久依赖、对象Project归属/摘要/就绪、回收资格/删除进度、清理授权范围 | 取得保护与标记回收互斥；重复清理幂等；物理共享对象需校验全部引用；不从哈希推出权限 |
@@ -92,7 +92,7 @@ P1 调度/邮件/通用导出及 P2 协作/观点/历史版本记录仅保留既
 
 `knowledge_versions` 应保存 Project、版本号、来源 Construction Run、发布时间、状态、关系库论文快照范围、向量索引引用、图谱引用和发布诊断摘要。
 
-Research Session 和 Review Run 保存稳定的 `knowledge_version_id`；采用新知识创建关联新 Session 或新版 Review，不改写原对象绑定。完整边界见 [知识库并行构建与版本更新领域附录](02-02_construction_versioning_appendix.md)；本设计不代表物理数据模型或迁移已完成。
+研究与综述的父对象持续工作。以 (Project, 轮次或生成/审查操作, KnowledgeVersion) 保存版本依赖；受理与读取当前默认版本按发布事务排序，依赖和可重放结果同事务持久化。执行恢复从原记录取得 pin，新的追问或写作在原 Session/Run 下建立新依赖。已有稿件按来源修订解析历史证据，升级不删除旧依赖。旧记录升级时，有历史证据则按其可验证来源回填，无法确定时标为未知，不按最新指针补造历史。
 
 版本固化论文与资料集合、正文来源、分析、引用定位、向量和图谱引用。候选写入与已发布读取隔离；允许复用未变化资产，但不得改变旧版本内容。旧版本仍被研究或导出依赖时，不得因常规清理破坏必要证据；权限撤销或必须删除时保留原因并安全拒绝访问。
 
@@ -164,7 +164,7 @@ pin 需要续期时使用持有者和 epoch 条件更新；到期后旧持有者
 
 ### 5.5 Review 当前稿与下载一致性
 
-P0 终稿保存单一完整 Markdown 正文、revision、accepted/rejected、来源大纲/章节修订、KnowledgeVersion 和最小修改元数据。摘要/关键词/参考文献是同一正文修订的派生投影，不成为第二份可写正文。审查记录绑定正文修订，不存覆盖率、豁免或 strict 配置，不因正文改写复用旧审查结论。
+P0 终稿保存单一完整 Markdown 正文、revision、accepted/rejected、来源大纲/章节修订、每项来源证据版本、本次生成版本和最小修改元数据。摘要/关键词/参考文献是同一正文修订的派生投影，不成为第二份可写正文。审查记录绑定正文修订，不存覆盖率、豁免或 strict 配置，不因正文改写复用旧审查结论。
 
 不新增 ReviewExportableVersion/ExportableSnapshot 生命周期，不要求保存每次编辑完整历史；已有独立 accepted 终稿成果不因新稿失败删除。编辑条件更新只允许未完成 Run 的 accepted 稿，不能复活 rejected。完成与保存/启动任务按 Run、稿件和来源修订原子裁决，完成后只读。
 
@@ -245,7 +245,7 @@ Project 私人资产清理范围包括 Project 私有运行记录、Research Ses
 | 索引延迟可见、文件写好但发布事务失败 | 不暴露半版本；保留旧默认；候选残留按归属安全处理 | KV-I05 |
 | 发布提交响应丢失 | 查 Run 唯一完成记录，不再发版、不盲目回滚 | KV-I05 |
 | 发布后存储损坏或 Provider/通知失败 | 明确同版依赖不可用；不拼接新版；通知失败不撤销成功 | KV-I07、ARC-05 |
-| 新版本发布与旧研究/分页并行 | 固定绑定和快照，旧证据定位不变 | KV-I01–04、KV-C01/02 |
+| 新版本发布与旧研究/分页并行 | 原任务和游标保持快照，新操作受理读取新默认，旧证据定位不变 | KV-I01–04、KV-C01/02 |
 | 读取保护与回收、撤权交错 | 回收资格与新读取互斥；失效后不能继续取新数据或提交；共享闭包不误删 | KV-I06、ARC-06 |
 | 入库确认后编辑、旧确认/旧审查提交 | 拒绝或保留未采纳结果；人工稿和旧证据不受损 | API-R03/09 |
 | 迁移/恢复中断 | 无伪成功；保持故障可诊断；验证原权限、版本清单、对象摘要后再恢复服务 | ARC-09 |

@@ -31,6 +31,7 @@ class TermsClient(TestClient):
                 "material-policy",
                 "material-sources",
                 "construction-runs",
+                "research-sessions",
             }
         ):
             parts[2] = "{project_id}"
@@ -38,6 +39,8 @@ class TermsClient(TestClient):
                 parts[4] = "{run_id}"
                 if len(parts) > 6 and parts[5] in {"candidates", "waiting-items"}:
                     parts[6] = "{candidate_id}" if parts[5] == "candidates" else "{waiting_item_id}"
+            if "research-sessions" in parts and len(parts) > 4:
+                parts[4] = "{session_id}"
             if "material-sources" in parts:
                 parts[4] = "{source_id}"
             if "search-terms" in parts and len(parts) > 5 and parts[5] != "generate":

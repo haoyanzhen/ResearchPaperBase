@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="4.239" timestamp="2026-11-05T14:52:45.533868+08:00" hostname="qy.local"><testcase classname="tests.integration.test_research_sessions" name="test_research_create_restore_latest_and_replay" time="1.011" /><testcase classname="tests.integration.test_research_sessions" name="test_research_validation_permissions_paging_and_archived" time="0.787"><failure message="KeyError: 'data'">subject = (&lt;test_search_terms.TermsClient object at 0x110e20690&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'dbuRz4ZDq...2bb81ba713f43b9aec?host=%2Fprivate%2Ftmp%2Frpb-db-aeot2g8y&amp;port=5432), b'BG3YMyt_ccpodgmYsyfLOs-J-bhxOmBFbiJFdb9E3KE=')
+
+    def test_research_validation_permissions_paging_and_archived(subject):
+        c, h, root, _, engine, _ = subject
+        path = root + "/research-sessions"
+        seed_version(engine, root.split("/")[-1])
+        for body in (
+            {"title": " "},
+            {"title": "x" * 201},
+            {"knowledge_version_id": str(uuid4())},
+            {"title": None},
+        ):
+            assert post(c, h, path, body).status_code == 422
+        assert c.post(path, json={}, headers=h).status_code == 400
+        assert (
+            c.post(path, json={}, headers={"Idempotency-Key": "research-no-csrf1"}).status_code == 403
+        )
+        assert c.get(path, headers={"X-Expected-Actor": str(uuid4())}).status_code == 401
+        first = post(c, h, path, {"title": "one"}, "research-create-01").json()["data"]
+        second = post(c, h, path, {"title": "two"}, "research-create-02").json()["data"]
+        page = c.get(path + "?page_size=1").json()
+        assert page["data"]["items"][0]["id"] == second["id"]
+        next_page = c.get(path, params={"page_size": 1, "cursor": page["meta"]["next_cursor"]}).json()
+&gt;       assert next_page["data"]["items"][0]["id"] == first["id"]
+               ^^^^^^^^^^^^^^^^^
+E       KeyError: 'data'
+
+tests/integration/test_research_sessions.py:107: KeyError</failure></testcase><testcase classname="tests.integration.test_research_sessions" name="test_research_rollback_duplicate_and_expiry" time="0.858" /><testcase classname="tests.integration.test_research_sessions" name="test_research_candidate_not_readable" time="0.777"><failure message="sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) default knowledge version must be sealed&#10;CONTEXT:  PL/pgSQL function rpb_head_requires_sealed_version() line 5 at RAISE&#10;[SQL: INSERT INTO knowledge_project_heads (project_id, version_id) VALUES (%(project_id)s::UUID, %(version_id)s::UUID)]&#10;[SQL parameters hidden due to hide_parameters=True]&#10;(Background on this error at: https://sqlalche.me/e/20/f405)">self = &lt;sqlalchemy.engine.base.Connection object at 0x10fa10d70&gt;
+dialect = &lt;sqlalchemy.dialects.postgresql.psycopg.PGDialect_psycopg object at 0x110c21550&gt;
+context = &lt;sqlalchemy.dialects.postgresql.psycopg.PGExecutionContext_psycopg object at 0x110da2250&gt;
+statement = &lt;sqlalchemy.dialects.postgresql.psycopg.PGCompiler_psycopg object at 0x110ea60d0&gt;
+parameters = [{'project_id': UUID('b1e83ca4-63e6-44cf-b224-7f56e1ad4a35'), 'version_id': UUID('8f2b36a9-0718-42c2-95cc-aec896189c91')}]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [IDLE] (database=rpb_test_86390b3168384b2bb81ba713f43b9aec) at 0x111b0cc50&gt;
+query = 'INSERT INTO knowledge_project_heads (project_id, version_id) VALUES (%(project_id)s::UUID, %(version_id)s::UUID)'
+params = {'project_id': UUID('b1e83ca4-63e6-44cf-b224-7f56e1ad4a35'), 'version_id': UUID('8f2b36a9-0718-42c2-95cc-aec896189c91')}
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.RaiseException: default knowledge version must be sealed
+E           CONTEXT:  PL/pgSQL function rpb_head_requires_sealed_version() line 5 at RAISE
+
+.venv/lib/python3.14/site-packages/psycopg/cursor.py:117: RaiseException
+
+The above exception was the direct cause of the following exception:
+
+subject = (&lt;test_search_terms.TermsClient object at 0x1110c9e00&gt;, {'Origin': 'http://127.0.0.1:8000', 'X-CSRF-Token': 'B2-PdxIbJ...2bb81ba713f43b9aec?host=%2Fprivate%2Ftmp%2Frpb-db-aeot2g8y&amp;port=5432), b'wou3pF-y4m9zj8xTnFi1dnDo7MofyAP2aXtyUNwmalY=')
+
+    def test_research_candidate_not_readable(subject):
+        c, h, root, _, engine, _ = subject
+&gt;       seed_version(engine, root.split("/")[-1], sealed=False)
+
+tests/integration/test_research_sessions.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_research_sessions.py:52: in seed_version
+    conn.execute(heads.insert().values(project_id=project_id, version_id=version_id))
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1428: in execute
+    return meth(
+.venv/lib/python3.14/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1650: in _execute_clauseelement
+    ret = self._execute_context(
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1855: in _execute_context
+    return self._exec_single_context(
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1995: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:2372: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1976: in _exec_single_context
+    self.dialect.do_execute(
+.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py:964: in do_execute
+    cursor.execute(statement, parameters)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [IDLE] (database=rpb_test_86390b3168384b2bb81ba713f43b9aec) at 0x111b0cc50&gt;
+query = 'INSERT INTO knowledge_project_heads (project_id, version_id) VALUES (%(project_id)s::UUID, %(version_id)s::UUID)'
+params = {'project_id': UUID('b1e83ca4-63e6-44cf-b224-7f56e1ad4a35'), 'version_id': UUID('8f2b36a9-0718-42c2-95cc-aec896189c91')}
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           sqlalchemy.exc.ProgrammingError: (psycopg.errors.RaiseException) default knowledge version must be sealed
+E           CONTEXT:  PL/pgSQL function rpb_head_requires_sealed_version() line 5 at RAISE
+E           [SQL: INSERT INTO knowledge_project_heads (project_id, version_id) VALUES (%(project_id)s::UUID, %(version_id)s::UUID)]
+E           [SQL parameters hidden due to hide_parameters=True]
+E           (Background on this error at: https://sqlalche.me/e/20/f405)
+
+.venv/lib/python3.14/site-packages/psycopg/cursor.py:117: ProgrammingError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/baseline-review/commit.log",
+  "exit_code": 0,
+  "report_type": "log",
+  "status": "command_succeeded",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 108,
+  "read_start_byte": 0,
+  "text": "12c408b7cff48dae49a4579b945e883563e2c88a\nfix(task050): reflect published knowledge version in project views\n",
+  "truncated": false
+}

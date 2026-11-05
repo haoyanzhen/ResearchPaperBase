@@ -1,0 +1,1 @@
+{"command": ["backend/.venv/bin/mypy", "backend/src/rpb/adapters/research.py", "backend/src/rpb/adapters/knowledge_read.py", "backend/src/rpb/api/research.py", "backend/src/rpb/modules/research/application/sessions.py"], "exit_code": 0}

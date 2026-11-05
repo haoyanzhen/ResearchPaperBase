@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/lint-final/output.log",
+  "exit_code": 1,
+  "report_type": "log",
+  "status": "failed",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 1840,
+  "read_start_byte": 0,
+  "text": "E501 Line too long (101 > 100)\n  --> backend/tests/integration/test_browser_research_sessions.py:86:101\n   |\n84 |     region = page.get_by_role(\"region\", name=\"研究会话\", exact=True)\n85 |     with engine.connect() as conn:\n86 |         project_id = conn.scalar(sa.select(projects.c.id).where(projects.c.name == \"Research retry\"))\n   |                                                                                                     ^\n87 |     seed_version(engine, project_id)\n88 |     expect(region.get_by_role(\"button\", name=\"创建研究会话\", exact=True)).to_be_visible(timeout=10000)\n   |\n\nE501 Line too long (102 > 100)\n  --> backend/tests/integration/test_browser_research_sessions.py:88:95\n   |\n86 |         project_id = conn.scalar(sa.select(projects.c.id).where(projects.c.name == \"Research retry\"))\n87 |     seed_version(engine, project_id)\n88 |     expect(region.get_by_role(\"button\", name=\"创建研究会话\", exact=True)).to_be_visible(timeout=10000)\n   |                                                                                                     ^^\n89 |     def lose_response(route):\n90 |         if route.request.method == \"POST\":\n   |\n\nE501 Line too long (122 > 100)\n   --> backend/tests/integration/test_browser_research_sessions.py:101:91\n    |\n 99 |     page.unroute(\"**/research-sessions\", lose_response)\n100 |     region.get_by_role(\"button\", name=\"重试创建会话\").click()\n101 |     expect(region.get_by_role(\"article\", name=\"当前研究会话\").get_by_role(\"heading\", name=\"网络中断研究\")).to_be_visible()\n    |                                                                                                      ^^^^^^^^^^^^^^^^^^^^^\n102 |     with engine.connect() as conn:\n103 |         assert conn.scalar(sa.select(sa.func.count()).select_from(sessions)) == 1\n    |\n\nFound 3 errors.\n",
+  "truncated": false
+}

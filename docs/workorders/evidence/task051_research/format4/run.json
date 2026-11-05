@@ -1,0 +1,1 @@
+{"command": ["backend/.venv/bin/ruff", "format", "backend/tests/integration/test_research_sessions.py", "backend/tests/integration/test_browser_research_sessions.py"], "cwd": null, "exit_code": 0}

@@ -1,7 +1,7 @@
 # 新核心最小工程基线
 
-文档版本：v1.2
-更新日期：2026-10-23
+文档版本：v1.3
+更新日期：2026-11-04
 依据：[00](00_layers.md)、[05-01](05-01_internal_module_contracts.md)、[07](07_data_persistence.md)、[08](08_security_permissions.md)、[10](10_operations_deployment.md)
 
 ## 1. 决策范围
@@ -58,7 +58,7 @@ scripts/                        # 已有契约工具，工程入口随实现建�
 | Project | Project生命周期与归属 | 经应用协作初始化Construction容器和治理撤权，不私改Run/版本 |
 | Workspace | 用户显示现场、未提交草稿 | 恢复不提交业务内容 |
 | Construction | 补充、候选、Run和知识资产发布 | 唯一组织知识库业务提交，Knowledge/Agent只返回受控准备结果 |
-| Research / Review | 各自绑定、回复/稿件、确认及证据关联 | 不修改知识资产或旧绑定，遵循人工保护 |
+| Research / Review | 按操作记录版本、回复/稿件、确认及证据关联 | 保护知识资产及历史证据版本，遵循人工保护 |
 | Execution / Knowledge / Agent | 所属技术事实或具名能力 | 不拥有跨业务状态机；身份登记经应用端口，候选写受scope限制 |
 
 Domain不导入外层；Application依赖Domain、服务契约和自身端口；Agent可依赖Knowledge契约，Knowledge不反向依赖具体Agent/应用。跨模块只用公开端口，不传可写ORM对象；adapters实现所属端口，只有bootstrap选择具体实现。事务由应用协调，repository/Provider不擅自commit。

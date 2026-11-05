@@ -1,0 +1,1 @@
+{"command": ["python3", "scripts/delivery_snapshot.py", "create", "--directory", "docs/workorders/evidence/task051_research/final/snapshot"], "exit_code": 0}

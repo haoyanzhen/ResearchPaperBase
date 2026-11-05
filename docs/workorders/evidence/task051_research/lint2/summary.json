@@ -1,0 +1,11 @@
+{
+  "report": "/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/lint2/output.log",
+  "exit_code": 1,
+  "report_type": "log",
+  "status": "failed",
+  "notice": "Process exit only, not test pass/coverage. Tail may omit the failure origin; inspect the original log as needed and verify run identity/baseline.",
+  "total_bytes": 953,
+  "read_start_byte": 0,
+  "text": "I001 [*] Import block is un-sorted or un-formatted\n  --> backend/src/rpb/adapters/research.py:3:1\n   |\n 1 |   \"\"\"Research session persistence through the current account and Project boundaries.\"\"\"\n 2 |\n 3 | / import secrets\n 4 | |\n 5 | | from datetime import UTC, datetime, timedelta\n 6 | | from typing import Any\n 7 | | from uuid import UUID, uuid4\n 8 | |\n 9 | | import sqlalchemy as sa\n10 | |\n11 | | from rpb.adapters.knowledge_baseline_papers import content_digest\n12 | | from rpb.adapters.knowledge_read import latest_published\n13 | | from rpb.adapters.research_tables import catalogs, commands, sessions\n14 | | from rpb.adapters.runs import page\n15 | | from rpb.modules.account_config.application.ports import AccountError\n   | |_____________________________________________________________________^\nhelp: Organize imports\n  |\n3 | import secrets\n  -\n4 | from datetime import UTC, datetime, timedelta\n  |\n\nFound 1 error.\n[*] 1 fixable with `--fix`.\n",
+  "truncated": false
+}

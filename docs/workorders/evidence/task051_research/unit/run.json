@@ -1,0 +1,1 @@
+{"command": [".venv/bin/python", "-m", "pytest", "tests/unit", "tests/architecture", "-q", "--junitxml=/Users/qingyue/projects/ResearchPaperBase_codex/docs/workorders/evidence/task051_research/unit/tests.xml"], "cwd": "backend", "exit_code": 1}

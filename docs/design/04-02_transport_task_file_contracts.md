@@ -1,7 +1,7 @@
 # API 附录：异步任务、事件传输与文件
 
-文档版本：v1.11
-更新日期：2026-10-26
+文档版本：v1.12
+更新日期：2026-11-04
 适用项目大版本：v1
 依据文档：[API 主文](04_api_contracts.md)、[P0 操作契约](04-01_p0_operation_contracts.md)、[应用用例](05_application_use_cases.md)、[运行恢复领域附录](02-04_run_recovery_appendix.md)
 
@@ -24,7 +24,7 @@
 | --- | --- |
 | `task_id` | UUID；一次受理执行的稳定标识 |
 | `project_id` | UUID 或 null；Project操作必须有值，配置与账号治理任务按§2.1.1允许为空 |
-| `knowledge_version_id` | ID或null，必填；Research/Review为创建时固定版，其余为null；与事件绑定一致 |
+| `knowledge_version_id` | ID或null，必填；Research/Review为本次任务受理时固定版，其余为null；与事件绑定一致 |
 | `target` | `{type:string,id:UUID}`；封闭目标及操作映射见§2.1.1；客户端不得自行新增 |
 | `attempt_id` | UUID；本次执行尝试身份，不因网络重订阅改变 |
 | `execution_status` | `queued / running / waiting_user / succeeded / failed / cancelled`；仅为技术执行投影 |
@@ -72,11 +72,11 @@ TaskView 在上述字段上增加：
 | supplement / supplement_id | Construction.SubmitSupplement、UploadSupplement | 当前Project，无KV，无需Run | 无补充重跑/取消新路由；补充详情及静态/解析结果 |
 | construction_run / run_id | Construction.Start、ClearAssociations、AppendSearchTerms、ScoreCandidates及步骤继续 | 当前Project；顶层knowledge_version_id=null | 既有Construction取消；Run详情及已提交结果，基线/发布版本从具名业务投影读取 |
 | construction_candidate / candidate_id | Construction.GenerateAnalysis | 当前Project、所属Run；顶层KV=null | 仅原操作允许的Run级取消，不能暗示只取消候选；候选详情 |
-| research_response_attempt / 业务回复attempt_id | Research.SendMessage、ContinueWithoutEvidence | 当前Project、Session固定KV | 仅原回复取消；attempt详情、已保存回复/输出 |
-| review_run / run_id | Review.Create、AdoptVersion、首次Finalize（无终稿身份时） | 当前Project、Run固定KV | 既有Review指定Task取消；Run详情及后续实际产物引用 |
-| review_outline / 所属run_id | Review.GenerateOutline、ReviewOutline | 当前Project、Run固定KV；大纲为Run内单例 | 同上；outline详情，id使用父Run身份且type明确，不虚构大纲UUID |
-| review_chapter / chapter_id | Review.GenerateChapter、ReviewChapter | 当前Project、Run固定KV | 同上；chapter详情 |
-| review_final / final_id | Review.ReviewFinal、RegenerateFinalComponents、重汇总到已有终稿 | 当前Project、Run固定KV | 同上；当前final详情；finalize目标选择在受理时固定 |
+| research_response_attempt / 业务回复attempt_id | Research.SendMessage、ContinueWithoutEvidence | 当前Project、回复尝试所属轮次固定KV | 仅原回复取消；attempt详情、已保存回复/输出 |
+| review_run / run_id | Review.Create、首次Finalize（无终稿身份时） | 当前Project、本次综述任务固定KV | 既有Review指定Task取消；Run详情及后续实际产物引用 |
+| review_outline / 所属run_id | Review.GenerateOutline、ReviewOutline | 当前Project、本次综述任务固定KV；大纲为Run内单例 | 同上；outline详情，id使用父Run身份且type明确，不虚构大纲UUID |
+| review_chapter / chapter_id | Review.GenerateChapter、ReviewChapter | 当前Project、本次综述任务固定KV | 同上；chapter详情 |
+| review_final / final_id | Review.ReviewFinal、RegenerateFinalComponents、重汇总到已有终稿 | 当前Project、本次综述任务固定KV | 同上；当前final详情；finalize目标选择在受理时固定 |
 
 `TaskView.target_location:TaskTargetLocation`为必填只读补充：`{parent_type:project|construction_run|research_session|review_run|null,parent_id:ID|null,read_url:string|null}`。parent两字段同时为空或同时非空；需Run/Session祖先的目标必须提供对应父身份，Workspace/补充/Project子范围以Project作父，配置/账号无父。read_url由服务端生成，使用04-01现有读取入口（singleton/list也可），只在当前主体合法可读时非空；它不是外部URL、任意路由分发或授权。TaskHandle保持轻量，客户端用status_url取得完整定位；SSE不另外复制此定位，可刷新TaskView。
 
@@ -152,7 +152,7 @@ data: {"event_id":"<uuid>","sequence":12,"task_id":"<uuid>","project_id":"<uuid>
 ```
 
 - `event_id` 是去重身份；`sequence` 是该 Task/attempt 内单调递增整数，不承诺全 Project 的全局顺序。
-- `project_id` 仅§2.1.1的配置/账号治理任务可为空；`knowledge_version_id` 对无知识版本任务可为空，Research/Review 必须等于其实际绑定版本；Construction 的基线/候选/发布版本通过明确命名的 payload 字段表达，不能以一个含糊版本字段互相替代。
+- `project_id` 仅§2.1.1的配置/账号治理任务可为空；`knowledge_version_id` 对无知识版本任务可为空，Research/Review 必须等于本次已受理任务的实际版本；Construction 的基线/候选/发布版本通过明确命名的 payload 字段表达，不能以一个含糊版本字段互相替代。
 - `task_revision` 必填，对应该事件提交时 TaskView.revision；`target_revision` 可为空，非空时对应 target 业务对象修订，不能混用。`business_state.revision` 仅对应 business_state.target_id 的业务对象，若与事件 target 相同则应与 target_revision 一致。两类修订均不比较大小，事件顺序由 sequence 决定。
 - delta 必须可重放或包含在可恢复快照中后才能发送。客户端按 event_id 去重；不得重复追加文本。
 
@@ -201,7 +201,7 @@ SSE帧由id、event、data组成：id是本事件可用于续读的不透明游�
 | task_id / attempt_id | ID；必须是订阅Task和其实际执行尝试；重连不改变 |
 | project_id | ID或null；与Task作用域一致 |
 | target | TaskHandle.target，同Task固定目标；不能换成新生成产物 |
-| knowledge_version_id | ID或null；Research/Review等于绑定版；配置/治理/补充/构建为null，构建版本从业务结果读取 |
+| knowledge_version_id | ID或null；Research/Review等于该任务固定版；配置/治理/补充/构建为null，构建版本从业务结果读取 |
 | task_revision | Revision；对应该持久提交的Task视图 |
 | target_revision | Revision或null；尚无/不提供目标修订时null；若business_state指同目标，其revision须匹配 |
 | occurred_at | Time；提交事实时间，不是重放发送时间 |

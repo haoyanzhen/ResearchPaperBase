@@ -1,7 +1,7 @@
 # API 附录：P0 操作与数据契约
 
-文档版本：v1.37
-更新日期：2026-11-02
+文档版本：v1.39
+更新日期：2026-11-05
 依据：[需求基线](01_functional_requirements.md)、[领域核心](02_domain_core.md)、[API 主文](04_api_contracts.md)
 适用范围：P0 设计契约；不是实现或验收通过声明。
 
@@ -27,7 +27,7 @@
 | `ConfirmationPreview` | §1.1定义完整具名影响/保留结构；使用subject_revision，预览不执行业务动作 |
 | `Trace` | `actor_id:ID\|null,at:Time,source_action:string,content_revision:Revision`；只保存必要追溯，不代表 P2 历史版本功能 |
 
-仅承担确认凭据读取的详情返回 `confirmations:ConfirmationPreview[]`：检索词、补充请求、候选（含分析）、大纲、章节、Research attempt 和终稿详情；当前无合法确认动作时为空数组。WaitingItem、IngestionPreview 与 FinalizationPreview 保留各自已定义确认字段。PendingRevisionView 的 confirmations 沿用其显式结构，无适用动作时为空。其他普通详情、列表和 Workspace 显示上下文不要求附带 confirmations，也不为读取计算全部动作的影响范围。阶段确认、无证据继续、人工内容覆盖、治理、删除清理和版本采用的既有确认要求不变；普通保存只按所属操作表要求，不增加确认步骤。
+仅承担确认凭据读取的详情返回 `confirmations:ConfirmationPreview[]`：检索词、补充请求、候选（含分析）、大纲、章节、Research attempt 和终稿详情；当前无合法确认动作时为空数组。WaitingItem、IngestionPreview 与 FinalizationPreview 保留各自已定义确认字段。PendingRevisionView 的 confirmations 沿用其显式结构，无适用动作时为空。其他普通详情、列表和 Workspace 显示上下文不要求附带 confirmations，也不为读取计算全部动作的影响范围。阶段确认、无证据继续、人工内容覆盖、治理和删除清理的既有确认要求不变；普通保存只按所属操作表要求，不增加确认步骤。
 
 可由当前详情确定范围的确认从上述详情获取；替换参数或影响范围需用户指定时，使用下列限定纯预览路由，均为 POST、不要求 Idempotency-Key，请求 `{expected_revision!,action:string!,proposed_changes?:对应目标写结构}`，响应 ConfirmationPreview。纯预览只计算影响并签发凭据，不改变业务状态；具体行为遵循 04 第 7 节。
 
@@ -60,11 +60,10 @@ subject_revision标识该动作直接依据，expected_revision按第7节取目�
 | association_removal | object:PreviewObjectRef、asset_kind:paper\|material、asset_revision:Revision、base_knowledge_version_id:ID | object.type与asset_kind一致，移除Project关联，不删旧版本/共享身份；与AssociationRemovalPreview.targets逐项相等 |
 | private_cleanup | object:PreviewObjectRef、artifact_kind:document\|text\|vector\|graph\|private_record、reason:string | object.type为document_asset/project_record/vector_view/graph_view；由当前Project治理授权枚举实际私有对象，不暴露物理路径/桶key；共享依赖校验后才清理 |
 | account_governance | account_id:ID、account_revision:Revision、operation:change_email\|enable\|disable\|grant_admin\|revoke_admin\|reset_password\|delete、summary:string | 仅已授权账号治理事实；具体邮箱参数绑定token而非从summary反解析；不得附私人Project/文件/标题/URL；摘要不是可扩大执行范围的选择器 |
-| version_adoption | source:PreviewObjectRef、target_knowledge_version_id:ID、source_content_revisions:PreviewContentRevision[]、regeneration_scope:string[] | source.type为research_session/review_run；仅复制已选稳定背景或明确人工参考，绑定目标版，不能原地迁移 |
+
 
 content_change.content_scope为非空、去重的封闭语义范围，按原动作裁剪：检索词生成用search_terms（列明每个受保护词对象，尚无词时用workspace）；评分用screening；候选分析用analysis；大纲用outline；章节用chapter；简报用brief；终稿允许body、abstract、references。generate_components严格等于原请求components选集（abstract/references）；终稿人工编辑只列实际改动字段，重汇总及reject列实际完整终稿范围。不得将选定摘要扩大成body或把候选分析扩大为processing；不支持的操作/范围组合拒绝。每项object.revision绑定该范围所依附的当前内容修订，服务端token同时绑定请求参数及全部范围；UI按此回显，不从reason解析。范围列表不是新增可写字段或任意JSON路径。
 
-`PreviewContentRevision={type:research_message|review_brief|review_outline|review_chapter|review_final,id:ID,revision:Revision}`，全部必填；review_brief/outline单例id为Run ID，必须以type区分；禁止流式未采纳片段，跨Project/Run/Session引用拒绝。AdoptionPreview的source_content_revisions原object[]具体改为此数组，与version_adoption项同一集合；Research只使用稳定message，Review只使用选定参考及主题/简报，不继承确认。regeneration_scope仅既有Research背景继承/Review从头生成的安全说明，不是可执行指令。
 
 PreviewRetainedItem为以下封闭联合：
 
@@ -80,7 +79,6 @@ PreviewRetainedItem为以下封闭联合：
 | Admin.PreviewAccountAction | account_governance | 所属治理范围和安全protected_scope保留说明；管理员无权读私人Project内容，不枚举私人ID来“证明完整” |
 | Project.PreviewLifecycle / PreviewCleanup | execution_revocation；cleanup另用private_cleanup | 现有Project状态/治理修订与固定影响范围；保留共享身份/他人数据/受保护旧依赖与默认保留导出；archive不物理删除 |
 | Construction.PreviewClearAssociations | association_removal、execution_revocation | targets/asset_revision/基线/conflicting_runs固定；retained_items解释旧版引用与共享身份保留；新冲突须刷新，不扩大取消 |
-| Research/Review.PreviewAdoption | version_adoption | 原绑定、目标KV、稳定继承内容修订；retained_items列原对象/原稿；出现新版不换目标 |
 | Review.PreviewFinalization | 重新覆盖时content_change及实际失效项；首次无受保护稿confirmations=[] | source_revisions完整绑定大纲与必需章节，不给首次汇总增加token；可选缺失不阻断 |
 | Review.RejectFinal | content_change(operation=reject)，只指目标final | 既有拒绝与文件清理范围；保留其他accepted成果、历史诊断；不承诺撤回下载副本 |
 
@@ -297,7 +295,7 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 
 论文过滤query：title/abstract/author/source为可选1–200字符字符串，score_min/score_max为可选有限数且min≤max、按资产返回的score_scale解释；valid/cited为可选boolean，push_status可选not_enabled|not_sent|sent|failed。资料过滤query：title/source为可选1–200字符，content_format为04-02已支持格式枚举，processing_status可选pending|processing|available|degraded|failed|unsupported，participates_in_knowledge为可选boolean。q为可选1–200字符全文匹配词；未列字段拒绝，不接受任意排序表达式。P0 push_status 只能展示未启用或已有事实，不能隐式触发推送。空过滤结果为成功空列表，缺失版本为明确错误。
 
-`AdoptionPreviewRequest={expected_revision!,target_knowledge_version_id:ID!,inheritance:{stable_message_ids?:ID[],reference_content_ids?:ID[]}}`。预览返回 ConfirmationPreview 加 `{source_object_id,source_bound_version_id,target_knowledge_version_id,source_content_revisions:PreviewContentRevision[],regeneration_scope:string[],cost_notice:string}`。cost_notice 可说明无法估算，不伪造精确费用。Research 继承只取已保存稳定内容，标为待复核背景；Review 保留原主题，人工内容仅为明确参考，不继承确认状态。
+研究与综述遵守 FR-018。每次新回复、大纲、章节、终稿生成或审查的受理事务读取当前 Project 默认已发布版本，将实际 knowledge_version_id 与命令、轮次或任务和依赖一并保存；发布与受理有确定的先后次序。重放同一命令以及在途继续、重试均沿用该次记录。源对象 ID 不变，已有内容、人工确认和引用不被发布事件重写。模块根据当前默认版本变化就地显示“检测到知识库版本更新”，无需发起采用命令。
 
 ### 5.1 版本摘要与引用解析补充
 
@@ -307,28 +305,26 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 - `VersionScopeSummary={construction_run_id:ID,search_execution:executed|not_executed|unknown,search_scopes:SearchScope[],includes_manual_inputs:boolean|null,summary:string}`；`SearchScope={source:string,query_summary:string,executed_at:Time|null,date_basis:string|null,date_from:Time|null,date_to:Time|null,result:completed|partial|failed|unknown}`。范围来自本次冻结输入/执行事实，日期端点是否包含及日期含义写入 date_basis；未知 date_basis 时不得推断截止满足情况。该摘要不能表示累计版本的完整检索覆盖，详细事实仍追溯 construction_run_id。revision_only 标 not_executed，空 search_scopes 不等于“全部来源”。既有 retrieval_cutoff_at 为有依据的文献截止说明，无单一可证明截止时为 null，不以 published_at 或最近检查时间填充。
 - `EvidenceRef` 增加 `asset_revision:Revision`、`target:EvidenceTarget`、`origin_evidence_id:ID|null`。`EvidenceTarget={kind:asset|text|graph,text_revision_id:ID|null,fragment_id:ID|null,graph_view_id:ID|null,graph_edge_ids:ID[]}`。text 必有 text_revision_id，fragment_id 可空但片段引用必须有 fragment_id 或 locator；graph 必有 graph_view_id 且 graph_node_ids 或 graph_edge_ids 非空；asset 为资产级引用，不冒充精确文段支持。text 不携带 graph_node_ids；graph 不携带正文 locator；asset 不携带 fragment_id、locator 或图谱节点/边。非本 kind 字段为 null/空数组。document_asset_id 若非空须解析为清单内不可变文件修订；无 PDF 的摘要证据允许为空。内部保存内容校验依据，不公开对象 key。来源关联仅用于同 Project 可授权追溯，不赋予访问权，不表示自动继承支持性。
 - GET `P/evidence/{evidence_id}` 成功仍返回 EvidenceRef，附只读 `resolution:{checked_at:Time,integrity:verified|not_checked,risk_notices:RiskNotice[]}`；带定位的成功解析要求 verified，asset 级可为 not_checked 且不得称已验证片段。`RiskNotice={kind:retraction|correction|parse_error|source_unavailable,summary:string,source_url:string|null,observed_at:Time}`；风险来自已有可追溯记录，空数组不保证全面核查。权限、缺失或校验失败沿用既有非成功错误信封，不返回伪成功 EvidenceRef；只有有权获知时才提供具体不可用原因。动态 resolution 不写回历史引用，不代表论断已获支持。
-- 用户显式选择/预览目标后，ResearchCreate/ReviewCreate 必须带 knowledge_version_id；AdoptionPreviewRequest 继续必填 target_knowledge_version_id。预览/创建期间出现新版不改目标，仍可创建已选可用旧版；省略只代表创建事务时默认选择，响应必须展示实际绑定。列表 is_latest 是查询时投影，不作为创建时必须最新的约束。
+- 版本列表与历史证据允许显式指定已授权的版本；普通研究/综述继续由宿主在新操作受理时选择最新版本，不要求用户提交升级确认。当前最新版本不可读时返回相应错误；不回退旧版。
 
 本节不增加迁移引用或自动截止筛选端点；无已发布版本引导用户进入 Construction，不隐式启动构建；已发布空版本可浏览及新建 Research/Review，明确无证据，不以成员数为创建门槛，不自动回退其他版本。无权限的版本摘要与来源引用同样按公共防枚举规则隐藏；动态状态不改变版本内容，风险统计 unknown/null 与 0 区分。
 
 ## 6. Research
 
-`ResearchCreate={title?:string,knowledge_version_id?:ID}`；title 默认由服务端使用项目主题形成；省略版本在创建事务绑定当前默认版本。`ResearchSessionView=Resource+{title,knowledge_version_id:ID,latest_knowledge_version_id:ID,range_fixed:boolean,retrieval_cutoff_at:Time|null,current_attempt_id:ID|null,available_actions:ActionAvailability[]}`；不创建 paused Session 状态。
+`ResearchCreate={title?:string}`；创建时校验存在可访问的已发布版本。`ResearchSessionView=Resource+{title,latest_knowledge_version_id:ID,last_execution_knowledge_version_id:ID|null,current_attempt_id:ID|null,available_actions:ActionAvailability[]}`。最近执行按受理顺序取值，无执行或历史来源无法确认时为空。当前默认值与过去工作的事实分别展示。会话无 paused 状态。 会话读取投影另提供 `no_project_evidence:boolean`，仅按当前版本已发布论文/资料清单是否为空计算，不代表某个查询的检索结果。创建标题为1–200字符且不得全空白，省略时显示“新研究会话”。task051 的 Create/List/Read 首个实现切片尚无轮次，最近执行与当前 attempt 为 null；后续轮次必须回填真实事实，不能沿用占位值。
 
 `ResearchMessageSend`（字段见机器schema）。`ResearchTurnView={id:ID,session_id:ID,knowledge_version_id:ID,user_message:{id,text,created_at},attempts:ResearchAttemptView[]}`。`ResearchAttemptView={id,revision,status:string,partial_result_ref:string|null,accepted_text:string|null,evidence:EvidenceRef[],retrieval_status:pending|found|empty|failed,no_evidence:boolean,error:object|null,task:TaskRef|null}`；partial_result_ref 指向04-02 `/tasks/{task_id}/output`，其未完成文本不作为成功回复，empty 不等于 failed。
 
 | 方法/路径 | 用例 ID / FR | 请求 → 响应 | 约束 |
 | --- | --- | --- | --- |
 | GET/POST `P/research-sessions` | `Research.List/Create` / 014,018,028 | 分页/ResearchCreate → List<ResearchSessionView>/ResearchSessionView | 无可读已发布版本拒绝创建 |
-| GET `RS` | `Research.Read` / 011,014,028 | 无 → ResearchSessionView | 返回实际绑定和新版本提示，不强制采用 |
+| GET `RS` | `Research.Read` / 011,014,028 | 无 → ResearchSessionView | 返回当前最新与最近执行版本，读取本身不启动任务 |
 | GET `RS/turns` | `Research.ReadTurns` / 028 | 分页 → List<ResearchTurnView> | 按 created_at ASC,id ASC；失败用户输入和诊断保留 |
 | POST `RS/messages` | `Research.SendMessage` / 028 | ResearchMessageSend → `{turn:ResearchTurnView,attempt_id:ID,task:TaskRef}` | 同 Session 只有一个活跃回复；重复命令不重复追加输入 |
 | GET `RS/attempts/{attempt_id}` | `Research.ReadAttempt` / 015,028 | 无 → ResearchAttemptView | 核验 Session 归属 |
 | POST `RS/attempts/{attempt_id}/cancel` | `Research.CancelResponse` / 015,028 | RevCommand → CommandResult | 只取消指定 attempt，不取消未来回复，不把部分回复标成功 |
 | POST `RS/attempts/{attempt_id}/continue-without-evidence` | `Research.ContinueWithoutEvidence` / 028 | `{expected_revision!,confirmation_token!,acknowledged_risk_ids:string[]!}` → TaskRef | 仅当前 empty 等待项，显式选择无证据普通回复；仍标 no_evidence |
-| POST `RS/fix-evidence-range` | `Research.FixRange` / 018 | RevCommand → ResearchSessionView | 固定现有绑定，停止重复升级催促，保留重要证据风险提示 |
-| POST `RS/adoption-preview` | `Research.PreviewAdoption` / 018 | AdoptionPreviewRequest → 采用预览 | 不读取流式半成品 |
-| POST `RS/adoptions` | `Research.AdoptVersion` / 018 | AdoptionPreviewRequest+Confirmation → `{source_session_id,new_session:ResearchSessionView}` | 创建独立新会话，旧绑定/历史不变；目标版本不自动替换成新出现的 latest |
+
 
 调整空检索问题可取消当前等待尝试后发送新问题；不得把“继续无证据”自动当用户同意。API-D02 B 已将消息编辑/删除、失败片段编辑/采纳划入 P1，P0 不开放其写端点；已保存成功消息读取、失败输入/片段及诊断保留继续属于 P0。
 
@@ -336,18 +332,18 @@ SupplementView 与 CandidateView 另返回只读 `document_refs:ID[]`，列出�
 
 ### 7.1 数据结构
 
-- `ReviewCreate`（字段见机器schema）；scope/requirements 默认空串；省略知识版本绑定创建事务的当前默认版本。创建并启动大纲生成返回202。
-- `ReviewRunView=Resource+{topic,scope,requirements,knowledge_version_id:ID,latest_knowledge_version_id:ID,range_fixed:boolean,lifecycle_status:string,phase:string,outline:OutlineView|null,chapter_summaries:object[],current_final_id:ID|null,tasks:TaskRef[],available_actions:ActionAvailability[]}`；lifecycle_status 只映射02既有合法状态，不添加 active 枚举，不由子任务完成擅自决定 Run succeeded。
-- `OutlineView={revision,content_state,title:string,abstract_prompt:string,chapters:{id:ID,title:string,type:string,order:integer,required:boolean,key_points:string[],support_summary:string,risk_codes:string[]}[],review_issues:ReviewIssue[],confirmed_revision:Revision|null,trace:Trace}`。章节 type 是用户描述标签，1–64；order 从0起唯一；required 必须显式提供，不能根据类型猜测。
+- `ReviewCreate` 的 scope/requirements 默认空串；同一事务中创建 Run 并按当时的当前默认版本受理首次大纲生成，返回 202。
+- `ReviewRunView=Resource+{topic,scope,requirements,latest_knowledge_version_id:ID,last_execution_knowledge_version_id:ID|null,lifecycle_status:string,phase:string,outline:OutlineView|null,chapter_summaries:object[],current_final_id:ID|null,tasks:TaskRef[],available_actions:ActionAvailability[]}`；最近执行按受理顺序确定。每项大纲、章节、正文及审查的生成记录返回其实际 knowledge_version_id；汇总稿保留来源内容修订及各自证据，不使用 Run 当前默认值回写历史。子任务完成不能擅自决定 Run succeeded。
+- `OutlineView={revision,knowledge_version_id:ID|null,content_state,title:string,abstract_prompt:string,chapters:{id:ID,title:string,type:string,order:integer,required:boolean,key_points:string[],support_summary:string,risk_codes:string[]}[],review_issues:ReviewIssue[],confirmed_revision:Revision|null,trace:Trace}`。章节 type 是用户描述标签，1–64；order 从0起唯一；required 必须显式提供，不能根据类型猜测。
 - `OutlinePatch={expected_revision!,confirmation_token?:string,acknowledged_risk_ids:string[]!,title?:string,abstract_prompt?:string,chapters?:{id?:ID,title:string,type:string,order:integer,required:boolean,key_points:string[]}[]}`；整组章节替换中已有条目必须包含本Run的已存在ID，保留其身份；新条目省略id，由服务端分配；禁止客户端伪造/借用其他Run章节ID。移除/改变既有章节时预览下游失效范围，不删除已接受成果。
-- `ChapterView={id,revision,content:Content,required:boolean,confirmed_revision:Revision|null,evidence:EvidenceRef[],review_history:{id:ID,content_revision:Revision,created_at:Time,issues:ReviewIssue[]}[],trace:Trace}`。引用链接问题和学术审查建议复用 ReviewIssue，绑定内容修订；不提供覆盖率、严格模式、阈值或豁免。
-- `ReviewIssue={id:ID,revision:Revision,source_revision:Revision,kind:string,description:string,suggestion:string|null,resolution:open|applied|handled|ignored,actor_id:ID|null,resolved_at:Time|null}`。
+- `ChapterView={id,revision,knowledge_version_id:ID|null,content:Content,required:boolean,confirmed_revision:Revision|null,evidence:EvidenceRef[],review_history:{id:ID,knowledge_version_id:ID|null,content_revision:Revision,created_at:Time,issues:ReviewIssue[]}[],trace:Trace}`。引用链接问题和学术审查建议复用 ReviewIssue，绑定内容修订；不提供覆盖率、严格模式、阈值或豁免。
+- `ReviewIssue={id:ID,revision:Revision,knowledge_version_id:ID|null,source_revision:Revision,kind:string,description:string,suggestion:string|null,resolution:open|applied|handled|ignored,actor_id:ID|null,resolved_at:Time|null}`。
 - `GenerateRequest`（字段见机器schema）；重新生成受到已确认/人工修改内容保护，确认令牌范围必须包括具体章节/大纲/终稿片段。
 - `FinalView={id,revision,content:Content,abstract:string,keywords:string[],references:EvidenceRef[],source_outline_revision:Revision,source_chapter_revisions:{chapter_id,revision}[],knowledge_version_id:ID,acceptance:accepted|rejected,acceptance_source:default|explicit_rejection,issues:ReviewIssue[],trace:Trace}`。content 是唯一可写的完整 Markdown 文章，摘要/关键词/参考文献为同修订只读投影，不独立保存冲突正文。
 
 ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续时为 waiting_user。终稿保存后当前修订即可读取和下载，无独立导出快照、过期状态或重新生成快照命令。完成检查当前 accepted 终稿、无活动任务及来源大纲/必需章节仍有效；成功后整个 Run 只读，P0 不提供 reopen 或复制 Run 编辑。完成不是下载前置。新生成结果独立完成后按输入修订及人工覆盖授权提交，失败/迟到不覆盖旧稿。人工终稿编辑不反向使章节确认失效。
 
-引用遵循 FR-033 学术规范：借用内容注明来源、直接引文准确定位、摘要证据明确标示、事实与自己的推论区分。只做标记—参考条目—EvidenceRef 的机械对应检查和已有章节/全文建议式审查，不以数量或 Agent 分数判定学术充分性。人工正文坏标记允许保存并显示问题，不注册伪有效 EvidenceRef；越权/跨 Project/跨绑定版本的证据读取和关联仍拒绝。旧审查不能冒充当前修订审查。
+引用遵循 FR-033 学术规范：借用内容注明来源、直接引文准确定位、摘要证据明确标示、事实与自己的推论区分。只做标记—参考条目—EvidenceRef 的机械对应检查和已有章节/全文建议式审查，不以数量或 Agent 分数判定学术充分性。人工正文坏标记允许保存并显示问题，不注册伪有效 EvidenceRef；越权/跨 Project/与引用自身记录版本不符的证据读取和关联仍拒绝。旧审查不能冒充当前修订审查。
 
 `FinalizationSources={outline_revision:Revision,chapters:{chapter_id:ID,revision:Revision}[]}`。`FinalizationPreview={revision:Revision,confirmations:ConfirmationPreview[],required_chapters:{chapter_id:ID,confirmed_revision:Revision|null}[],optional_chapters:{chapter_id:ID,confirmed_revision:Revision|null}[],source_revisions:FinalizationSources,blocked_reasons:string[]}`；finalize必须携带该完整来源，校验确认修订仍有效。首次汇总无受保护终稿时 confirmations=[]，不新增确认门槛；重新汇总会覆盖受保护内容时返回绑定完整来源及替换范围的确认对象，提交其 token。输入简报为`ReviewBrief={revision:Revision,topic:string,scope:string,requirements:string,knowledge_version_id:ID,trace:Trace}`，知识版本只读。
 
@@ -364,7 +360,7 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 | POST `RV/outline/generate` | `Review.GenerateOutline` / 032 | GenerateRequest → TaskRef | 合法可继续 Run，保护已确认/人工修改内容；阶段再生成不是通用重跑 |
 | POST `RV/outline/confirm` | `Review.ConfirmOutline` / 032 | `{expected_revision!,confirmation_token!,acknowledged_risk_ids:string[]!}` → OutlineView | 确认绑定大纲及KV；允许确认低支撑风险，不冒充无风险 |
 | GET/PATCH `RV/chapters/{chapter_id}` | `Review.ReadChapter/EditChapter` / 017,033,035 | 无/`{expected_revision!,markdown:string!}` → ChapterView | 同章生成/审查/保存互斥；编辑记录人工来源并使旧确认失效 |
-| POST `RV/chapters/{chapter_id}/generate` | `Review.GenerateChapter` / 033 | GenerateRequest → TaskRef | 当前大纲已确认；同章锁；所有证据为绑定版本 |
+| POST `RV/chapters/{chapter_id}/generate` | `Review.GenerateChapter` / 033 | GenerateRequest → TaskRef | 当前大纲已确认；同章锁；新取证据来自本任务冻结版本 |
 | POST `RV/chapters/{chapter_id}/review` | `Review.ReviewChapter` / 033,035 | GenerateRequest → TaskRef | 审查结果绑定提交时章节修订；迟到审查不覆盖其他修订 |
 | POST `RV/chapters/{chapter_id}/confirm` | `Review.ConfirmChapter` / 033 | `{expected_revision!,confirmation_token!,acknowledged_risk_ids:string[]!}` → ChapterView | 引用问题/学术建议提示，不以覆盖率或未处理建议拒绝确认；证据关联权限仍强制校验 |
 | POST `RV/chapters/{chapter_id}/issues/{issue_id}/resolve` | `Review.ResolveChapterIssue` / 033,035 | `{expected_revision!,issue_revision:Revision!,action:apply\|ignore!,replacement_markdown?:string}` → ChapterView | apply 必填已查看的替换正文，按当前修订保存；ignore 禁止正文；不使用过期建议静默覆盖 |
@@ -379,9 +375,7 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 | POST `RV/complete` | `Review.Complete` / 034 | `{expected_revision!,final_id:ID!,final_revision:Revision!}` → ReviewRunView | 幂等；原子检查Run/终稿/来源修订、accepted及无活动任务；未处理审查建议不阻断；不另要确认token |
 | GET `RV/finals/{final_id}/download` | `Review.DownloadFinalMarkdown` / 034,035 | `expected_revision!` query → Markdown附件流 | 仅当前已保存accepted修订；缺修订428、失配412；无模型调用，流固定读取内容；完成前后均可用，见04-02 |
 | POST `RV/tasks/{task_id}/cancel` | `Review.CancelGeneration` / 015 | `{expected_revision!,attempt_id:ID!}` → CommandResult | 只取消指定生成任务；不能取消下一次任务或删除人工稿 |
-| POST `RV/fix-evidence-range` | `Review.FixRange` / 018 | RevCommand → ReviewRunView | 保持原绑定，不反复催促 |
-| POST `RV/adoption-preview` | `Review.PreviewAdoption` / 018 | AdoptionPreviewRequest → 采用预览 | 展示从头生成范围、继承主题、人工参考处理和成本提示 |
-| POST `RV/adoptions` | `Review.AdoptVersion` / 018 | AdoptionPreviewRequest+Confirmation+`{model_selection!}` → `{source_run_id,new_run:ReviewRunView,task:TaskRef}` | 新独立Run，不改旧绑定，不继承原确认状态 |
+
 
 审查历史可随 ChapterView 分页读取 `GET RV/chapters/{chapter_id}/review-history`（`Review.ReadChapterReviews` / FR-033,035，响应 List<审查记录>）；这不提供任意内容版本恢复。大纲和必需章节确认、Review 终稿默认接受属于不同规则，不可合并为通用“全部确认”。
 
@@ -399,7 +393,7 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 | 候选重评分 | ConstructionRunView.candidate_revision；预览同时绑定目标候选修订集合 |
 | 阶段等待项确认 | WaitingItem.revision；subject_revision/candidate_revision是附加确认依据 |
 | Construction 取消 | ConstructionRunView.revision；已有执行身份时 attempt_id 必须匹配，无已分配执行身份时显式传 null，按路径 Run ID 和修订取消 |
-| Research 发送、固定范围和采用预览/执行 | ResearchSessionView.revision；采用 token 另绑定稳定继承内容修订 |
+| Research 发送 | ResearchSessionView.revision；受理时解析该轮知识版本 |
 | Research 取消/无证据继续 | ResearchAttemptView.revision |
 | 大纲生成/审查/编辑/确认 | 已存在 OutlineView.revision；尚无大纲的首次补生成使用 ReviewRunView.revision，服务端同时检查 outline 仍为空 |
 | 章节、章节问题处理 | ChapterView.revision；问题另校验 issue_revision |
@@ -407,7 +401,7 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 | 终稿操作、问题处理 | FinalView.revision；问题另校验 issue_revision |
 | 返回检索追加词、Review 完成 | 对应 RunView.revision；完成另校验 final_revision 与当前来源集合 |
 | Review 指定任务取消 | TaskView.revision，attempt_id 必须匹配该 task |
-| Review 简报/固定范围/采用 | 简报用 ReviewBrief.revision；固定范围及采用用 ReviewRunView.revision |
+| Review 简报 | ReviewBrief.revision |
 
 同键已受理命令按主文先重放，不让上述已推进的修订造成假冲突。确认 token 的技术有效期只限制新命令受理，执行中使用持久确认记录。
 
@@ -444,19 +438,9 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 
 若提交前候选已变为 candidate-r10，返回412或主文明确的确认失效冲突，不可用相同 token 发布 r10。用户重新查看预览，再取得与新内容绑定的确认。
 
-### 8.3 新知识采用
+### 8.3 同一对象继续使用新知识
 
-```json
-{
-  "expected_revision": "session-r8",
-  "target_knowledge_version_id": "00000000-0000-4000-8000-000000000003",
-  "inheritance": {"stable_message_ids": ["00000000-0000-4000-8000-000000000004"]},
-  "confirmation_token": "opaque-adoption-token",
-  "acknowledged_risk_ids": []
-}
-```
-
-返回 source_session_id 和 new_session，new_session 绑定确认目标版本。源会话继续其原版本；即使确认期间发布另一版本，也不替换请求中的目标。
+研究答复或综述章节在 V1 上受理，期间发布 V2。模块就地提示更新，原任务及其输出仍记 V1。下一次新操作无需提交版本号或确认 token，在同一 Session/Run 上受理，任务及响应显示实际采用 V2；读取旧引用仍返回 V1 的原修订。
 
 ### 8.4 必须覆盖的文档/后续实现验收
 
@@ -475,7 +459,7 @@ ReviewRun 的 accepted 不自动推进 succeeded；无活动任务且可继续�
 | 解析降级、部分源失败、全源失败 | 来源可辨；部分成功继续，全源失败阻断后续 |
 | 已发布KV与候选同时存在 | 研究/知识面板只读指定已发布版本 |
 | 研究空检索与流式失败 | 显式选择普通回复；半成品不保存为成功回复 |
-| 新版本发布与旧回复并行 | 原绑定稳定；关联新对象独立绑定用户确认版本 |
+| 新版本发布与旧回复或章节生成并行 | 原执行用 V1 完成；发布后的新追问、章节生成或审查在原对象用 V2；历史证据按原版本读取 |
 | 章节并发、过期审查建议、人工覆盖 | 同章互斥；修订冲突拒绝；不得静默覆盖 |
 | 终稿必需/可选章节、默认接受与拒绝 | 必需缺失阻断；可选不阻断；成功默认接受；拒绝只清理目标产物 |
 | archived/deleted/context恢复 | 不能恢复写权限；context不改变业务对象 |

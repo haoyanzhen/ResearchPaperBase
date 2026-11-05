@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Paper Base P0 typed contract subset",
-    "version": "1.24",
+    "version": "1.26",
     "description": "Bounded request/success and public error field contracts; endpoint error applicability and runtime invariants remain in p0.coverage.json.",
-    "x-updated": "2026-11-02"
+    "x-updated": "2026-11-05"
   },
   "servers": [
     {
@@ -5557,7 +5557,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -5629,7 +5629,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "admitted-task-version",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -5708,7 +5708,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "admitted-task-version",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -5778,77 +5778,6 @@
         "x-coverage": "request-only"
       }
     },
-    "/projects/{project_id}/research-sessions/{session_id}/fix-evidence-range": {
-      "post": {
-        "operationId": "Research.FixRange",
-        "x-use-case": "Research.FixRange",
-        "x-fr": [
-          "FR-018"
-        ],
-        "x-phase": "P0",
-        "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
-        "x-errors": "#/components/schemas/PublicError",
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ID"
-            }
-          },
-          {
-            "name": "session_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ID"
-            }
-          },
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128,
-              "pattern": "^[\\x20-\\x7e]+$"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RevCommand"
-              }
-            }
-          }
-        },
-        "x-coverage": "request-only"
-      }
-    },
     "/projects/{project_id}/review-runs": {
       "post": {
         "operationId": "Review.Create",
@@ -5860,7 +5789,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "explicit-or-default-at-creation",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -5923,7 +5852,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -5994,7 +5923,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6065,7 +5994,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6138,7 +6067,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6206,7 +6135,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6286,7 +6215,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6365,7 +6294,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6445,7 +6374,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6533,7 +6462,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6614,7 +6543,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6682,7 +6611,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "latest-at-admission",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6762,7 +6691,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6850,7 +6779,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -6929,7 +6858,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "source-revision",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -7000,7 +6929,7 @@
         ],
         "x-phase": "P0",
         "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
+        "x-version-binding": "admitted-task-version",
         "x-errors": "#/components/schemas/PublicError",
         "security": [
           {
@@ -7063,77 +6992,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AttemptCancel"
-              }
-            }
-          }
-        },
-        "x-coverage": "request-only"
-      }
-    },
-    "/projects/{project_id}/review-runs/{run_id}/fix-evidence-range": {
-      "post": {
-        "operationId": "Review.FixRange",
-        "x-use-case": "Review.FixRange",
-        "x-fr": [
-          "FR-018"
-        ],
-        "x-phase": "P0",
-        "x-authorization": "project-owner-active",
-        "x-version-binding": "bound-object",
-        "x-errors": "#/components/schemas/PublicError",
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ID"
-            }
-          },
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ID"
-            }
-          },
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128,
-              "pattern": "^[\\x20-\\x7e]+$"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Success and error schema are not transcribed/closed. Request-only contract; see coverage. No response body is asserted here."
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RevCommand"
               }
             }
           }
@@ -13382,6 +13240,386 @@
         },
         "x-coverage": "request-success-errors-partial"
       }
+    },
+    "/projects/{project_id}/research-sessions": {
+      "get": {
+        "operationId": "Research.List",
+        "x-use-case": "Research.List",
+        "x-fr": [
+          "FR-014",
+          "FR-018",
+          "FR-028"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "200": {
+            "description": "Research session creation/read slice; no reply generation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ResearchSessionView"
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "Research.Create",
+        "x-use-case": "Research.Create",
+        "x-fr": [
+          "FR-014",
+          "FR-018",
+          "FR-028"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-active",
+        "x-version-binding": "latest-at-admission",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128,
+              "pattern": "^[\\x20-\\x7e]+$"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "201": {
+            "description": "Research session creation/read slice; no reply generation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Location": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ResearchSessionView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/IdempotentMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResearchCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/research-sessions/{session_id}": {
+      "get": {
+        "operationId": "Research.Read",
+        "x-use-case": "Research.Read",
+        "x-fr": [
+          "FR-014",
+          "FR-018",
+          "FR-028"
+        ],
+        "x-phase": "P0",
+        "x-authorization": "project-owner-readable",
+        "x-version-binding": "not-applicable",
+        "x-errors": "#/components/schemas/PublicError",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "X-Expected-Actor",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/PublicError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError403"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError409"
+          },
+          "412": {
+            "$ref": "#/components/responses/PublicError412"
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicError422"
+          },
+          "428": {
+            "$ref": "#/components/responses/PublicError428"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError500"
+          },
+          "413": {
+            "$ref": "#/components/responses/PublicError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/PublicError415"
+          },
+          "200": {
+            "description": "Research session creation/read slice; no reply generation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ResearchSessionView"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15817,9 +16055,6 @@
           "requirements": {
             "$ref": "#/components/schemas/Description",
             "default": ""
-          },
-          "knowledge_version_id": {
-            "$ref": "#/components/schemas/ID"
           },
           "model_selection": {
             "$ref": "#/components/schemas/ModelSelection"
@@ -27407,6 +27642,95 @@
           "supplement_ids",
           "base_knowledge_version_id",
           "frozen_at"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchCreate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "ResearchSessionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "latest_knowledge_version_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "last_execution_knowledge_version_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_attempt_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActionAvailability"
+            }
+          },
+          "no_project_evidence": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "revision",
+          "latest_knowledge_version_id",
+          "title",
+          "status",
+          "created_at",
+          "updated_at",
+          "last_execution_knowledge_version_id",
+          "current_attempt_id",
+          "available_actions",
+          "no_project_evidence"
         ],
         "additionalProperties": false
       }

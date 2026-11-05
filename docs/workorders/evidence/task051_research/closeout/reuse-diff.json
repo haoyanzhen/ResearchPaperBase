@@ -1,0 +1,9 @@
+{
+  "changed_since_final2": [
+    "backend/tests/integration/test_research_sessions.py",
+    "frontend/src/ResearchSessions.tsx",
+    "backend/tests/integration/test_browser_research_sessions.py"
+  ],
+  "final3_retested": "all Research cases",
+  "existing_134_reused": "backend business/migrations/Project fixtures unchanged"
+}

@@ -127,6 +127,10 @@ class PublicErrorTests(unittest.TestCase):
      self.assertEqual(updated['properties'].pop('last_test_at'), {'anyOf':[{'$ref':'#/components/schemas/Time'},{'type':'null'}]})
      for added in ['provider','oauth','oauth_status','connection_status','last_test_at']: updated['required'].remove(added)
     self.assertEqual(schema,updated,name)
+   elif name == 'ReviewCreate':
+    expected = copy.deepcopy(schema)
+    self.assertEqual(expected['properties'].pop('knowledge_version_id'), {'$ref':'#/components/schemas/ID'})
+    self.assertEqual(expected, SCHEMAS[name], name)
    elif name not in llm_changed: self.assertEqual(schema,SCHEMAS[name],name)
    else:
     # task026 explicitly accepted expansion; LP and LC13 test its new bounded contracts.
@@ -134,7 +138,25 @@ class PublicErrorTests(unittest.TestCase):
     self.assertTrue(set(schema['properties']) <= set(SCHEMAS[name]['properties']))
   for path,item in old['paths'].items():
    for method,op in item.items():
+    if op['operationId'] in {'Research.FixRange', 'Review.FixRange'}:
+     self.assertNotIn(path, SPEC_DATA['paths'])
+     continue
     updated=copy.deepcopy(SPEC_DATA['paths'][path][method]); updated['x-errors']=op['x-errors']
+    # FR-018 changes only the knowledge resolution semantics on these operations.
+    if op['x-version-binding'] in {'bound-object', 'explicit-or-default-at-creation'}:
+     self.assertTrue(op['operationId'].startswith(('Research.', 'Review.')))
+     if op['operationId'] in {'Research.SendMessage', 'Review.Create', 'Review.GenerateOutline',
+                             'Review.ReviewOutline', 'Review.GenerateChapter', 'Review.ReviewChapter',
+                             'Review.ReviewFinal', 'Review.RegenerateFinalComponents'}:
+      expected_binding = 'latest-at-admission'
+     elif op['operationId'] in {'Research.CancelResponse', 'Research.ContinueWithoutEvidence', 'Review.CancelGeneration'}:
+      expected_binding = 'admitted-task-version'
+     else:
+      self.assertIn(op['operationId'], {'Review.EditChapter', 'Review.ConfirmOutline', 'Review.ConfirmChapter',
+                   'Review.EditFinal', 'Review.ResolveFinalIssue', 'Review.ResolveChapterIssue', 'Review.RejectFinal', 'Review.Complete'})
+      expected_binding = 'source-revision'
+     self.assertEqual(updated['x-version-binding'], expected_binding)
+     updated['x-version-binding'] = op['x-version-binding']
     if method == 'get' and (path.startswith('/me/llm-configs') or path in {'/me/model-options','/me/model-selection'}):
      guard=next(p for p in updated['parameters'] if p['name']=='X-Expected-Actor')
      self.assertEqual(guard, {'name':'X-Expected-Actor','in':'header','required':False,'schema':{'type':'string','format':'uuid'}})

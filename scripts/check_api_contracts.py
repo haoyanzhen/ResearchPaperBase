@@ -67,7 +67,7 @@ def check(spec, coverage):
         ids.add(op['operationId'])
         assert op['x-phase'] == 'P0'
         assert op['x-use-case'] and op['x-fr'] and op['x-authorization']
-        assert op['x-version-binding'] in {'not-applicable','bound-object','explicit-or-default-at-creation'}
+        assert op['x-version-binding'] in {'not-applicable', 'latest-at-admission', 'admitted-task-version', 'source-revision'}
         assert op['x-errors'] == '#/components/schemas/PublicError', 'public error reference drift'
         names = {p['name'] for p in op.get('parameters', [])}
         required_headers = {p['name'] for p in op.get('parameters', []) if p['in'] == 'header' and p.get('required') is True}

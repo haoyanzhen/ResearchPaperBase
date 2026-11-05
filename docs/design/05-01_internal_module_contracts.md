@@ -1,7 +1,7 @@
 # 内部模块与执行契约
 
-文档版本：v1.8
-更新日期：2026-10-23
+文档版本：v1.9
+更新日期：2026-11-04
 依据文档：[00](00_layers.md)、[02](02_domain_core.md)、[04](04_api_contracts.md)、[05](05_application_use_cases.md)、[06](06_agent_knowledge_services.md)
 
 资料读取政策接缝见[08-01 §7](08-01_agent_data_access_policy.md#7-服务接缝与可独立修改范围)。现有ActorContext/ReadContext/写入scope不能被理解为已经实现公开/私人资料判定；Q1–Q4已确认，类型化接入见§3.4–3.5，运行实现仍待完成；受理修订仅供审计，执行按当前政策，不能冻结资料权限上限。SEC-D01/03按08 §12已决规则实施，认证材料与冻结业务配置分开。
@@ -25,8 +25,8 @@
 | Workspace | 用户/Project 下显示上下文和未提交草稿 | 查询所属对象的可访问投影 | 恢复即提交业务内容、推进任务或拥有知识资产 |
 | Construction | Workspace 检索配置、补充请求、候选及其决定、Run/attempt；受控提交 ProjectPaper/ProjectMaterial/DocumentAsset 候选修订和版本发布 | 调用身份归一化、解析、Agent、候选同步端口；唯一发起版本发布提交 | 修改已发布内容；把 Agent 提案当人工确认；复用失权 attempt |
 | Knowledge / Identity（能力模块） | 提供全局论文身份归一化与登记端口、知识读取、证据解析、候选准备和完整性核验能力；业务提交仍由应用协调 | 身份登记经受控应用入口且只写全局身份；候选写入限应用签发范围；读取使用 ReadContext | 从全局身份暴露 Project 私有资产；自行提交 Run 成功、默认指针或研究绑定 |
-| Research | Session、轮次、回复 attempt、消息和其证据关联；创建时版本绑定 | 通过 Knowledge 读取固定版本；通过 Agent 生成提案 | 改知识资产、原地采用新版本或把失败片段变为成功正文 |
-| Review | Run、大纲、章节、终稿、审查与确认事实；创建时版本绑定 | 调用 Knowledge/Agent；当前修订的授权 Markdown 读取 | 通过导出覆盖正文、迟到生成覆盖人工稿或隐式完成 Run |
+| Research | Session、轮次、回复 attempt、消息和证据关联；每轮受理冻结版本 | 通过 Knowledge 读取该轮固定版本；通过 Agent 生成提案 | 改知识资产、替换历史证据或把失败片段变为成功正文 |
+| Review | Run、大纲、章节、终稿、审查与确认；每次新生成或审查受理冻结版本 | 调用 Knowledge/Agent；按稿件来源修订授权读取 | 通过导出覆盖正文、迟到生成覆盖人工稿或隐式完成 Run |
 | Execution（技术能力） | 命令去重、任务投递、领取、执行资格记录和持久事件 | 各应用模块在其业务事务中使用；Worker 经应用执行入口提交 | 自行定义统一业务状态机、把投递成功当业务成功 |
 | 后续能力 | 调度/邮件/通用导出为 P1，观点/协作为 P2 | 分期启用后调用公开应用端口并保持自身副作用记录 | 因本表预留而提前开放入口或改变 P0 验收 |
 
@@ -54,7 +54,7 @@
 | 类型 | 必需结构及约束 |
 | --- | --- |
 | `ExecutionContext` | command/task/attempt 引用、触发主体、Project（适用时）、所属业务对象、固定输入修订、配置快照引用、执行资格引用；读取任务另携带持久读取绑定。执行资格须由服务端解析并校验当前有效性 |
-| `ReadBinding` | Project、KnowledgeVersion、不可变清单引用及来源 Session/Run/显式浏览意图；可持久化，不携带永久授权 |
+| `ReadBinding` | Project、KnowledgeVersion、不可变清单引用及来源轮次/写作任务/历史引用或显式浏览意图；可持久化，不携带永久授权 |
 | `ReadContext` | 已核验 ReadBinding、当前读取保护句柄；严格承接 06 §3.1。重启后从持久绑定重新取得保护，不序列化进程内句柄作为有效授权 |
 | `SupplementWriteScope` | Project、补充请求引用及修订、当前 task/attempt、文件/输入修订和写资格引用；只写所属暂存文件及提取结果，不要求 ConstructionRun、基线或已发布版本，不授予候选/索引/图谱/发布资格 |
 | `CandidateWriteScope` | Project、ConstructionRun、attempt、候选引用及修订、基线（首次允许无基线）、写资格引用；只能写该隔离候选，不能用于发布或任意路径写入 |
